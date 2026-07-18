@@ -91,6 +91,76 @@ npm run build
 # 将dist目录部署到静态服务器（如Nginx）
 ```
 
+### 腾讯云EdgeOne部署
+
+#### 1. 前端部署
+
+**步骤1：构建前端**
+```bash
+cd frontend
+npm install
+npm run build
+```
+
+**步骤2：上传静态文件**
+- 将 `frontend/dist` 目录下的所有文件上传到EdgeOne的源站（如对象存储COS）
+
+**步骤3：配置EdgeOne规则**
+
+在EdgeOne控制台配置以下规则：
+
+**路由规则（Routing Rules）**：
+```json
+[
+  {
+    "match": "/api/*",
+    "action": "origin",
+    "origin": "https://your-backend-server.com"
+  },
+  {
+    "match": "/*",
+    "action": "origin",
+    "origin": "your-cos-origin",
+    "rewrite": {
+      "uri": "/index.html"
+    }
+  }
+]
+```
+
+**关键配置**：
+- **SPA路由重写**：将所有非API请求重写到 `/index.html`
+- **API代理**：将 `/api/*` 请求转发到后端服务器
+
+**响应头配置**：
+```
+Content-Type: text/html; charset=utf-8
+Cache-Control: no-cache
+```
+
+#### 2. 后端部署
+
+后端服务需要部署在腾讯云CVM或其他服务器上，确保：
+- 服务器安全组开放3000端口
+- 配置HTTPS（推荐）
+- 服务器防火墙允许EdgeOne的IP访问
+
+#### 3. EdgeOne配置要点
+
+**源站配置**：
+- 静态资源：使用COS作为源站
+- API请求：使用CVM作为源站
+
+**缓存配置**：
+- HTML文件：不缓存或短时间缓存
+- JS/CSS文件：长期缓存（带hash文件名）
+- API请求：不缓存
+
+**安全配置**：
+- 启用WAF防护
+- 配置访问控制
+- 启用HTTPS
+
 ## 测试账号
 
 | 用户名 | 密码 | 角色 |
