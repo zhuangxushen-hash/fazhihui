@@ -269,6 +269,7 @@ export class DashboardService {
       traffic: '交通事故',
       debt: '债务纠纷',
       contract: '合同纠纷',
+      other: '其他',
     };
 
     const queryBuilder = this.caseRepository.createQueryBuilder('case')

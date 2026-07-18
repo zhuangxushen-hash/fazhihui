@@ -40,8 +40,8 @@ export class FinanceController {
   }
 
   @Get('profit-share')
-  getProfitShares(@Query('case_id') caseId: string) {
-    return this.financeService.getProfitShares(caseId);
+  getProfitShares(@Query('org_id') orgId: string, @Query('case_id') caseId?: string) {
+    return this.financeService.getProfitShares(orgId, caseId);
   }
 
   @Post('refund')

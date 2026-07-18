@@ -173,7 +173,7 @@ export class ComplianceController {
   }
 
   @Get('case-sop')
-  getCaseSOP(@Query('case_id') caseId: string) {
+  getCaseSOP(@Query('case_id') caseId?: string) {
     return this.complianceService.getCaseSOP(caseId);
   }
 

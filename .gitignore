@@ -10,5 +10,3 @@ build/
 *.tmp
 .vscode/
 .idea/
-data/
-*.tsbuildinfo

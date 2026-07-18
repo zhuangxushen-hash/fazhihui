@@ -100,7 +100,10 @@ export class ComplianceService {
   }
 
   async getComplianceRecords(orgId: string, type?: ComplianceType, result?: ComplianceResult): Promise<ComplianceRecord[]> {
-    const query = { organization_id: orgId } as any;
+    const query: any = {};
+    if (orgId) {
+      query.organization_id = orgId;
+    }
     if (type) {
       query.type = type;
     }
@@ -137,7 +140,10 @@ export class ComplianceService {
   }
 
   async getComplaints(orgId: string, status?: ComplaintStatus): Promise<Complaint[]> {
-    const query = { organization_id: orgId } as any;
+    const query: any = {};
+    if (orgId) {
+      query.organization_id = orgId;
+    }
     if (status) {
       query.status = status;
     }
@@ -180,7 +186,10 @@ export class ComplianceService {
   }
 
   async getMarketingContents(orgId: string, status?: string): Promise<MarketingContent[]> {
-    const query = { organization_id: orgId } as any;
+    const query: any = {};
+    if (orgId) {
+      query.organization_id = orgId;
+    }
     if (status) {
       query.status = status;
     }
@@ -218,7 +227,10 @@ export class ComplianceService {
   }
 
   async getSalesComplianceRecords(orgId: string, leadId?: string): Promise<SalesCompliance[]> {
-    const query = { organization_id: orgId } as any;
+    const query: any = {};
+    if (orgId) {
+      query.organization_id = orgId;
+    }
     if (leadId) {
       query.lead_id = leadId;
     }
@@ -265,7 +277,10 @@ export class ComplianceService {
   }
 
   async getSigningCompliance(orgId: string, caseId?: string): Promise<SigningCompliance[]> {
-    const query = { organization_id: orgId } as any;
+    const query: any = {};
+    if (orgId) {
+      query.organization_id = orgId;
+    }
     if (caseId) {
       query.case_id = caseId;
     }
@@ -313,15 +328,23 @@ export class ComplianceService {
     return this.caseSOPRepository.findOne({ where: { id } });
   }
 
-  async getCaseSOP(caseId: string): Promise<CaseSOP[]> {
-    return this.caseSOPRepository.find({ where: { case_id: caseId }, order: { step_order: 'ASC' } });
+  async getCaseSOP(caseId?: string): Promise<CaseSOP[]> {
+    const query: any = {};
+    if (caseId) {
+      query.case_id = caseId;
+    }
+    return this.caseSOPRepository.find({ where: query, order: { step_order: 'ASC' } });
   }
 
   async getCaseSOPStats(orgId: string): Promise<{ pending: number; completed: number; overdue: number }> {
-    const pending = await this.caseSOPRepository.count({ where: { organization_id: orgId, status: 'pending' } });
-    const completed = await this.caseSOPRepository.count({ where: { organization_id: orgId, status: 'completed' } });
+    const query: any = {};
+    if (orgId) {
+      query.organization_id = orgId;
+    }
+    const pending = await this.caseSOPRepository.count({ where: { ...query, status: 'pending' } });
+    const completed = await this.caseSOPRepository.count({ where: { ...query, status: 'completed' } });
     const overdue = await this.caseSOPRepository.count({
-      where: { organization_id: orgId, status: 'pending' },
+      where: { ...query, status: 'pending' },
     });
     return { pending, completed, overdue };
   }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, Tabs } from 'antd'
 import { PlusOutlined, EyeOutlined, SearchOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
+import { formatDateTime } from '../utils/format'
 
 export default function FinanceManagement() {
   const [activeTab, setActiveTab] = useState('fees')
@@ -40,7 +41,7 @@ export default function FinanceManagement() {
       if (searchParams.case_id) params.case_id = searchParams.case_id
 
       const res = await axios.get('/finance/fees', { params })
-      setFees(res.data || [])
+      setFees(res || [])
     } catch (error) {
       console.error('Fetch fees error:', error)
     } finally {
@@ -52,7 +53,7 @@ export default function FinanceManagement() {
     setLoading(true)
     try {
       const res = await axios.get('/finance/profit-share', { params: { org_id: user.organization_id } })
-      setProfitShares(res.data || [])
+      setProfitShares(res || [])
     } catch (error) {
       console.error('Fetch profit shares error:', error)
     } finally {
@@ -67,7 +68,7 @@ export default function FinanceManagement() {
       if (searchParams.status) params.status = searchParams.status
 
       const res = await axios.get('/finance/refunds', { params })
-      setRefunds(res.data || [])
+      setRefunds(res || [])
     } catch (error) {
       console.error('Fetch refunds error:', error)
     } finally {
@@ -82,7 +83,7 @@ export default function FinanceManagement() {
       if (searchParams.status) params.status = searchParams.status
 
       const res = await axios.get('/finance/invoices', { params })
-      setInvoices(res.data || [])
+      setInvoices(res || [])
     } catch (error) {
       console.error('Fetch invoices error:', error)
     } finally {
@@ -232,8 +233,8 @@ export default function FinanceManagement() {
     { title: '状态', dataIndex: 'paid', key: 'paid', render: (paid: boolean) => {
       return <Tag color={paid ? 'success' : 'default'}>{paid ? '已支付' : '未支付'}</Tag>
     }},
-    { title: '支付时间', dataIndex: 'paid_at', key: 'paid_at' },
-    { title: '创建时间', dataIndex: 'created_at', key: 'created_at' },
+    { title: '支付时间', dataIndex: 'paid_at', key: 'paid_at', render: (val: string) => formatDateTime(val) },
+    { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
     { title: '操作', key: 'action', render: (_: any, record: any) => (
       <Space>
         <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
@@ -254,13 +255,13 @@ export default function FinanceManagement() {
       marketing: '投放',
       assistant: '助理',
     }[role]) },
-    { title: '分润比例', dataIndex: 'share_ratio', key: 'share_ratio', render: (ratio: number) => `${ratio}%` },
-    { title: '分润金额', dataIndex: 'share_amount', key: 'share_amount', render: (amount: number) => `¥${amount?.toFixed(2) || '0.00'}` },
+    { title: '分润比例', dataIndex: 'percentage', key: 'percentage', render: (ratio: number) => `${ratio}%` },
+    { title: '分润金额', dataIndex: 'amount', key: 'amount', render: (amount: number) => `¥${amount?.toFixed(2) || '0.00'}` },
     { title: '结算状态', dataIndex: 'paid', key: 'paid', render: (paid: boolean) => {
       return <Tag color={paid ? 'success' : 'default'}>{paid ? '已支付' : '待支付'}</Tag>
     }},
-    { title: '结算日期', dataIndex: 'paid_at', key: 'paid_at' },
-    { title: '创建时间', dataIndex: 'created_at', key: 'created_at' },
+    { title: '结算日期', dataIndex: 'paid_at', key: 'paid_at', render: (val: string) => formatDateTime(val) },
+    { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
     { title: '操作', key: 'action', render: (_: any, record: any) => (
       <Space>
         <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
@@ -291,7 +292,7 @@ export default function FinanceManagement() {
       }
       return <Tag color={colors[status]}>{labels[status]}</Tag>
     }},
-    { title: '申请时间', dataIndex: 'created_at', key: 'created_at' },
+    { title: '申请时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
     { title: '操作', key: 'action', render: (_: any, record: any) => (
       <Space>
         <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
@@ -325,7 +326,7 @@ export default function FinanceManagement() {
       }
       return <Tag color={colors[status]}>{labels[status]}</Tag>
     }},
-    { title: '创建时间', dataIndex: 'created_at', key: 'created_at' },
+    { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
     { title: '操作', key: 'action', render: (_: any, record: any) => (
       <Space>
         <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
@@ -457,8 +458,8 @@ export default function FinanceManagement() {
                 <div><span style={{ fontWeight: 'bold' }}>状态：</span>
                   <Tag color={currentItem.paid ? 'success' : 'default'}>{currentItem.paid ? '已支付' : '未支付'}</Tag>
                 </div>
-                <div><span style={{ fontWeight: 'bold' }}>支付时间：</span>{currentItem.paid_at || '-'}</div>
-                <div><span style={{ fontWeight: 'bold' }}>创建时间：</span>{currentItem.created_at}</div>
+                <div><span style={{ fontWeight: 'bold' }}>支付时间：</span>{formatDateTime(currentItem.paid_at)}</div>
+                <div><span style={{ fontWeight: 'bold' }}>创建时间：</span>{formatDateTime(currentItem.created_at)}</div>
               </div>
             )}
             {activeTab === 'profit-shares' && (
@@ -472,13 +473,13 @@ export default function FinanceManagement() {
                   marketing: '投放',
                   assistant: '助理',
                 }[currentItem.role as string])}</div>
-                <div><span style={{ fontWeight: 'bold' }}>分润比例：</span>{currentItem.share_ratio}%</div>
-                <div><span style={{ fontWeight: 'bold' }}>分润金额：</span>¥{currentItem.share_amount?.toFixed(2) || '0.00'}</div>
+                <div><span style={{ fontWeight: 'bold' }}>分润比例：</span>{currentItem.percentage}%</div>
+                <div><span style={{ fontWeight: 'bold' }}>分润金额：</span>¥{currentItem.amount?.toFixed(2) || '0.00'}</div>
                 <div><span style={{ fontWeight: 'bold' }}>结算状态：</span>
                   <Tag color={currentItem.paid ? 'success' : 'default'}>{currentItem.paid ? '已支付' : '待支付'}</Tag>
                 </div>
-                <div><span style={{ fontWeight: 'bold' }}>结算日期：</span>{currentItem.paid_at || '-'}</div>
-                <div><span style={{ fontWeight: 'bold' }}>创建时间：</span>{currentItem.created_at}</div>
+                <div><span style={{ fontWeight: 'bold' }}>结算日期：</span>{formatDateTime(currentItem.paid_at)}</div>
+                <div><span style={{ fontWeight: 'bold' }}>创建时间：</span>{formatDateTime(currentItem.created_at)}</div>
               </div>
             )}
             {activeTab === 'refunds' && (
@@ -502,7 +503,7 @@ export default function FinanceManagement() {
                     }[currentItem.status as string]}
                   </Tag>
                 </div>
-                <div><span style={{ fontWeight: 'bold' }}>申请时间：</span>{currentItem.created_at}</div>
+                <div><span style={{ fontWeight: 'bold' }}>申请时间：</span>{formatDateTime(currentItem.created_at)}</div>
               </div>
             )}
           </div>

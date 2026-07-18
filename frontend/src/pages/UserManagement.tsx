@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, Popconfirm } from 'antd'
 import { PlusOutlined, EditOutlined, EyeOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
+import { formatDateTime } from '../utils/format'
 
 export default function UserManagement() {
   const [data, setData] = useState<any[]>([])
@@ -150,7 +151,7 @@ export default function UserManagement() {
       }
       return <Tag color={colors[role]}>{labels[role]}</Tag>
     }},
-    { title: '创建时间', dataIndex: 'created_at', key: 'created_at' },
+    { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
     { title: '操作', key: 'action', render: (_: any, record: any) => (
       <Space>
         <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
@@ -269,8 +270,8 @@ export default function UserManagement() {
               </Tag>
             </div>
             <div><span style={{ fontWeight: 'bold' }}>组织ID：</span>{currentUser.organization_id}</div>
-            <div><span style={{ fontWeight: 'bold' }}>创建时间：</span>{currentUser.created_at}</div>
-            <div><span style={{ fontWeight: 'bold' }}>更新时间：</span>{currentUser.updated_at || '-'}</div>
+            <div><span style={{ fontWeight: 'bold' }}>创建时间：</span>{formatDateTime(currentUser.created_at)}</div>
+            <div><span style={{ fontWeight: 'bold' }}>更新时间：</span>{formatDateTime(currentUser.updated_at)}</div>
           </div>
         )}
       </Modal>

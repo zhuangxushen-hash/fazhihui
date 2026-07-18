@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, Select, Space, message } from 'antd'
 import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, HistoryOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
+import { formatDateTime } from '../utils/format'
 
 export default function LeadManagement() {
   const [data, setData] = useState<any[]>([])
@@ -199,7 +200,7 @@ export default function LeadManagement() {
       }
       return <Tag color={colors[status]}>{labels[status]}</Tag>
     }},
-    { title: '创建时间', dataIndex: 'created_at', key: 'created_at' },
+    { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
     { title: '操作', key: 'action', render: (_: any, record: any) => (
       <Space>
         <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
@@ -357,7 +358,7 @@ export default function LeadManagement() {
                 <span style={{ fontWeight: 'bold' }}>来源关键词：</span>{currentLead.source_keyword || '-'}
               </div>
               <div>
-                <span style={{ fontWeight: 'bold' }}>创建时间：</span>{currentLead.created_at}
+                <span style={{ fontWeight: 'bold' }}>创建时间：</span>{formatDateTime(currentLead.created_at)}
               </div>
             </div>
             <div style={{ marginBottom: 24 }}>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, Upload, DatePicker } from 'antd'
 import { PlusOutlined, EditOutlined, EyeOutlined, UploadOutlined, SearchOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
+import { formatDate, formatDateTime } from '../utils/format'
 
 export default function CaseManagement() {
   const [data, setData] = useState<any[]>([])
@@ -85,7 +86,7 @@ export default function CaseManagement() {
     setCurrentCase(record)
     try {
       const res = await axios.get(`/cases/${record.id}/documents`)
-      setDocuments(res.data || [])
+      setDocuments(res || [])
     } catch (error) {
       setDocuments([])
     }
@@ -139,7 +140,7 @@ export default function CaseManagement() {
       })
       message.success('文件上传成功')
       const res = await axios.get(`/cases/${currentCase.id}/documents`)
-      setDocuments(res.data || [])
+      setDocuments(res || [])
     } catch (error) {
       message.error('文件上传失败')
       console.error('Upload document error:', error)
@@ -226,8 +227,8 @@ export default function CaseManagement() {
     { title: '是否超时', dataIndex: 'is_overdue', key: 'is_overdue', render: (overdue: boolean) => {
       return overdue ? <Tag color="red">已超时</Tag> : <Tag color="green">正常</Tag>
     }},
-    { title: '立案日期', dataIndex: 'filing_date', key: 'filing_date' },
-    { title: '预计结案', dataIndex: 'expected_close_date', key: 'expected_close_date' },
+    { title: '立案日期', dataIndex: 'filing_date', key: 'filing_date', render: (val: string) => formatDate(val) },
+    { title: '预计结案', dataIndex: 'expected_close_date', key: 'expected_close_date', render: (val: string) => formatDate(val) },
     { title: '操作', key: 'action', render: (_: any, record: any) => (
       <Space>
         <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
@@ -395,16 +396,16 @@ export default function CaseManagement() {
                 </Tag>
               </div>
               <div>
-                <span style={{ fontWeight: 'bold' }}>立案日期：</span>{currentCase.filing_date || '-'}
+                <span style={{ fontWeight: 'bold' }}>立案日期：</span>{formatDate(currentCase.filing_date)}
               </div>
               <div>
-                <span style={{ fontWeight: 'bold' }}>预计结案：</span>{currentCase.expected_close_date || '-'}
+                <span style={{ fontWeight: 'bold' }}>预计结案：</span>{formatDate(currentCase.expected_close_date)}
               </div>
               <div>
-                <span style={{ fontWeight: 'bold' }}>创建时间：</span>{currentCase.created_at}
+                <span style={{ fontWeight: 'bold' }}>创建时间：</span>{formatDateTime(currentCase.created_at)}
               </div>
               <div>
-                <span style={{ fontWeight: 'bold' }}>更新时间：</span>{currentCase.updated_at || '-'}
+                <span style={{ fontWeight: 'bold' }}>更新时间：</span>{formatDateTime(currentCase.updated_at)}
               </div>
             </div>
             <div style={{ marginBottom: 24 }}>
@@ -439,7 +440,7 @@ export default function CaseManagement() {
                             judgment: '判决书',
                             contract: '合同',
                             other: '其他',
-                          }[doc.doc_type as string])} - {doc.created_at}
+                          }[doc.doc_type as string])} - {formatDateTime(doc.created_at)}
                         </div>
                       </div>
                       <Button size="small" onClick={() => window.open(`/api/documents/${doc.id}/download`)}>下载</Button>
@@ -462,7 +463,7 @@ export default function CaseManagement() {
           <Form.Item name="lawyer_id" label="选择律师" rules={[{ required: true }]}>
             <Select>
               {lawyers.map(lawyer => (
-                <Select.Option key={lawyer.id} value={lawyer.id}>{lawyer.name}</Select.Option>
+                <Select.Option key={lawyer.id} value={lawyer.id}>{lawyer.real_name}</Select.Option>
               ))}
             </Select>
           </Form.Item>

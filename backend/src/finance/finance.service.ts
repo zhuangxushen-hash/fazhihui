@@ -26,7 +26,10 @@ export class FinanceService {
   }
 
   async findFees(orgId: string, caseId?: string): Promise<Fee[]> {
-    const query = { organization_id: orgId } as any;
+    const query: any = {};
+    if (orgId) {
+      query.organization_id = orgId;
+    }
     if (caseId) {
       query.case_id = caseId;
     }
@@ -94,8 +97,12 @@ export class FinanceService {
     return this.profitShareRepository.save(shares);
   }
 
-  async getProfitShares(caseId: string): Promise<ProfitShare[]> {
-    return this.profitShareRepository.find({ where: { case_id: caseId } });
+  async getProfitShares(orgId: string, caseId?: string): Promise<ProfitShare[]> {
+    const query = { organization_id: orgId } as any;
+    if (caseId) {
+      query.case_id = caseId;
+    }
+    return this.profitShareRepository.find({ where: query });
   }
 
   async createRefund(refundData: Partial<Refund>): Promise<Refund> {
@@ -122,7 +129,10 @@ export class FinanceService {
   }
 
   async findRefunds(orgId: string, caseId?: string): Promise<Refund[]> {
-    const query = { organization_id: orgId } as any;
+    const query: any = {};
+    if (orgId) {
+      query.organization_id = orgId;
+    }
     if (caseId) {
       query.case_id = caseId;
     }
@@ -135,7 +145,10 @@ export class FinanceService {
   }
 
   async findInvoices(orgId: string, caseId?: string, status?: string): Promise<Invoice[]> {
-    const query = { organization_id: orgId } as any;
+    const query: any = {};
+    if (orgId) {
+      query.organization_id = orgId;
+    }
     if (caseId) {
       query.case_id = caseId;
     }

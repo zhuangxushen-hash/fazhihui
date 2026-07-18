@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, Select, Space, message } from 'antd'
 import { EyeOutlined, SearchOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
+import { formatDateTime } from '../utils/format'
 
 export default function ComplianceManagement() {
   const [data, setData] = useState<any[]>([])
@@ -31,7 +32,7 @@ export default function ComplianceManagement() {
       if (searchParams.status) params.status = searchParams.status
 
       const res = await axios.get('/compliance/complaints', { params })
-      setData(res.data || [])
+      setData(res || [])
     } catch (error) {
       console.error('Fetch complaints error:', error)
     } finally {
@@ -126,7 +127,7 @@ export default function ComplianceManagement() {
       }
       return <Tag color={colors[status]}>{labels[status]}</Tag>
     }},
-    { title: '投诉日期', dataIndex: 'created_at', key: 'created_at' },
+    { title: '投诉日期', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
     { title: '操作', key: 'action', render: (_: any, record: any) => (
       <Space>
         <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
@@ -226,7 +227,7 @@ export default function ComplianceManagement() {
                 </Tag>
               </div>
               <div>
-                <span style={{ fontWeight: 'bold' }}>投诉日期：</span>{currentComplaint.created_at}
+                <span style={{ fontWeight: 'bold' }}>投诉日期：</span>{formatDateTime(currentComplaint.created_at)}
               </div>
               <div>
                 <span style={{ fontWeight: 'bold' }}>受理人：</span>{currentComplaint.handler_name || '-'}
@@ -246,7 +247,7 @@ export default function ComplianceManagement() {
                 </div>
                 {currentComplaint.resolved_at && (
                   <div style={{ marginTop: 8, fontSize: 13, color: '#666' }}>
-                    处理时间：{currentComplaint.resolved_at}
+                    处理时间：{formatDateTime(currentComplaint.resolved_at)}
                   </div>
                 )}
               </div>

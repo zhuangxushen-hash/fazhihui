@@ -117,20 +117,7 @@ export default function Dashboard() {
   ]
 
   const caseTypeColumns = [
-    { title: '案由', dataIndex: 'case_type', key: 'case_type', render: (type: string) => {
-      const labels: Record<string, string> = {
-        marriage: '婚姻家事',
-        labor: '劳动纠纷',
-        contract: '合同纠纷',
-        tort: '侵权责任',
-        criminal: '刑事案件',
-        administrative: '行政案件',
-        intellectual: '知识产权',
-        company: '公司法务',
-        other: '其他',
-      }
-      return labels[type] || type
-    }},
+    { title: '案由', dataIndex: 'case_type_label', key: 'case_type_label' },
     { title: '案件数', dataIndex: 'case_count', key: 'case_count' },
     { title: '总收入', dataIndex: 'total_revenue', key: 'total_revenue', render: (rev: number) => `¥${rev.toFixed(2)}` },
     { title: '平均收入', dataIndex: 'avg_revenue', key: 'avg_revenue', render: (rev: number) => `¥${rev.toFixed(2)}` },
@@ -175,28 +162,28 @@ export default function Dashboard() {
                 <span>待分配</span>
                 <Tag color="orange">{caseStats.pending_assign || 0}</Tag>
               </div>
-              <Progress percent={((caseStats.pending_assign || 0) / (caseStats.total || 1)) * 100} strokeColor="#fa8c16" />
+              <Progress percent={((caseStats.pending_assign || 0) / (caseStats.total || 1)) * 100} strokeColor="#fa8c16" format={(percent) => `${(percent || 0).toFixed(2)}%`} />
             </div>
             <div style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                 <span>处理中</span>
                 <Tag color="blue">{caseStats.processing || 0}</Tag>
               </div>
-              <Progress percent={((caseStats.processing || 0) / (caseStats.total || 1)) * 100} strokeColor="#1890ff" />
+              <Progress percent={((caseStats.processing || 0) / (caseStats.total || 1)) * 100} strokeColor="#1890ff" format={(percent) => `${(percent || 0).toFixed(2)}%`} />
             </div>
             <div style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                 <span>已结案</span>
                 <Tag color="green">{caseStats.closed || 0}</Tag>
               </div>
-              <Progress percent={((caseStats.closed || 0) / (caseStats.total || 1)) * 100} strokeColor="#52c41a" />
+              <Progress percent={((caseStats.closed || 0) / (caseStats.total || 1)) * 100} strokeColor="#52c41a" format={(percent) => `${(percent || 0).toFixed(2)}%`} />
             </div>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                 <span>超期案件</span>
                 <Tag color="red">{caseStats.overdue || 0}</Tag>
               </div>
-              <Progress percent={((caseStats.overdue || 0) / (caseStats.total || 1)) * 100} strokeColor="#f5222d" />
+              <Progress percent={((caseStats.overdue || 0) / (caseStats.total || 1)) * 100} strokeColor="#f5222d" format={(percent) => `${(percent || 0).toFixed(2)}%`} />
             </div>
           </Card>
         </Col>
