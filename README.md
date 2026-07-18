@@ -91,75 +91,117 @@ npm run build
 # 将dist目录部署到静态服务器（如Nginx）
 ```
 
-### 腾讯云EdgeOne部署
+### 腾讯云EdgeOne部署（GitHub同步）
 
-#### 1. 前端部署
+#### 1. EdgeOne配置步骤
 
-**步骤1：构建前端**
-```bash
-cd frontend
-npm install
-npm run build
-```
+**步骤1：添加站点**
+- 登录EdgeOne控制台，添加您的域名
+- 完成DNS解析配置
 
-**步骤2：上传静态文件**
-- 将 `frontend/dist` 目录下的所有文件上传到EdgeOne的源站（如对象存储COS）
+**步骤2：配置源站**
+1. 添加**前端源站**：选择"GitHub仓库"作为源站类型
+   - 仓库地址：`https://github.com/zhuangxushen-hash/fazhihui`
+   - 分支：`master`
+   - 构建目录：`frontend/dist`
+   
+2. 添加**后端源站**：选择"IP/域名"作为源站类型
+   - 源站地址：您的后端服务器IP或域名（如 `http://your-cvm-ip:3000`）
 
-**步骤3：配置EdgeOne规则**
+**步骤3：配置路由规则**
 
 在EdgeOne控制台配置以下规则：
 
-**路由规则（Routing Rules）**：
-```json
-[
-  {
-    "match": "/api/*",
-    "action": "origin",
-    "origin": "https://your-backend-server.com"
-  },
-  {
-    "match": "/*",
-    "action": "origin",
-    "origin": "your-cos-origin",
-    "rewrite": {
-      "uri": "/index.html"
-    }
-  }
-]
-```
+| 优先级 | 匹配路径 | 动作 | 源站 | 重写 |
+|--------|----------|------|------|------|
+| 1 | `/api/*` | 转发 | 后端源站 | 无 |
+| 2 | `/*` | 返回 | 前端源站 | `/index.html` |
 
-**关键配置**：
-- **SPA路由重写**：将所有非API请求重写到 `/index.html`
-- **API代理**：将 `/api/*` 请求转发到后端服务器
+**关键配置说明**：
+- **规则1（API代理）**：将所有 `/api/*` 请求转发到后端服务器
+- **规则2（SPA路由重写）**：将所有非API请求重写到 `/index.html`，解决React路由404问题
 
-**响应头配置**：
-```
-Content-Type: text/html; charset=utf-8
-Cache-Control: no-cache
-```
+**步骤4：配置缓存规则**
+
+| 文件类型 | 缓存策略 | 说明 |
+|----------|----------|------|
+| `*.html` | 不缓存 | 确保页面及时更新 |
+| `*.js`, `*.css` | 缓存7天 | 文件名带hash，可长期缓存 |
+| `*.png`, `*.jpg`, `*.svg` | 缓存30天 | 静态资源 |
+| `/api/*` | 不缓存 | API请求实时响应 |
 
 #### 2. 后端部署
 
-后端服务需要部署在腾讯云CVM或其他服务器上，确保：
-- 服务器安全组开放3000端口
-- 配置HTTPS（推荐）
-- 服务器防火墙允许EdgeOne的IP访问
+后端服务需要单独部署在腾讯云CVM或其他服务器上：
 
-#### 3. EdgeOne配置要点
+```bash
+# 登录CVM服务器
+ssh your-server-ip
 
-**源站配置**：
-- 静态资源：使用COS作为源站
-- API请求：使用CVM作为源站
+# 克隆项目
+git clone https://github.com/zhuangxushen-hash/fazhihui.git
+cd fazhihui/backend
 
-**缓存配置**：
-- HTML文件：不缓存或短时间缓存
-- JS/CSS文件：长期缓存（带hash文件名）
-- API请求：不缓存
+# 安装依赖
+npm install
 
-**安全配置**：
-- 启用WAF防护
-- 配置访问控制
-- 启用HTTPS
+# 构建项目
+npm run build
+
+# 启动服务（使用PM2管理）
+npm install -g pm2
+pm2 start dist/main.js --name fazhihui-backend
+
+# 配置PM2开机自启
+pm2 startup
+pm2 save
+```
+
+**服务器配置要点**：
+- 安全组开放3000端口
+- 配置防火墙允许EdgeOne IP访问（或直接允许所有访问）
+- 推荐配置HTTPS（使用Nginx反向代理）
+
+#### 3. Nginx后端配置（可选）
+
+如果后端需要HTTPS，在CVM上配置Nginx：
+
+```nginx
+server {
+    listen 80;
+    server_name your-backend-domain.com;
+
+    location /api/ {
+        proxy_pass http://localhost:3000/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    # SSL配置（需要申请证书）
+    listen 443 ssl;
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+}
+```
+
+#### 4. 常见问题排查
+
+**问题1：页面404错误**
+- 原因：SPA路由未配置重写
+- 解决：在EdgeOne路由规则中添加 `/*` → `/index.html` 重写规则
+
+**问题2：API请求失败**
+- 原因：后端服务未启动或端口未开放
+- 解决：检查后端服务状态，确保3000端口可访问
+
+**问题3：页面显示空白**
+- 原因：前端资源路径错误或缓存问题
+- 解决：清除浏览器缓存，检查EdgeOne缓存配置
+
+**问题4：部署后页面未更新**
+- 原因：EdgeOne缓存了旧版本
+- 解决：在EdgeOne控制台手动清除缓存
 
 ## 测试账号
 
