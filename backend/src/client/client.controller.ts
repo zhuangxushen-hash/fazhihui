@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { ClientService } from './client.service';
 import { ComplaintType } from '../types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PaymentStatus, PaymentMethod } from '../finance/payment-record.entity';
 
 @Controller('client')
 @UseGuards(JwtAuthGuard)
@@ -53,5 +54,15 @@ export class ClientController {
   @Post('complaints')
   getClientComplaints(@Body() body: { client_id: string }) {
     return this.clientService.getClientComplaints(body.client_id);
+  }
+
+  @Post('payments')
+  getClientPayments(@Body() body: { client_id: string }) {
+    return this.clientService.getClientPayments(body.client_id);
+  }
+
+  @Post('service-fee')
+  getClientServiceFee(@Body() body: { client_id: string }) {
+    return this.clientService.getClientServiceFee(body.client_id);
   }
 }

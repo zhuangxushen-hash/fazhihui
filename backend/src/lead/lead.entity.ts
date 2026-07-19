@@ -36,6 +36,9 @@ export class Lead {
   @Column({ nullable: true })
   landing_page: string;
 
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  service_fee: number;
+
   @ManyToOne(() => Organization, org => org.leads)
   organization: Organization;
 

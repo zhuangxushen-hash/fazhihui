@@ -18,6 +18,7 @@ import { Fee } from '../finance/fee.entity';
 import { ProfitShare } from '../finance/profit-share.entity';
 import { Refund, RefundStatus } from '../finance/refund.entity';
 import { Invoice, InvoiceStatus } from '../finance/invoice.entity';
+import { PaymentRecord, PaymentStatus, PaymentMethod } from '../finance/payment-record.entity';
 import { MarketingMaterial } from '../marketing/marketing-material.entity';
 import * as bcrypt from 'bcryptjs';
 import { UserRole, LeadSource, LeadStatus, CaseType, CaseStatus, ComplianceType, ComplianceResult, ComplaintType, ComplaintStatus, FeeRole } from '../types';
@@ -43,6 +44,7 @@ import { SigningStatus } from '../compliance/signing-compliance.entity';
     ProfitShare,
     Refund,
     Invoice,
+    PaymentRecord,
     MarketingMaterial,
   ])],
 })
@@ -82,6 +84,8 @@ export class SeedsModule implements OnModuleInit {
     private readonly invoiceRepository: Repository<Invoice>,
     @InjectRepository(MarketingMaterial)
     private readonly marketingMaterialRepository: Repository<MarketingMaterial>,
+    @InjectRepository(PaymentRecord)
+    private readonly paymentRecordRepository: Repository<PaymentRecord>,
   ) {}
 
   async onModuleInit() {
@@ -140,6 +144,7 @@ export class SeedsModule implements OnModuleInit {
     await this.seedComplianceRecords(orgId, userMap);
     await this.seedComplaints(orgId, userMap);
     await this.seedFinanceData(orgId, userMap);
+    await this.seedPaymentRecords(orgId, userMap);
     await this.seedMarketingMaterials(orgId, userMap);
     await this.seedMarketingContents(orgId, userMap);
     await this.seedSalesCompliance(orgId, userMap);
@@ -847,6 +852,84 @@ export class SeedsModule implements OnModuleInit {
           status: invoiceStatus,
           organization_id: orgId,
         });
+      }
+    }
+  }
+
+  private async seedPaymentRecords(orgId: string, userMap: Record<string, User>) {
+    const clientUser = userMap['13800138007'];
+    const clientUser2 = userMap['13800138011'];
+    const cases = await this.caseRepository.find({ where: { organization_id: orgId }, take: 8 });
+
+    const paymentData: {
+      case_id: string;
+      client_id: string;
+      amount: number;
+      status: PaymentStatus;
+      method: PaymentMethod;
+    }[] = [
+      {
+        case_id: cases[0]?.id || '',
+        client_id: clientUser?.id || '',
+        amount: 50000,
+        status: PaymentStatus.PAID,
+        method: PaymentMethod.ALIPAY,
+      },
+      {
+        case_id: cases[1]?.id || '',
+        client_id: clientUser?.id || '',
+        amount: 30000,
+        status: PaymentStatus.PAID,
+        method: PaymentMethod.WECHAT,
+      },
+      {
+        case_id: cases[2]?.id || '',
+        client_id: clientUser?.id || '',
+        amount: 15000,
+        status: PaymentStatus.PENDING,
+        method: PaymentMethod.BANK,
+      },
+      {
+        case_id: cases[3]?.id || '',
+        client_id: clientUser2?.id || '',
+        amount: 80000,
+        status: PaymentStatus.PAID,
+        method: PaymentMethod.ALIPAY,
+      },
+      {
+        case_id: cases[4]?.id || '',
+        client_id: clientUser2?.id || '',
+        amount: 60000,
+        status: PaymentStatus.FAILED,
+        method: PaymentMethod.WECHAT,
+      },
+      {
+        case_id: cases[5]?.id || '',
+        client_id: clientUser?.id || '',
+        amount: 25000,
+        status: PaymentStatus.PAID,
+        method: PaymentMethod.BANK,
+      },
+      {
+        case_id: cases[6]?.id || '',
+        client_id: clientUser?.id || '',
+        amount: 40000,
+        status: PaymentStatus.PENDING,
+        method: PaymentMethod.ALIPAY,
+      },
+      {
+        case_id: cases[7]?.id || '',
+        client_id: clientUser2?.id || '',
+        amount: 35000,
+        status: PaymentStatus.PAID,
+        method: PaymentMethod.WECHAT,
+      },
+    ];
+
+    for (const data of paymentData) {
+      const existing = await this.paymentRecordRepository.findOne({ where: { case_id: data.case_id } });
+      if (!existing && data.case_id) {
+        await this.paymentRecordRepository.save(data);
       }
     }
   }

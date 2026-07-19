@@ -84,6 +84,11 @@ export class LeadService {
     return this.followUpRepository.find({ where: { lead_id: leadId }, order: { created_at: 'DESC' } });
   }
 
+  async updateFee(id: string, serviceFee: number): Promise<Lead> {
+    await this.leadRepository.update(id, { service_fee: serviceFee });
+    return this.leadRepository.findOne({ where: { id } });
+  }
+
   async autoRecycle(timeoutHours: number = 24): Promise<void> {
     const timeoutDate = new Date(Date.now() - timeoutHours * 60 * 60 * 1000);
     await this.leadRepository.update(

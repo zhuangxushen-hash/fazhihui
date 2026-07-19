@@ -23,15 +23,16 @@ export default function AIConsult() {
     token: { colorBgContainer },
   } = theme.useToken()
 
-  const handleSend = async () => {
-    if (!inputValue.trim()) return
+  const handleSend = async (question?: string) => {
+    const text = question || inputValue
+    if (!text.trim()) return
 
-    setMessages([...messages, { id: Date.now().toString(), content: inputValue, isUser: true }])
+    setMessages([...messages, { id: Date.now().toString(), content: text, isUser: true }])
     setInputValue('')
     setLoading(true)
 
     try {
-      const res = await axios.post('/client/ai/consult', { question: inputValue })
+      const res = await axios.post('/client/ai/consult', { question: text })
       setMessages([...messages, {
         id: (Date.now() + 1).toString(),
         content: res.answer,
@@ -80,7 +81,7 @@ export default function AIConsult() {
         <Card title="热门问题" style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {recommendQuestions.map((q, i) => (
-              <Tag key={i} color="blue" style={{ cursor: 'pointer' }} onClick={() => setInputValue(q)}>
+              <Tag key={i} color="blue" style={{ cursor: 'pointer' }} onClick={() => handleSend(q)}>
                 {q}
               </Tag>
             ))}
@@ -123,7 +124,7 @@ export default function AIConsult() {
           placeholder="请输入您的法律问题..."
           style={{ flex: 1 }}
         />
-        <Button type="primary" icon={<SendOutlined />} loading={loading} onClick={handleSend}>
+        <Button type="primary" icon={<SendOutlined />} loading={loading} onClick={() => handleSend()}>
           发送
         </Button>
       </div>
@@ -156,9 +157,9 @@ export default function AIConsult() {
             </div>
           )
         })}
-        <div style={{ textAlign: 'center', cursor: 'pointer' }}>
-          <CreditCardOutlined style={{ fontSize: 24, color: '#999' }} />
-          <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>支付</div>
+        <div style={{ textAlign: 'center', cursor: 'pointer' }} onClick={() => navigate('/client/payment')}>
+          <CreditCardOutlined style={{ fontSize: 24, color: window.location.pathname === '/client/payment' ? '#1890ff' : '#999' }} />
+          <div style={{ fontSize: 10, color: window.location.pathname === '/client/payment' ? '#1890ff' : '#999', marginTop: 4 }}>签约</div>
         </div>
       </div>
     </div>

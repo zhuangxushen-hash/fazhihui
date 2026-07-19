@@ -60,4 +60,9 @@ export class LeadController {
   getFollowUps(@Param('id') id: string) {
     return this.leadService.getFollowUps(id);
   }
+
+  @Put(':id/fee')
+  updateFee(@Param('id') id: string, @Body() body: { service_fee: number }) {
+    return this.leadService.updateFee(id, body.service_fee);
+  }
 }

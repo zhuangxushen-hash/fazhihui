@@ -5,9 +5,11 @@ import { ClientController } from './client.controller';
 import { Case } from '../case/case.entity';
 import { Document } from '../case/document.entity';
 import { Complaint } from '../compliance/complaint.entity';
+import { PaymentRecord } from '../finance/payment-record.entity';
+import { Lead } from '../lead/lead.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Case, Document, Complaint])],
+  imports: [TypeOrmModule.forFeature([Case, Document, Complaint, PaymentRecord, Lead])],
   providers: [ClientService],
   controllers: [ClientController],
 })

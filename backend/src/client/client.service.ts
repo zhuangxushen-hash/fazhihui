@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { Case } from '../case/case.entity';
 import { Document } from '../case/document.entity';
 import { Complaint } from '../compliance/complaint.entity';
+import { PaymentRecord } from '../finance/payment-record.entity';
+import { Lead } from '../lead/lead.entity';
 import { ComplaintType, ComplaintStatus } from '../types';
 
 @Injectable()
@@ -15,6 +17,10 @@ export class ClientService {
     private documentRepository: Repository<Document>,
     @InjectRepository(Complaint)
     private complaintRepository: Repository<Complaint>,
+    @InjectRepository(PaymentRecord)
+    private paymentRecordRepository: Repository<PaymentRecord>,
+    @InjectRepository(Lead)
+    private leadRepository: Repository<Lead>,
   ) {}
 
   async getClientCases(clientId: string): Promise<Case[]> {
@@ -72,5 +78,14 @@ export class ClientService {
 
   async getClientComplaints(clientId: string): Promise<Complaint[]> {
     return this.complaintRepository.find({ where: { client_id: clientId }, order: { created_at: 'DESC' } });
+  }
+
+  async getClientPayments(clientId: string): Promise<PaymentRecord[]> {
+    return this.paymentRecordRepository.find({ where: { client_id: clientId }, order: { created_at: 'DESC' } });
+  }
+
+  async getClientServiceFee(clientId: string): Promise<{ service_fee: number }> {
+    const user = await this.leadRepository.findOne({ where: { phone: clientId } });
+    return { service_fee: user?.service_fee || 0 };
   }
 }

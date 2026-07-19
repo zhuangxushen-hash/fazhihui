@@ -12,6 +12,7 @@ import AITools from './pages/AITools'
 import ClientHome from './pages/client/ClientHome'
 import AIConsult from './pages/client/AIConsult'
 import Complaint from './pages/client/Complaint'
+import Payment from './pages/client/Payment'
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('token')
@@ -45,6 +46,7 @@ function App() {
         <Route path="/client" element={<ClientRoute><ClientHome /></ClientRoute>} />
         <Route path="/client/ai-consult" element={<ClientRoute><AIConsult /></ClientRoute>} />
         <Route path="/client/complaint" element={<ClientRoute><Complaint /></ClientRoute>} />
+        <Route path="/client/payment" element={<ClientRoute><Payment /></ClientRoute>} />
       </Routes>
     </Router>
   )

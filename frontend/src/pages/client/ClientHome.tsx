@@ -94,10 +94,13 @@ export default function ClientHome() {
             <div style={{ fontSize: 12, color: '#666' }}>在线咨询</div>
             <div style={{ fontSize: 18, fontWeight: 'bold', color: '#333', marginTop: 4 }}>AI助手</div>
           </Card>
-          <Card style={{ textAlign: 'center', borderRadius: borderRadiusLG }}>
+          <Card
+            style={{ textAlign: 'center', borderRadius: borderRadiusLG }}
+            onClick={() => navigate('/client/payment')}
+          >
             <CreditCardOutlined style={{ fontSize: 28, color: '#faad14', marginBottom: 8 }} />
-            <div style={{ fontSize: 12, color: '#666' }}>在线支付</div>
-            <div style={{ fontSize: 18, fontWeight: 'bold', color: '#333', marginTop: 4 }}>便捷支付</div>
+            <div style={{ fontSize: 12, color: '#666' }}>签约付款</div>
+            <div style={{ fontSize: 18, fontWeight: 'bold', color: '#333', marginTop: 4 }}>立即签约</div>
           </Card>
           <Card
             style={{ textAlign: 'center', borderRadius: borderRadiusLG }}
@@ -141,7 +144,7 @@ export default function ClientHome() {
             <Button type="primary" block icon={<MessageOutlined />} onClick={() => navigate('/client/ai-consult')}>
               在线咨询AI法律助手
             </Button>
-            <Button block icon={<CreditCardOutlined />}>在线支付</Button>
+            <Button block icon={<CreditCardOutlined />} onClick={() => navigate('/client/payment')}>签约付款</Button>
             <Button block icon={<BellOutlined />} onClick={() => navigate('/client/complaint')}>投诉反馈</Button>
           </div>
         </Card>
@@ -175,9 +178,9 @@ export default function ClientHome() {
             </div>
           )
         })}
-        <div style={{ textAlign: 'center', cursor: 'pointer' }}>
-          <CreditCardOutlined style={{ fontSize: 24, color: '#999' }} />
-          <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>支付</div>
+        <div style={{ textAlign: 'center', cursor: 'pointer' }} onClick={() => navigate('/client/payment')}>
+          <CreditCardOutlined style={{ fontSize: 24, color: window.location.pathname === '/client/payment' ? '#1890ff' : '#999' }} />
+          <div style={{ fontSize: 10, color: window.location.pathname === '/client/payment' ? '#1890ff' : '#999', marginTop: 4 }}>签约</div>
         </div>
       </div>
     </div>

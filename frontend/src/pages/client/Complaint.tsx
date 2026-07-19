@@ -131,9 +131,9 @@ export default function Complaint() {
             </div>
           )
         })}
-        <div style={{ textAlign: 'center', cursor: 'pointer' }}>
-          <CreditCardOutlined style={{ fontSize: 24, color: '#999' }} />
-          <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>支付</div>
+        <div style={{ textAlign: 'center', cursor: 'pointer' }} onClick={() => navigate('/client/payment')}>
+          <CreditCardOutlined style={{ fontSize: 24, color: window.location.pathname === '/client/payment' ? '#1890ff' : '#999' }} />
+          <div style={{ fontSize: 10, color: window.location.pathname === '/client/payment' ? '#1890ff' : '#999', marginTop: 4 }}>签约</div>
         </div>
       </div>
     </div>

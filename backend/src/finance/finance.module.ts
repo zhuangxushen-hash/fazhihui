@@ -6,9 +6,10 @@ import { Fee } from './fee.entity';
 import { ProfitShare } from './profit-share.entity';
 import { Refund } from './refund.entity';
 import { Invoice } from './invoice.entity';
+import { PaymentRecord } from './payment-record.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Fee, ProfitShare, Refund, Invoice])],
+  imports: [TypeOrmModule.forFeature([Fee, ProfitShare, Refund, Invoice, PaymentRecord])],
   providers: [FinanceService],
   controllers: [FinanceController],
 })

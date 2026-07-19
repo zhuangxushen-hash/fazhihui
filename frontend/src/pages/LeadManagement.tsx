@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, Select, Space, message } from 'antd'
-import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, HistoryOutlined } from '@ant-design/icons'
+import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, InputNumber } from 'antd'
+import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, HistoryOutlined, SaveOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
 
@@ -16,6 +16,8 @@ export default function LeadManagement() {
   const [statusForm] = Form.useForm()
   const [currentLead, setCurrentLead] = useState<any>(null)
   const [followUps, setFollowUps] = useState<any[]>([])
+  const [editingFee, setEditingFee] = useState(false)
+  const [feeValue, setFeeValue] = useState(0)
   const [searchParams, setSearchParams] = useState({
     phone: '',
     status: '',
@@ -135,6 +137,24 @@ export default function LeadManagement() {
     }
   }
 
+  const handleEditFee = (record: any) => {
+    setCurrentLead(record)
+    setFeeValue(record.service_fee || 0)
+    setEditingFee(true)
+  }
+
+  const handleSaveFee = async () => {
+    try {
+      await axios.put(`/leads/${currentLead.id}/fee`, { service_fee: feeValue })
+      setEditingFee(false)
+      message.success('服务费用更新成功')
+      fetchData()
+    } catch (error) {
+      message.error('服务费用更新失败')
+      console.error('Update fee error:', error)
+    }
+  }
+
   const statusOptions = [
     { value: 'new', label: '新线索' },
     { value: 'pending_follow', label: '待跟进' },
@@ -179,6 +199,7 @@ export default function LeadManagement() {
       wechat: '微信',
       other: '其他',
     }[channel]) },
+    { title: '服务费用', dataIndex: 'service_fee', key: 'service_fee', render: (fee: number) => fee ? `¥${fee.toFixed(2)}` : '-' },
     { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => {
       const colors: Record<string, string> = {
         new: 'default',
@@ -205,6 +226,7 @@ export default function LeadManagement() {
       <Space>
         <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
         <Button size="small" icon={<EditOutlined />} onClick={() => handleChangeStatus(record)}>状态</Button>
+        <Button size="small" icon={<SaveOutlined />} onClick={() => handleEditFee(record)}>设置费用</Button>
         {record.status === 'new' && (
           <Button size="small" type="primary" onClick={() => handleAssign(record)}>分配</Button>
         )}
@@ -435,6 +457,28 @@ export default function LeadManagement() {
             <Button type="primary" htmlType="submit">确认变更</Button>
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title="设置服务费用"
+        open={editingFee}
+        onCancel={() => setEditingFee(false)}
+        footer={null}
+      >
+        <div style={{ padding: '16px 0' }}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 14, color: '#666', marginBottom: 8 }}>服务费用（元）</label>
+            <InputNumber
+              value={feeValue}
+              onChange={(value) => setFeeValue(value || 0)}
+              style={{ width: '100%', fontSize: 18 }}
+              prefix="¥"
+              min={0}
+              step={100}
+            />
+          </div>
+          <Button type="primary" block onClick={handleSaveFee}>保存费用</Button>
+        </div>
       </Modal>
     </div>
   )
