@@ -5,7 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 export default function BottomNav() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { token: { colorBgContainer, colorPrimary, borderRadiusLG } } = theme.useToken()
+  const { token: { borderRadiusLG } } = theme.useToken()
 
   const menuItems = [
     { key: '/client', label: '案件', icon: FileTextOutlined },
