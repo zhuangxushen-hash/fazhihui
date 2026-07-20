@@ -53,16 +53,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }
 
   const {
-    token: { colorBgContainer, borderRadiusLG },
+    token: { borderRadiusLG },
   } = theme.useToken()
 
+  const siderWidth = collapsed ? 72 : 240
+
   return (
-    <AntLayout style={{ minHeight: '100vh' }}>
+    <AntLayout style={{ minHeight: '100vh', background: 'var(--bg-body)' }}>
+      {/* Sidebar */}
       <Sider
         collapsible
         collapsed={collapsed}
         onCollapse={setCollapsed}
-        theme="light"
+        trigger={null}
+        width={240}
+        collapsedWidth={72}
         style={{
           overflow: 'auto',
           height: '100vh',
@@ -70,75 +75,93 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           left: 0,
           top: 0,
           bottom: 0,
-          width: collapsed ? 80 : 220,
-          background: 'linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
-          boxShadow: '2px 0 12px rgba(0, 0, 0, 0.1)',
-          transition: 'width 0.3s ease',
+          background: 'var(--sidebar-bg)',
+          borderRight: '1px solid var(--sidebar-border)',
+          transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
           zIndex: 200,
         }}
       >
+        {/* Logo */}
         <div
           style={{
-            padding: '20px 16px',
-            textAlign: 'center',
-            fontWeight: 'bold',
-            fontSize: collapsed ? 20 : 22,
-            color: '#fff',
-            marginBottom: 24,
-            letterSpacing: 2,
-            background: 'linear-gradient(135deg, rgba(24, 144, 255, 0.2) 0%, rgba(78, 205, 196, 0.2) 100%)',
-            borderRadius: collapsed ? '50%' : borderRadiusLG,
-            height: collapsed ? 60 : 'auto',
+            height: 64,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            padding: collapsed ? '0' : '0 20px',
+            borderBottom: '1px solid var(--sidebar-border)',
+            overflow: 'hidden',
+            transition: 'padding 0.25s ease',
           }}
         >
-          {collapsed ? (
-            <span style={{ fontSize: 24 }}>法</span>
-          ) : (
-            <span>法智汇</span>
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 8,
+              background: 'var(--gradient-accent)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              marginLeft: collapsed ? 18 : 0,
+              marginRight: collapsed ? 0 : 12,
+              transition: 'margin 0.25s ease',
+            }}
+          >
+            <span style={{ fontSize: 18, fontWeight: 800, color: '#fff', fontFamily: 'serif' }}>F</span>
+          </div>
+          {!collapsed && (
+            <div style={{ whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#f1f5f9', letterSpacing: '0.02em' }}>法智汇</div>
+              <div style={{ fontSize: 10, color: '#475569', marginTop: -2, letterSpacing: '0.05em' }}>LEGAL AI PLATFORM</div>
+            </div>
           )}
         </div>
+
+        {/* Navigation */}
         <Menu
           mode="inline"
           selectedKeys={[location.pathname]}
           items={menuItems.map(item => ({
             ...item,
-            icon: <span style={{ color: location.pathname === item.key ? '#4edcca' : '#8b9dc3' }}>{item.icon}</span>,
-            label: <span style={{ color: location.pathname === item.key ? '#fff' : '#b8c5d6' }}>{item.label}</span>,
+            icon: <span style={{ fontSize: 16, color: location.pathname === item.key ? 'var(--sidebar-accent)' : 'var(--sidebar-text)', transition: 'color 0.15s ease' }}>{item.icon}</span>,
+            label: <span style={{ fontSize: 14, color: location.pathname === item.key ? 'var(--sidebar-text-active)' : 'var(--sidebar-text)', fontWeight: location.pathname === item.key ? 600 : 400, transition: 'color 0.15s ease' }}>{item.label}</span>,
           }))}
           onClick={({ key }) => navigate(key)}
           style={{
             borderRight: 0,
             background: 'transparent',
-            marginTop: 16,
+            marginTop: 8,
+            padding: collapsed ? '0 12px' : '0 12px',
           }}
           theme="dark"
         />
       </Sider>
+
+      {/* Main area */}
       <AntLayout
         style={{
-          marginLeft: collapsed ? 80 : 220,
-          transition: 'margin-left 0.3s ease',
+          marginLeft: siderWidth,
+          transition: 'margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
+        {/* Header */}
         <Header
           style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            padding: '0 24px',
-            background: colorBgContainer,
-            borderBottom: '1px solid #f0f0f0',
+            padding: '0 28px',
+            background: 'var(--bg-header)',
+            borderBottom: '1px solid var(--border-default)',
             position: 'fixed',
             top: 0,
             right: 0,
-            left: collapsed ? 80 : 220,
+            left: siderWidth,
             zIndex: 100,
-            transition: 'left 0.3s ease',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+            transition: 'left 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
             height: 64,
+            boxShadow: 'var(--shadow-xs)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -146,47 +169,48 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               type="text"
               icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
               onClick={() => setCollapsed(!collapsed)}
-              style={{ fontSize: 18, color: '#666' }}
+              style={{ fontSize: 16, color: 'var(--text-tertiary)', width: 36, height: 36, borderRadius: 6 }}
             />
-            <span style={{ fontSize: 18, fontWeight: 600, color: '#1f1f1f' }}>
+            <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
               {menuItems.find(item => item.key === location.pathname)?.label || '数据看板'}
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Button
               type="text"
               icon={<BellOutlined />}
-              style={{ fontSize: 18, color: '#666', position: 'relative' }}
+              style={{ fontSize: 16, color: 'var(--text-tertiary)', width: 36, height: 36, borderRadius: 6, position: 'relative' }}
             >
-              <span style={{ position: 'absolute', top: 4, right: 4, width: 6, height: 6, background: '#f5222d', borderRadius: '50%' }} />
+              <span style={{ position: 'absolute', top: 8, right: 8, width: 6, height: 6, background: 'var(--error)', borderRadius: '50%', border: '2px solid var(--bg-header)' }} />
             </Button>
             <Dropdown menu={{ items: userMenu, onClick: handleUserMenuClick }}>
-              <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: 10, padding: '8px 12px', borderRadius: 8, transition: 'background 0.2s' }}>
+              <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: 10, padding: '6px 10px', borderRadius: 8, transition: 'background 0.15s ease', marginLeft: 4 }}>
                 <Avatar
                   icon={<UserOutlined />}
                   style={{
-                    background: 'linear-gradient(135deg, #1890ff 0%, #4edcca 100%)',
-                    border: '2px solid #fff',
-                    boxShadow: '0 2px 8px rgba(24, 144, 255, 0.3)',
-                    width: 36,
-                    height: 36,
+                    background: 'var(--gradient-accent)',
+                    width: 34,
+                    height: 34,
+                    fontSize: 14,
                   }}
                 />
-                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', justifyContent: 'center', lineHeight: 1.4 }}>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: '#1f1f1f', marginBottom: 2 }}>{user.real_name || '用户'}</div>
-                  <div style={{ fontSize: 12, color: '#999' }}>{user.role === 'admin' ? '管理员' : user.role === 'lawyer' ? '律师' : '销售人员'}</div>
+                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', justifyContent: 'center', lineHeight: 1.3 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{user.real_name || '用户'}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{user.role === 'admin' ? '管理员' : user.role === 'lawyer' ? '律师' : '销售人员'}</div>
                 </div>
               </div>
             </Dropdown>
           </div>
         </Header>
+
+        {/* Content */}
         <Content
           style={{
-            margin: 24,
+            margin: 20,
+            marginTop: 84,
             padding: 24,
-            paddingTop: 100,
-            background: '#f5f7fa',
-            minHeight: 'calc(100vh - 48px)',
+            background: 'var(--bg-body)',
+            minHeight: 'calc(100vh - 104px)',
             borderRadius: borderRadiusLG,
           }}
         >

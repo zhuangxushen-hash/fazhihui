@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Tabs, Form, Input, Select, Button, message, Card } from 'antd';
-import { CopyOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { CopyOutlined, CheckCircleOutlined, RobotOutlined } from '@ant-design/icons';
 import axios from '../api/axios';
 
 export default function AITools() {
@@ -14,13 +14,13 @@ export default function AITools() {
     { value: 'traffic', label: '交通事故' },
     { value: 'labor', label: '劳动纠纷' },
     { value: 'debt', label: '债务纠纷' },
-  ];
+    ];
 
   const platforms = [
     { value: 'douyin', label: '抖音' },
     { value: 'baidu', label: '百度' },
     { value: 'wechat', label: '微信' },
-  ];
+    ];
 
   const documentTypes = [
     { value: 'complaint', label: '民事起诉状' },
@@ -28,7 +28,7 @@ export default function AITools() {
     { value: 'response', label: '民事答辩状' },
     { value: 'evidence', label: '证据清单' },
     { value: 'retainer', label: '委托代理合同' },
-  ];
+    ];
 
   const handleGenerateCopy = async (values: any) => {
     setLoading(true);
@@ -110,15 +110,22 @@ export default function AITools() {
 
   return (
     <div>
-      <h2>AI智能工具</h2>
+      <div className="page-header">
+        <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <RobotOutlined style={{ fontSize: 20, color: 'var(--primary)' }} />
+          AI智能工具
+        </h2>
+      </div>
       
-      <Tabs activeKey={activeTab} onChange={setActiveTab} style={{ marginTop: 16 }}>
+      <Tabs activeKey={activeTab} onChange={setActiveTab}>
         <Tabs.TabPane tab="营销内容生成" key="marketing">
           <Tabs defaultActiveKey="copy">
             <Tabs.TabPane tab="文案生成" key="copy">
               <Card>
                 <Form layout="vertical" onFinish={handleGenerateCopy}>
-                  <Form.Item name="prompt" label="生成主题" rules={[{ required: true }]}>
+                  <Form.Item name="prompt" label="生成主题" rules={[{ required: true }]}
+                    tooltip="描述您想要的营销文案主题和方向"
+                  >
                     <Input.TextArea placeholder="请输入想要生成的文案主题，例如：离婚财产分割注意事项" rows={3} />
                   </Form.Item>
                   <Form.Item name="case_type" label="案由类型">
@@ -140,7 +147,9 @@ export default function AITools() {
             <Tabs.TabPane tab="视频脚本" key="script">
               <Card>
                 <Form layout="vertical" onFinish={handleGenerateScript}>
-                  <Form.Item name="prompt" label="脚本主题" rules={[{ required: true }]}>
+                  <Form.Item name="prompt" label="脚本主题" rules={[{ required: true }]}
+                    tooltip="描述您想要的视频脚本主题"
+                  >
                     <Input.TextArea placeholder="请输入视频脚本主题，例如：交通事故理赔流程" rows={3} />
                   </Form.Item>
                   <Form.Item name="case_type" label="案由类型">
@@ -160,7 +169,9 @@ export default function AITools() {
         <Tabs.TabPane tab="法律文书生成" key="legal">
           <Card>
             <Form layout="vertical" onFinish={handleGenerateDocument}>
-              <Form.Item name="doc_type" label="文书类型" rules={[{ required: true }]}>
+              <Form.Item name="doc_type" label="文书类型" rules={[{ required: true }]}
+                tooltip="选择需要生成的法律文书类型"
+              >
                 <Select placeholder="请选择文书类型">
                   {documentTypes.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
                 </Select>
@@ -225,12 +236,29 @@ export default function AITools() {
 
       {generatedContent && (
         <Card title="生成结果" style={{ marginTop: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-            <Button icon={copied ? <CheckCircleOutlined /> : <CopyOutlined />} onClick={handleCopy}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+            <Button 
+              icon={copied ? <CheckCircleOutlined /> : <CopyOutlined />} 
+              onClick={handleCopy}
+              type={copied ? 'primary' : 'default'}
+            >
               {copied ? '已复制' : '复制内容'}
             </Button>
           </div>
-          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: '500px', overflow: 'auto' }}>
+          <pre style={{ 
+            whiteSpace: 'pre-wrap', 
+            wordBreak: 'break-all', 
+            maxHeight: '500px', 
+            overflow: 'auto',
+            background: 'var(--bg-sunken)',
+            border: '1px solid var(--border-light)',
+            borderRadius: 6,
+            padding: 16,
+            fontSize: 13,
+            lineHeight: 1.8,
+            color: 'var(--text-primary)',
+            margin: 0,
+          }}>
             {generatedContent}
           </pre>
         </Card>

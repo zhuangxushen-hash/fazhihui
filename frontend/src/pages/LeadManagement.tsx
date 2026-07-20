@@ -236,12 +236,12 @@ export default function LeadManagement() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+      <div className="page-header">
         <h2>线索管理</h2>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAddLead}>添加线索</Button>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div className="search-bar">
         <Input
           placeholder="手机号搜索"
           prefix={<SearchOutlined />}
@@ -326,36 +326,25 @@ export default function LeadManagement() {
       >
         {currentLead && (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>线索ID：</span>{currentLead.id}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>手机号：</span>{currentLead.phone}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>联系人：</span>{currentLead.contact_name || '-'}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>案由：</span>{({
+            <div className="detail-grid">
+              <div className="detail-item"><span className="detail-label">线索ID</span><span className="detail-value">{currentLead.id}</span></div>
+              <div className="detail-item"><span className="detail-label">手机号</span><span className="detail-value">{currentLead.phone}</span></div>
+              <div className="detail-item"><span className="detail-label">联系人</span><span className="detail-value">{currentLead.contact_name || '-'}</span></div>
+              <div className="detail-item"><span className="detail-label">案由</span><span className="detail-value">{({
                   marriage: '婚姻家事',
                   traffic: '交通事故',
                   labor: '劳动争议',
                   debt: '债务逾期',
                   other: '其他',
-                }[currentLead.case_type as string])}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>来源渠道：</span>{({
+                }[currentLead.case_type as string])}</span></div>
+              <div className="detail-item"><span className="detail-label">来源渠道</span><span className="detail-value">{({
                   douyin: '抖音',
                   baidu: '百度',
                   kuaishou: '快手',
                   wechat: '微信',
                   other: '其他',
-                }[currentLead.source_channel as string])}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>状态：</span>
+                }[currentLead.source_channel as string])}</span></div>
+              <div className="detail-item"><span className="detail-label">状态</span><span className="detail-value">
                 <Tag color={{
                   new: 'default',
                   pending_follow: 'processing',
@@ -375,17 +364,13 @@ export default function LeadManagement() {
                     lost: '已流失',
                   }[currentLead.status as string]}
                 </Tag>
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>来源关键词：</span>{currentLead.source_keyword || '-'}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>创建时间：</span>{formatDateTime(currentLead.created_at)}
-              </div>
+              </span></div>
+              <div className="detail-item"><span className="detail-label">来源关键词</span><span className="detail-value">{currentLead.source_keyword || '-'}</span></div>
+              <div className="detail-item"><span className="detail-label">创建时间</span><span className="detail-value">{formatDateTime(currentLead.created_at)}</span></div>
             </div>
             <div style={{ marginBottom: 24 }}>
               <div style={{ fontWeight: 'bold', marginBottom: 8 }}>咨询内容</div>
-              <div style={{ padding: 12, background: '#f5f5f5', borderRadius: 4 }}>
+              <div className="info-block">
                 {currentLead.case_description || '-'}
               </div>
             </div>

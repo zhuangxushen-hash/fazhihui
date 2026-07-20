@@ -56,13 +56,13 @@ export default function ClientCaseList() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f0f2f5', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
       <div
         style={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: '#0a0e1a',
           padding: '16px 16px',
           paddingTop: '52px',
-          color: '#fff',
+          color: '#f1f5f9',
           position: 'relative',
         }}
       >
@@ -73,16 +73,16 @@ export default function ClientCaseList() {
             onTouchStart={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
             onTouchEnd={(e) => e.currentTarget.style.transform = 'scale(1)'}
           >
-            <ArrowLeftOutlined style={{ fontSize: 18 }} />
+            <ArrowLeftOutlined style={{ fontSize: 18, color: '#94a3b8' }} />
           </div>
           <h2 style={{ fontSize: 20, fontWeight: 'bold' }}>我的案件</h2>
         </div>
-        <p style={{ fontSize: 12, opacity: 0.9, marginTop: 4 }}>共 {cases.length} 个案件</p>
+        <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>共 {cases.length} 个案件</p>
       </div>
 
       <div style={{ padding: '12px', flex: 1, paddingBottom: '80px' }}>
         <Card 
-          style={{ borderRadius: borderRadiusLG, boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: 'none' }}
+          style={{ borderRadius: borderRadiusLG, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}
         >
           <List
             loading={loading}
@@ -90,7 +90,7 @@ export default function ClientCaseList() {
             renderItem={(item, index) => (
               <List.Item
                 style={{ 
-                  borderBottom: index < cases.length - 1 ? '1px solid #f5f5f5' : 'none', 
+                  borderBottom: index < cases.length - 1 ? '1px solid var(--border-light)' : 'none', 
                   padding: '14px 0', 
                   cursor: 'pointer', 
                   transition: 'transform 0.15s ease',
@@ -102,25 +102,25 @@ export default function ClientCaseList() {
                 onTouchEnd={() => setActiveItem(null)}
               >
                 <List.Item.Meta
-                  avatar={<div style={{ width: 40, height: 40, borderRadius: 10, background: `rgba(24,144,255,0.1)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <FileTextOutlined style={{ fontSize: 18, color: '#1890ff' }} />
+                  avatar={<div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--primary-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <FileTextOutlined style={{ fontSize: 18, color: 'var(--primary)' }} />
                   </div>}
                   title={<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: '#333' }}>{item.case_type || '未知案由'}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{item.case_type || '未知案由'}</span>
                     <Tag color={statusColors[item.status]} style={{ fontSize: 11, padding: '2px 8px' }}>{statusLabels[item.status]}</Tag>
                   </div>}
                   description={<div>
-                    <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>案件ID: {item.id}</div>
-                    <div style={{ color: '#999', fontSize: 11, marginTop: 2 }}>创建时间：{item.created_at}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>案件ID: {item.id}</div>
+                    <div style={{ color: 'var(--text-tertiary)', fontSize: 11, marginTop: 2 }}>创建时间：{item.created_at}</div>
                   </div>}
                 />
-                <ArrowRightOutlined style={{ fontSize: 16, color: '#ccc' }} />
+                <ArrowRightOutlined style={{ fontSize: 16, color: 'var(--text-tertiary)' }} />
               </List.Item>
             )}
           />
           {cases.length === 0 && !loading && (
-            <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
-              <FileTextOutlined style={{ fontSize: 48, color: '#e8e8e8', marginBottom: 12 }} />
+            <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-tertiary)' }}>
+              <FileTextOutlined style={{ fontSize: 48, color: 'var(--border-default)', marginBottom: 12 }} />
               <div style={{ fontSize: 14 }}>暂无案件</div>
               <div style={{ fontSize: 12, marginTop: 4 }}>您可以通过签约付款创建新案件</div>
             </div>

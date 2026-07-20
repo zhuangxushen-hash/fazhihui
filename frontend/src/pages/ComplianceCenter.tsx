@@ -215,7 +215,7 @@ export default function ComplianceCenter() {
     <div>
       {activeTab === 'overview' && (
         <>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div className="page-header">
             <h2>合规风控中心</h2>
           </div>
 
@@ -280,22 +280,22 @@ export default function ComplianceCenter() {
         </>
       )}
 
-      {activeTab !== 'overview' && (
-        <>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-            <h2>合规风控中心</h2>
-          </div>
+          {activeTab !== 'overview' && (
+            <>
+              <div className="page-header">
+                <h2>合规风控中心</h2>
+              </div>
 
-          <Table
-            dataSource={activeTab === 'marketing' ? marketingContents : activeTab === 'sales' ? salesCompliance : activeTab === 'signing' ? signingCompliance : caseSOP}
-            columns={activeTab === 'marketing' ? marketingColumns : activeTab === 'sales' ? salesColumns : activeTab === 'signing' ? signingColumns : sopColumns}
-            loading={loading}
-            rowKey="id"
-          />
-        </>
-      )}
+              <Table
+                dataSource={activeTab === 'marketing' ? marketingContents : activeTab === 'sales' ? salesCompliance : activeTab === 'signing' ? signingCompliance : caseSOP}
+                columns={activeTab === 'marketing' ? marketingColumns : activeTab === 'sales' ? salesColumns : activeTab === 'signing' ? signingColumns : sopColumns}
+                loading={loading}
+                rowKey="id"
+              />
+            </>
+          )}
 
-      <div style={{ position: 'fixed', bottom: 24, right: 24 }}>
+      <div className="compliance-bottom-bar">
         <Space wrap>
           <Button onClick={() => setActiveTab('overview')} type={activeTab === 'overview' ? 'primary' : 'default'} icon={<CiOutlined />}>概览</Button>
           <Button onClick={() => setActiveTab('marketing')} type={activeTab === 'marketing' ? 'primary' : 'default'} icon={<FileTextOutlined />}>营销合规</Button>

@@ -345,7 +345,7 @@ export default function FinanceManagement() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+      <div className="page-header">
         <h2>财务管理</h2>
         {activeTab === 'fees' && (
           <Button type="primary" icon={<PlusOutlined />} onClick={handleAddFee}>创建费用</Button>
@@ -357,7 +357,7 @@ export default function FinanceManagement() {
 
       <Tabs activeKey={activeTab} onChange={setActiveTab}>
         <Tabs.TabPane tab="费用管理" key="fees">
-          <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+          <div className="search-bar">
             <Input
               placeholder="案件ID搜索"
               prefix={<SearchOutlined />}
@@ -374,7 +374,7 @@ export default function FinanceManagement() {
           <Table dataSource={profitShares} columns={profitShareColumns} loading={loading} rowKey="id" />
         </Tabs.TabPane>
         <Tabs.TabPane tab="退款审批" key="refunds">
-          <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+          <div className="search-bar">
             <Select
               placeholder="状态筛选"
               style={{ width: 150 }}
@@ -390,7 +390,7 @@ export default function FinanceManagement() {
           <Table dataSource={refunds} columns={refundColumns} loading={loading} rowKey="id" />
         </Tabs.TabPane>
         <Tabs.TabPane tab="发票管理" key="invoices">
-          <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+          <div className="search-bar">
             <Select
               placeholder="状态筛选"
               style={{ width: 150 }}
@@ -450,45 +450,45 @@ export default function FinanceManagement() {
         {currentItem && (
           <div>
             {activeTab === 'fees' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div><span style={{ fontWeight: 'bold' }}>费用ID：</span>{currentItem.id}</div>
-                <div><span style={{ fontWeight: 'bold' }}>案件ID：</span>{currentItem.case_id || '-'}</div>
-                <div><span style={{ fontWeight: 'bold' }}>金额：</span>¥{currentItem.amount?.toFixed(2) || '0.00'}</div>
-                <div><span style={{ fontWeight: 'bold' }}>描述：</span>{currentItem.description || '-'}</div>
-                <div><span style={{ fontWeight: 'bold' }}>状态：</span>
+              <div className="detail-grid">
+                <div className="detail-item"><span className="detail-label">费用ID</span><span className="detail-value">{currentItem.id}</span></div>
+                <div className="detail-item"><span className="detail-label">案件ID</span><span className="detail-value">{currentItem.case_id || '-'}</span></div>
+                <div className="detail-item"><span className="detail-label">金额</span><span className="detail-value">¥{currentItem.amount?.toFixed(2) || '0.00'}</span></div>
+                <div className="detail-item"><span className="detail-label">描述</span><span className="detail-value">{currentItem.description || '-'}</span></div>
+                <div className="detail-item"><span className="detail-label">状态</span><span className="detail-value">
                   <Tag color={currentItem.paid ? 'success' : 'default'}>{currentItem.paid ? '已支付' : '未支付'}</Tag>
-                </div>
-                <div><span style={{ fontWeight: 'bold' }}>支付时间：</span>{formatDateTime(currentItem.paid_at)}</div>
-                <div><span style={{ fontWeight: 'bold' }}>创建时间：</span>{formatDateTime(currentItem.created_at)}</div>
+                </span></div>
+                <div className="detail-item"><span className="detail-label">支付时间</span><span className="detail-value">{formatDateTime(currentItem.paid_at)}</span></div>
+                <div className="detail-item"><span className="detail-label">创建时间</span><span className="detail-value">{formatDateTime(currentItem.created_at)}</span></div>
               </div>
             )}
             {activeTab === 'profit-shares' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div><span style={{ fontWeight: 'bold' }}>分润ID：</span>{currentItem.id}</div>
-                <div><span style={{ fontWeight: 'bold' }}>案件ID：</span>{currentItem.case_id || '-'}</div>
-                <div><span style={{ fontWeight: 'bold' }}>角色：</span>{({
+              <div className="detail-grid">
+                <div className="detail-item"><span className="detail-label">分润ID</span><span className="detail-value">{currentItem.id}</span></div>
+                <div className="detail-item"><span className="detail-label">案件ID</span><span className="detail-value">{currentItem.case_id || '-'}</span></div>
+                <div className="detail-item"><span className="detail-label">角色</span><span className="detail-value">{({
                   org: '律所',
                   lawyer: '律师',
                   sales: '销售',
                   marketing: '投放',
                   assistant: '助理',
-                }[currentItem.role as string])}</div>
-                <div><span style={{ fontWeight: 'bold' }}>分润比例：</span>{currentItem.percentage}%</div>
-                <div><span style={{ fontWeight: 'bold' }}>分润金额：</span>¥{currentItem.amount?.toFixed(2) || '0.00'}</div>
-                <div><span style={{ fontWeight: 'bold' }}>结算状态：</span>
+                }[currentItem.role as string])}</span></div>
+                <div className="detail-item"><span className="detail-label">分润比例</span><span className="detail-value">{currentItem.percentage}%</span></div>
+                <div className="detail-item"><span className="detail-label">分润金额</span><span className="detail-value">¥{currentItem.amount?.toFixed(2) || '0.00'}</span></div>
+                <div className="detail-item"><span className="detail-label">结算状态</span><span className="detail-value">
                   <Tag color={currentItem.paid ? 'success' : 'default'}>{currentItem.paid ? '已支付' : '待支付'}</Tag>
-                </div>
-                <div><span style={{ fontWeight: 'bold' }}>结算日期：</span>{formatDateTime(currentItem.paid_at)}</div>
-                <div><span style={{ fontWeight: 'bold' }}>创建时间：</span>{formatDateTime(currentItem.created_at)}</div>
+                </span></div>
+                <div className="detail-item"><span className="detail-label">结算日期</span><span className="detail-value">{formatDateTime(currentItem.paid_at)}</span></div>
+                <div className="detail-item"><span className="detail-label">创建时间</span><span className="detail-value">{formatDateTime(currentItem.created_at)}</span></div>
               </div>
             )}
             {activeTab === 'refunds' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div><span style={{ fontWeight: 'bold' }}>退款ID：</span>{currentItem.id}</div>
-                <div><span style={{ fontWeight: 'bold' }}>案件ID：</span>{currentItem.case_id || '-'}</div>
-                <div><span style={{ fontWeight: 'bold' }}>退款金额：</span>¥{currentItem.amount?.toFixed(2) || '0.00'}</div>
-                <div><span style={{ fontWeight: 'bold' }}>退款原因：</span>{currentItem.reason || '-'}</div>
-                <div><span style={{ fontWeight: 'bold' }}>状态：</span>
+              <div className="detail-grid">
+                <div className="detail-item"><span className="detail-label">退款ID</span><span className="detail-value">{currentItem.id}</span></div>
+                <div className="detail-item"><span className="detail-label">案件ID</span><span className="detail-value">{currentItem.case_id || '-'}</span></div>
+                <div className="detail-item"><span className="detail-label">退款金额</span><span className="detail-value">¥{currentItem.amount?.toFixed(2) || '0.00'}</span></div>
+                <div className="detail-item"><span className="detail-label">退款原因</span><span className="detail-value">{currentItem.reason || '-'}</span></div>
+                <div className="detail-item"><span className="detail-label">状态</span><span className="detail-value">
                   <Tag color={{
                     pending: 'default',
                     approved: 'green',
@@ -502,8 +502,8 @@ export default function FinanceManagement() {
                       processed: '已处理',
                     }[currentItem.status as string]}
                   </Tag>
-                </div>
-                <div><span style={{ fontWeight: 'bold' }}>申请时间：</span>{formatDateTime(currentItem.created_at)}</div>
+                </span></div>
+                <div className="detail-item"><span className="detail-label">申请时间</span><span className="detail-value">{formatDateTime(currentItem.created_at)}</span></div>
               </div>
             )}
           </div>

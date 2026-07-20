@@ -166,12 +166,12 @@ export default function UserManagement() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+      <div className="page-header">
         <h2>用户管理</h2>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAddUser}>添加用户</Button>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div className="search-bar">
         <Input
           placeholder="姓名搜索"
           prefix={<SearchOutlined />}
@@ -241,12 +241,12 @@ export default function UserManagement() {
         width={500}
       >
         {currentUser && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <div><span style={{ fontWeight: 'bold' }}>用户ID：</span>{currentUser.id}</div>
-            <div><span style={{ fontWeight: 'bold' }}>姓名：</span>{currentUser.name}</div>
-            <div><span style={{ fontWeight: 'bold' }}>手机号：</span>{currentUser.phone}</div>
-            <div><span style={{ fontWeight: 'bold' }}>邮箱：</span>{currentUser.email || '-'}</div>
-            <div><span style={{ fontWeight: 'bold' }}>角色：</span>
+          <div className="detail-grid">
+            <div className="detail-item"><span className="detail-label">用户ID</span><span className="detail-value">{currentUser.id}</span></div>
+            <div className="detail-item"><span className="detail-label">姓名</span><span className="detail-value">{currentUser.name}</span></div>
+            <div className="detail-item"><span className="detail-label">手机号</span><span className="detail-value">{currentUser.phone}</span></div>
+            <div className="detail-item"><span className="detail-label">邮箱</span><span className="detail-value">{currentUser.email || '-'}</span></div>
+            <div className="detail-item"><span className="detail-label">角色</span><span className="detail-value">
               <Tag color={{
                 admin: 'red',
                 manager: 'orange',
@@ -268,10 +268,10 @@ export default function UserManagement() {
                   client: '客户',
                 }[currentUser.role as string]}
               </Tag>
-            </div>
-            <div><span style={{ fontWeight: 'bold' }}>组织ID：</span>{currentUser.organization_id}</div>
-            <div><span style={{ fontWeight: 'bold' }}>创建时间：</span>{formatDateTime(currentUser.created_at)}</div>
-            <div><span style={{ fontWeight: 'bold' }}>更新时间：</span>{formatDateTime(currentUser.updated_at)}</div>
+            </span></div>
+            <div className="detail-item"><span className="detail-label">组织ID</span><span className="detail-value">{currentUser.organization_id}</span></div>
+            <div className="detail-item"><span className="detail-label">创建时间</span><span className="detail-value">{formatDateTime(currentUser.created_at)}</span></div>
+            <div className="detail-item"><span className="detail-label">更新时间</span><span className="detail-value">{formatDateTime(currentUser.updated_at)}</span></div>
           </div>
         )}
       </Modal>

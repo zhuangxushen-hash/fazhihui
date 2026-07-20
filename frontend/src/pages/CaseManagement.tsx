@@ -242,12 +242,12 @@ export default function CaseManagement() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+      <div className="page-header">
         <h2>案件管理</h2>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAddCase}>创建案件</Button>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div className="search-bar">
         <Input
           placeholder="案件编号搜索"
           prefix={<SearchOutlined />}
@@ -337,36 +337,21 @@ export default function CaseManagement() {
       >
         {currentCase && (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>案件编号：</span>{currentCase.case_no}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>客户姓名：</span>{currentCase.client_name}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>客户手机号：</span>{currentCase.client_phone || '-'}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>案由：</span>{({
+            <div className="detail-grid">
+              <div className="detail-item"><span className="detail-label">案件编号</span><span className="detail-value">{currentCase.case_no}</span></div>
+              <div className="detail-item"><span className="detail-label">客户姓名</span><span className="detail-value">{currentCase.client_name}</span></div>
+              <div className="detail-item"><span className="detail-label">客户手机号</span><span className="detail-value">{currentCase.client_phone || '-'}</span></div>
+              <div className="detail-item"><span className="detail-label">案由</span><span className="detail-value">{({
                   marriage: '婚姻家事',
                   traffic: '交通事故',
                   labor: '劳动争议',
                   debt: '债务逾期',
                   other: '其他',
-                }[currentCase.case_type as string])}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>主办律师：</span>{currentCase.lawyer_name || '-'}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>受理法院：</span>{currentCase.court || '-'}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>涉案金额：</span>{currentCase.amount || '-'}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>状态：</span>
+                }[currentCase.case_type as string])}</span></div>
+              <div className="detail-item"><span className="detail-label">主办律师</span><span className="detail-value">{currentCase.lawyer_name || '-'}</span></div>
+              <div className="detail-item"><span className="detail-label">受理法院</span><span className="detail-value">{currentCase.court || '-'}</span></div>
+              <div className="detail-item"><span className="detail-label">涉案金额</span><span className="detail-value">{currentCase.amount || '-'}</span></div>
+              <div className="detail-item"><span className="detail-label">状态</span><span className="detail-value">
                 <Tag color={{
                   pending_accept: 'default',
                   accepted: 'processing',
@@ -394,23 +379,15 @@ export default function CaseManagement() {
                     suspended: '已中止',
                   }[currentCase.status as string]}
                 </Tag>
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>立案日期：</span>{formatDate(currentCase.filing_date)}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>预计结案：</span>{formatDate(currentCase.expected_close_date)}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>创建时间：</span>{formatDateTime(currentCase.created_at)}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>更新时间：</span>{formatDateTime(currentCase.updated_at)}
-              </div>
+              </span></div>
+              <div className="detail-item"><span className="detail-label">立案日期</span><span className="detail-value">{formatDate(currentCase.filing_date)}</span></div>
+              <div className="detail-item"><span className="detail-label">预计结案</span><span className="detail-value">{formatDate(currentCase.expected_close_date)}</span></div>
+              <div className="detail-item"><span className="detail-label">创建时间</span><span className="detail-value">{formatDateTime(currentCase.created_at)}</span></div>
+              <div className="detail-item"><span className="detail-label">更新时间</span><span className="detail-value">{formatDateTime(currentCase.updated_at)}</span></div>
             </div>
             <div style={{ marginBottom: 24 }}>
               <div style={{ fontWeight: 'bold', marginBottom: 8 }}>案件描述</div>
-              <div style={{ padding: 12, background: '#f5f5f5', borderRadius: 4 }}>
+              <div className="info-block">
                 {currentCase.description || '-'}
               </div>
             </div>

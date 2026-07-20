@@ -129,7 +129,7 @@ export default function Dashboard() {
       dataIndex: 'rate', 
       key: 'rate',
       render: (rate: string) => (
-        <Tag color={rate === '-' ? 'default' : parseFloat(rate) > 50 ? 'green' : 'orange'}>
+        <Tag color={rate === '-' ? 'default' : parseFloat(rate) > 50 ? 'blue' : 'orange'}>
           {rate}
         </Tag>
       )
@@ -175,7 +175,7 @@ export default function Dashboard() {
       title: '总线索数',
       value: stats.totalLeads,
       icon: <FileSearchOutlined />,
-      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      gradient: 'var(--gradient-stat-1)',
       trend: '+12%',
       trendUp: true,
     },
@@ -183,7 +183,7 @@ export default function Dashboard() {
       title: '总案件数',
       value: stats.totalCases,
       icon: <FileTextOutlined />,
-      gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      gradient: 'var(--gradient-stat-2)',
       trend: '+8%',
       trendUp: true,
     },
@@ -191,7 +191,7 @@ export default function Dashboard() {
       title: '合规率',
       value: `${stats.complianceRate.toFixed(1)}%`,
       icon: <SecurityScanOutlined />,
-      gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      gradient: 'var(--gradient-stat-3)',
       trend: '+3%',
       trendUp: true,
     },
@@ -199,40 +199,47 @@ export default function Dashboard() {
       title: '总收入',
       value: `¥${stats.totalRevenue.toFixed(2)}`,
       icon: <DollarOutlined />,
-      gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+      gradient: 'var(--gradient-stat-4)',
       trend: '+15%',
       trendUp: true,
     },
   ]
 
+  const tableCardStyle: React.CSSProperties = {
+    background: '#fff',
+    border: '1px solid var(--border-default)',
+    boxShadow: 'var(--shadow-sm)',
+    borderRadius: 10,
+  }
+
   return (
     <div>
-      <Row gutter={[20, 20]}>
+      <Row gutter={[16, 16]}>
         {statCards.map((card, index) => (
           <Col span={6} key={index}>
             <Card
               style={{
                 background: card.gradient,
                 border: 'none',
-                borderRadius: 12,
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
-                overflow: 'hidden',
+                borderRadius: 10,
+                padding: 20,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>{card.title}</div>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: '#fff' }}>{card.value}</div>
+                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', marginBottom: 8 }}>{card.title}</div>
+                  <div style={{ fontSize: 26, fontWeight: 700, color: '#fff' }}>{card.value}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 8 }}>
                     {card.trendUp ? (
-                      <ArrowUpOutlined style={{ fontSize: 14, color: '#fff' }} />
+                      <ArrowUpOutlined style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }} />
                     ) : (
-                      <ArrowDownOutlined style={{ fontSize: 14, color: '#fff' }} />
+                      <ArrowDownOutlined style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }} />
                     )}
-                    <span style={{ fontSize: 12, color: '#fff' }}>{card.trend} 较上月</span>
+                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>{card.trend} 较上月</span>
                   </div>
                 </div>
-                <div style={{ background: 'rgba(255,255,255,0.2)', padding: 12, borderRadius: 10 }}>
+                <div style={{ background: 'rgba(255,255,255,0.1)', padding: 10, borderRadius: 8 }}>
                   {card.icon}
                 </div>
               </div>
@@ -241,11 +248,11 @@ export default function Dashboard() {
         ))}
       </Row>
 
-      <Row gutter={[20, 20]} style={{ marginTop: 24 }}>
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col span={12}>
           <Card 
-            title="线索转化漏斗" 
-            style={{ borderRadius: 12, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)' }}
+            title={<span style={{ fontSize: 15, fontWeight: 600 }}>线索转化漏斗</span>}
+            style={tableCardStyle}
           >
             <div style={{ marginBottom: 20 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -272,61 +279,74 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
-            <Table dataSource={conversionData} columns={columns} pagination={false} />
+            <Table 
+              dataSource={conversionData} 
+              columns={columns} 
+              pagination={false}
+              rowKey="stage"
+            />
           </Card>
         </Col>
         <Col span={12}>
           <Card 
-            title="案件状态分布" 
-            style={{ borderRadius: 12, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)' }}
+            title={<span style={{ fontSize: 15, fontWeight: 600 }}>案件状态分布</span>}
+            style={tableCardStyle}
           >
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <div style={{ background: '#fff7e6', padding: 16, borderRadius: 8 }}>
+              <div style={{ background: 'var(--warning-bg)', padding: 16, borderRadius: 8, border: '1px solid var(--warning-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, color: '#d46b08' }}>待分配</span>
-                  <span style={{ fontSize: 20, fontWeight: 700, color: '#fa8c16' }}>{caseStats.pending_assign || 0}</span>
+                  <span style={{ fontSize: 13, color: '#b45309' }}>待分配</span>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: '#b45309' }}>{caseStats.pending_assign || 0}</span>
                 </div>
                 <Progress 
                   percent={((caseStats.pending_assign || 0) / (caseStats.total || 1)) * 100} 
-                  strokeColor="#fa8c16" 
+                  strokeColor="#b45309"
                   format={(percent) => `${(percent || 0).toFixed(1)}%`}
                   size="small"
+                  trailColor="rgba(180, 83, 9, 0.12)"
+                  strokeWidth={4}
                 />
               </div>
-              <div style={{ background: '#e6f7ff', padding: 16, borderRadius: 8 }}>
+              <div style={{ background: 'var(--primary-bg)', padding: 16, borderRadius: 8, border: '1px solid var(--primary-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, color: '#08979c' }}>处理中</span>
-                  <span style={{ fontSize: 20, fontWeight: 700, color: '#1890ff' }}>{caseStats.processing || 0}</span>
+                  <span style={{ fontSize: 13, color: 'var(--primary)' }}>处理中</span>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--primary)' }}>{caseStats.processing || 0}</span>
                 </div>
                 <Progress 
                   percent={((caseStats.processing || 0) / (caseStats.total || 1)) * 100} 
-                  strokeColor="#1890ff" 
+                  strokeColor="var(--primary)"
                   format={(percent) => `${(percent || 0).toFixed(1)}%`}
                   size="small"
+                  trailColor="rgba(59, 130, 246, 0.12)"
+                  strokeWidth={4}
                 />
               </div>
-              <div style={{ background: '#f6ffed', padding: 16, borderRadius: 8 }}>
+              <div style={{ background: 'var(--success-bg)', padding: 16, borderRadius: 8, border: '1px solid var(--success-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, color: '#389e0d' }}>已结案</span>
-                  <span style={{ fontSize: 20, fontWeight: 700, color: '#52c41a' }}>{caseStats.closed || 0}</span>
+                  <span style={{ fontSize: 13, color: 'var(--success)' }}>已结案</span>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--success)' }}>{caseStats.closed || 0}</span>
                 </div>
                 <Progress 
                   percent={((caseStats.closed || 0) / (caseStats.total || 1)) * 100} 
-                  strokeColor="#52c41a" 
+                  strokeColor="var(--success)"
                   format={(percent) => `${(percent || 0).toFixed(1)}%`}
                   size="small"
+                  trailColor="rgba(16, 185, 129, 0.12)"
+                  strokeWidth={4}
                 />
               </div>
-              <div style={{ background: '#fff1f0', padding: 16, borderRadius: 8 }}>
+              <div style={{ background: 'var(--error-bg)', padding: 16, borderRadius: 8, border: '1px solid var(--error-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, color: '#d32f2f' }}>超期案件</span>
-                  <span style={{ fontSize: 20, fontWeight: 700, color: '#f5222d' }}>{caseStats.overdue || 0}</span>
+                  <span style={{ fontSize: 13, color: 'var(--error)' }}>超期案件</span>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--error)' }}>{caseStats.overdue || 0}</span>
                 </div>
                 <Progress 
                   percent={((caseStats.overdue || 0) / (caseStats.total || 1)) * 100} 
-                  strokeColor="#f5222d" 
+                  strokeColor="var(--error)"
                   format={(percent) => `${(percent || 0).toFixed(1)}%`}
                   size="small"
+                  trailColor="rgba(239, 68, 68, 0.12)"
+                  strokeWidth={4}
                 />
               </div>
             </div>
@@ -334,11 +354,11 @@ export default function Dashboard() {
         </Col>
       </Row>
 
-      <Row gutter={[20, 20]} style={{ marginTop: 24 }}>
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col span={12}>
           <Card 
-            title="律师绩效统计" 
-            style={{ borderRadius: 12, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)' }}
+            title={<span style={{ fontSize: 15, fontWeight: 600 }}>律师绩效统计</span>}
+            style={tableCardStyle}
           >
             <Table 
               dataSource={lawyerStats} 
@@ -350,8 +370,8 @@ export default function Dashboard() {
         </Col>
         <Col span={12}>
           <Card 
-            title="分案由盈利分析" 
-            style={{ borderRadius: 12, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)' }}
+            title={<span style={{ fontSize: 15, fontWeight: 600 }}>分案由盈利分析</span>}
+            style={tableCardStyle}
           >
             <Table 
               dataSource={caseTypeProfit} 
@@ -363,51 +383,51 @@ export default function Dashboard() {
         </Col>
       </Row>
 
-      <Row gutter={[20, 20]} style={{ marginTop: 24 }}>
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col span={12}>
           <Card 
-            title="风险预警统计" 
-            style={{ borderRadius: 12, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)' }}
+            title={<span style={{ fontSize: 15, fontWeight: 600 }}>风险预警统计</span>}
+            style={tableCardStyle}
           >
             <div style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <WarningOutlined style={{ color: '#f5222d' }} />
+                  <WarningOutlined style={{ color: 'var(--error)' }} />
                   高风险案件
                 </span>
                 <Tag color="red" style={{ fontWeight: 600 }}>{riskStats.high_risk || 0}</Tag>
               </div>
               <Progress 
                 percent={((riskStats.high_risk || 0) / (riskStats.total || 1)) * 100} 
-                strokeColor="#f5222d" 
+                strokeColor="var(--error)"
                 format={(percent) => `${(percent || 0).toFixed(1)}%`}
               />
             </div>
             <div style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <WarningOutlined style={{ color: '#fa8c16' }} />
+                  <WarningOutlined style={{ color: 'var(--warning)' }} />
                   中风险案件
                 </span>
                 <Tag color="orange" style={{ fontWeight: 600 }}>{riskStats.medium_risk || 0}</Tag>
               </div>
               <Progress 
                 percent={((riskStats.medium_risk || 0) / (riskStats.total || 1)) * 100} 
-                strokeColor="#fa8c16" 
+                strokeColor="var(--warning)"
                 format={(percent) => `${(percent || 0).toFixed(1)}%`}
               />
             </div>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                  <CheckCircleOutlined style={{ color: 'var(--success)' }} />
                   低风险案件
                 </span>
                 <Tag color="green" style={{ fontWeight: 600 }}>{riskStats.low_risk || 0}</Tag>
               </div>
               <Progress 
                 percent={((riskStats.low_risk || 0) / (riskStats.total || 1)) * 100} 
-                strokeColor="#52c41a" 
+                strokeColor="var(--success)"
                 format={(percent) => `${(percent || 0).toFixed(1)}%`}
               />
             </div>
@@ -415,30 +435,30 @@ export default function Dashboard() {
         </Col>
         <Col span={12}>
           <Card 
-            title="经营数据概览" 
-            style={{ borderRadius: 12, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)' }}
+            title={<span style={{ fontSize: 15, fontWeight: 600 }}>经营数据概览</span>}
+            style={tableCardStyle}
           >
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <div style={{ background: 'linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%)', padding: 20, borderRadius: 10, textAlign: 'center' }}>
+              <div style={{ background: '#fff', padding: 20, borderRadius: 8, textAlign: 'center', border: '1px solid var(--border-light)' }}>
                 <div style={{ fontSize: 28, fontWeight: 'bold', color: '#1890ff' }}>
                   {riskStats.total || 0}
                 </div>
                 <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>总风险案件</div>
               </div>
-              <div style={{ background: 'linear-gradient(135deg, #fff1f0 0%, #ffccc7 100%)', padding: 20, borderRadius: 10, textAlign: 'center' }}>
-                <div style={{ fontSize: 28, fontWeight: 'bold', color: '#f5222d' }}>
+              <div style={{ background: '#fff', padding: 20, borderRadius: 8, textAlign: 'center', border: '1px solid var(--border-light)' }}>
+                <div style={{ fontSize: 28, fontWeight: 'bold', color: 'var(--error)' }}>
                   {riskStats.high_risk || 0}
                 </div>
                 <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>高风险案件</div>
               </div>
-              <div style={{ background: 'linear-gradient(135deg, #fff7e6 0%, #ffe58f 100%)', padding: 20, borderRadius: 10, textAlign: 'center' }}>
-                <div style={{ fontSize: 28, fontWeight: 'bold', color: '#fa8c16' }}>
+              <div style={{ background: '#fff', padding: 20, borderRadius: 8, textAlign: 'center', border: '1px solid var(--border-light)' }}>
+                <div style={{ fontSize: 28, fontWeight: 'bold', color: 'var(--warning)' }}>
                   {riskStats.medium_risk || 0}
                 </div>
                 <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>中风险案件</div>
               </div>
-              <div style={{ background: 'linear-gradient(135deg, #f6ffed 0%, #b7eb8f 100%)', padding: 20, borderRadius: 10, textAlign: 'center' }}>
-                <div style={{ fontSize: 28, fontWeight: 'bold', color: '#52c41a' }}>
+              <div style={{ background: '#fff', padding: 20, borderRadius: 8, textAlign: 'center', border: '1px solid var(--border-light)' }}>
+                <div style={{ fontSize: 28, fontWeight: 'bold', color: 'var(--success)' }}>
                   {riskStats.low_risk || 0}
                 </div>
                 <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>低风险案件</div>

@@ -17,52 +17,44 @@ export default function ClientButton({
   const [isPressed, setIsPressed] = useState(false)
 
   const sizeStyles = {
-    small: { height: 32, fontSize: 12, padding: '0 16px', borderRadius: 16 },
-    medium: { height: 44, fontSize: 15, padding: '0 24px', borderRadius: 22 },
-    large: { height: 52, fontSize: 17, padding: '0 32px', borderRadius: 26 },
+    small: { height: 32, fontSize: 13, padding: '0 16px', borderRadius: 6 },
+    medium: { height: 44, fontSize: 14, padding: '0 24px', borderRadius: 8 },
+    large: { height: 50, fontSize: 15, padding: '0 28px', borderRadius: 8 },
   }
 
   const baseStyles = {
     ...sizeStyles[btnSize],
     transition: 'all 0.15s ease',
-    fontWeight: 500,
+    fontWeight: 600 as const,
     WebkitTapHighlightColor: 'transparent',
     touchAction: 'manipulation',
-    transform: isPressed ? 'scale(0.96)' : 'scale(1)',
+    transform: isPressed ? 'scale(0.97)' : 'scale(1)',
     ...style,
   }
 
   const variantStyles = {
     primary: {
-      background: isPressed 
-        ? 'linear-gradient(135deg, #40a9ff 0%, #69c0ff 100%)' 
-        : 'linear-gradient(135deg, #1890ff 0%, #40a9ff 100%)',
-      borderColor: 'transparent',
+      background: 'var(--primary)',
+      borderColor: 'var(--primary)',
       color: '#fff',
-      boxShadow: isPressed 
-        ? '0 2px 8px rgba(24,144,255,0.25)' 
-        : '0 4px 14px rgba(24,144,255,0.35)',
+      boxShadow: 'none',
     },
     secondary: {
-      background: isPressed 
-        ? 'linear-gradient(135deg, #73d13d 0%, #95de64 100%)' 
-        : 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
-      borderColor: 'transparent',
+      background: 'var(--success)',
+      borderColor: 'var(--success)',
       color: '#fff',
-      boxShadow: isPressed 
-        ? '0 2px 8px rgba(82,196,26,0.25)' 
-        : '0 4px 14px rgba(82,196,26,0.3)',
+      boxShadow: 'none',
     },
     outline: {
-      background: isPressed ? 'rgba(24,144,255,0.1)' : '#fff',
-      borderColor: '#1890ff',
-      color: '#1890ff',
-      borderWidth: 2,
+      background: isPressed ? 'var(--primary-bg)' : '#fff',
+      borderColor: 'var(--primary)',
+      color: 'var(--primary)',
+      borderWidth: 1,
     },
     ghost: {
-      background: isPressed ? '#f0f0f0' : 'transparent',
+      background: isPressed ? 'var(--bg-muted)' : 'transparent',
       borderColor: 'transparent',
-      color: isPressed ? '#333' : '#666',
+      color: 'var(--text-secondary)',
     },
   }
 

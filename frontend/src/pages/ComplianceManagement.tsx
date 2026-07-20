@@ -146,11 +146,11 @@ export default function ComplianceManagement() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+      <div className="page-header">
         <h2>合规管理</h2>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div className="search-bar">
         <Input
           placeholder="案件编号搜索"
           prefix={<SearchOutlined />}
@@ -235,7 +235,7 @@ export default function ComplianceManagement() {
             </div>
             <div style={{ marginBottom: 24 }}>
               <div style={{ fontWeight: 'bold', marginBottom: 8 }}>投诉内容</div>
-              <div style={{ padding: 12, background: '#f5f5f5', borderRadius: 4 }}>
+              <div className="info-block">
                 {currentComplaint.content || '-'}
               </div>
             </div>
