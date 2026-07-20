@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Button } from 'antd'
 import type { ButtonProps } from 'antd'
 
@@ -13,55 +14,55 @@ export default function ClientButton({
   children,
   ...props 
 }: ClientButtonProps) {
+  const [isPressed, setIsPressed] = useState(false)
+
   const sizeStyles = {
-    small: { height: 32, fontSize: 12, padding: '0 16px', borderRadius: 16, transform: 'none' },
-    medium: { height: 44, fontSize: 15, padding: '0 24px', borderRadius: 22, transform: 'none' },
-    large: { height: 52, fontSize: 17, padding: '0 32px', borderRadius: 26, transform: 'none' },
+    small: { height: 32, fontSize: 12, padding: '0 16px', borderRadius: 16 },
+    medium: { height: 44, fontSize: 15, padding: '0 24px', borderRadius: 22 },
+    large: { height: 52, fontSize: 17, padding: '0 32px', borderRadius: 26 },
+  }
+
+  const baseStyles = {
+    ...sizeStyles[btnSize],
+    transition: 'all 0.15s ease',
+    fontWeight: 500,
+    WebkitTapHighlightColor: 'transparent',
+    touchAction: 'manipulation',
+    transform: isPressed ? 'scale(0.96)' : 'scale(1)',
+    ...style,
   }
 
   const variantStyles = {
     primary: {
-      background: 'linear-gradient(135deg, #1890ff 0%, #40a9ff 100%)',
+      background: isPressed 
+        ? 'linear-gradient(135deg, #40a9ff 0%, #69c0ff 100%)' 
+        : 'linear-gradient(135deg, #1890ff 0%, #40a9ff 100%)',
       borderColor: 'transparent',
       color: '#fff',
-      boxShadow: '0 4px 14px rgba(24,144,255,0.35)',
+      boxShadow: isPressed 
+        ? '0 2px 8px rgba(24,144,255,0.25)' 
+        : '0 4px 14px rgba(24,144,255,0.35)',
     },
     secondary: {
-      background: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
+      background: isPressed 
+        ? 'linear-gradient(135deg, #73d13d 0%, #95de64 100%)' 
+        : 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
       borderColor: 'transparent',
       color: '#fff',
-      boxShadow: '0 4px 14px rgba(82,196,26,0.3)',
+      boxShadow: isPressed 
+        ? '0 2px 8px rgba(82,196,26,0.25)' 
+        : '0 4px 14px rgba(82,196,26,0.3)',
     },
     outline: {
-      background: '#fff',
+      background: isPressed ? 'rgba(24,144,255,0.1)' : '#fff',
       borderColor: '#1890ff',
       color: '#1890ff',
       borderWidth: 2,
     },
     ghost: {
-      background: 'transparent',
+      background: isPressed ? '#f0f0f0' : 'transparent',
       borderColor: 'transparent',
-      color: '#666',
-    },
-  }
-
-  const hoverStyles = {
-    primary: {
-      background: 'linear-gradient(135deg, #40a9ff 0%, #69c0ff 100%)',
-      boxShadow: '0 6px 20px rgba(24,144,255,0.45)',
-      transform: 'translateY(-1px)',
-    },
-    secondary: {
-      background: 'linear-gradient(135deg, #73d13d 0%, #95de64 100%)',
-      boxShadow: '0 6px 20px rgba(82,196,26,0.4)',
-      transform: 'translateY(-1px)',
-    },
-    outline: {
-      background: 'rgba(24,144,255,0.05)',
-    },
-    ghost: {
-      background: '#f5f5f5',
-      color: '#333',
+      color: isPressed ? '#333' : '#666',
     },
   }
 
@@ -69,24 +70,15 @@ export default function ClientButton({
     <Button
       {...props}
       style={{
-        ...sizeStyles[btnSize],
+        ...baseStyles,
         ...variantStyles[btnVariant],
-        transition: 'all 0.2s ease',
-        fontWeight: 500,
-        ...style,
       }}
-      onMouseEnter={(e) => {
-        if (!props.disabled) {
-          Object.assign(e.currentTarget.style, hoverStyles[btnVariant])
-        }
-      }}
-      onMouseLeave={(e) => {
-        Object.assign(e.currentTarget.style, {
-          ...sizeStyles[btnSize],
-          ...variantStyles[btnVariant],
-          transition: 'all 0.2s ease',
-        })
-      }}
+      onTouchStart={() => !props.disabled && setIsPressed(true)}
+      onTouchEnd={() => setIsPressed(false)}
+      onTouchCancel={() => setIsPressed(false)}
+      onMouseDown={() => !props.disabled && setIsPressed(true)}
+      onMouseUp={() => setIsPressed(false)}
+      onMouseLeave={() => setIsPressed(false)}
     >
       {children}
     </Button>

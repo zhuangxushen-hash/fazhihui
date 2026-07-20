@@ -10,6 +10,8 @@ import FinanceManagement from './pages/FinanceManagement'
 import UserManagement from './pages/UserManagement'
 import AITools from './pages/AITools'
 import ClientHome from './pages/client/ClientHome'
+import ClientCaseList from './pages/client/ClientCaseList'
+import ClientCaseDetail from './pages/client/ClientCaseDetail'
 import AIConsult from './pages/client/AIConsult'
 import Complaint from './pages/client/Complaint'
 import Payment from './pages/client/Payment'
@@ -44,6 +46,8 @@ function App() {
         <Route path="/users" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
         <Route path="/ai-tools" element={<ProtectedRoute><AITools /></ProtectedRoute>} />
         <Route path="/client" element={<ClientRoute><ClientHome /></ClientRoute>} />
+        <Route path="/client/cases" element={<ClientRoute><ClientCaseList /></ClientRoute>} />
+        <Route path="/client/case/:id" element={<ClientRoute><ClientCaseDetail /></ClientRoute>} />
         <Route path="/client/ai-consult" element={<ClientRoute><AIConsult /></ClientRoute>} />
         <Route path="/client/complaint" element={<ClientRoute><Complaint /></ClientRoute>} />
         <Route path="/client/payment" element={<ClientRoute><Payment /></ClientRoute>} />

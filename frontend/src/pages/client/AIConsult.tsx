@@ -18,6 +18,7 @@ export default function AIConsult() {
     { id: '1', content: '您好！我是您的AI法律助手，请问有什么可以帮助您的？', isUser: false },
   ])
   const [loading, setLoading] = useState(false)
+  const [activeQuestion, setActiveQuestion] = useState<number | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
   const {
@@ -69,48 +70,49 @@ export default function AIConsult() {
       <div
         style={{
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          padding: '20px 16px',
-          paddingTop: '48px',
+          padding: '16px 16px',
+          paddingTop: '52px',
           color: '#fff',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <RobotOutlined style={{ fontSize: 24 }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <RobotOutlined style={{ fontSize: 22 }} />
           </div>
           <div>
-            <h2 style={{ fontSize: 22, fontWeight: 'bold' }}>AI法律助手</h2>
-            <p style={{ fontSize: 12, opacity: 0.9 }}>7×24小时在线答疑</p>
+            <h2 style={{ fontSize: 20, fontWeight: 'bold' }}>AI法律助手</h2>
+            <p style={{ fontSize: 11, opacity: 0.9 }}>7×24小时在线答疑</p>
           </div>
         </div>
       </div>
 
-      <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: 16, paddingBottom: '160px' }}>
+      <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: 12, paddingBottom: '160px' }}>
         <Card 
-          title={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Tag color="blue" style={{ borderRadius: 4 }}>热门问题</Tag>
-            <span style={{ fontSize: 14, fontWeight: 500, color: '#333' }}>点击快速提问</span>
+          title={<div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Tag color="blue" style={{ borderRadius: 4, fontSize: 10 }}>热门问题</Tag>
+            <span style={{ fontSize: 13, fontWeight: 500, color: '#333' }}>点击快速提问</span>
           </div>}
-          style={{ marginBottom: 20, borderRadius: borderRadiusLG, boxShadow: '0 4px 16px rgba(0,0,0,0.06)' }}
+          style={{ marginBottom: 16, borderRadius: borderRadiusLG, boxShadow: '0 2px 12px rgba(0,0,0,0.06)', border: 'none' }}
         >
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {recommendQuestions.map((q, i) => (
               <Tag 
                 key={i} 
                 color="blue" 
                 style={{ 
                   cursor: 'pointer', 
-                  padding: '8px 16px', 
-                  fontSize: 13, 
-                  borderRadius: 20,
+                  padding: '6px 14px', 
+                  fontSize: 12, 
+                  borderRadius: 16,
                   background: 'linear-gradient(135deg, rgba(24,144,255,0.1) 0%, rgba(24,144,255,0.05) 100%)',
                   color: '#1890ff',
                   border: '1px solid rgba(24,144,255,0.2)',
-                  transition: 'all 0.2s ease'
+                  transition: 'transform 0.15s ease',
+                  transform: activeQuestion === i ? 'scale(0.95)' : 'scale(1)',
                 }} 
                 onClick={() => handleSend(q)}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                onTouchStart={() => setActiveQuestion(i)}
+                onTouchEnd={() => setActiveQuestion(null)}
               >
                 {q}
               </Tag>
@@ -118,45 +120,45 @@ export default function AIConsult() {
           </div>
         </Card>
 
-        <div style={{ background: '#fff', borderRadius: borderRadiusLG, padding: 16, minHeight: '300px', boxShadow: '0 4px 16px rgba(0,0,0,0.06)' }}>
+        <div style={{ background: '#fff', borderRadius: borderRadiusLG, padding: 12, minHeight: '300px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
           <div>
             {messages.map((item) => (
-              <div key={item.id} style={{ display: 'flex', marginBottom: 20, justifyContent: item.isUser ? 'flex-end' : 'flex-start', alignItems: 'flex-start' }}>
+              <div key={item.id} style={{ display: 'flex', marginBottom: 16, justifyContent: item.isUser ? 'flex-end' : 'flex-start', alignItems: 'flex-start' }}>
                 {!item.isUser && (
                   <Avatar
                     icon={<RobotOutlined />}
                     style={{ 
                       background: 'linear-gradient(135deg, #1890ff 0%, #40a9ff 100%)',
-                      width: 40,
-                      height: 40,
-                      marginRight: 10,
-                      boxShadow: '0 2px 8px rgba(24,144,255,0.3)'
+                      width: 36,
+                      height: 36,
+                      marginRight: 8,
+                      boxShadow: '0 2px 6px rgba(24,144,255,0.3)'
                     }}
                   />
                 )}
                 <div style={{
-                  maxWidth: '75%',
-                  padding: '14px 18px',
-                  borderRadius: item.isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                  maxWidth: '80%',
+                  padding: '12px 16px',
+                  borderRadius: item.isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                   background: item.isUser ? 'linear-gradient(135deg, #1890ff 0%, #40a9ff 100%)' : '#f5f5f5',
                   color: item.isUser ? '#fff' : '#333',
                   fontSize: 14,
                   lineHeight: 1.6,
-                  boxShadow: item.isUser ? '0 4px 12px rgba(24,144,255,0.3)' : '0 2px 8px rgba(0,0,0,0.04)',
-                  transition: 'all 0.2s ease',
+                  boxShadow: item.isUser ? '0 2px 10px rgba(24,144,255,0.3)' : '0 2px 6px rgba(0,0,0,0.04)',
+                  transition: 'all 0.15s ease',
                 }}>
                   {item.content}
                   {item.relatedLaws && item.relatedLaws.length > 0 && (
                     <div style={{ 
-                      marginTop: 12, 
-                      padding: 12, 
+                      marginTop: 10, 
+                      padding: 10, 
                       borderTop: `1px solid ${item.isUser ? 'rgba(255,255,255,0.2)' : '#e8e8e8'}`,
                       background: item.isUser ? 'rgba(255,255,255,0.08)' : '#fff',
-                      borderRadius: 8,
+                      borderRadius: 6,
                     }}>
-                      <div style={{ fontSize: 12, color: item.isUser ? 'rgba(255,255,255,0.8)' : '#999', fontWeight: 500, marginBottom: 8 }}>📖 相关法条：</div>
+                      <div style={{ fontSize: 11, color: item.isUser ? 'rgba(255,255,255,0.8)' : '#999', fontWeight: 500, marginBottom: 6 }}>📖 相关法条：</div>
                       {item.relatedLaws.map((law, i) => (
-                        <div key={i} style={{ fontSize: 13, marginTop: 4, padding: '6px 10px', background: item.isUser ? 'rgba(255,255,255,0.1)' : '#f5f5f5', borderRadius: 6 }}>{law}</div>
+                        <div key={i} style={{ fontSize: 12, marginTop: 3, padding: '4px 8px', background: item.isUser ? 'rgba(255,255,255,0.1)' : '#f5f5f5', borderRadius: 4 }}>{law}</div>
                       ))}
                     </div>
                   )}
@@ -166,10 +168,10 @@ export default function AIConsult() {
                     icon={<UserOutlined />}
                     style={{ 
                       background: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
-                      width: 40,
-                      height: 40,
-                      marginLeft: 10,
-                      boxShadow: '0 2px 8px rgba(82,196,26,0.3)'
+                      width: 36,
+                      height: 36,
+                      marginLeft: 8,
+                      boxShadow: '0 2px 6px rgba(82,196,26,0.3)'
                     }}
                   />
                 )}
@@ -177,35 +179,35 @@ export default function AIConsult() {
             ))}
           </div>
           {loading && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', background: '#f5f5f5', borderRadius: '18px 18px 18px 4px', maxWidth: '75%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', background: '#f5f5f5', borderRadius: '16px 16px 16px 4px', maxWidth: '80%' }}>
               <Avatar
                 icon={<RobotOutlined />}
                 style={{ 
                   background: 'linear-gradient(135deg, #1890ff 0%, #40a9ff 100%)',
-                  width: 36,
-                  height: 36,
-                  marginRight: 8,
+                  width: 32,
+                  height: 32,
+                  marginRight: 6,
                 }}
               />
-              <div style={{ display: 'flex', gap: 4 }}>
-                <span style={{ width: 6, height: 6, background: '#999', borderRadius: '50%', animation: 'bounce 1.4s infinite ease-in-out both' }} />
-                <span style={{ width: 6, height: 6, background: '#999', borderRadius: '50%', animation: 'bounce 1.4s infinite ease-in-out both', animationDelay: '0.2s' }} />
-                <span style={{ width: 6, height: 6, background: '#999', borderRadius: '50%', animation: 'bounce 1.4s infinite ease-in-out both', animationDelay: '0.4s' }} />
+              <div style={{ display: 'flex', gap: 3 }}>
+                <span style={{ width: 5, height: 5, background: '#999', borderRadius: '50%', animation: 'bounce 1.4s infinite ease-in-out both' }} />
+                <span style={{ width: 5, height: 5, background: '#999', borderRadius: '50%', animation: 'bounce 1.4s infinite ease-in-out both', animationDelay: '0.2s' }} />
+                <span style={{ width: 5, height: 5, background: '#999', borderRadius: '50%', animation: 'bounce 1.4s infinite ease-in-out both', animationDelay: '0.4s' }} />
               </div>
             </div>
           )}
         </div>
       </div>
 
-      <div style={{ position: 'fixed', bottom: 60, left: 0, right: 0, background: '#fff', padding: '12px 16px', borderTop: '1px solid #f0f0f0', display: 'flex', gap: 10, boxShadow: '0 -4px 20px rgba(0,0,0,0.06)' }}>
+      <div style={{ position: 'fixed', bottom: 56, left: 0, right: 0, background: '#fff', padding: '10px 12px', borderTop: '1px solid #f0f0f0', display: 'flex', gap: 8, boxShadow: '0 -2px 16px rgba(0,0,0,0.06)' }}>
         <Input
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
           placeholder="请输入您的法律问题..."
           size="large"
-          style={{ flex: 1, borderRadius: 24, border: '1px solid #e8e8e8', transition: 'all 0.2s ease' }}
-          prefix={<span style={{ fontSize: 16, color: '#999', marginRight: 8 }}>💬</span>}
+          style={{ flex: 1, borderRadius: 20, border: '1px solid #e8e8e8', transition: 'all 0.15s ease' }}
+          prefix={<span style={{ fontSize: 14, color: '#999', marginRight: 6 }}>💬</span>}
         />
         <ClientButton 
           btnVariant="primary" 
@@ -213,7 +215,7 @@ export default function AIConsult() {
           icon={<SendOutlined />} 
           loading={loading} 
           onClick={() => handleSend()}
-          style={{ height: 44, width: 44, borderRadius: '50%', padding: 0 }}
+          style={{ height: 40, width: 40, borderRadius: '50%', padding: 0 }}
         />
       </div>
 
