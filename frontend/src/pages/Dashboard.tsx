@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
-import { Card, Row, Col, Statistic, Progress, Table, Tag } from 'antd'
+import { Card, Row, Col, Progress, Table, Tag } from 'antd'
 import {
   FileSearchOutlined,
   FileTextOutlined,
   SecurityScanOutlined,
   DollarOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+  WarningOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons'
 import axios from '../api/axios'
 
@@ -56,10 +60,10 @@ export default function Dashboard() {
     try {
       const res = await axios.get('/dashboard/conversion-funnel', { params: { org_id: user.organization_id } })
       setConversionData([
-        { stage: '总线索', value: res.total_leads, rate: '-' },
-        { stage: '邀约中', value: res.invited, rate: `${res.rates.invite_rate.toFixed(1)}%` },
-        { stage: '谈判中', value: res.negotiated, rate: `${res.rates.negotiate_rate.toFixed(1)}%` },
-        { stage: '待签约', value: res.signed, rate: `${res.rates.sign_rate.toFixed(1)}%` },
+        { stage: '总线索', value: res.total_leads, rate: '-', color: '#1890ff' },
+        { stage: '邀约中', value: res.invited, rate: `${res.rates.invite_rate.toFixed(1)}%`, color: '#4edcca' },
+        { stage: '谈判中', value: res.negotiated, rate: `${res.rates.negotiate_rate.toFixed(1)}%`, color: '#faad14' },
+        { stage: '待签约', value: res.signed, rate: `${res.rates.sign_rate.toFixed(1)}%`, color: '#52c41a' },
       ])
     } catch (error) {
       console.error('Fetch conversion data error:', error)
@@ -103,157 +107,341 @@ export default function Dashboard() {
   }
 
   const columns = [
-    { title: '阶段', dataIndex: 'stage', key: 'stage' },
-    { title: '数量', dataIndex: 'value', key: 'value' },
-    { title: '转化率', dataIndex: 'rate', key: 'rate' },
+    { 
+      title: '阶段', 
+      dataIndex: 'stage', 
+      key: 'stage',
+      render: (_: string, record: any) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: record.color }} />
+          <span>{_}</span>
+        </div>
+      )
+    },
+    { 
+      title: '数量', 
+      dataIndex: 'value', 
+      key: 'value',
+      render: (val: number) => <span style={{ fontWeight: 600, fontSize: 15 }}>{val}</span>
+    },
+    { 
+      title: '转化率', 
+      dataIndex: 'rate', 
+      key: 'rate',
+      render: (rate: string) => (
+        <Tag color={rate === '-' ? 'default' : parseFloat(rate) > 50 ? 'green' : 'orange'}>
+          {rate}
+        </Tag>
+      )
+    },
   ]
 
   const lawyerColumns = [
-    { title: '律师姓名', dataIndex: 'lawyer_name', key: 'lawyer_name' },
-    { title: '案件数', dataIndex: 'cases_count', key: 'cases_count' },
-    { title: '结案数', dataIndex: 'closed_cases', key: 'closed_cases' },
-    { title: '结案率', dataIndex: 'revenue_rate', key: 'revenue_rate', render: (rate: number) => `${rate.toFixed(1)}%` },
-    { title: '创收', dataIndex: 'total_revenue', key: 'total_revenue', render: (rev: number) => `¥${rev.toFixed(2)}` },
+    { title: '律师姓名', dataIndex: 'lawyer_name', key: 'lawyer_name', render: (name: string) => <span style={{ fontWeight: 500 }}>{name}</span> },
+    { title: '案件数', dataIndex: 'cases_count', key: 'cases_count', render: (count: number) => <span style={{ fontWeight: 600 }}>{count}</span> },
+    { title: '结案数', dataIndex: 'closed_cases', key: 'closed_cases', render: (count: number) => <span style={{ fontWeight: 600, color: '#52c41a' }}>{count}</span> },
+    { 
+      title: '结案率', 
+      dataIndex: 'revenue_rate', 
+      key: 'revenue_rate', 
+      render: (rate: number) => (
+        <span style={{ fontWeight: 600, color: rate > 70 ? '#52c41a' : rate > 40 ? '#faad14' : '#f5222d' }}>
+          {rate.toFixed(1)}%
+        </span>
+      ) 
+    },
+    { title: '创收', dataIndex: 'total_revenue', key: 'total_revenue', render: (rev: number) => <span style={{ fontWeight: 600, color: '#1890ff' }}>¥{rev.toFixed(2)}</span> },
   ]
 
   const caseTypeColumns = [
-    { title: '案由', dataIndex: 'case_type_label', key: 'case_type_label' },
-    { title: '案件数', dataIndex: 'case_count', key: 'case_count' },
-    { title: '总收入', dataIndex: 'total_revenue', key: 'total_revenue', render: (rev: number) => `¥${rev.toFixed(2)}` },
-    { title: '平均收入', dataIndex: 'avg_revenue', key: 'avg_revenue', render: (rev: number) => `¥${rev.toFixed(2)}` },
-    { title: '利润率', dataIndex: 'profit_margin', key: 'profit_margin', render: (rate: number) => `${rate.toFixed(1)}%` },
+    { title: '案由', dataIndex: 'case_type_label', key: 'case_type_label', render: (label: string) => <span style={{ fontWeight: 500 }}>{label}</span> },
+    { title: '案件数', dataIndex: 'case_count', key: 'case_count', render: (count: number) => <span style={{ fontWeight: 600 }}>{count}</span> },
+    { title: '总收入', dataIndex: 'total_revenue', key: 'total_revenue', render: (rev: number) => <span style={{ fontWeight: 600, color: '#1890ff' }}>¥{rev.toFixed(2)}</span> },
+    { title: '平均收入', dataIndex: 'avg_revenue', key: 'avg_revenue', render: (rev: number) => <span style={{ fontWeight: 500 }}>¥{rev.toFixed(2)}</span> },
+    { 
+      title: '利润率', 
+      dataIndex: 'profit_margin', 
+      key: 'profit_margin', 
+      render: (rate: number) => (
+        <span style={{ fontWeight: 600, color: rate > 30 ? '#52c41a' : rate > 15 ? '#faad14' : '#f5222d' }}>
+          {rate.toFixed(1)}%
+        </span>
+      ) 
+    },
+  ]
+
+  const statCards = [
+    {
+      title: '总线索数',
+      value: stats.totalLeads,
+      icon: <FileSearchOutlined />,
+      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      trend: '+12%',
+      trendUp: true,
+    },
+    {
+      title: '总案件数',
+      value: stats.totalCases,
+      icon: <FileTextOutlined />,
+      gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      trend: '+8%',
+      trendUp: true,
+    },
+    {
+      title: '合规率',
+      value: `${stats.complianceRate.toFixed(1)}%`,
+      icon: <SecurityScanOutlined />,
+      gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      trend: '+3%',
+      trendUp: true,
+    },
+    {
+      title: '总收入',
+      value: `¥${stats.totalRevenue.toFixed(2)}`,
+      icon: <DollarOutlined />,
+      gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+      trend: '+15%',
+      trendUp: true,
+    },
   ]
 
   return (
     <div>
-      <Row gutter={16}>
-        <Col span={6}>
-          <Card>
-            <Statistic title="总线索数" value={stats.totalLeads} prefix={<FileSearchOutlined />} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic title="总案件数" value={stats.totalCases} prefix={<FileTextOutlined />} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic title="合规率" value={stats.complianceRate.toFixed(1)} suffix="%" prefix={<SecurityScanOutlined />} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic title="总收入" value={stats.totalRevenue.toFixed(2)} prefix={<DollarOutlined />} suffix="元" />
-          </Card>
-        </Col>
+      <Row gutter={[20, 20]}>
+        {statCards.map((card, index) => (
+          <Col span={6} key={index}>
+            <Card
+              style={{
+                background: card.gradient,
+                border: 'none',
+                borderRadius: 12,
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>{card.title}</div>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: '#fff' }}>{card.value}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 8 }}>
+                    {card.trendUp ? (
+                      <ArrowUpOutlined style={{ fontSize: 14, color: '#fff' }} />
+                    ) : (
+                      <ArrowDownOutlined style={{ fontSize: 14, color: '#fff' }} />
+                    )}
+                    <span style={{ fontSize: 12, color: '#fff' }}>{card.trend} 较上月</span>
+                  </div>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.2)', padding: 12, borderRadius: 10 }}>
+                  {card.icon}
+                </div>
+              </div>
+            </Card>
+          </Col>
+        ))}
       </Row>
 
-      <Row gutter={16} style={{ marginTop: 24 }}>
+      <Row gutter={[20, 20]} style={{ marginTop: 24 }}>
         <Col span={12}>
-          <Card title="线索转化漏斗">
+          <Card 
+            title="线索转化漏斗" 
+            style={{ borderRadius: 12, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)' }}
+          >
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                {conversionData.map((item, index) => (
+                  <div key={index} style={{ flex: 1, textAlign: 'center' }}>
+                    <div 
+                      style={{ 
+                        width: '100%', 
+                        padding: '16px 8px', 
+                        borderRadius: 8,
+                        background: item.color,
+                        color: '#fff',
+                        fontSize: 18,
+                        fontWeight: 700,
+                        marginBottom: 8,
+                        opacity: 1 - (index * 0.15),
+                      }}
+                    >
+                      {item.value}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>{item.stage}</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: item.color }}>{item.rate}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
             <Table dataSource={conversionData} columns={columns} pagination={false} />
           </Card>
         </Col>
         <Col span={12}>
-          <Card title="案件状态分布">
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span>待分配</span>
-                <Tag color="orange">{caseStats.pending_assign || 0}</Tag>
-              </div>
-              <Progress percent={((caseStats.pending_assign || 0) / (caseStats.total || 1)) * 100} strokeColor="#fa8c16" format={(percent) => `${(percent || 0).toFixed(2)}%`} />
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span>处理中</span>
-                <Tag color="blue">{caseStats.processing || 0}</Tag>
-              </div>
-              <Progress percent={((caseStats.processing || 0) / (caseStats.total || 1)) * 100} strokeColor="#1890ff" format={(percent) => `${(percent || 0).toFixed(2)}%`} />
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span>已结案</span>
-                <Tag color="green">{caseStats.closed || 0}</Tag>
-              </div>
-              <Progress percent={((caseStats.closed || 0) / (caseStats.total || 1)) * 100} strokeColor="#52c41a" format={(percent) => `${(percent || 0).toFixed(2)}%`} />
-            </div>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span>超期案件</span>
-                <Tag color="red">{caseStats.overdue || 0}</Tag>
-              </div>
-              <Progress percent={((caseStats.overdue || 0) / (caseStats.total || 1)) * 100} strokeColor="#f5222d" format={(percent) => `${(percent || 0).toFixed(2)}%`} />
-            </div>
-          </Card>
-        </Col>
-      </Row>
-
-      <Row gutter={16} style={{ marginTop: 24 }}>
-        <Col span={12}>
-          <Card title="律师绩效统计">
-            <Table dataSource={lawyerStats} columns={lawyerColumns} pagination={false} />
-          </Card>
-        </Col>
-        <Col span={12}>
-          <Card title="分案由盈利分析">
-            <Table dataSource={caseTypeProfit} columns={caseTypeColumns} pagination={false} />
-          </Card>
-        </Col>
-      </Row>
-
-      <Row gutter={16} style={{ marginTop: 24 }}>
-        <Col span={12}>
-          <Card title="风险预警统计">
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span>高风险案件</span>
-                <Tag color="red">{riskStats.high_risk || 0}</Tag>
-              </div>
-              <Progress percent={((riskStats.high_risk || 0) / (riskStats.total || 1)) * 100} strokeColor="#f5222d" />
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span>中风险案件</span>
-                <Tag color="orange">{riskStats.medium_risk || 0}</Tag>
-              </div>
-              <Progress percent={((riskStats.medium_risk || 0) / (riskStats.total || 1)) * 100} strokeColor="#fa8c16" />
-            </div>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span>低风险案件</span>
-                <Tag color="green">{riskStats.low_risk || 0}</Tag>
-              </div>
-              <Progress percent={((riskStats.low_risk || 0) / (riskStats.total || 1)) * 100} strokeColor="#52c41a" />
-            </div>
-          </Card>
-        </Col>
-        <Col span={12}>
-          <Card title="经营数据概览">
+          <Card 
+            title="案件状态分布" 
+            style={{ borderRadius: 12, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)' }}
+          >
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              <div>
-                <div style={{ fontSize: 24, fontWeight: 'bold', color: '#1890ff' }}>
+              <div style={{ background: '#fff7e6', padding: 16, borderRadius: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, color: '#d46b08' }}>待分配</span>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: '#fa8c16' }}>{caseStats.pending_assign || 0}</span>
+                </div>
+                <Progress 
+                  percent={((caseStats.pending_assign || 0) / (caseStats.total || 1)) * 100} 
+                  strokeColor="#fa8c16" 
+                  format={(percent) => `${(percent || 0).toFixed(1)}%`}
+                  size="small"
+                />
+              </div>
+              <div style={{ background: '#e6f7ff', padding: 16, borderRadius: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, color: '#08979c' }}>处理中</span>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: '#1890ff' }}>{caseStats.processing || 0}</span>
+                </div>
+                <Progress 
+                  percent={((caseStats.processing || 0) / (caseStats.total || 1)) * 100} 
+                  strokeColor="#1890ff" 
+                  format={(percent) => `${(percent || 0).toFixed(1)}%`}
+                  size="small"
+                />
+              </div>
+              <div style={{ background: '#f6ffed', padding: 16, borderRadius: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, color: '#389e0d' }}>已结案</span>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: '#52c41a' }}>{caseStats.closed || 0}</span>
+                </div>
+                <Progress 
+                  percent={((caseStats.closed || 0) / (caseStats.total || 1)) * 100} 
+                  strokeColor="#52c41a" 
+                  format={(percent) => `${(percent || 0).toFixed(1)}%`}
+                  size="small"
+                />
+              </div>
+              <div style={{ background: '#fff1f0', padding: 16, borderRadius: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, color: '#d32f2f' }}>超期案件</span>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: '#f5222d' }}>{caseStats.overdue || 0}</span>
+                </div>
+                <Progress 
+                  percent={((caseStats.overdue || 0) / (caseStats.total || 1)) * 100} 
+                  strokeColor="#f5222d" 
+                  format={(percent) => `${(percent || 0).toFixed(1)}%`}
+                  size="small"
+                />
+              </div>
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[20, 20]} style={{ marginTop: 24 }}>
+        <Col span={12}>
+          <Card 
+            title="律师绩效统计" 
+            style={{ borderRadius: 12, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)' }}
+          >
+            <Table 
+              dataSource={lawyerStats} 
+              columns={lawyerColumns} 
+              pagination={false}
+              rowKey="lawyer_name"
+            />
+          </Card>
+        </Col>
+        <Col span={12}>
+          <Card 
+            title="分案由盈利分析" 
+            style={{ borderRadius: 12, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)' }}
+          >
+            <Table 
+              dataSource={caseTypeProfit} 
+              columns={caseTypeColumns} 
+              pagination={false}
+              rowKey="case_type_label"
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[20, 20]} style={{ marginTop: 24 }}>
+        <Col span={12}>
+          <Card 
+            title="风险预警统计" 
+            style={{ borderRadius: 12, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)' }}
+          >
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <WarningOutlined style={{ color: '#f5222d' }} />
+                  高风险案件
+                </span>
+                <Tag color="red" style={{ fontWeight: 600 }}>{riskStats.high_risk || 0}</Tag>
+              </div>
+              <Progress 
+                percent={((riskStats.high_risk || 0) / (riskStats.total || 1)) * 100} 
+                strokeColor="#f5222d" 
+                format={(percent) => `${(percent || 0).toFixed(1)}%`}
+              />
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <WarningOutlined style={{ color: '#fa8c16' }} />
+                  中风险案件
+                </span>
+                <Tag color="orange" style={{ fontWeight: 600 }}>{riskStats.medium_risk || 0}</Tag>
+              </div>
+              <Progress 
+                percent={((riskStats.medium_risk || 0) / (riskStats.total || 1)) * 100} 
+                strokeColor="#fa8c16" 
+                format={(percent) => `${(percent || 0).toFixed(1)}%`}
+              />
+            </div>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                  低风险案件
+                </span>
+                <Tag color="green" style={{ fontWeight: 600 }}>{riskStats.low_risk || 0}</Tag>
+              </div>
+              <Progress 
+                percent={((riskStats.low_risk || 0) / (riskStats.total || 1)) * 100} 
+                strokeColor="#52c41a" 
+                format={(percent) => `${(percent || 0).toFixed(1)}%`}
+              />
+            </div>
+          </Card>
+        </Col>
+        <Col span={12}>
+          <Card 
+            title="经营数据概览" 
+            style={{ borderRadius: 12, boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)' }}
+          >
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div style={{ background: 'linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%)', padding: 20, borderRadius: 10, textAlign: 'center' }}>
+                <div style={{ fontSize: 28, fontWeight: 'bold', color: '#1890ff' }}>
                   {riskStats.total || 0}
                 </div>
-                <div style={{ fontSize: 12, color: '#999' }}>总风险案件</div>
+                <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>总风险案件</div>
               </div>
-              <div>
-                <div style={{ fontSize: 24, fontWeight: 'bold', color: '#f5222d' }}>
+              <div style={{ background: 'linear-gradient(135deg, #fff1f0 0%, #ffccc7 100%)', padding: 20, borderRadius: 10, textAlign: 'center' }}>
+                <div style={{ fontSize: 28, fontWeight: 'bold', color: '#f5222d' }}>
                   {riskStats.high_risk || 0}
                 </div>
-                <div style={{ fontSize: 12, color: '#999' }}>高风险案件</div>
+                <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>高风险案件</div>
               </div>
-              <div>
-                <div style={{ fontSize: 24, fontWeight: 'bold', color: '#fa8c16' }}>
+              <div style={{ background: 'linear-gradient(135deg, #fff7e6 0%, #ffe58f 100%)', padding: 20, borderRadius: 10, textAlign: 'center' }}>
+                <div style={{ fontSize: 28, fontWeight: 'bold', color: '#fa8c16' }}>
                   {riskStats.medium_risk || 0}
                 </div>
-                <div style={{ fontSize: 12, color: '#999' }}>中风险案件</div>
+                <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>中风险案件</div>
               </div>
-              <div>
-                <div style={{ fontSize: 24, fontWeight: 'bold', color: '#52c41a' }}>
+              <div style={{ background: 'linear-gradient(135deg, #f6ffed 0%, #b7eb8f 100%)', padding: 20, borderRadius: 10, textAlign: 'center' }}>
+                <div style={{ fontSize: 28, fontWeight: 'bold', color: '#52c41a' }}>
                   {riskStats.low_risk || 0}
                 </div>
-                <div style={{ fontSize: 12, color: '#999' }}>低风险案件</div>
+                <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>低风险案件</div>
               </div>
             </div>
           </Card>
