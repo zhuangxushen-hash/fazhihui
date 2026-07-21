@@ -155,7 +155,7 @@ export default function Dashboard() {
 
   const caseTypeColumns = [
     { title: '案由', dataIndex: 'case_type_label', key: 'case_type_label', render: (label: string) => <span style={{ fontWeight: 500 }}>{label}</span> },
-    { title: '案件数', dataIndex: 'case_count', key: 'case_count', render: (count: number) => <span style={{ fontWeight: 600 }}>{count}</span> },
+    { title: '案件数', dataIndex: 'cases_count', key: 'cases_count', render: (count: number) => <span style={{ fontWeight: 600 }}>{count ?? 0}</span> },
     { title: '总收入', dataIndex: 'total_revenue', key: 'total_revenue', render: (rev: number) => <span style={{ fontWeight: 600, color: '#1890ff' }}>¥{rev.toFixed(2)}</span> },
     { title: '平均收入', dataIndex: 'avg_revenue', key: 'avg_revenue', render: (rev: number) => <span style={{ fontWeight: 500 }}>¥{rev.toFixed(2)}</span> },
     { 

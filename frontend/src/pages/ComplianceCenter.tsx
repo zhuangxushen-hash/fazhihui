@@ -10,6 +10,7 @@ import {
   CiOutlined,
 } from '@ant-design/icons'
 import axios from '../api/axios'
+import { formatDateTime, formatDate } from '../utils/format'
 
 export default function ComplianceCenter() {
   const [activeTab, setActiveTab] = useState('overview')
@@ -32,9 +33,8 @@ export default function ComplianceCenter() {
 
   const fetchStats = async () => {
     try {
-      const [sopStats, , salesRes] = await Promise.all([
+      const [sopStats, salesRes] = await Promise.all([
         axios.get('/compliance/case-sop/stats', { params: { org_id: user.organization_id } }),
-        axios.get('/compliance/marketing-content', { params: { org_id: user.organization_id } }),
         axios.get('/compliance/sales-compliance', { params: { org_id: user.organization_id } }),
       ])
       setStats({
@@ -143,7 +143,8 @@ export default function ComplianceCenter() {
       return <Tag color={colors[status]}>{labels[status]}</Tag>
     }},
     { title: '合规问题', dataIndex: 'compliance_issues', key: 'compliance_issues', render: (issues: string) => issues ? <Tag color="red">有问题</Tag> : <Tag color="green">通过</Tag> },
-    { title: '创建时间', dataIndex: 'created_at', key: 'created_at' },
+    { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
+    { title: '审核时间', dataIndex: 'review_time', key: 'review_time', render: (val: string) => formatDateTime(val) },
     { title: '操作', key: 'action', render: (_: any, record: any) => (
       <Space>
         {record.status === 'pending_review' && (
@@ -169,7 +170,8 @@ export default function ComplianceCenter() {
       return <Tag color={colors[result]}>{labels[result]}</Tag>
     }},
     { title: '风险告知', dataIndex: 'risk_disclosure_accepted', key: 'risk_disclosure_accepted', render: (accepted: boolean) => accepted ? <Tag color="green">已签署</Tag> : <Tag color="red">未签署</Tag> },
-    { title: '创建时间', dataIndex: 'created_at', key: 'created_at' },
+    { title: '风险告知时间', dataIndex: 'risk_disclosure_time', key: 'risk_disclosure_time', render: (val: string) => formatDateTime(val) },
+    { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
   ]
 
   const signingColumns = [
@@ -184,7 +186,8 @@ export default function ComplianceCenter() {
     { title: '资质验证', dataIndex: 'lawyer_qualification_verified', key: 'lawyer_qualification_verified', render: (v: boolean) => v ? <Tag color="green">已验证</Tag> : <Tag color="red">未验证</Tag> },
     { title: '风险告知', dataIndex: 'risk_disclosure_signed', key: 'risk_disclosure_signed', render: (signed: boolean) => signed ? <Tag color="green">已签署</Tag> : <Tag color="red">未签署</Tag> },
     { title: '合同合规', dataIndex: 'contract_compliance_passed', key: 'contract_compliance_passed', render: (passed: boolean) => passed ? <Tag color="green">通过</Tag> : <Tag color="red">未通过</Tag> },
-    { title: '创建时间', dataIndex: 'created_at', key: 'created_at' },
+    { title: '签约时间', dataIndex: 'signed_time', key: 'signed_time', render: (val: string) => formatDateTime(val) },
+    { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
   ]
 
   const sopColumns = [
@@ -200,7 +203,8 @@ export default function ComplianceCenter() {
       const labels: Record<string, string> = { pending: '待完成', completed: '已完成', overdue: '已超时' }
       return <Tag color={colors[status]}>{labels[status]}</Tag>
     }},
-    { title: '截止日期', dataIndex: 'deadline', key: 'deadline' },
+    { title: '截止日期', dataIndex: 'deadline', key: 'deadline', render: (val: string) => formatDate(val) },
+    { title: '完成时间', dataIndex: 'completed_time', key: 'completed_time', render: (val: string) => formatDateTime(val) },
     { title: '证据验证', dataIndex: 'evidence_verified', key: 'evidence_verified', render: (v: boolean) => v ? <Tag color="green">已验证</Tag> : <Tag color="orange">待验证</Tag> },
     { title: '操作', key: 'action', render: (_: any, record: any) => (
       <Space>

@@ -14,6 +14,7 @@ export default function Payment() {
   const [paymentSuccess, setPaymentSuccess] = useState(false)
   const [showSignModal, setShowSignModal] = useState(false)
   const [serviceFee, setServiceFee] = useState<number | null>(null)
+  const [createdCaseId, setCreatedCaseId] = useState<string | null>(null)
   const [loadingFee, setLoadingFee] = useState(false)
   const [activePaymentMethod, setActivePaymentMethod] = useState<string | null>(null)
   const [activeCaseType, setActiveCaseType] = useState<string | null>(null)
@@ -113,21 +114,56 @@ export default function Payment() {
     setCurrentStep(prev => prev - 1)
   }
 
-  const handleSign = () => {
-    setSigned(true)
-    setShowSignModal(false)
-    message.success('签约成功')
+  const handleSign = async () => {
+    try {
+      const caseData = await axios.post('/cases', {
+        case_type: formData.case_type,
+        client_id: user.id,
+        organization_id: user.organization_id,
+        client_name: formData.name,
+        client_phone: formData.phone,
+        fee_amount: serviceFee || 0,
+        amount: serviceFee || 0,
+        description: formData.case_desc || `客户${formData.name}签约的${formData.case_type}案件`,
+      })
+      // 保存新创建的 case id 供后续付款使用
+      setCreatedCaseId(caseData.id)
+      setSigned(true)
+      setShowSignModal(false)
+      message.success('签约成功')
+    } catch (error) {
+      console.error('Sign error:', error)
+      message.error('签约失败，请重试')
+    }
   }
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     if (!serviceFee || serviceFee <= 0) {
       message.error('服务费用未设置，请联系销售')
       return
     }
-    setPaymentSuccess(true)
-    setTimeout(() => {
-      setPaymentSuccess(false)
-    }, 2000)
+    if (!createdCaseId) {
+      message.error('请先完成签约')
+      return
+    }
+    try {
+      await axios.post('/finance/fee', {
+        case_id: createdCaseId,
+        amount: serviceFee,
+        organization_id: user.organization_id,
+        payment_method: selectedMethod,
+        paid: true,
+        paid_at: new Date().toISOString(),
+        description: `客户${formData.name}支付${formData.case_type}案件服务费`,
+      })
+      setPaymentSuccess(true)
+      setTimeout(() => {
+        setPaymentSuccess(false)
+      }, 2000)
+    } catch (error) {
+      console.error('Payment error:', error)
+      message.error('支付失败，请重试')
+    }
   }
 
   const paymentMethods = [

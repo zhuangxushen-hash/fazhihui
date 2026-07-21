@@ -21,6 +21,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   if (!token) {
     return <Navigate to="/login" />
   }
+  const userStr = localStorage.getItem('user')
+  const user = userStr ? JSON.parse(userStr) : null
+  if (user?.role === 'client') {
+    return <Navigate to="/client" />
+  }
   return <Layout>{children}</Layout>
 }
 
@@ -28,6 +33,11 @@ const ClientRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem('token')
   if (!token) {
     return <Navigate to="/login" />
+  }
+  const userStr = localStorage.getItem('user')
+  const user = userStr ? JSON.parse(userStr) : null
+  if (user?.role !== 'client') {
+    return <Navigate to="/" />
   }
   return <>{children}</>
 }

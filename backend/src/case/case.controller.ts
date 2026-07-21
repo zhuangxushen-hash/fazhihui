@@ -40,6 +40,16 @@ export class CaseController {
     return this.caseService.findAll(orgId, { status, case_type, assignee_lawyer_id, page, limit, case_no, client_name });
   }
 
+  @Get('overdue')
+  getOverdueCases(@Query('org_id') orgId: string) {
+    return this.caseService.getOverdueCases(orgId);
+  }
+
+  @Get('high-risk')
+  getHighRiskCases(@Query('org_id') orgId: string) {
+    return this.caseService.getHighRiskCases(orgId);
+  }
+
   @Get(':id')
   findById(@Param('id') id: string) {
     return this.caseService.findById(id);
@@ -81,16 +91,6 @@ export class CaseController {
   @Put(':id/risk')
   updateRiskLevel(@Param('id') id: string, @Body() body: { risk_level: string; risk_notes?: string }) {
     return this.caseService.updateRiskLevel(id, body.risk_level, body.risk_notes);
-  }
-
-  @Get('overdue')
-  getOverdueCases(@Query('org_id') orgId: string) {
-    return this.caseService.getOverdueCases(orgId);
-  }
-
-  @Get('high-risk')
-  getHighRiskCases(@Query('org_id') orgId: string) {
-    return this.caseService.getHighRiskCases(orgId);
   }
 
   @Post('check-overdue')

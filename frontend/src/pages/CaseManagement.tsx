@@ -149,17 +149,14 @@ export default function CaseManagement() {
   }
 
   const statusOptions = [
-    { value: 'pending_accept', label: '待受理' },
-    { value: 'accepted', label: '已受理' },
-    { value: 'preparing', label: '准备中' },
-    { value: 'investigating', label: '调查取证' },
-    { value: 'litigating', label: '诉讼中' },
-    { value: 'mediating', label: '调解中' },
-    { value: 'pending_judgment', label: '待判决' },
-    { value: 'judged', label: '已判决' },
-    { value: 'executing', label: '执行中' },
+    { value: 'pending_assign', label: '待分配' },
+    { value: 'processing', label: '处理中' },
+    { value: 'filing', label: '立案中' },
+    { value: 'evidence', label: '取证中' },
+    { value: 'hearing', label: '庭审中' },
+    { value: 'appeal', label: '上诉中' },
+    { value: 'pending_close', label: '待结案' },
     { value: 'closed', label: '已结案' },
-    { value: 'suspended', label: '已中止' },
   ]
 
   const caseTypeOptions = [
@@ -184,32 +181,26 @@ export default function CaseManagement() {
     { title: '受理法院', dataIndex: 'court', key: 'court' },
     { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => {
       const colors: Record<string, string> = {
-        pending_accept: 'default',
-        accepted: 'processing',
-        preparing: 'blue',
-        investigating: 'cyan',
-        litigating: 'orange',
-        mediating: 'purple',
-        pending_judgment: 'gold',
-        judged: 'green',
-        executing: 'blue',
+        pending_assign: 'default',
+        processing: 'processing',
+        filing: 'blue',
+        evidence: 'cyan',
+        hearing: 'orange',
+        appeal: 'geekblue',
+        pending_close: 'orange',
         closed: 'success',
-        suspended: 'red',
       }
       const labels: Record<string, string> = {
-        pending_accept: '待受理',
-        accepted: '已受理',
-        preparing: '准备中',
-        investigating: '调查取证',
-        litigating: '诉讼中',
-        mediating: '调解中',
-        pending_judgment: '待判决',
-        judged: '已判决',
-        executing: '执行中',
+        pending_assign: '待分配',
+        processing: '处理中',
+        filing: '立案中',
+        evidence: '取证中',
+        hearing: '庭审中',
+        appeal: '上诉中',
+        pending_close: '待结案',
         closed: '已结案',
-        suspended: '已中止',
       }
-      return <Tag color={colors[status]}>{labels[status]}</Tag>
+      return <Tag color={colors[status] || 'default'}>{labels[status] || '-'}</Tag>
     }},
     { title: '风险等级', dataIndex: 'risk_level', key: 'risk_level', render: (level: string) => {
       const colors: Record<string, string> = {
@@ -353,31 +344,25 @@ export default function CaseManagement() {
               <div className="detail-item"><span className="detail-label">涉案金额</span><span className="detail-value">{currentCase.amount || '-'}</span></div>
               <div className="detail-item"><span className="detail-label">状态</span><span className="detail-value">
                 <Tag color={{
-                  pending_accept: 'default',
-                  accepted: 'processing',
-                  preparing: 'blue',
-                  investigating: 'cyan',
-                  litigating: 'orange',
-                  mediating: 'purple',
-                  pending_judgment: 'gold',
-                  judged: 'green',
-                  executing: 'blue',
+                  pending_assign: 'default',
+                  processing: 'processing',
+                  filing: 'blue',
+                  evidence: 'cyan',
+                  hearing: 'orange',
+                  appeal: 'geekblue',
+                  pending_close: 'orange',
                   closed: 'success',
-                  suspended: 'red',
-                }[currentCase.status as string]}>
+                }[currentCase.status as string] || 'default'}>
                   {{
-                    pending_accept: '待受理',
-                    accepted: '已受理',
-                    preparing: '准备中',
-                    investigating: '调查取证',
-                    litigating: '诉讼中',
-                    mediating: '调解中',
-                    pending_judgment: '待判决',
-                    judged: '已判决',
-                    executing: '执行中',
+                    pending_assign: '待分配',
+                    processing: '处理中',
+                    filing: '立案中',
+                    evidence: '取证中',
+                    hearing: '庭审中',
+                    appeal: '上诉中',
+                    pending_close: '待结案',
                     closed: '已结案',
-                    suspended: '已中止',
-                  }[currentCase.status as string]}
+                  }[currentCase.status as string] || '-'}
                 </Tag>
               </span></div>
               <div className="detail-item"><span className="detail-label">立案日期</span><span className="detail-value">{formatDate(currentCase.filing_date)}</span></div>

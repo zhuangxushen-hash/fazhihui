@@ -7,9 +7,10 @@ import { Document } from '../case/document.entity';
 import { Complaint } from '../compliance/complaint.entity';
 import { PaymentRecord } from '../finance/payment-record.entity';
 import { Lead } from '../lead/lead.entity';
+import { User } from '../user/user.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Case, Document, Complaint, PaymentRecord, Lead])],
+  imports: [TypeOrmModule.forFeature([Case, Document, Complaint, PaymentRecord, Lead, User])],
   providers: [ClientService],
   controllers: [ClientController],
 })

@@ -73,7 +73,7 @@ export default function ComplianceManagement() {
 
   const handleSubmitResolve = async (values: any) => {
     try {
-      await axios.put(`/compliance/complaint/${currentComplaint.id}/status`, { status: 'resolved', process_note: values.resolve_content })
+      await axios.put(`/compliance/complaint/${currentComplaint.id}/status`, { status: 'processing', process_note: values.resolve_content })
       setHandleVisible(false)
       message.success('投诉已处理')
       fetchData()
@@ -95,9 +95,10 @@ export default function ComplianceManagement() {
   }
 
   const statusOptions = [
-    { value: 'pending', label: '待受理' },
-    { value: 'accepted', label: '处理中' },
-    { value: 'resolved', label: '已解决' },
+    { value: 'new', label: '待受理' },
+    { value: 'accepted', label: '已受理' },
+    { value: 'processing', label: '处理中' },
+    { value: 'reviewing', label: '审核中' },
     { value: 'closed', label: '已关闭' },
   ]
 
@@ -105,39 +106,41 @@ export default function ComplianceManagement() {
     { title: '投诉ID', dataIndex: 'id', key: 'id', width: 120 },
     { title: '案件编号', dataIndex: 'case_no', key: 'case_no' },
     { title: '客户姓名', dataIndex: 'client_name', key: 'client_name' },
-    { title: '投诉类型', dataIndex: 'complaint_type', key: 'complaint_type', render: (type: string) => ({
-      service: '服务问题',
-      fee: '费用争议',
+    { title: '投诉类型', dataIndex: 'type', key: 'type', render: (type: string) => ({
+      service_quality: '服务问题',
+      fee_issue: '费用争议',
       progress: '进度不满',
       result: '结果不满',
       other: '其他',
-    }[type]) },
+    }[type] || '-') },
     { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => {
       const colors: Record<string, string> = {
-        pending: 'default',
+        new: 'default',
         accepted: 'processing',
-        resolved: 'green',
-        closed: 'default',
+        processing: 'blue',
+        reviewing: 'orange',
+        closed: 'success',
       }
       const labels: Record<string, string> = {
-        pending: '待受理',
-        accepted: '处理中',
-        resolved: '已解决',
+        new: '待受理',
+        accepted: '已受理',
+        processing: '处理中',
+        reviewing: '审核中',
         closed: '已关闭',
       }
-      return <Tag color={colors[status]}>{labels[status]}</Tag>
+      return <Tag color={colors[status] || 'default'}>{labels[status] || '-'}</Tag>
     }},
     { title: '投诉日期', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
     { title: '操作', key: 'action', render: (_: any, record: any) => (
       <Space>
         <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
-        {record.status === 'pending' && (
+        {record.status === 'new' && (
           <Button size="small" type="primary" icon={<CheckCircleOutlined />} onClick={() => handleAccept(record)}>受理</Button>
         )}
         {record.status === 'accepted' && (
           <Button size="small" type="primary" onClick={() => handleResolve(record)}>处理</Button>
         )}
-        {(record.status === 'resolved' || record.status === 'accepted') && (
+        {(record.status === 'processing' || record.status === 'reviewing') && (
           <Button size="small" icon={<CloseCircleOutlined />} onClick={() => handleClose(record)}>关闭</Button>
         )}
       </Space>
@@ -188,50 +191,37 @@ export default function ComplianceManagement() {
       >
         {currentComplaint && (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>投诉ID：</span>{currentComplaint.id}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>案件编号：</span>{currentComplaint.case_no || '-'}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>客户姓名：</span>{currentComplaint.client_name}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>客户手机号：</span>{currentComplaint.client_phone || '-'}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>投诉类型：</span>{({
-                  service: '服务问题',
-                  fee: '费用争议',
+            <div className="detail-grid">
+              <div className="detail-item"><span className="detail-label">投诉ID</span><span className="detail-value">{currentComplaint.id}</span></div>
+              <div className="detail-item"><span className="detail-label">案件编号</span><span className="detail-value">{currentComplaint.case_no || '-'}</span></div>
+              <div className="detail-item"><span className="detail-label">客户姓名</span><span className="detail-value">{currentComplaint.client_name}</span></div>
+              <div className="detail-item"><span className="detail-label">客户手机号</span><span className="detail-value">{currentComplaint.client_phone || '-'}</span></div>
+              <div className="detail-item"><span className="detail-label">投诉类型</span><span className="detail-value">{({
+                  service_quality: '服务问题',
+                  fee_issue: '费用争议',
                   progress: '进度不满',
                   result: '结果不满',
                   other: '其他',
-                }[currentComplaint.complaint_type as string])}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>状态：</span>
+                }[currentComplaint.type as string] || '-')}</span></div>
+              <div className="detail-item"><span className="detail-label">状态</span><span className="detail-value">
                 <Tag color={{
-                  pending: 'default',
+                  new: 'default',
                   accepted: 'processing',
-                  resolved: 'green',
-                  closed: 'default',
-                }[currentComplaint.status as string]}>
+                  processing: 'blue',
+                  reviewing: 'orange',
+                  closed: 'success',
+                }[currentComplaint.status as string] || 'default'}>
                   {{
-                    pending: '待受理',
-                    accepted: '处理中',
-                    resolved: '已解决',
+                    new: '待受理',
+                    accepted: '已受理',
+                    processing: '处理中',
+                    reviewing: '审核中',
                     closed: '已关闭',
-                  }[currentComplaint.status as string]}
+                  }[currentComplaint.status as string] || '-'}
                 </Tag>
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>投诉日期：</span>{formatDateTime(currentComplaint.created_at)}
-              </div>
-              <div>
-                <span style={{ fontWeight: 'bold' }}>受理人：</span>{currentComplaint.handler_name || '-'}
-              </div>
+              </span></div>
+              <div className="detail-item"><span className="detail-label">投诉日期</span><span className="detail-value">{formatDateTime(currentComplaint.created_at)}</span></div>
+              <div className="detail-item"><span className="detail-label">受理人</span><span className="detail-value">{currentComplaint.assignee_id || '-'}</span></div>
             </div>
             <div style={{ marginBottom: 24 }}>
               <div style={{ fontWeight: 'bold', marginBottom: 8 }}>投诉内容</div>
@@ -239,17 +229,25 @@ export default function ComplianceManagement() {
                 {currentComplaint.content || '-'}
               </div>
             </div>
-            {currentComplaint.resolve_content && (
+            {currentComplaint.process_note && (
               <div>
                 <div style={{ fontWeight: 'bold', marginBottom: 8 }}>处理结果</div>
                 <div style={{ padding: 12, background: '#e8f5e9', borderRadius: 4 }}>
-                  {currentComplaint.resolve_content}
+                  {currentComplaint.process_note}
                 </div>
-                {currentComplaint.resolved_at && (
+                {currentComplaint.updated_at && (
                   <div style={{ marginTop: 8, fontSize: 13, color: '#666' }}>
-                    处理时间：{formatDateTime(currentComplaint.resolved_at)}
+                    处理时间：{formatDateTime(currentComplaint.updated_at)}
                   </div>
                 )}
+              </div>
+            )}
+            {currentComplaint.resolution && (
+              <div style={{ marginTop: 16 }}>
+                <div style={{ fontWeight: 'bold', marginBottom: 8 }}>关闭说明</div>
+                <div style={{ padding: 12, background: '#f5f5f5', borderRadius: 4 }}>
+                  {currentComplaint.resolution}
+                </div>
               </div>
             )}
           </div>

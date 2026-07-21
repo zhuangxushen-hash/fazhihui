@@ -27,10 +27,8 @@ export default function ClientCaseDetail() {
   const fetchCaseDetail = async (caseId: string) => {
     setLoading(true)
     try {
-      const res = await axios.post('/client/cases', { client_id: user.id })
-      const cases = res || []
-      const detail = cases.find((c: any) => c.id === caseId)
-      setCaseDetail(detail)
+      const res = await axios.post(`/client/cases/${caseId}`, { client_id: user.id })
+      setCaseDetail(res)
     } catch (error) {
       console.error('Fetch case detail error:', error)
     } finally {
@@ -147,7 +145,7 @@ export default function ClientCaseDetail() {
             />
             <div>
               <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>{caseDetail.lawyer_name || '待分配律师'}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 2 }}>{caseDetail.lawyer_phone ? `联系电话: ${caseDetail.lawyer_phone}` : '律师信息待分配'}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 2 }}>{caseDetail.assignee_lawyer_id ? '律师已分配' : '律师信息待分配'}</div>
             </div>
           </div>
         </Card>
@@ -202,12 +200,12 @@ export default function ClientCaseDetail() {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0' }}>
             <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>服务费用</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--primary)' }}>¥{(caseDetail.service_fee || 0).toFixed(2)}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--primary)' }}>¥{(caseDetail.fee_amount || caseDetail.amount || 0).toFixed(2)}</div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderTop: '1px solid var(--border-light)' }}>
-            <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>支付状态</div>
-            <div style={{ fontSize: 13, fontWeight: 500, color: caseDetail.paid ? 'var(--success)' : 'var(--warning)' }}>
-              {caseDetail.paid ? '已支付' : '待支付'}
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>案件状态</div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--primary)' }}>
+              {statusLabels[caseDetail.status] || '处理中'}
             </div>
           </div>
         </Card>

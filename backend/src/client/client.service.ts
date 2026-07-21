@@ -6,6 +6,7 @@ import { Document } from '../case/document.entity';
 import { Complaint } from '../compliance/complaint.entity';
 import { PaymentRecord } from '../finance/payment-record.entity';
 import { Lead } from '../lead/lead.entity';
+import { User } from '../user/user.entity';
 import { ComplaintType, ComplaintStatus } from '../types';
 
 @Injectable()
@@ -21,18 +22,33 @@ export class ClientService {
     private paymentRecordRepository: Repository<PaymentRecord>,
     @InjectRepository(Lead)
     private leadRepository: Repository<Lead>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
   ) {}
 
-  async getClientCases(clientId: string): Promise<Case[]> {
-    return this.caseRepository.find({ where: { client_id: clientId }, order: { created_at: 'DESC' } });
+  async getClientCases(clientId: string): Promise<any[]> {
+    const cases = await this.caseRepository.find({ where: { client_id: clientId }, order: { created_at: 'DESC' } });
+    return Promise.all(cases.map(async (item) => {
+      let lawyer_name: string | undefined;
+      if (item.assignee_lawyer_id) {
+        const lawyer = await this.userRepository.findOne({ where: { id: item.assignee_lawyer_id } });
+        lawyer_name = lawyer?.real_name;
+      }
+      return { ...item, lawyer_name };
+    }));
   }
 
-  async getCaseDetail(caseId: string, clientId: string): Promise<Case> {
+  async getCaseDetail(caseId: string, clientId: string): Promise<any> {
     const caseEntity = await this.caseRepository.findOne({ where: { id: caseId } });
     if (!caseEntity || caseEntity.client_id !== clientId) {
       throw new Error('案件不存在或无权访问');
     }
-    return caseEntity;
+    let lawyer_name: string | undefined;
+    if (caseEntity.assignee_lawyer_id) {
+      const lawyer = await this.userRepository.findOne({ where: { id: caseEntity.assignee_lawyer_id } });
+      lawyer_name = lawyer?.real_name;
+    }
+    return { ...caseEntity, lawyer_name };
   }
 
   async uploadDocument(caseId: string, clientId: string, documentData: Partial<Document>): Promise<Document> {
@@ -85,7 +101,12 @@ export class ClientService {
   }
 
   async getClientServiceFee(clientId: string): Promise<{ service_fee: number }> {
-    const user = await this.leadRepository.findOne({ where: { phone: clientId } });
-    return { service_fee: user?.service_fee || 0 };
+    // 通过 clientId 查询用户获取 phone，再用 phone 查询 Lead 表获取 service_fee
+    const user = await this.userRepository.findOne({ where: { id: clientId } });
+    if (!user) {
+      return { service_fee: 0 };
+    }
+    const lead = await this.leadRepository.findOne({ where: { phone: user.phone } });
+    return { service_fee: lead?.service_fee ? Number(lead.service_fee) : 0 };
   }
 }

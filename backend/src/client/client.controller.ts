@@ -27,7 +27,7 @@ export class ClientController {
     return this.clientService.uploadDocument(id, body.client_id, body);
   }
 
-  @Post('cases/:id/documents')
+  @Post('cases/:id/documents/list')
   getCaseDocuments(@Param('id') id: string, @Body() body: { client_id: string }) {
     return this.clientService.getCaseDocuments(id, body.client_id);
   }

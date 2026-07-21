@@ -13,7 +13,7 @@ export default function UserManagement() {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [isEdit, setIsEdit] = useState(false)
   const [searchParams, setSearchParams] = useState({
-    name: '',
+    real_name: '',
     phone: '',
     role: '',
   })
@@ -28,7 +28,7 @@ export default function UserManagement() {
     setLoading(true)
     try {
       const params: any = { org_id: user.organization_id }
-      if (searchParams.name) params.name = searchParams.name
+      if (searchParams.real_name) params.real_name = searchParams.real_name
       if (searchParams.phone) params.phone = searchParams.phone
       if (searchParams.role) params.role = searchParams.role
 
@@ -46,7 +46,7 @@ export default function UserManagement() {
   }
 
   const handleReset = () => {
-    setSearchParams({ name: '', phone: '', role: '' })
+    setSearchParams({ real_name: '', phone: '', role: '' })
     fetchData()
   }
 
@@ -60,7 +60,7 @@ export default function UserManagement() {
   const handleEditUser = (record: any) => {
     setCurrentUser(record)
     form.setFieldsValue({
-      name: record.name,
+      real_name: record.real_name,
       phone: record.phone,
       role: record.role,
       email: record.email,
@@ -113,9 +113,9 @@ export default function UserManagement() {
   }
 
   const roleOptions = [
-    { value: 'admin', label: '超级管理员' },
-    { value: 'manager', label: '律所管理者' },
-    { value: 'marketer', label: '投放专员' },
+    { value: 'super_admin', label: '超级管理员' },
+    { value: 'org_admin', label: '律所管理者' },
+    { value: 'marketing', label: '投放专员' },
     { value: 'sales', label: '谈案销售' },
     { value: 'lawyer', label: '办案律师' },
     { value: 'assistant', label: '律师助理' },
@@ -125,31 +125,31 @@ export default function UserManagement() {
 
   const columns = [
     { title: '用户ID', dataIndex: 'id', key: 'id', width: 120 },
-    { title: '姓名', dataIndex: 'name', key: 'name' },
+    { title: '姓名', dataIndex: 'real_name', key: 'real_name' },
     { title: '手机号', dataIndex: 'phone', key: 'phone' },
     { title: '邮箱', dataIndex: 'email', key: 'email' },
     { title: '角色', dataIndex: 'role', key: 'role', render: (role: string) => {
       const colors: Record<string, string> = {
-        admin: 'red',
-        manager: 'orange',
-        marketer: 'cyan',
+        super_admin: 'red',
+        org_admin: 'orange',
+        marketing: 'cyan',
         sales: 'blue',
-        lawyer: 'purple',
+        lawyer: 'geekblue',
         assistant: 'default',
-        finance: 'gold',
-        client: 'gray',
+        finance: 'orange',
+        client: 'default',
       }
       const labels: Record<string, string> = {
-        admin: '超级管理员',
-        manager: '律所管理者',
-        marketer: '投放专员',
+        super_admin: '超级管理员',
+        org_admin: '律所管理者',
+        marketing: '投放专员',
         sales: '谈案销售',
         lawyer: '办案律师',
         assistant: '律师助理',
         finance: '财务人员',
         client: '客户',
       }
-      return <Tag color={colors[role]}>{labels[role]}</Tag>
+      return <Tag color={colors[role] || 'default'}>{labels[role] || '-'}</Tag>
     }},
     { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
     { title: '操作', key: 'action', render: (_: any, record: any) => (
@@ -176,8 +176,8 @@ export default function UserManagement() {
           placeholder="姓名搜索"
           prefix={<SearchOutlined />}
           style={{ width: 150 }}
-          value={searchParams.name}
-          onChange={(e) => setSearchParams({ ...searchParams, name: e.target.value })}
+          value={searchParams.real_name}
+          onChange={(e) => setSearchParams({ ...searchParams, real_name: e.target.value })}
         />
         <Input
           placeholder="手机号搜索"
@@ -208,7 +208,7 @@ export default function UserManagement() {
         width={500}
       >
         <Form onFinish={handleSubmit}>
-          <Form.Item name="name" label="姓名" rules={[{ required: true }]}>
+          <Form.Item name="real_name" label="姓名" rules={[{ required: true }]}>
             <Input placeholder="请输入姓名" />
           </Form.Item>
           <Form.Item name="phone" label="手机号" rules={[{ required: true }]}>
@@ -243,30 +243,30 @@ export default function UserManagement() {
         {currentUser && (
           <div className="detail-grid">
             <div className="detail-item"><span className="detail-label">用户ID</span><span className="detail-value">{currentUser.id}</span></div>
-            <div className="detail-item"><span className="detail-label">姓名</span><span className="detail-value">{currentUser.name}</span></div>
+            <div className="detail-item"><span className="detail-label">姓名</span><span className="detail-value">{currentUser.real_name}</span></div>
             <div className="detail-item"><span className="detail-label">手机号</span><span className="detail-value">{currentUser.phone}</span></div>
             <div className="detail-item"><span className="detail-label">邮箱</span><span className="detail-value">{currentUser.email || '-'}</span></div>
             <div className="detail-item"><span className="detail-label">角色</span><span className="detail-value">
               <Tag color={{
-                admin: 'red',
-                manager: 'orange',
-                marketer: 'cyan',
+                super_admin: 'red',
+                org_admin: 'orange',
+                marketing: 'cyan',
                 sales: 'blue',
-                lawyer: 'purple',
+                lawyer: 'geekblue',
                 assistant: 'default',
-                finance: 'gold',
-                client: 'gray',
-              }[currentUser.role as string]}>
+                finance: 'orange',
+                client: 'default',
+              }[currentUser.role as string] || 'default'}>
                 {{
-                  admin: '超级管理员',
-                  manager: '律所管理者',
-                  marketer: '投放专员',
+                  super_admin: '超级管理员',
+                  org_admin: '律所管理者',
+                  marketing: '投放专员',
                   sales: '谈案销售',
                   lawyer: '办案律师',
                   assistant: '律师助理',
                   finance: '财务人员',
                   client: '客户',
-                }[currentUser.role as string]}
+                }[currentUser.role as string] || '-'}
               </Tag>
             </span></div>
             <div className="detail-item"><span className="detail-label">组织ID</span><span className="detail-value">{currentUser.organization_id}</span></div>

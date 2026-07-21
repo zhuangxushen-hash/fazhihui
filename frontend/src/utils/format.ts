@@ -1,6 +1,7 @@
 export function formatDate(dateStr: string | Date): string {
   if (!dateStr) return '-';
-  const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+  const dateStrNormalized = typeof dateStr === 'string' ? dateStr.replace(' ', 'T') : dateStr;
+  const date = typeof dateStrNormalized === 'string' ? new Date(dateStrNormalized) : dateStrNormalized;
   if (isNaN(date.getTime())) return '-';
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -10,7 +11,8 @@ export function formatDate(dateStr: string | Date): string {
 
 export function formatDateTime(dateStr: string | Date): string {
   if (!dateStr) return '-';
-  const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+  const dateStrNormalized = typeof dateStr === 'string' ? dateStr.replace(' ', 'T') : dateStr;
+  const date = typeof dateStrNormalized === 'string' ? new Date(dateStrNormalized) : dateStrNormalized;
   if (isNaN(date.getTime())) return '-';
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
