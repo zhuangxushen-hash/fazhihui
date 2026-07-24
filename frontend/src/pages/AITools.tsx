@@ -117,56 +117,73 @@ export default function AITools() {
         </h2>
       </div>
       
-      <Tabs activeKey={activeTab} onChange={setActiveTab}>
-        <Tabs.TabPane tab="营销内容生成" key="marketing">
-          <Tabs defaultActiveKey="copy">
-            <Tabs.TabPane tab="文案生成" key="copy">
-              <Card>
-                <Form layout="vertical" onFinish={handleGenerateCopy}>
-                  <Form.Item name="prompt" label="生成主题" rules={[{ required: true }]}
-                    tooltip="描述您想要的营销文案主题和方向"
-                  >
-                    <Input.TextArea placeholder="请输入想要生成的文案主题，例如：离婚财产分割注意事项" rows={3} />
-                  </Form.Item>
-                  <Form.Item name="case_type" label="案由类型">
-                    <Select placeholder="请选择案由类型">
-                      {caseTypes.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
-                    </Select>
-                  </Form.Item>
-                  <Form.Item name="platform" label="发布平台">
-                    <Select placeholder="请选择发布平台">
-                      {platforms.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
-                    </Select>
-                  </Form.Item>
-                  <Form.Item>
-                    <Button type="primary" htmlType="submit" loading={loading}>生成文案</Button>
-                  </Form.Item>
-                </Form>
-              </Card>
-            </Tabs.TabPane>
-            <Tabs.TabPane tab="视频脚本" key="script">
-              <Card>
-                <Form layout="vertical" onFinish={handleGenerateScript}>
-                  <Form.Item name="prompt" label="脚本主题" rules={[{ required: true }]}
-                    tooltip="描述您想要的视频脚本主题"
-                  >
-                    <Input.TextArea placeholder="请输入视频脚本主题，例如：交通事故理赔流程" rows={3} />
-                  </Form.Item>
-                  <Form.Item name="case_type" label="案由类型">
-                    <Select placeholder="请选择案由类型">
-                      {caseTypes.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
-                    </Select>
-                  </Form.Item>
-                  <Form.Item>
-                    <Button type="primary" htmlType="submit" loading={loading}>生成脚本</Button>
-                  </Form.Item>
-                </Form>
-              </Card>
-            </Tabs.TabPane>
-          </Tabs>
-        </Tabs.TabPane>
-
-        <Tabs.TabPane tab="法律文书生成" key="legal">
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={[
+          {
+            key: 'marketing',
+            label: '营销内容生成',
+            children: (
+              <Tabs defaultActiveKey="copy" items={[
+                {
+                  key: 'copy',
+                  label: '文案生成',
+                  children: (
+                    <Card>
+                      <Form layout="vertical" onFinish={handleGenerateCopy}>
+                        <Form.Item name="prompt" label="生成主题" rules={[{ required: true }]}
+                          tooltip="描述您想要的营销文案主题和方向"
+                        >
+                          <Input.TextArea placeholder="请输入想要生成的文案主题，例如：离婚财产分割注意事项" rows={3} />
+                        </Form.Item>
+                        <Form.Item name="case_type" label="案由类型">
+                          <Select placeholder="请选择案由类型">
+                            {caseTypes.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
+                          </Select>
+                        </Form.Item>
+                        <Form.Item name="platform" label="发布平台">
+                          <Select placeholder="请选择发布平台">
+                            {platforms.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
+                          </Select>
+                        </Form.Item>
+                        <Form.Item>
+                          <Button type="primary" htmlType="submit" loading={loading}>生成文案</Button>
+                        </Form.Item>
+                      </Form>
+                    </Card>
+                  ),
+                },
+                {
+                  key: 'script',
+                  label: '视频脚本',
+                  children: (
+                    <Card>
+                      <Form layout="vertical" onFinish={handleGenerateScript}>
+                        <Form.Item name="prompt" label="脚本主题" rules={[{ required: true }]}
+                          tooltip="描述您想要的视频脚本主题"
+                        >
+                          <Input.TextArea placeholder="请输入视频脚本主题，例如：交通事故理赔流程" rows={3} />
+                        </Form.Item>
+                        <Form.Item name="case_type" label="案由类型">
+                          <Select placeholder="请选择案由类型">
+                            {caseTypes.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
+                          </Select>
+                        </Form.Item>
+                        <Form.Item>
+                          <Button type="primary" htmlType="submit" loading={loading}>生成脚本</Button>
+                        </Form.Item>
+                      </Form>
+                    </Card>
+                  ),
+                },
+              ]} />
+            ),
+          },
+          {
+            key: 'legal',
+            label: '法律文书生成',
+            children: (
           <Card>
             <Form layout="vertical" onFinish={handleGenerateDocument}>
               <Form.Item name="doc_type" label="文书类型" rules={[{ required: true }]}
@@ -231,8 +248,9 @@ export default function AITools() {
               </Form.Item>
             </Form>
           </Card>
-        </Tabs.TabPane>
-      </Tabs>
+              ),
+          },
+        ]} />
 
       {generatedContent && (
         <Card title="生成结果" style={{ marginTop: 16 }}>

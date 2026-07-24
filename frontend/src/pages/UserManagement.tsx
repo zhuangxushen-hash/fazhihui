@@ -28,7 +28,7 @@ export default function UserManagement() {
     setLoading(true)
     try {
       const params: any = { org_id: user.organization_id }
-      if (searchParams.real_name) params.real_name = searchParams.real_name
+      if (searchParams.real_name) params.name = searchParams.real_name
       if (searchParams.phone) params.phone = searchParams.phone
       if (searchParams.role) params.role = searchParams.role
 

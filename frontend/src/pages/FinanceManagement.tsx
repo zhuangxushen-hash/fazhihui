@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, Tabs } from 'antd'
 import { PlusOutlined, EyeOutlined, SearchOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
@@ -343,20 +343,12 @@ export default function FinanceManagement() {
     )},
   ]
 
-  return (
-    <div>
-      <div className="page-header">
-        <h2>财务管理</h2>
-        {activeTab === 'fees' && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAddFee}>创建费用</Button>
-        )}
-        {activeTab === 'invoices' && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateInvoice}>创建发票</Button>
-        )}
-      </div>
-
-      <Tabs activeKey={activeTab} onChange={setActiveTab}>
-        <Tabs.TabPane tab="费用管理" key="fees">
+  const tabItems = useMemo(() => [
+    {
+      key: 'fees',
+      label: '费用管理',
+      children: (
+        <>
           <div className="search-bar">
             <Input
               placeholder="案件ID搜索"
@@ -369,11 +361,19 @@ export default function FinanceManagement() {
             <Button onClick={handleReset}>重置</Button>
           </div>
           <Table dataSource={fees} columns={feeColumns} loading={loading} rowKey="id" />
-        </Tabs.TabPane>
-        <Tabs.TabPane tab="分润管理" key="profit-shares">
-          <Table dataSource={profitShares} columns={profitShareColumns} loading={loading} rowKey="id" />
-        </Tabs.TabPane>
-        <Tabs.TabPane tab="退款审批" key="refunds">
+        </>
+      ),
+    },
+    {
+      key: 'profit-shares',
+      label: '分润管理',
+      children: <Table dataSource={profitShares} columns={profitShareColumns} loading={loading} rowKey="id" />,
+    },
+    {
+      key: 'refunds',
+      label: '退款审批',
+      children: (
+        <>
           <div className="search-bar">
             <Select
               placeholder="状态筛选"
@@ -388,8 +388,14 @@ export default function FinanceManagement() {
             <Button onClick={handleReset}>重置</Button>
           </div>
           <Table dataSource={refunds} columns={refundColumns} loading={loading} rowKey="id" />
-        </Tabs.TabPane>
-        <Tabs.TabPane tab="发票管理" key="invoices">
+        </>
+      ),
+    },
+    {
+      key: 'invoices',
+      label: '发票管理',
+      children: (
+        <>
           <div className="search-bar">
             <Select
               placeholder="状态筛选"
@@ -404,8 +410,24 @@ export default function FinanceManagement() {
             <Button onClick={handleReset}>重置</Button>
           </div>
           <Table dataSource={invoices} columns={invoiceColumns} loading={loading} rowKey="id" />
-        </Tabs.TabPane>
-      </Tabs>
+        </>
+      ),
+    },
+  ], [searchParams, fees, profitShares, refunds, invoices, loading])
+
+  return (
+    <div>
+      <div className="page-header">
+        <h2>财务管理</h2>
+        {activeTab === 'fees' && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleAddFee}>创建费用</Button>
+        )}
+        {activeTab === 'invoices' && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateInvoice}>创建发票</Button>
+        )}
+      </div>
+
+      <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
 
       <Modal
         title={activeTab === 'fees' ? '创建费用' : '创建发票'}

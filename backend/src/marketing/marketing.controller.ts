@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { MarketingService } from './marketing.service';
 import { ComplianceResult } from '../types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -33,8 +33,10 @@ export class MarketingController {
     @Query('platform') platform?: string,
     @Query('is_ai_generated') is_ai_generated?: boolean,
     @Query('compliance_result') compliance_result?: ComplianceResult,
+    @Request() req?: any,
   ) {
-    return this.marketingService.findMaterials(orgId, { platform, is_ai_generated, compliance_result });
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.marketingService.findMaterials(finalOrgId, { platform, is_ai_generated, compliance_result });
   }
 
   @Delete('materials/:id')

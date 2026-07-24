@@ -1,91 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+
 /* ============================================
-   Design System: "Deep Formal Tech"
+   Design System: "Legal Authority"
    Law Firm Full-Chain Management Platform
+   深藏青 + 暗金 — 专业、权威、正式
    ============================================ */
 
 :root {
-  /* === Primary === */
-  --primary: #3b82f6;
-  --primary-light: #60a5fa;
-  --primary-dark: #2563eb;
-  --primary-bg: rgba(59, 130, 246, 0.06);
-  --primary-border: rgba(59, 130, 246, 0.15);
+  /* === Primary: 深藏青 === */
+  --primary: #1a365d;
+  --primary-light: #2c5282;
+  --primary-dark: #102a43;
+  --primary-bg: rgba(26, 54, 93, 0.06);
+  --primary-border: rgba(26, 54, 93, 0.18);
 
-  /* === Accent (Tech) === */
-  --accent: #06b6d4;
-  --accent-light: #22d3ee;
-  --accent-bg: rgba(6, 182, 212, 0.08);
-  --accent-border: rgba(6, 182, 212, 0.2);
+  /* === Accent: 暗金 === */
+  --accent: #9c7c2d;
+  --accent-light: #b8941e;
+  --accent-bg: rgba(156, 124, 45, 0.06);
+  --accent-border: rgba(156, 124, 45, 0.2);
 
   /* === Status === */
-  --success: #10b981;
-  --success-bg: rgba(16, 185, 129, 0.06);
-  --success-border: rgba(16, 185, 129, 0.15);
-  --warning: #f59e0b;
-  --warning-bg: rgba(245, 158, 11, 0.06);
-  --warning-border: rgba(245, 158, 11, 0.15);
-  --error: #ef4444;
-  --error-bg: rgba(239, 68, 68, 0.06);
-  --error-border: rgba(239, 68, 68, 0.15);
-  --info: #3b82f6;
+  --success: #2f855a;
+  --success-bg: rgba(47, 133, 90, 0.06);
+  --success-border: rgba(47, 133, 90, 0.15);
+  --warning: #b7791f;
+  --warning-bg: rgba(183, 121, 31, 0.06);
+  --warning-border: rgba(183, 121, 31, 0.15);
+  --error: #c53030;
+  --error-bg: rgba(197, 48, 48, 0.06);
+  --error-border: rgba(197, 48, 48, 0.15);
+  --info: #2c5282;
+  --info-bg: rgba(44, 82, 130, 0.06);
 
-  /* === Sidebar === */
-  --sidebar-bg: #0a0e1a;
-  --sidebar-surface: #111827;
-  --sidebar-hover: rgba(59, 130, 246, 0.06);
-  --sidebar-active-bg: rgba(6, 182, 212, 0.08);
+  /* === Sidebar: 深沉藏青 === */
+  --sidebar-bg: #0d1b2a;
+  --sidebar-surface: #1b2638;
+  --sidebar-hover: rgba(156, 124, 45, 0.08);
+  --sidebar-active-bg: rgba(156, 124, 45, 0.12);
   --sidebar-text: #64748b;
   --sidebar-text-hover: #cbd5e1;
-  --sidebar-text-active: #e2e8f0;
-  --sidebar-border: rgba(255, 255, 255, 0.04);
-  --sidebar-accent: #06b6d4;
+  --sidebar-text-active: #f1f5f9;
+  --sidebar-border: rgba(255, 255, 255, 0.06);
+  --sidebar-accent: #b8941e;
 
   /* === Backgrounds === */
-  --bg-body: #f1f5f9;
+  --bg-body: #f0f2f5;
   --bg-card: #ffffff;
   --bg-header: #ffffff;
   --bg-input: #ffffff;
-  --bg-sunken: #f8fafc;
-  --bg-muted: #f1f5f9;
+  --bg-sunken: #f7f8fa;
+  --bg-muted: #f0f2f5;
 
   /* === Text === */
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-tertiary: #94a3b8;
+  --text-primary: #1a202c;
+  --text-secondary: #4a5568;
+  --text-tertiary: #a0aec0;
   --text-inverse: #ffffff;
 
   /* === Borders === */
   --border-default: #e2e8f0;
   --border-light: #f1f5f9;
-  --border-dark: #cbd5e1;
+  --border-dark: #cbd5e0;
 
   /* === Shadows === */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.1), 0 4px 8px -4px rgba(15, 23, 42, 0.04);
 
   /* === Radius === */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
-  --radius-2xl: 16px;
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --radius-2xl: 10px;
   --radius-full: 9999px;
 
   /* === Gradients === */
-  --gradient-primary: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
-  --gradient-accent: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 50%, #14b8a6 100%);
-  --gradient-dark-card: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  --gradient-stat-1: linear-gradient(135deg, #1e3a5f 0%, #1e40af 100%);
-  --gradient-stat-2: linear-gradient(135deg, #164e63 0%, #0e7490 100%);
-  --gradient-stat-3: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-  --gradient-stat-4: linear-gradient(135deg, #064e3b 0%, #047857 100%);
+  --gradient-primary: linear-gradient(135deg, #1a365d 0%, #102a43 100%);
+  --gradient-accent: linear-gradient(135deg, #9c7c2d 0%, #b8941e 100%);
+  --gradient-dark-card: linear-gradient(135deg, #1b2638 0%, #0d1b2a 100%);
+  --gradient-stat-1: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
+  --gradient-stat-2: linear-gradient(135deg, #744210 0%, #9c7c2d 100%);
+  --gradient-stat-3: linear-gradient(135deg, #1b2638 0%, #2d3748 100%);
+  --gradient-stat-4: linear-gradient(135deg, #1a4434 0%, #2f855a 100%);
 
   /* === Transitions === */
   --transition-fast: 0.15s ease;
   --transition-base: 0.2s ease;
   --transition-slow: 0.3s ease;
+
+  /* === Typography === */
+  --font-heading: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'STSong', serif;
+  --font-body: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
 * {
@@ -104,7 +112,7 @@ html, body, #root {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   line-height: 1.6;
   color: var(--text-primary);
@@ -147,7 +155,7 @@ a:hover {
 
 /* === Ant Design Overrides: Cards === */
 .ant-card {
-  border-radius: var(--radius-lg) !important;
+  border-radius: var(--radius-xl) !important;
   box-shadow: var(--shadow-sm) !important;
   border: 1px solid var(--border-default) !important;
   transition: box-shadow var(--transition-base), border-color var(--transition-base) !important;
@@ -165,9 +173,11 @@ a:hover {
 }
 
 .ant-card-head-title {
-  font-size: 14px !important;
+  font-family: var(--font-heading) !important;
+  font-size: 15px !important;
   font-weight: 600 !important;
   color: var(--text-primary) !important;
+  letter-spacing: 0.01em !important;
 }
 
 .ant-card-body {
@@ -224,6 +234,7 @@ a:hover {
   color: var(--text-secondary) !important;
   border-bottom: 1px solid var(--border-default) !important;
   padding: 12px 16px !important;
+  text-transform: none !important;
 }
 
 .ant-table-tbody > tr > td {
@@ -254,7 +265,7 @@ a:hover {
 /* === Ant Design Overrides: Modals === */
 .ant-modal-content {
   border-radius: var(--radius-xl) !important;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.15) !important;
   padding: 0 !important;
   overflow: hidden;
 }
@@ -266,6 +277,7 @@ a:hover {
 }
 
 .ant-modal-title {
+  font-family: var(--font-heading) !important;
   font-size: 16px !important;
   font-weight: 600 !important;
   color: var(--text-primary) !important;
@@ -324,7 +336,7 @@ a:hover {
 }
 
 .ant-tabs-ink-bar {
-  background: var(--primary) !important;
+  background: var(--accent) !important;
   height: 2px !important;
   border-radius: 1px !important;
 }
@@ -336,6 +348,7 @@ a:hover {
 }
 
 .ant-statistic-content {
+  font-family: var(--font-heading) !important;
   font-weight: 700 !important;
   color: var(--text-primary) !important;
 }
@@ -349,6 +362,42 @@ a:hover {
 /* === Ant Design Overrides: Progress === */
 .ant-progress-inner {
   border-radius: var(--radius-full) !important;
+}
+
+/* === Ant Design Overrides: Menu (Sidebar) === */
+.ant-menu-dark {
+  background: transparent !important;
+}
+
+.ant-menu-dark .ant-menu-item {
+  color: rgba(203, 213, 225, 0.7) !important;
+  border-radius: var(--radius-sm) !important;
+  margin: 2px 12px !important;
+  width: calc(100% - 24px) !important;
+}
+
+.ant-menu-dark .ant-menu-item-selected {
+  background: var(--sidebar-active-bg) !important;
+  color: var(--sidebar-accent) !important;
+}
+
+.ant-menu-dark .ant-menu-item-selected::after {
+  display: none !important;
+}
+
+.ant-menu-dark .ant-menu-submenu-title {
+  color: rgba(203, 213, 225, 0.85) !important;
+  margin: 4px 12px !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.ant-menu-dark .ant-menu-submenu-title:hover {
+  background: var(--sidebar-hover) !important;
+  color: #fff !important;
+}
+
+.ant-menu-dark .ant-menu-sub {
+  background: transparent !important;
 }
 
 /* === Client Components === */
@@ -402,11 +451,12 @@ a:hover {
 }
 
 .page-header h2 {
-  font-size: 18px;
+  font-family: var(--font-heading);
+  font-size: 19px;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.01em;
 }
 
 /* === Search Bar === */
@@ -435,8 +485,8 @@ a:hover {
   font-size: 12px;
   color: var(--text-tertiary);
   font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  text-transform: none;
+  letter-spacing: 0.02em;
 }
 
 .detail-grid .detail-value {
@@ -464,7 +514,7 @@ a:hover {
   background: white;
   border: 1px solid var(--border-default);
   box-shadow: var(--shadow-md);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   padding: 10px;
   display: flex;
   gap: 8px;

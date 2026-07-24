@@ -21,8 +21,14 @@ export class Case {
   @Column({ nullable: true })
   assignee_lawyer_id: string;
 
+  @Column({ nullable: true })
+  lead_id: string;
+
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
   fee_amount: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  service_fee: number;
 
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
   amount: number;

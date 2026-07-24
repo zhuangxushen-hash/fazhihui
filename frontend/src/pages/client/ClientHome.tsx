@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Card, List, Tag, theme, Avatar } from 'antd'
-import { FileTextOutlined, MessageOutlined, CreditCardOutlined, BellOutlined, UserOutlined, ArrowRightOutlined } from '@ant-design/icons'
+import { FileTextOutlined, MessageOutlined, CreditCardOutlined, BellOutlined, UserOutlined, ArrowRightOutlined, PhoneOutlined, WechatOutlined, AppstoreOutlined, SafetyCertificateOutlined } from '@ant-design/icons'
 import axios from '../../api/axios'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../../components/BottomNav'
@@ -59,29 +59,45 @@ export default function ClientHome() {
   }
 
   const quickActions = [
-    { 
-      title: '在线咨询', 
-      desc: 'AI法律助手随时解答', 
-      icon: MessageOutlined, 
+    {
+      title: '在线咨询',
+      desc: 'AI法律助手随时解答',
+      icon: MessageOutlined,
       color: '#52c41a',
       gradient: 'linear-gradient(135deg, rgba(82,196,26,0.1) 0%, rgba(82,196,26,0.05) 100%)',
       path: '/client/ai-consult'
     },
-    { 
-      title: '签约', 
-      desc: '一站式法律服务签约', 
-      icon: CreditCardOutlined, 
+    {
+      title: '服务大厅',
+      desc: '签约/支付/发票/证据一站式办理',
+      icon: AppstoreOutlined,
+      color: '#8b5cf6',
+      gradient: 'linear-gradient(135deg, rgba(139,92,246,0.1) 0%, rgba(139,92,246,0.05) 100%)',
+      path: '/client/service-hall'
+    },
+    {
+      title: '签约付款',
+      desc: '一站式法律服务签约',
+      icon: CreditCardOutlined,
       color: '#1890ff',
       gradient: 'linear-gradient(135deg, rgba(24,144,255,0.1) 0%, rgba(24,144,255,0.05) 100%)',
       path: '/client/payment'
     },
-    { 
-      title: '投诉反馈', 
-      desc: '24小时快速响应', 
-      icon: BellOutlined, 
+    {
+      title: '投诉反馈',
+      desc: '24小时快速响应',
+      icon: BellOutlined,
       color: '#f5222d',
       gradient: 'linear-gradient(135deg, rgba(245,34,45,0.1) 0%, rgba(245,34,45,0.05) 100%)',
       path: '/client/complaint'
+    },
+    {
+      title: '服务评价',
+      desc: '对已结案案件进行评价',
+      icon: SafetyCertificateOutlined,
+      color: '#faad14',
+      gradient: 'linear-gradient(135deg, rgba(250,173,20,0.1) 0%, rgba(250,173,20,0.05) 100%)',
+      path: '/client/service-rating'
     },
   ]
 
@@ -169,6 +185,27 @@ export default function ClientHome() {
           >
             <div style={{ fontSize: 20, fontWeight: 700, color: '#e2e8f0' }}>{cases.filter(c => c.status === 'closed').length}</div>
             <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>已结案</div>
+          </div>
+        </div>
+        {/* 律所品牌联系方式 */}
+        <div style={{ display: 'flex', gap: 12, marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <PhoneOutlined style={{ fontSize: 14, color: '#22d3ee' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 10, color: '#64748b' }}>律所热线</div>
+              <div style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 500 }}>400-888-0000</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <WechatOutlined style={{ fontSize: 14, color: '#22d3ee' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 10, color: '#64748b' }}>微信咨询</div>
+              <div style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 500 }}>fazhikuai</div>
+            </div>
           </div>
         </div>
       </div>

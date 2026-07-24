@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Form, Input, Button, message } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { login } from '../api/auth'
+import logo from '../assets/fazhihui-logo.svg'
 
 const gridBg = 'linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px)'
 
@@ -43,10 +44,10 @@ export default function Login() {
       <div style={{ position: 'absolute', bottom: '-20%', left: '-10%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(59,130,246,0.06) 0%, transparent 70%)' }} />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px 80px', position: 'relative', zIndex: 1 }}>
-        <div style={{ width: 48, height: 48, borderRadius: 10, background: 'var(--gradient-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 32 }}>
-          <span style={{ fontSize: 24, fontWeight: 800, color: '#fff', fontFamily: 'serif' }}>F</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 32 }}>
+          <img src={logo} style={{ width: 64, height: 64 }} alt="法智汇" />
+          <h1 style={{ fontSize: 36, fontWeight: 800, color: '#f1f5f9', marginBottom: 0, letterSpacing: '-0.02em' }}>法智汇</h1>
         </div>
-        <h1 style={{ fontSize: 36, fontWeight: 800, color: '#f1f5f9', marginBottom: 12, letterSpacing: '-0.02em' }}>法智汇</h1>
         <p style={{ fontSize: 16, color: '#64748b', lineHeight: 1.7, maxWidth: 380, marginBottom: 48 }}>
           网推律所全链路一体化管理系统
           <br />

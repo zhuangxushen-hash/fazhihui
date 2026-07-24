@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -14,8 +14,9 @@ export class UserController {
   }
 
   @Get()
-  findAll(@Query('org_id') orgId?: string, @Query('name') name?: string, @Query('phone') phone?: string, @Query('role') role?: string) {
-    return this.userService.findAll(orgId, name, phone, role);
+  findAll(@Query('org_id') orgId?: string, @Query('name') name?: string, @Query('phone') phone?: string, @Query('role') role?: string, @Request() req?: any) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.userService.findAll(finalOrgId, name, phone, role);
   }
 
   @Get(':id')

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { ComplianceService } from './compliance.service';
 import { ComplianceType, ComplianceResult, ComplaintType, ComplaintStatus } from '../types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -26,8 +26,10 @@ export class ComplianceController {
     @Query('org_id') orgId: string,
     @Query('type') type?: ComplianceType,
     @Query('result') result?: ComplianceResult,
+    @Request() req?: any,
   ) {
-    return this.complianceService.getComplianceRecords(orgId, type, result);
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.complianceService.getComplianceRecords(finalOrgId, type, result);
   }
 
   @Post('complaint')
@@ -62,8 +64,9 @@ export class ComplianceController {
   }
 
   @Get('complaints')
-  getComplaints(@Query('org_id') orgId: string, @Query('status') status?: ComplaintStatus) {
-    return this.complianceService.getComplaints(orgId, status);
+  getComplaints(@Query('org_id') orgId: string, @Query('status') status?: ComplaintStatus, @Request() req?: any) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.complianceService.getComplaints(finalOrgId, status);
   }
 
   @Get('complaint/:id')
@@ -93,8 +96,9 @@ export class ComplianceController {
   }
 
   @Get('marketing-content')
-  getMarketingContents(@Query('org_id') orgId: string, @Query('status') status?: string) {
-    return this.complianceService.getMarketingContents(orgId, status);
+  getMarketingContents(@Query('org_id') orgId: string, @Query('status') status?: string, @Request() req?: any) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.complianceService.getMarketingContents(finalOrgId, status);
   }
 
   @Post('sales-compliance')
@@ -117,8 +121,9 @@ export class ComplianceController {
   }
 
   @Get('sales-compliance')
-  getSalesComplianceRecords(@Query('org_id') orgId: string, @Query('lead_id') leadId?: string) {
-    return this.complianceService.getSalesComplianceRecords(orgId, leadId);
+  getSalesComplianceRecords(@Query('org_id') orgId: string, @Query('lead_id') leadId?: string, @Request() req?: any) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.complianceService.getSalesComplianceRecords(finalOrgId, leadId);
   }
 
   @Post('signing-compliance')
@@ -144,8 +149,9 @@ export class ComplianceController {
   }
 
   @Get('signing-compliance')
-  getSigningCompliance(@Query('org_id') orgId: string, @Query('case_id') caseId?: string) {
-    return this.complianceService.getSigningCompliance(orgId, caseId);
+  getSigningCompliance(@Query('org_id') orgId: string, @Query('case_id') caseId?: string, @Request() req?: any) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.complianceService.getSigningCompliance(finalOrgId, caseId);
   }
 
   @Post('case-sop')
@@ -178,7 +184,8 @@ export class ComplianceController {
   }
 
   @Get('case-sop/stats')
-  getCaseSOPStats(@Query('org_id') orgId: string) {
-    return this.complianceService.getCaseSOPStats(orgId);
+  getCaseSOPStats(@Query('org_id') orgId: string, @Request() req?: any) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.complianceService.getCaseSOPStats(finalOrgId);
   }
 }

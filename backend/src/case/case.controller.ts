@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { CaseService } from './case.service';
 import { CaseStatus, CaseType } from '../types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -36,18 +36,22 @@ export class CaseController {
     @Query('limit') limit?: number,
     @Query('case_no') case_no?: string,
     @Query('client_name') client_name?: string,
+    @Request() req?: any,
   ) {
-    return this.caseService.findAll(orgId, { status, case_type, assignee_lawyer_id, page, limit, case_no, client_name });
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.caseService.findAll(finalOrgId, { status, case_type, assignee_lawyer_id, page, limit, case_no, client_name });
   }
 
   @Get('overdue')
-  getOverdueCases(@Query('org_id') orgId: string) {
-    return this.caseService.getOverdueCases(orgId);
+  getOverdueCases(@Query('org_id') orgId: string, @Request() req?: any) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.caseService.getOverdueCases(finalOrgId);
   }
 
   @Get('high-risk')
-  getHighRiskCases(@Query('org_id') orgId: string) {
-    return this.caseService.getHighRiskCases(orgId);
+  getHighRiskCases(@Query('org_id') orgId: string, @Request() req?: any) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.caseService.getHighRiskCases(finalOrgId);
   }
 
   @Get(':id')

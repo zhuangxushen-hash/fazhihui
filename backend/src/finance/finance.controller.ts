@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { FinanceService } from './finance.service';
 import { Invoice } from './invoice.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -14,8 +14,9 @@ export class FinanceController {
   }
 
   @Get('fees')
-  findFees(@Query('org_id') orgId: string, @Query('case_id') caseId?: string) {
-    return this.financeService.findFees(orgId, caseId);
+  findFees(@Query('org_id') orgId: string, @Query('case_id') caseId?: string, @Request() req?: any) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.financeService.findFees(finalOrgId, caseId);
   }
 
   @Put('fee/:id/paid')
@@ -40,8 +41,9 @@ export class FinanceController {
   }
 
   @Get('profit-share')
-  getProfitShares(@Query('org_id') orgId: string, @Query('case_id') caseId?: string) {
-    return this.financeService.getProfitShares(orgId, caseId);
+  getProfitShares(@Query('org_id') orgId: string, @Query('case_id') caseId?: string, @Request() req?: any) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.financeService.getProfitShares(finalOrgId, caseId);
   }
 
   @Post('refund')
@@ -67,8 +69,9 @@ export class FinanceController {
   }
 
   @Get('refunds')
-  findRefunds(@Query('org_id') orgId: string, @Query('case_id') caseId?: string) {
-    return this.financeService.findRefunds(orgId, caseId);
+  findRefunds(@Query('org_id') orgId: string, @Query('case_id') caseId?: string, @Request() req?: any) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.financeService.findRefunds(finalOrgId, caseId);
   }
 
   @Post('invoice')
@@ -77,8 +80,9 @@ export class FinanceController {
   }
 
   @Get('invoices')
-  findInvoices(@Query('org_id') orgId: string, @Query('case_id') caseId?: string, @Query('status') status?: string) {
-    return this.financeService.findInvoices(orgId, caseId, status);
+  findInvoices(@Query('org_id') orgId: string, @Query('case_id') caseId?: string, @Query('status') status?: string, @Request() req?: any) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.financeService.findInvoices(finalOrgId, caseId, status);
   }
 
   @Put('invoice/:id/issue')

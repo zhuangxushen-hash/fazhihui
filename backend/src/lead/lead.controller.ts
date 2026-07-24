@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { LeadService } from './lead.service';
 import { LeadStatus, CaseType, LeadSource } from '../types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -29,8 +29,10 @@ export class LeadController {
     @Query('source_channel') source_channel?: LeadSource,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
+    @Request() req?: any,
   ) {
-    return this.leadService.findAll(orgId, { status, case_type, source_channel, page, limit });
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.leadService.findAll(finalOrgId, { status, case_type, source_channel, page, limit });
   }
 
   @Get(':id')
