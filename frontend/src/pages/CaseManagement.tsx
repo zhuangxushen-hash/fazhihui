@@ -1,8 +1,123 @@
 import { useState, useEffect } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, Upload, DatePicker } from 'antd'
+import { Table, Button, Modal, Form, Input, Select, Space, message, Upload, DatePicker, Card } from 'antd'
 import { PlusOutlined, EditOutlined, EyeOutlined, UploadOutlined, SearchOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { formatDate, formatDateTime } from '../utils/format'
+
+// === Material Design 3 Style Tokens ===
+const pageH2Style: React.CSSProperties = {
+  fontFamily: "'Noto Serif SC', serif",
+  fontSize: 22,
+  fontWeight: 600,
+  color: '#1a1c1d',
+  margin: 0,
+  letterSpacing: '0.01em',
+}
+
+const searchBarStyle: React.CSSProperties = {
+  background: '#ffffff',
+  padding: 16,
+  borderRadius: 12,
+  border: '1px solid #c1c6d6',
+  marginBottom: 16,
+  display: 'flex',
+  gap: 12,
+  flexWrap: 'wrap',
+  alignItems: 'center',
+}
+
+const tableCardStyle: React.CSSProperties = {
+  borderRadius: 16,
+  overflow: 'hidden',
+}
+
+const infoBlockStyle: React.CSSProperties = {
+  background: '#f3f3f5',
+  padding: 16,
+  borderRadius: 8,
+  fontSize: 13,
+  color: '#414753',
+  lineHeight: 1.7,
+}
+
+const sectionTitleStyle: React.CSSProperties = {
+  fontFamily: "'Noto Serif SC', serif",
+  fontSize: 15,
+  fontWeight: 600,
+  color: '#1a1c1d',
+  marginBottom: 8,
+}
+
+// === MD3 Status Pill (Soft Background Style) ===
+type PillKind = 'neutral' | 'blue' | 'gold' | 'green' | 'red' | 'orange' | 'purple' | 'cyan' | 'geekblue'
+
+const pillColorMap: Record<PillKind, { bg: string; color: string }> = {
+  neutral: { bg: 'rgba(113, 119, 133, 0.12)', color: '#5f6672' },
+  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: '#0071e3' },
+  gold: { bg: 'rgba(201, 169, 97, 0.15)', color: '#8c702e' },
+  green: { bg: 'rgba(46, 125, 50, 0.1)', color: '#2e7d32' },
+  red: { bg: 'rgba(186, 26, 26, 0.1)', color: '#ba1a1a' },
+  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: '#ed6c02' },
+  purple: { bg: 'rgba(114, 46, 209, 0.1)', color: '#722ed1' },
+  cyan: { bg: 'rgba(0, 166, 167, 0.1)', color: '#00a6a7' },
+  geekblue: { bg: 'rgba(47, 84, 235, 0.1)', color: '#2f54eb' },
+}
+
+const StatusPill = ({ text, kind }: { text: string; kind: PillKind }) => {
+  const c = pillColorMap[kind] || pillColorMap.neutral
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        padding: '2px 10px',
+        borderRadius: 999,
+        background: c.bg,
+        color: c.color,
+        fontSize: 12,
+        fontWeight: 500,
+        lineHeight: '20px',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {text}
+    </span>
+  )
+}
+
+// === Case Status & Risk Mappings (Preserved) ===
+const caseStatusKindMap: Record<string, PillKind> = {
+  pending_assign: 'neutral',
+  processing: 'blue',
+  filing: 'blue',
+  evidence: 'cyan',
+  hearing: 'orange',
+  appeal: 'geekblue',
+  pending_close: 'orange',
+  closed: 'green',
+}
+
+const caseStatusLabelMap: Record<string, string> = {
+  pending_assign: '待分配',
+  processing: '处理中',
+  filing: '立案中',
+  evidence: '取证中',
+  hearing: '庭审中',
+  appeal: '上诉中',
+  pending_close: '待结案',
+  closed: '已结案',
+}
+
+const riskKindMap: Record<string, PillKind> = {
+  low: 'green',
+  medium: 'orange',
+  high: 'red',
+}
+
+const riskLabelMap: Record<string, string> = {
+  low: '低风险',
+  medium: '中风险',
+  high: '高风险',
+}
 
 export default function CaseManagement() {
   const [data, setData] = useState<any[]>([])
@@ -179,51 +294,21 @@ export default function CaseManagement() {
     }[type]) },
     { title: '主办律师', dataIndex: 'lawyer_name', key: 'lawyer_name' },
     { title: '受理法院', dataIndex: 'court', key: 'court' },
-    { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => {
-      const colors: Record<string, string> = {
-        pending_assign: 'default',
-        processing: 'processing',
-        filing: 'blue',
-        evidence: 'cyan',
-        hearing: 'orange',
-        appeal: 'geekblue',
-        pending_close: 'orange',
-        closed: 'success',
-      }
-      const labels: Record<string, string> = {
-        pending_assign: '待分配',
-        processing: '处理中',
-        filing: '立案中',
-        evidence: '取证中',
-        hearing: '庭审中',
-        appeal: '上诉中',
-        pending_close: '待结案',
-        closed: '已结案',
-      }
-      return <Tag color={colors[status] || 'default'}>{labels[status] || '-'}</Tag>
-    }},
-    { title: '风险等级', dataIndex: 'risk_level', key: 'risk_level', render: (level: string) => {
-      const colors: Record<string, string> = {
-        low: 'green',
-        medium: 'orange',
-        high: 'red',
-      }
-      const labels: Record<string, string> = {
-        low: '低风险',
-        medium: '中风险',
-        high: '高风险',
-      }
-      return <Tag color={colors[level] || 'default'}>{labels[level] || '-'}</Tag>
-    }},
+    { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => (
+      <StatusPill text={caseStatusLabelMap[status] || '-'} kind={caseStatusKindMap[status] || 'neutral'} />
+    )},
+    { title: '风险等级', dataIndex: 'risk_level', key: 'risk_level', render: (level: string) => (
+      <StatusPill text={riskLabelMap[level] || '-'} kind={riskKindMap[level] || 'neutral'} />
+    )},
     { title: '是否超时', dataIndex: 'is_overdue', key: 'is_overdue', render: (overdue: boolean) => {
-      return overdue ? <Tag color="red">已超时</Tag> : <Tag color="green">正常</Tag>
+      return <StatusPill text={overdue ? '已超时' : '正常'} kind={overdue ? 'red' : 'green'} />
     }},
     { title: '立案日期', dataIndex: 'filing_date', key: 'filing_date', render: (val: string) => formatDate(val) },
     { title: '预计结案', dataIndex: 'expected_close_date', key: 'expected_close_date', render: (val: string) => formatDate(val) },
     { title: '操作', key: 'action', render: (_: any, record: any) => (
       <Space>
-        <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
-        <Button size="small" icon={<EditOutlined />} onClick={() => handleChangeStatus(record)}>状态</Button>
+        <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
+        <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleChangeStatus(record)}>状态</Button>
         {!record.assignee_lawyer_id && (
           <Button size="small" type="primary" onClick={() => handleAssignLawyer(record)}>分配律师</Button>
         )}
@@ -232,13 +317,13 @@ export default function CaseManagement() {
   ]
 
   return (
-    <div>
-      <div className="page-header">
-        <h2>案件管理</h2>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className="page-header" style={{ marginBottom: 0 }}>
+        <h2 style={pageH2Style}>案件管理</h2>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAddCase}>创建案件</Button>
       </div>
 
-      <div className="search-bar">
+      <div className="search-bar" style={searchBarStyle}>
         <Input
           placeholder="案件编号搜索"
           prefix={<SearchOutlined />}
@@ -274,7 +359,9 @@ export default function CaseManagement() {
         <Button onClick={handleReset}>重置</Button>
       </div>
 
-      <Table dataSource={data} columns={columns} loading={loading} rowKey="id" />
+      <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" size="small" />
+      </Card>
 
       <Modal
         title="创建案件"
@@ -343,27 +430,7 @@ export default function CaseManagement() {
               <div className="detail-item"><span className="detail-label">受理法院</span><span className="detail-value">{currentCase.court || '-'}</span></div>
               <div className="detail-item"><span className="detail-label">涉案金额</span><span className="detail-value">{currentCase.amount || '-'}</span></div>
               <div className="detail-item"><span className="detail-label">状态</span><span className="detail-value">
-                <Tag color={{
-                  pending_assign: 'default',
-                  processing: 'processing',
-                  filing: 'blue',
-                  evidence: 'cyan',
-                  hearing: 'orange',
-                  appeal: 'geekblue',
-                  pending_close: 'orange',
-                  closed: 'success',
-                }[currentCase.status as string] || 'default'}>
-                  {{
-                    pending_assign: '待分配',
-                    processing: '处理中',
-                    filing: '立案中',
-                    evidence: '取证中',
-                    hearing: '庭审中',
-                    appeal: '上诉中',
-                    pending_close: '待结案',
-                    closed: '已结案',
-                  }[currentCase.status as string] || '-'}
-                </Tag>
+                <StatusPill text={caseStatusLabelMap[currentCase.status as string] || '-'} kind={caseStatusKindMap[currentCase.status as string] || 'neutral'} />
               </span></div>
               <div className="detail-item"><span className="detail-label">立案日期</span><span className="detail-value">{formatDate(currentCase.filing_date)}</span></div>
               <div className="detail-item"><span className="detail-label">预计结案</span><span className="detail-value">{formatDate(currentCase.expected_close_date)}</span></div>
@@ -371,14 +438,14 @@ export default function CaseManagement() {
               <div className="detail-item"><span className="detail-label">更新时间</span><span className="detail-value">{formatDateTime(currentCase.updated_at)}</span></div>
             </div>
             <div style={{ marginBottom: 24 }}>
-              <div style={{ fontWeight: 'bold', marginBottom: 8 }}>案件描述</div>
-              <div className="info-block">
+              <div style={sectionTitleStyle}>案件描述</div>
+              <div className="info-block" style={infoBlockStyle}>
                 {currentCase.description || '-'}
               </div>
             </div>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                <div style={{ fontWeight: 'bold' }}>案件文档</div>
+                <div style={sectionTitleStyle}>案件文档</div>
                 <Upload
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                   showUploadList={false}
@@ -389,13 +456,13 @@ export default function CaseManagement() {
               </div>
               <div style={{ maxHeight: 300, overflow: 'auto' }}>
                 {documents.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#999', padding: 24 }}>暂无文档</div>
+                  <div style={{ textAlign: 'center', color: '#717785', padding: 24, fontSize: 13 }}>暂无文档</div>
                 ) : (
                   documents.map((doc) => (
-                    <div key={doc.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', borderBottom: '1px solid #f0f0f0' }}>
+                    <div key={doc.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderBottom: '1px solid #e2e2e4' }}>
                       <div>
-                        <div style={{ fontWeight: 'bold' }}>{doc.file_name}</div>
-                        <div style={{ fontSize: 13, color: '#666' }}>
+                        <div style={{ fontWeight: 600, color: '#1a1c1d', fontSize: 13 }}>{doc.file_name}</div>
+                        <div style={{ fontSize: 12, color: '#717785', marginTop: 2 }}>
                           {({
                             complaint: '起诉状',
                             evidence: '证据材料',
@@ -405,7 +472,7 @@ export default function CaseManagement() {
                           }[doc.doc_type as string])} - {formatDateTime(doc.created_at)}
                         </div>
                       </div>
-                      <Button size="small" onClick={() => window.open(`/api/documents/${doc.id}/download`)}>下载</Button>
+                      <Button type="link" size="small" onClick={() => window.open(`/api/documents/${doc.id}/download`)}>下载</Button>
                     </div>
                   ))
                 )}

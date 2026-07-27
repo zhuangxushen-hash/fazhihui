@@ -15,7 +15,7 @@ export class Case {
   @Column({ type: 'varchar', default: CaseStatus.PENDING_ASSIGN })
   status: CaseStatus;
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   client_id: string;
 
   @Column({ nullable: true })

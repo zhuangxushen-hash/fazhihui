@@ -1,11 +1,9 @@
-import { theme } from 'antd'
 import { FileTextOutlined, MessageOutlined, CreditCardOutlined, BellOutlined } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 
 export default function BottomNav() {
   const navigate = useNavigate()
   const location = useLocation()
-  void theme.useToken()
 
   const menuItems = [
     { key: '/client', label: '案件', icon: FileTextOutlined },
@@ -15,58 +13,82 @@ export default function BottomNav() {
   ]
 
   return (
-    <div
+    <nav
       style={{
         position: 'fixed',
         bottom: 0,
         left: 0,
         right: 0,
         background: '#ffffff',
-        borderTop: '1px solid var(--border-default)',
-        padding: '4px 8px',
-        paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
+        borderTop: '1px solid #c1c6d6',
+        borderTopLeftRadius: 16,
+        borderTopRightRadius: 16,
+        padding: '8px 8px',
+        paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
         display: 'flex',
         justifyContent: 'space-around',
         alignItems: 'center',
+        height: 64,
         zIndex: 100,
-        boxShadow: '0 -1px 8px rgba(0,0,0,0.04)',
+        boxShadow: '0 -2px 12px rgba(15, 23, 42, 0.04)',
         touchAction: 'pan-y',
       }}
     >
       {menuItems.map((item) => {
         const isActive = location.pathname === item.key
-        
+
         return (
           <div
             key={item.key}
-            style={{ 
-              textAlign: 'center', 
+            style={{
+              textAlign: 'center',
               cursor: 'pointer',
-              padding: '8px 20px',
+              padding: '6px 16px',
               borderRadius: 8,
-              background: isActive ? 'var(--primary-bg)' : 'transparent',
-              transition: 'all 0.15s ease',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 2,
+              position: 'relative',
+              transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
               WebkitTapHighlightColor: 'transparent',
             }}
             onClick={() => navigate(item.key)}
           >
-            <item.icon style={{ 
-              fontSize: 20, 
-              color: isActive ? 'var(--primary)' : 'var(--text-tertiary)', 
-              transition: 'color 0.15s ease' 
-            }} />
-            <div style={{ 
-              fontSize: 10, 
-              marginTop: 2,
-              color: isActive ? 'var(--primary)' : 'var(--text-tertiary)', 
-              fontWeight: isActive ? 600 : 400,
-              transition: 'color 0.15s ease',
-            }}>
+            <item.icon
+              style={{
+                fontSize: 22,
+                color: isActive ? '#0059b5' : '#717785',
+                transition: 'color 0.15s ease',
+              }}
+            />
+            <div
+              style={{
+                fontSize: 11,
+                color: isActive ? '#0059b5' : '#717785',
+                fontWeight: isActive ? 600 : 500,
+                transition: 'color 0.15s ease',
+              }}
+            >
               {item.label}
             </div>
+            {isActive && (
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: -6,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: 24,
+                  height: 3,
+                  background: '#c9a961',
+                  borderRadius: 2,
+                }}
+              />
+            )}
           </div>
         )
       })}
-    </div>
+    </nav>
   )
 }

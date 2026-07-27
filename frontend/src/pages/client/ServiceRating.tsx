@@ -180,21 +180,40 @@ export default function ServiceRating() {
   if (submitted) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
-        <div
+        <header
           style={{
-            background: '#0a0e1a',
-            padding: '16px 16px',
-            paddingTop: '52px',
-            color: '#f1f5f9',
+            position: 'sticky',
+            top: 0,
+            background: '#ffffff',
+            borderBottom: '1px solid #c1c6d6',
+            padding: '14px 16px',
+            paddingTop: 'max(14px, env(safe-area-inset-top))',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            zIndex: 50,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ cursor: 'pointer', padding: 4 }} onClick={() => navigate(-1)}>
-              <ArrowLeftOutlined style={{ fontSize: 18, color: '#94a3b8' }} />
-            </div>
-            <h2 style={{ fontSize: 20, fontWeight: 'bold' }}>服务评价</h2>
-          </div>
-        </div>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              width: 40,
+              height: 40,
+              border: 'none',
+              background: 'transparent',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: '#0059b5',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            <ArrowLeftOutlined style={{ fontSize: 22 }} />
+          </button>
+          <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#0059b5', letterSpacing: '0.01em' }}>服务评价</h2>
+        </header>
 
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <Card style={{ width: '100%', maxWidth: 420, borderRadius: borderRadiusLG, textAlign: 'center', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--border-default)' }}>
@@ -225,24 +244,43 @@ export default function ServiceRating() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
-      <div
+      <header
         style={{
-          background: '#0a0e1a',
-          padding: '16px 16px',
-          paddingTop: '52px',
-          color: '#f1f5f9',
+          position: 'sticky',
+          top: 0,
+          background: '#ffffff',
+          borderBottom: '1px solid #c1c6d6',
+          padding: '14px 16px',
+          paddingTop: 'max(14px, env(safe-area-inset-top))',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          zIndex: 50,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ cursor: 'pointer', padding: 4 }} onClick={() => navigate(-1)}>
-            <ArrowLeftOutlined style={{ fontSize: 18, color: '#94a3b8' }} />
-          </div>
-          <div>
-            <h2 style={{ fontSize: 20, fontWeight: 'bold' }}>服务评价</h2>
-            <p style={{ fontSize: 11, color: '#94a3b8' }}>您的反馈对我们至关重要</p>
-          </div>
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            width: 40,
+            height: 40,
+            border: 'none',
+            background: 'transparent',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            color: '#0059b5',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          <ArrowLeftOutlined style={{ fontSize: 22 }} />
+        </button>
+        <div>
+          <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#0059b5', letterSpacing: '0.01em' }}>服务评价</h2>
+          <p style={{ fontSize: 12, color: '#717785', marginTop: 2 }}>您的反馈对我们至关重要</p>
         </div>
-      </div>
+      </header>
 
       <div style={{ padding: '12px', flex: 1, paddingBottom: '80px' }}>
         {/* 评价表单 */}

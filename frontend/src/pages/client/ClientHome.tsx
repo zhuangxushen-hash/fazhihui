@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Card, List, Tag, theme, Avatar } from 'antd'
-import { FileTextOutlined, MessageOutlined, CreditCardOutlined, BellOutlined, UserOutlined, ArrowRightOutlined, PhoneOutlined, WechatOutlined, AppstoreOutlined, SafetyCertificateOutlined } from '@ant-design/icons'
+import { Card, List, Avatar } from 'antd'
+import { FileTextOutlined, MessageOutlined, CreditCardOutlined, BellOutlined, UserOutlined, ArrowRightOutlined, PhoneOutlined, WechatOutlined, AppstoreOutlined, SafetyCertificateOutlined, NotificationOutlined } from '@ant-design/icons'
 import axios from '../../api/axios'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../../components/BottomNav'
-import ClientButton from '../../components/ClientButton'
 
 export default function ClientHome() {
   const [cases, setCases] = useState<any[]>([])
@@ -15,10 +14,6 @@ export default function ClientHome() {
   const navigate = useNavigate()
 
   const user = JSON.parse(localStorage.getItem('user') || '{}')
-
-  const {
-    token: { borderRadiusLG },
-  } = theme.useToken()
 
   useEffect(() => {
     fetchCases()
@@ -47,15 +42,15 @@ export default function ClientHome() {
     closed: '已结案',
   }
 
-  const statusColors: Record<string, string> = {
-    pending_assign: 'orange',
-    processing: 'blue',
-    filing: 'purple',
-    evidence: 'cyan',
-    hearing: 'gold',
-    appeal: 'magenta',
-    pending_close: 'pink',
-    closed: 'green',
+  const statusPillStyles: Record<string, { bg: string; color: string }> = {
+    pending_assign: { bg: 'rgba(237, 108, 2, 0.1)', color: '#ed6c02' },
+    processing: { bg: 'rgba(0, 113, 227, 0.1)', color: '#0071e3' },
+    filing: { bg: 'rgba(0, 113, 227, 0.1)', color: '#0071e3' },
+    evidence: { bg: 'rgba(0, 113, 227, 0.1)', color: '#0071e3' },
+    hearing: { bg: 'rgba(201, 169, 97, 0.14)', color: '#8c702e' },
+    appeal: { bg: 'rgba(201, 169, 97, 0.14)', color: '#8c702e' },
+    pending_close: { bg: 'rgba(237, 108, 2, 0.1)', color: '#ed6c02' },
+    closed: { bg: 'rgba(46, 125, 50, 0.1)', color: '#2e7d32' },
   }
 
   const quickActions = [
@@ -63,311 +58,342 @@ export default function ClientHome() {
       title: '在线咨询',
       desc: 'AI法律助手随时解答',
       icon: MessageOutlined,
-      color: '#52c41a',
-      gradient: 'linear-gradient(135deg, rgba(82,196,26,0.1) 0%, rgba(82,196,26,0.05) 100%)',
+      color: '#0071e3',
+      bg: 'rgba(0, 113, 227, 0.1)',
       path: '/client/ai-consult'
     },
     {
       title: '服务大厅',
       desc: '签约/支付/发票/证据一站式办理',
       icon: AppstoreOutlined,
-      color: '#8b5cf6',
-      gradient: 'linear-gradient(135deg, rgba(139,92,246,0.1) 0%, rgba(139,92,246,0.05) 100%)',
+      color: '#715818',
+      bg: 'rgba(201, 169, 97, 0.14)',
       path: '/client/service-hall'
     },
     {
       title: '签约付款',
       desc: '一站式法律服务签约',
       icon: CreditCardOutlined,
-      color: '#1890ff',
-      gradient: 'linear-gradient(135deg, rgba(24,144,255,0.1) 0%, rgba(24,144,255,0.05) 100%)',
+      color: '#0071e3',
+      bg: 'rgba(0, 113, 227, 0.1)',
       path: '/client/payment'
     },
     {
       title: '投诉反馈',
       desc: '24小时快速响应',
       icon: BellOutlined,
-      color: '#f5222d',
-      gradient: 'linear-gradient(135deg, rgba(245,34,45,0.1) 0%, rgba(245,34,45,0.05) 100%)',
+      color: '#ba1a1a',
+      bg: 'rgba(186, 26, 26, 0.1)',
       path: '/client/complaint'
     },
     {
       title: '服务评价',
       desc: '对已结案案件进行评价',
       icon: SafetyCertificateOutlined,
-      color: '#faad14',
-      gradient: 'linear-gradient(135deg, rgba(250,173,20,0.1) 0%, rgba(250,173,20,0.05) 100%)',
+      color: '#8c702e',
+      bg: 'rgba(201, 169, 97, 0.14)',
       path: '/client/service-rating'
     },
   ]
 
+  const quickServiceItems = [
+    { label: '我的案件', icon: FileTextOutlined, color: '#0071e3', bg: 'rgba(0, 113, 227, 0.1)', value: cases.length, path: '/client/cases' },
+    { label: '在线咨询', icon: MessageOutlined, color: '#2e7d32', bg: 'rgba(46, 125, 50, 0.1)', value: 'AI助手', path: '/client/ai-consult' },
+    { label: '签约付款', icon: CreditCardOutlined, color: '#0071e3', bg: 'rgba(0, 113, 227, 0.1)', value: '立即签约', path: '/client/payment' },
+    { label: '投诉反馈', icon: BellOutlined, color: '#ba1a1a', bg: 'rgba(186, 26, 26, 0.1)', value: '24h响应', path: '/client/complaint' },
+  ]
+
+  const stats = [
+    { label: '我的案件', value: cases.length, path: '/client/cases' },
+    { label: '处理中', value: cases.filter(c => c.status === 'processing').length, path: '/client/cases' },
+    { label: '已结案', value: cases.filter(c => c.status === 'closed').length, path: '/client/cases' },
+  ]
+
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
-      <div
+    <div style={{ minHeight: '100vh', background: '#f9f9fb', display: 'flex', flexDirection: 'column' }}>
+      {/* === MD3 Top App Bar === */}
+      <header
         style={{
-          background: '#0a0e1a',
-          padding: '24px 16px',
-          paddingTop: '56px',
-          color: '#f1f5f9',
-          borderRadius: `0 0 ${borderRadiusLG} ${borderRadiusLG}`,
-          boxShadow: '0 8px 32px rgba(10, 14, 26, 0.3)',
+          position: 'sticky',
+          top: 0,
+          background: '#ffffff',
+          borderBottom: '1px solid #c1c6d6',
+          padding: '14px 16px',
+          paddingTop: 'max(14px, env(safe-area-inset-top))',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          zIndex: 50,
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <div>
-            <h1 style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 4 }}>法智汇</h1>
-            <p style={{ fontSize: 13, color: '#94a3b8' }}>您好，{user.real_name || '客户'}</p>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Avatar
             icon={<UserOutlined />}
             style={{
-              background: 'var(--gradient-accent)',
-              border: '2px solid rgba(6,182,212,0.3)',
-              width: 44,
-              height: 44,
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #1a2332 0%, #131c2a 100%)',
+              border: '1px solid rgba(201, 169, 97, 0.3)',
+              color: '#e4c278',
             }}
           />
+          <span style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#0059b5', letterSpacing: '0.01em' }}>法智汇</span>
         </div>
-        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-          <div 
-            style={{ 
-              flex: 1, 
-              background: 'rgba(255,255,255,0.05)', 
-              borderRadius: 8, 
-              border: '1px solid rgba(255,255,255,0.06)',
-              padding: '10px 12px', 
-              textAlign: 'center',
-              cursor: 'pointer',
-              transition: 'transform 0.15s ease',
-              transform: activeStat === 0 ? 'scale(0.96)' : 'scale(1)',
-            }}
-            onClick={() => navigate('/client/cases')}
-            onTouchStart={() => setActiveStat(0)}
-            onTouchEnd={() => setActiveStat(null)}
-          >
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#e2e8f0' }}>{cases.length}</div>
-            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>我的案件</div>
-          </div>
-          <div 
-            style={{ 
-              flex: 1, 
-              background: 'rgba(255,255,255,0.05)', 
-              borderRadius: 8, 
-              border: '1px solid rgba(255,255,255,0.06)',
-              padding: '10px 12px', 
-              textAlign: 'center',
-              cursor: 'pointer',
-              transition: 'transform 0.15s ease',
-              transform: activeStat === 1 ? 'scale(0.96)' : 'scale(1)',
-            }}
-            onClick={() => navigate('/client/cases')}
-            onTouchStart={() => setActiveStat(1)}
-            onTouchEnd={() => setActiveStat(null)}
-          >
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#e2e8f0' }}>{cases.filter(c => c.status === 'processing').length}</div>
-            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>处理中</div>
-          </div>
-          <div 
-            style={{ 
-              flex: 1, 
-              background: 'rgba(255,255,255,0.05)', 
-              borderRadius: 8, 
-              border: '1px solid rgba(255,255,255,0.06)',
-              padding: '10px 12px', 
-              textAlign: 'center',
-              cursor: 'pointer',
-              transition: 'transform 0.15s ease',
-              transform: activeStat === 2 ? 'scale(0.96)' : 'scale(1)',
-            }}
-            onClick={() => navigate('/client/cases')}
-            onTouchStart={() => setActiveStat(2)}
-            onTouchEnd={() => setActiveStat(null)}
-          >
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#e2e8f0' }}>{cases.filter(c => c.status === 'closed').length}</div>
-            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>已结案</div>
-          </div>
-        </div>
-        {/* 律所品牌联系方式 */}
-        <div style={{ display: 'flex', gap: 12, marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <PhoneOutlined style={{ fontSize: 14, color: '#22d3ee' }} />
-            </div>
-            <div>
-              <div style={{ fontSize: 10, color: '#64748b' }}>律所热线</div>
-              <div style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 500 }}>400-888-0000</div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <WechatOutlined style={{ fontSize: 14, color: '#22d3ee' }} />
-            </div>
-            <div>
-              <div style={{ fontSize: 10, color: '#64748b' }}>微信咨询</div>
-              <div style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 500 }}>fazhikuai</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ padding: '12px', flex: 1, paddingBottom: '80px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 16 }}>
-          <Card
-            style={{ textAlign: 'center', borderRadius: borderRadiusLG, boxShadow: 'var(--shadow-sm)', cursor: 'pointer', transition: 'all 0.15s ease', border: '1px solid var(--border-default)' }}
-            onClick={() => navigate('/client/cases')}
-            onTouchStart={() => setActiveCard(0)}
-            onTouchEnd={() => setActiveCard(null)}
-          >
-            <div style={{ background: 'var(--primary-bg)', width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 6px' }}>
-              <FileTextOutlined style={{ fontSize: 24, color: 'var(--primary)' }} />
-            </div>
-            <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginBottom: 2 }}>我的案件</div>
-            <div style={{ fontSize: 16, fontWeight: 'bold', color: 'var(--text-primary)' }}>{cases.length}</div>
-          </Card>
-          <Card
-            style={{ textAlign: 'center', borderRadius: borderRadiusLG, boxShadow: 'var(--shadow-sm)', cursor: 'pointer', transition: 'all 0.15s ease', border: '1px solid var(--border-default)' }}
-            onClick={() => navigate('/client/ai-consult')}
-            onTouchStart={() => setActiveCard(1)}
-            onTouchEnd={() => setActiveCard(null)}
-          >
-            <div style={{ background: 'var(--primary-bg)', width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 6px' }}>
-              <MessageOutlined style={{ fontSize: 24, color: 'var(--primary)' }} />
-            </div>
-            <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginBottom: 2 }}>在线咨询</div>
-            <div style={{ fontSize: 16, fontWeight: 'bold', color: 'var(--text-primary)' }}>AI助手</div>
-          </Card>
-          <Card
-            style={{ textAlign: 'center', borderRadius: borderRadiusLG, boxShadow: 'var(--shadow-sm)', cursor: 'pointer', transition: 'all 0.15s ease', border: '1px solid var(--primary-border)', background: 'var(--primary-bg)' }}
-            onClick={() => navigate('/client/payment')}
-            onTouchStart={() => setActiveCard(2)}
-            onTouchEnd={() => setActiveCard(null)}
-          >
-            <div style={{ background: 'var(--primary-bg)', width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 6px' }}>
-              <CreditCardOutlined style={{ fontSize: 24, color: 'var(--primary)' }} />
-            </div>
-            <div style={{ fontSize: 10, color: 'var(--primary)', marginBottom: 2 }}>签约</div>
-            <div style={{ fontSize: 16, fontWeight: 'bold', color: 'var(--primary)' }}>立即签约</div>
-          </Card>
-          <Card
-            style={{ textAlign: 'center', borderRadius: borderRadiusLG, boxShadow: 'var(--shadow-sm)', cursor: 'pointer', transition: 'all 0.15s ease', border: '1px solid var(--border-default)' }}
-            onClick={() => navigate('/client/complaint')}
-            onTouchStart={() => setActiveCard(3)}
-            onTouchEnd={() => setActiveCard(null)}
-          >
-            <div style={{ background: 'var(--primary-bg)', width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 6px' }}>
-              <BellOutlined style={{ fontSize: 24, color: 'var(--primary)' }} />
-            </div>
-            <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginBottom: 2 }}>投诉反馈</div>
-            <div style={{ fontSize: 16, fontWeight: 'bold', color: 'var(--text-primary)' }}>24h响应</div>
-          </Card>
-        </div>
-
-        <Card 
-          title="我的案件" 
-          style={{ marginBottom: 12, borderRadius: borderRadiusLG, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}
-          extra={<ClientButton btnVariant="ghost" onClick={() => navigate('/client/cases')} style={{ padding: '4px 12px' }}><ArrowRightOutlined style={{ marginLeft: 4, fontSize: 12, color: 'var(--text-tertiary)' }} /></ClientButton>}
+        <button
+          style={{
+            width: 40,
+            height: 40,
+            border: 'none',
+            background: 'transparent',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            color: '#0059b5',
+            WebkitTapHighlightColor: 'transparent',
+          }}
         >
-          <List
-            loading={loading}
-            dataSource={cases.slice(0, 5)}
-            renderItem={(item, index) => (
-              <List.Item
-                actions={[
-                  <div
-                    key={index}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      navigate(`/client/case/${item.id}`)
-                    }}
-                    onTouchStart={(e) => {
-                      e.stopPropagation()
-                      e.currentTarget.style.transform = 'scale(0.96)'
-                    }}
-                    onTouchEnd={(e) => {
-                      e.stopPropagation()
-                      e.currentTarget.style.transform = 'scale(1)'
-                    }}
-                    style={{
-                      padding: '4px 14px',
-                      borderRadius: 6,
-                      border: '1px solid var(--primary)',
-                      color: 'var(--primary)',
-                      fontSize: 12,
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                      background: '#fff',
-                      WebkitTapHighlightColor: 'transparent',
-                      touchAction: 'manipulation',
-                    }}
-                  >查看详情</div>
-                ]}
-                style={{ borderBottom: '1px solid var(--border-light)', padding: '12px 0', cursor: 'pointer', transition: 'transform 0.15s ease', WebkitTapHighlightColor: 'transparent' }}
-                onClick={() => navigate(`/client/case/${item.id}`)}
-                onTouchStart={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
-                onTouchEnd={(e) => e.currentTarget.style.transform = 'scale(1)'}
-              >
-                <List.Item.Meta
-                  avatar={<div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--primary-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <FileTextOutlined style={{ fontSize: 16, color: 'var(--primary)' }} />
-                  </div>}
-                  title={<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>案件ID: {item.id?.slice(0, 6)}...</span>
-                    <Tag color={statusColors[item.status]} style={{ fontSize: 10, padding: '2px 6px' }}>{statusLabels[item.status]}</Tag>
-                  </div>}
-                  description={<div>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>案由：{item.case_type}</div>
-                    <div style={{ color: 'var(--text-tertiary)', fontSize: 11, marginTop: 1 }}>创建时间：{item.created_at}</div>
-                  </div>}
-                />
-              </List.Item>
-            )}
-          />
-          {cases.length === 0 && !loading && (
-            <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-tertiary)' }}>
-              <FileTextOutlined style={{ fontSize: 40, color: 'var(--border-default)', marginBottom: 8 }} />
-              <div style={{ fontSize: 13 }}>暂无案件</div>
-              <div style={{ fontSize: 11, marginTop: 2 }}>您可以通过签约付款创建新案件</div>
-            </div>
-          )}
-        </Card>
+          <NotificationOutlined style={{ fontSize: 22 }} />
+        </button>
+      </header>
 
-        <Card 
-          title="快捷操作" 
-          style={{ borderRadius: borderRadiusLG, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {quickActions.map((action, index) => (
-              <div 
-                key={index}
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  padding: '14px', 
-                  background: 'var(--bg-sunken)', 
-                  borderRadius: 8,
-                  border: '1px solid var(--border-light)',
+      <main style={{ padding: '20px 16px 80px', flex: 1, maxWidth: 1024, margin: '0 auto', width: '100%' }}>
+        {/* === Welcome Section === */}
+        <section style={{ marginBottom: 24 }}>
+          <h1 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 24, fontWeight: 600, color: '#0059b5', margin: 0, letterSpacing: '0.01em' }}>
+            您好，{user.real_name || '客户'}
+          </h1>
+          <p style={{ fontSize: 14, color: '#414753', marginTop: 4 }}>
+            今天有 {cases.length} 条案件动态需要您关注
+          </p>
+        </section>
+
+        {/* === Stats Row === */}
+        <section style={{ marginBottom: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            {stats.map((stat, idx) => (
+              <div
+                key={idx}
+                onClick={() => navigate(stat.path)}
+                onTouchStart={() => setActiveStat(idx)}
+                onTouchEnd={() => setActiveStat(null)}
+                style={{
+                  background: '#ffffff',
+                  border: '1px solid #c1c6d6',
+                  borderRadius: 12,
+                  padding: '14px 12px',
+                  textAlign: 'center',
                   cursor: 'pointer',
-                  transition: 'transform 0.15s ease',
-                  transform: activeAction === index ? 'scale(0.98)' : 'scale(1)',
+                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                  transform: activeStat === idx ? 'scale(0.97)' : 'scale(1)',
+                  boxShadow: '0 1px 3px rgba(15, 23, 42, 0.02), 0 1px 2px rgba(15, 23, 42, 0.04)',
                 }}
-                onClick={() => navigate(action.path)}
-                onTouchStart={() => setActiveAction(index)}
-                onTouchEnd={() => setActiveAction(null)}
               >
-                <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                  <action.icon style={{ fontSize: 20, color: action.color }} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{action.title}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 1 }}>{action.desc}</div>
-                </div>
-                <ArrowRightOutlined style={{ fontSize: 14, color: 'var(--text-tertiary)' }} />
+                <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 22, fontWeight: 700, color: '#0059b5' }}>{stat.value}</div>
+                <div style={{ fontSize: 11, color: '#717785', marginTop: 2 }}>{stat.label}</div>
               </div>
             ))}
           </div>
-        </Card>
-      </div>
+        </section>
+
+        {/* === Quick Services Grid === */}
+        <section style={{ marginBottom: 24 }}>
+          <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#1a1c1d', marginBottom: 12, letterSpacing: '0.01em' }}>快捷服务</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+            {quickServiceItems.map((item, idx) => (
+              <div
+                key={idx}
+                onClick={() => navigate(item.path)}
+                onTouchStart={() => setActiveCard(idx)}
+                onTouchEnd={() => setActiveCard(null)}
+                style={{
+                  background: '#ffffff',
+                  border: '1px solid #c1c6d6',
+                  borderRadius: 12,
+                  padding: '14px 8px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                  transform: _activeCard === idx ? 'scale(0.97)' : 'scale(1)',
+                  boxShadow: '0 1px 3px rgba(15, 23, 42, 0.02), 0 1px 2px rgba(15, 23, 42, 0.04)',
+                }}
+              >
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: item.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
+                  <item.icon style={{ fontSize: 22, color: item.color }} />
+                </div>
+                <div style={{ fontSize: 11, color: '#414753', marginBottom: 2 }}>{item.label}</div>
+                <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 13, fontWeight: 600, color: '#1a1c1d' }}>{item.value}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* === My Cases Section === */}
+        <section style={{ marginBottom: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 12 }}>
+            <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#1a1c1d', margin: 0, letterSpacing: '0.01em' }}>我的活跃案件</h2>
+            <button
+              onClick={() => navigate('/client/cases')}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#0059b5',
+                fontSize: 12,
+                fontWeight: 500,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: 0,
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              查看全部 <ArrowRightOutlined style={{ fontSize: 11 }} />
+            </button>
+          </div>
+          <Card style={{ borderRadius: 12, border: '1px solid #c1c6d6', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.02), 0 1px 2px rgba(15, 23, 42, 0.04)' }} styles={{ body: { padding: '4px 16px' } }}>
+            <List
+              loading={loading}
+              dataSource={cases.slice(0, 5)}
+              renderItem={(item, index) => {
+                const pill = statusPillStyles[item.status] || statusPillStyles.processing
+                return (
+                  <List.Item
+                    actions={[
+                      <div
+                        key={index}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          navigate(`/client/case/${item.id}`)
+                        }}
+                        onTouchStart={(e) => {
+                          e.stopPropagation()
+                          e.currentTarget.style.transform = 'scale(0.96)'
+                        }}
+                        onTouchEnd={(e) => {
+                          e.stopPropagation()
+                          e.currentTarget.style.transform = 'scale(1)'
+                        }}
+                        style={{
+                          padding: '4px 14px',
+                          borderRadius: 999,
+                          border: '1px solid #0071e3',
+                          color: '#0071e3',
+                          fontSize: 12,
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          background: '#ffffff',
+                          WebkitTapHighlightColor: 'transparent',
+                          touchAction: 'manipulation',
+                        }}
+                      >查看详情</div>
+                    ]}
+                    style={{ borderBottom: index < Math.min(cases.length, 5) - 1 ? '1px solid #e2e2e4' : 'none', padding: '12px 0', cursor: 'pointer', transition: 'transform 0.15s ease', WebkitTapHighlightColor: 'transparent' }}
+                    onClick={() => navigate(`/client/case/${item.id}`)}
+                    onTouchStart={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
+                    onTouchEnd={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                  >
+                    <List.Item.Meta
+                      avatar={<div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <FileTextOutlined style={{ fontSize: 18, color: '#0071e3' }} />
+                      </div>}
+                      title={<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
+                        <span style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 14, fontWeight: 600, color: '#1a1c1d' }}>案件ID: {item.id?.slice(0, 6)}...</span>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center',
+                          padding: '2px 10px', borderRadius: 999,
+                          fontSize: 11, fontWeight: 500, lineHeight: '18px',
+                          background: pill.bg, color: pill.color,
+                        }}>{statusLabels[item.status]}</span>
+                      </div>}
+                      description={<div>
+                        <div style={{ fontSize: 12, color: '#414753', marginTop: 2 }}>案由：{item.case_type}</div>
+                        <div style={{ color: '#717785', fontSize: 11, marginTop: 2 }}>创建时间：{item.created_at}</div>
+                      </div>}
+                    />
+                  </List.Item>
+                )
+              }}
+            />
+            {cases.length === 0 && !loading && (
+              <div style={{ textAlign: 'center', padding: 32, color: '#717785' }}>
+                <FileTextOutlined style={{ fontSize: 40, color: '#c1c6d6', marginBottom: 8 }} />
+                <div style={{ fontSize: 13 }}>暂无案件</div>
+                <div style={{ fontSize: 11, marginTop: 2 }}>您可以通过签约付款创建新案件</div>
+              </div>
+            )}
+          </Card>
+        </section>
+
+        {/* === Quick Actions === */}
+        <section style={{ marginBottom: 24 }}>
+          <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#1a1c1d', marginBottom: 12, letterSpacing: '0.01em' }}>快捷操作</h2>
+          <Card style={{ borderRadius: 12, border: '1px solid #c1c6d6', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.02), 0 1px 2px rgba(15, 23, 42, 0.04)' }} styles={{ body: { padding: 8 } }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {quickActions.map((action, index) => (
+                <div
+                  key={index}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '12px 14px',
+                    background: 'transparent',
+                    borderRadius: 10,
+                    border: '1px solid transparent',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                    transform: activeAction === index ? 'scale(0.98)' : 'scale(1)',
+                  }}
+                  onClick={() => navigate(action.path)}
+                  onTouchStart={() => setActiveAction(index)}
+                  onTouchEnd={() => setActiveAction(null)}
+                >
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: action.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                    <action.icon style={{ fontSize: 22, color: action.color }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 15, fontWeight: 600, color: '#1a1c1d' }}>{action.title}</div>
+                    <div style={{ fontSize: 12, color: '#717785', marginTop: 2 }}>{action.desc}</div>
+                  </div>
+                  <ArrowRightOutlined style={{ fontSize: 14, color: '#717785' }} />
+                </div>
+              ))}
+            </div>
+          </Card>
+        </section>
+
+        {/* === Law Firm Contact (Navy Bento) === */}
+        <section>
+          <Card
+            style={{ borderRadius: 12, border: '1px solid #1a2332', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)', background: 'linear-gradient(135deg, #1a2332 0%, #131c2a 100%)' }}
+            styles={{ body: { padding: 16 } }}
+          >
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(228, 194, 120, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <PhoneOutlined style={{ fontSize: 16, color: '#e4c278' }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: 'rgba(228, 194, 120, 0.7)', letterSpacing: '0.05em' }}>律所热线</div>
+                  <div style={{ fontSize: 13, color: '#ffffff', fontWeight: 500 }}>400-888-0000</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(228, 194, 120, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <WechatOutlined style={{ fontSize: 16, color: '#e4c278' }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: 'rgba(228, 194, 120, 0.7)', letterSpacing: '0.05em' }}>微信咨询</div>
+                  <div style={{ fontSize: 13, color: '#ffffff', fontWeight: 500 }}>fazhikuai</div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </section>
+      </main>
 
       <BottomNav />
     </div>

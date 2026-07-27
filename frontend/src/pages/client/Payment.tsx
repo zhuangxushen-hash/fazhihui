@@ -178,7 +178,7 @@ export default function Payment() {
         return (
           <Card 
             title={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--gradient-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #0059b5 0%, #0071e3 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <UserOutlined style={{ fontSize: 14, color: '#fff' }} />
               </div>
               <span style={{ fontSize: 15, fontWeight: 600 }}>签约信息填写</span>
@@ -284,7 +284,7 @@ export default function Payment() {
         return (
           <Card 
             title={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--gradient-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #0059b5 0%, #0071e3 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <AlertOutlined style={{ fontSize: 14, color: '#fff' }} />
               </div>
               <span style={{ fontSize: 15, fontWeight: 600 }}>风险告知书</span>
@@ -293,12 +293,12 @@ export default function Payment() {
           >
             <div style={{ background: 'var(--bg-sunken)', border: '1px solid var(--border-default)', borderRadius: 8, padding: 16, marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 12 }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--gradient-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #0059b5 0%, #0071e3 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
                   <AlertOutlined style={{ fontSize: 18, color: '#fff' }} />
                 </div>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 'bold', color: 'var(--primary)' }}>重要提示</div>
-                  <div style={{ fontSize: 11, color: 'var(--accent)', marginTop: 1 }}>请仔细阅读以下风险告知事项</div>
+                  <div style={{ fontSize: 11, color: '#717785', marginTop: 1 }}>请仔细阅读以下风险告知事项</div>
                 </div>
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 2, whiteSpace: 'pre-wrap', background: 'var(--bg-card)', padding: 14, borderRadius: 6, maxHeight: 200, overflowY: 'auto' }}>
@@ -319,7 +319,7 @@ export default function Payment() {
         return (
           <Card 
             title={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--gradient-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #0059b5 0%, #0071e3 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <FileTextOutlined style={{ fontSize: 14, color: '#fff' }} />
               </div>
               <span style={{ fontSize: 15, fontWeight: 600 }}>在线签约</span>
@@ -327,7 +327,7 @@ export default function Payment() {
             style={{ marginBottom: 12, borderRadius: borderRadiusLG, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}
           >
             <div style={{ textAlign: 'center', padding: '24px 0' }}>
-              <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'var(--primary-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
                 <FileTextOutlined style={{ fontSize: 44, color: 'var(--primary)' }} />
               </div>
               <div style={{ fontSize: 18, fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: 6 }}>法律服务合同</div>
@@ -372,7 +372,7 @@ export default function Payment() {
         return (
           <Card 
             title={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--gradient-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #0059b5 0%, #0071e3 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <CreditCardOutlined style={{ fontSize: 14, color: '#fff' }} />
               </div>
               <span style={{ fontSize: 15, fontWeight: 600 }}>支付费用</span>
@@ -380,7 +380,7 @@ export default function Payment() {
             style={{ marginBottom: 12, borderRadius: borderRadiusLG, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}
           >
             <div style={{ textAlign: 'center', padding: '16px 0' }}>
-              <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--primary-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
                 <CreditCardOutlined style={{ fontSize: 32, color: 'var(--primary)' }} />
               </div>
               <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>应付金额</div>
@@ -433,23 +433,42 @@ export default function Payment() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
-      <div
+      <header
         style={{
-          background: '#0a0e1a',
-          padding: '16px 16px',
-          paddingTop: '52px',
-          color: '#f1f5f9',
-          position: 'relative',
+          position: 'sticky',
+          top: 0,
+          background: '#ffffff',
+          borderBottom: '1px solid #c1c6d6',
+          padding: '14px 16px',
+          paddingTop: 'max(14px, env(safe-area-inset-top))',
+          zIndex: 50,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-          <div style={{ cursor: 'pointer', padding: 4 }} onClick={() => navigate('/client')}>
-            <ArrowLeftOutlined style={{ fontSize: 18, color: '#94a3b8' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            onClick={() => navigate('/client')}
+            style={{
+              width: 40,
+              height: 40,
+              border: 'none',
+              background: 'transparent',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: '#0059b5',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            <ArrowLeftOutlined style={{ fontSize: 22 }} />
+          </button>
+          <div>
+            <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#0059b5', letterSpacing: '0.01em' }}>客户签约付款</h2>
+            <p style={{ fontSize: 12, color: '#717785', marginTop: 2 }}>一站式法律服务签约流程</p>
           </div>
-          <h2 style={{ fontSize: 20, fontWeight: 'bold' }}>客户签约付款</h2>
         </div>
-        <p style={{ fontSize: 12, color: '#94a3b8', marginLeft: 32 }}>一站式法律服务签约流程</p>
-      </div>
+      </header>
 
       <div style={{ padding: '12px', flex: 1, paddingBottom: '80px' }}>
         <div style={{ background: 'var(--bg-card)', borderRadius: borderRadiusLG, padding: 16, marginBottom: 16, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}>
@@ -490,7 +509,7 @@ export default function Payment() {
         style={{ borderRadius: 20 }}
       >
         <div style={{ textAlign: 'center', padding: '20px 0' }}>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--primary-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
             <FileTextOutlined style={{ fontSize: 28, color: 'var(--primary)' }} />
           </div>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 12 }}>请确认以下签约信息：</div>

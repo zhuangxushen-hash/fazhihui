@@ -57,28 +57,45 @@ export default function ClientCaseList() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
-      <div
+      <header
         style={{
-          background: '#0a0e1a',
-          padding: '16px 16px',
-          paddingTop: '52px',
-          color: '#f1f5f9',
-          position: 'relative',
+          position: 'sticky',
+          top: 0,
+          background: '#ffffff',
+          borderBottom: '1px solid #c1c6d6',
+          padding: '14px 16px',
+          paddingTop: 'max(14px, env(safe-area-inset-top))',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          zIndex: 50,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div 
-            style={{ cursor: 'pointer', padding: 4 }} 
-            onClick={() => navigate('/client')}
-            onTouchStart={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
-            onTouchEnd={(e) => e.currentTarget.style.transform = 'scale(1)'}
-          >
-            <ArrowLeftOutlined style={{ fontSize: 18, color: '#94a3b8' }} />
-          </div>
-          <h2 style={{ fontSize: 20, fontWeight: 'bold' }}>我的案件</h2>
+        <button
+          onClick={() => navigate('/client')}
+          onTouchStart={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
+          onTouchEnd={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          style={{
+            width: 40,
+            height: 40,
+            border: 'none',
+            background: 'transparent',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            color: '#0059b5',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          <ArrowLeftOutlined style={{ fontSize: 22 }} />
+        </button>
+        <div style={{ flex: 1 }}>
+          <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#0059b5', letterSpacing: '0.01em' }}>我的案件</h2>
+          <p style={{ fontSize: 12, color: '#717785', marginTop: 2 }}>共 {cases.length} 个案件</p>
         </div>
-        <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>共 {cases.length} 个案件</p>
-      </div>
+      </header>
 
       <div style={{ padding: '12px', flex: 1, paddingBottom: '80px' }}>
         <Card 
@@ -102,8 +119,8 @@ export default function ClientCaseList() {
                 onTouchEnd={() => setActiveItem(null)}
               >
                 <List.Item.Meta
-                  avatar={<div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--primary-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <FileTextOutlined style={{ fontSize: 18, color: 'var(--primary)' }} />
+                  avatar={<div style={{ width: 40, height: 40, borderRadius: 8, background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <FileTextOutlined style={{ fontSize: 18, color: '#0059b5' }} />
                   </div>}
                   title={<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
                     <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{item.case_type || '未知案由'}</span>

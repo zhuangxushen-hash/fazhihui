@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Card, Row, Col, Statistic, Progress, Table, Tag, Button, Space, message, Tabs } from 'antd'
+import { Card, Row, Col, Progress, Table, Button, Space, message, Tabs } from 'antd'
 import {
   AlertOutlined,
   CheckCircleOutlined,
@@ -11,6 +11,123 @@ import {
 } from '@ant-design/icons'
 import axios from '../api/axios'
 import { formatDateTime, formatDate } from '../utils/format'
+
+// === Material Design 3 Style Tokens ===
+const pageH2Style: React.CSSProperties = {
+  fontFamily: "'Noto Serif SC', serif",
+  fontSize: 22,
+  fontWeight: 600,
+  color: '#1a1c1d',
+  margin: 0,
+  letterSpacing: '0.01em',
+}
+
+const tableCardStyle: React.CSSProperties = {
+  borderRadius: 16,
+  overflow: 'hidden',
+}
+
+const cardHeadStyle: React.CSSProperties = {
+  borderBottom: '1px solid #c1c6d6',
+  padding: '0 20px',
+  minHeight: 56,
+}
+
+const cardTitleStyle: React.CSSProperties = {
+  fontFamily: "'Noto Serif SC', serif",
+  fontSize: 16,
+  fontWeight: 600,
+  color: '#1a1c1d',
+}
+
+// === MD3 Status Pill (Soft Background Style) ===
+type PillKind = 'neutral' | 'blue' | 'gold' | 'green' | 'red' | 'orange' | 'purple' | 'cyan' | 'geekblue'
+
+const pillColorMap: Record<PillKind, { bg: string; color: string }> = {
+  neutral: { bg: 'rgba(113, 119, 133, 0.12)', color: '#5f6672' },
+  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: '#0071e3' },
+  gold: { bg: 'rgba(201, 169, 97, 0.15)', color: '#8c702e' },
+  green: { bg: 'rgba(46, 125, 50, 0.1)', color: '#2e7d32' },
+  red: { bg: 'rgba(186, 26, 26, 0.1)', color: '#ba1a1a' },
+  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: '#ed6c02' },
+  purple: { bg: 'rgba(114, 46, 209, 0.1)', color: '#722ed1' },
+  cyan: { bg: 'rgba(0, 166, 167, 0.1)', color: '#00a6a7' },
+  geekblue: { bg: 'rgba(47, 84, 235, 0.1)', color: '#2f54eb' },
+}
+
+const StatusPill = ({ text, kind }: { text: string; kind: PillKind }) => {
+  const c = pillColorMap[kind] || pillColorMap.neutral
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        padding: '2px 10px',
+        borderRadius: 999,
+        background: c.bg,
+        color: c.color,
+        fontSize: 12,
+        fontWeight: 500,
+        lineHeight: '20px',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {text}
+    </span>
+  )
+}
+
+// === Compliance Status Mappings (Preserved) ===
+const marketingStatusKindMap: Record<string, PillKind> = {
+  draft: 'neutral',
+  pending_review: 'orange',
+  approved: 'green',
+  rejected: 'red',
+}
+
+const marketingStatusLabelMap: Record<string, string> = {
+  draft: '草稿',
+  pending_review: '待审核',
+  approved: '已通过',
+  rejected: '已拒绝',
+}
+
+const salesCheckKindMap: Record<string, PillKind> = {
+  pass: 'green',
+  warning: 'orange',
+  violation: 'red',
+}
+
+const salesCheckLabelMap: Record<string, string> = {
+  pass: '通过',
+  warning: '警告',
+  violation: '违规',
+}
+
+const signingStatusKindMap: Record<string, PillKind> = {
+  pending: 'neutral',
+  reviewing: 'blue',
+  signed: 'green',
+  rejected: 'red',
+}
+
+const signingStatusLabelMap: Record<string, string> = {
+  pending: '待签署',
+  reviewing: '审核中',
+  signed: '已签署',
+  rejected: '已拒绝',
+}
+
+const sopStatusKindMap: Record<string, PillKind> = {
+  pending: 'orange',
+  completed: 'green',
+  overdue: 'red',
+}
+
+const sopStatusLabelMap: Record<string, string> = {
+  pending: '待完成',
+  completed: '已完成',
+  overdue: '已超时',
+}
 
 export default function ComplianceCenter() {
   const [activeTab, setActiveTab] = useState('overview')
@@ -127,22 +244,12 @@ export default function ComplianceCenter() {
       const labels: Record<string, string> = { douyin: '抖音', baidu: '百度', kuaishou: '快手', wechat: '微信', other: '其他' }
       return labels[p] || p
     }},
-    { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => {
-      const colors: Record<string, string> = {
-        draft: 'default',
-        pending_review: 'orange',
-        approved: 'green',
-        rejected: 'red',
-      }
-      const labels: Record<string, string> = {
-        draft: '草稿',
-        pending_review: '待审核',
-        approved: '已通过',
-        rejected: '已拒绝',
-      }
-      return <Tag color={colors[status]}>{labels[status]}</Tag>
-    }},
-    { title: '合规问题', dataIndex: 'compliance_issues', key: 'compliance_issues', render: (issues: string) => issues ? <Tag color="red">有问题</Tag> : <Tag color="green">通过</Tag> },
+    { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => (
+      <StatusPill text={marketingStatusLabelMap[status] || status} kind={marketingStatusKindMap[status] || 'neutral'} />
+    )},
+    { title: '合规问题', dataIndex: 'compliance_issues', key: 'compliance_issues', render: (issues: string) => (
+      <StatusPill text={issues ? '有问题' : '通过'} kind={issues ? 'red' : 'green'} />
+    )},
     { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
     { title: '审核时间', dataIndex: 'review_time', key: 'review_time', render: (val: string) => formatDateTime(val) },
     { title: '操作', key: 'action', render: (_: any, record: any) => (
@@ -150,7 +257,7 @@ export default function ComplianceCenter() {
         {record.status === 'pending_review' && (
           <>
             <Button size="small" type="primary" onClick={() => handleReview(record, 'approved')}>通过</Button>
-            <Button size="small" danger onClick={() => handleReview(record, 'rejected')}>拒绝</Button>
+            <Button type="link" size="small" danger onClick={() => handleReview(record, 'rejected')}>拒绝</Button>
           </>
         )}
       </Space>
@@ -164,12 +271,12 @@ export default function ComplianceCenter() {
       const labels: Record<string, string> = { phone: '电话', wechat: '微信', qq: 'QQ', other: '其他' }
       return labels[c] || c
     }},
-    { title: '检查结果', dataIndex: 'check_result', key: 'check_result', render: (result: string) => {
-      const colors: Record<string, string> = { pass: 'green', warning: 'orange', violation: 'red' }
-      const labels: Record<string, string> = { pass: '通过', warning: '警告', violation: '违规' }
-      return <Tag color={colors[result]}>{labels[result]}</Tag>
-    }},
-    { title: '风险告知', dataIndex: 'risk_disclosure_accepted', key: 'risk_disclosure_accepted', render: (accepted: boolean) => accepted ? <Tag color="green">已签署</Tag> : <Tag color="red">未签署</Tag> },
+    { title: '检查结果', dataIndex: 'check_result', key: 'check_result', render: (result: string) => (
+      <StatusPill text={salesCheckLabelMap[result] || result} kind={salesCheckKindMap[result] || 'neutral'} />
+    )},
+    { title: '风险告知', dataIndex: 'risk_disclosure_accepted', key: 'risk_disclosure_accepted', render: (accepted: boolean) => (
+      <StatusPill text={accepted ? '已签署' : '未签署'} kind={accepted ? 'green' : 'red'} />
+    )},
     { title: '风险告知时间', dataIndex: 'risk_disclosure_time', key: 'risk_disclosure_time', render: (val: string) => formatDateTime(val) },
     { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
   ]
@@ -178,14 +285,18 @@ export default function ComplianceCenter() {
     { title: '案件ID', dataIndex: 'case_id', key: 'case_id', width: 120 },
     { title: '客户ID', dataIndex: 'client_id', key: 'client_id' },
     { title: '律师', dataIndex: 'lawyer_id', key: 'lawyer_id' },
-    { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => {
-      const colors: Record<string, string> = { pending: 'default', reviewing: 'blue', signed: 'green', rejected: 'red' }
-      const labels: Record<string, string> = { pending: '待签署', reviewing: '审核中', signed: '已签署', rejected: '已拒绝' }
-      return <Tag color={colors[status]}>{labels[status]}</Tag>
-    }},
-    { title: '资质验证', dataIndex: 'lawyer_qualification_verified', key: 'lawyer_qualification_verified', render: (v: boolean) => v ? <Tag color="green">已验证</Tag> : <Tag color="red">未验证</Tag> },
-    { title: '风险告知', dataIndex: 'risk_disclosure_signed', key: 'risk_disclosure_signed', render: (signed: boolean) => signed ? <Tag color="green">已签署</Tag> : <Tag color="red">未签署</Tag> },
-    { title: '合同合规', dataIndex: 'contract_compliance_passed', key: 'contract_compliance_passed', render: (passed: boolean) => passed ? <Tag color="green">通过</Tag> : <Tag color="red">未通过</Tag> },
+    { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => (
+      <StatusPill text={signingStatusLabelMap[status] || status} kind={signingStatusKindMap[status] || 'neutral'} />
+    )},
+    { title: '资质验证', dataIndex: 'lawyer_qualification_verified', key: 'lawyer_qualification_verified', render: (v: boolean) => (
+      <StatusPill text={v ? '已验证' : '未验证'} kind={v ? 'green' : 'red'} />
+    )},
+    { title: '风险告知', dataIndex: 'risk_disclosure_signed', key: 'risk_disclosure_signed', render: (signed: boolean) => (
+      <StatusPill text={signed ? '已签署' : '未签署'} kind={signed ? 'green' : 'red'} />
+    )},
+    { title: '合同合规', dataIndex: 'contract_compliance_passed', key: 'contract_compliance_passed', render: (passed: boolean) => (
+      <StatusPill text={passed ? '通过' : '未通过'} kind={passed ? 'green' : 'red'} />
+    )},
     { title: '签约时间', dataIndex: 'signed_time', key: 'signed_time', render: (val: string) => formatDateTime(val) },
     { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
   ]
@@ -198,14 +309,14 @@ export default function ComplianceCenter() {
     }},
     { title: '步骤名称', dataIndex: 'step_name', key: 'step_name' },
     { title: '步骤', dataIndex: 'step_order', key: 'step_order' },
-    { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => {
-      const colors: Record<string, string> = { pending: 'orange', completed: 'green', overdue: 'red' }
-      const labels: Record<string, string> = { pending: '待完成', completed: '已完成', overdue: '已超时' }
-      return <Tag color={colors[status]}>{labels[status]}</Tag>
-    }},
+    { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => (
+      <StatusPill text={sopStatusLabelMap[status] || status} kind={sopStatusKindMap[status] || 'neutral'} />
+    )},
     { title: '截止日期', dataIndex: 'deadline', key: 'deadline', render: (val: string) => formatDate(val) },
     { title: '完成时间', dataIndex: 'completed_time', key: 'completed_time', render: (val: string) => formatDateTime(val) },
-    { title: '证据验证', dataIndex: 'evidence_verified', key: 'evidence_verified', render: (v: boolean) => v ? <Tag color="green">已验证</Tag> : <Tag color="orange">待验证</Tag> },
+    { title: '证据验证', dataIndex: 'evidence_verified', key: 'evidence_verified', render: (v: boolean) => (
+      <StatusPill text={v ? '已验证' : '待验证'} kind={v ? 'green' : 'orange'} />
+    )},
     { title: '操作', key: 'action', render: (_: any, record: any) => (
       <Space>
         {record.status === 'pending' && (
@@ -215,9 +326,54 @@ export default function ComplianceCenter() {
     )},
   ]
 
+  // === MD3 Stat Cards (Bento Style with Icon Circle) ===
+  const statCards = [
+    {
+      title: '待完成节点',
+      value: stats.pending,
+      icon: <AlertOutlined />,
+      iconBg: 'rgba(237, 108, 2, 0.1)',
+      iconColor: '#ed6c02',
+    },
+    {
+      title: '已完成节点',
+      value: stats.completed,
+      icon: <CheckCircleOutlined />,
+      iconBg: 'rgba(46, 125, 50, 0.1)',
+      iconColor: '#2e7d32',
+    },
+    {
+      title: '已超时节点',
+      value: stats.overdue,
+      icon: <WarningOutlined />,
+      iconBg: 'rgba(186, 26, 26, 0.1)',
+      iconColor: '#ba1a1a',
+    },
+    {
+      title: '违规记录',
+      value: stats.violation,
+      icon: <AlertOutlined />,
+      iconBg: 'rgba(201, 169, 97, 0.15)',
+      iconColor: '#8c702e',
+    },
+  ]
+
+  const completionRate = Math.round((stats.completed / (stats.completed + stats.pending + stats.overdue)) * 100) || 0
+
+  const riskDistribution = [
+    { label: '待完成', value: stats.pending, color: '#ed6c02' },
+    { label: '已完成', value: stats.completed, color: '#2e7d32' },
+    { label: '已超时', value: stats.overdue, color: '#ba1a1a' },
+    { label: '违规记录', value: stats.violation, color: '#c9a961' },
+  ]
+
   return (
-    <div>
-      <Card>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className="page-header" style={{ marginBottom: 0 }}>
+        <h2 style={pageH2Style}>合规中心</h2>
+      </div>
+
+      <Card style={{ borderRadius: 16 }}>
         <Tabs
           activeKey={activeTab}
           onChange={setActiveTab}
@@ -232,60 +388,85 @@ export default function ComplianceCenter() {
               ),
               children: (
                 <>
-                  <Row gutter={16}>
-                    <Col span={6}>
-                      <Card>
-                        <Statistic title="待完成节点" value={stats.pending} prefix={<AlertOutlined />} />
-                      </Card>
-                    </Col>
-                    <Col span={6}>
-                      <Card>
-                        <Statistic title="已完成节点" value={stats.completed} prefix={<CheckCircleOutlined />} />
-                      </Card>
-                    </Col>
-                    <Col span={6}>
-                      <Card>
-                        <Statistic title="已超时节点" value={stats.overdue} prefix={<WarningOutlined />} />
-                      </Card>
-                    </Col>
-                    <Col span={6}>
-                      <Card>
-                        <Statistic title="违规记录" value={stats.violation} prefix={<AlertOutlined />} />
-                      </Card>
-                    </Col>
+                  <Row gutter={[16, 16]}>
+                    {statCards.map((card, index) => (
+                      <Col xs={24} sm={12} lg={6} key={index}>
+                        <Card style={{ height: '100%', borderRadius: 12 }} styles={{ body: { padding: 20 } }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 12, color: '#414753', marginBottom: 12, letterSpacing: '0.02em', fontWeight: 500 }}>
+                                {card.title}
+                              </div>
+                              <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 30, fontWeight: 700, color: '#1a1c1d', lineHeight: 1.2, letterSpacing: '0.01em' }}>
+                                {card.value}
+                              </div>
+                            </div>
+                            <div
+                              style={{
+                                width: 48,
+                                height: 48,
+                                borderRadius: 12,
+                                background: card.iconBg,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: card.iconColor,
+                                fontSize: 22,
+                              }}
+                            >
+                              {card.icon}
+                            </div>
+                          </div>
+                        </Card>
+                      </Col>
+                    ))}
                   </Row>
 
-                  <Row gutter={16} style={{ marginTop: 24 }}>
-                    <Col span={12}>
-                      <Card title="合规完成率">
+                  <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+                    <Col xs={24} lg={12}>
+                      <Card
+                        title={<span style={cardTitleStyle}>合规完成率</span>}
+                        headStyle={cardHeadStyle}
+                        style={{ height: '100%', borderRadius: 12 }}
+                      >
                         <div style={{ marginBottom: 16 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <span>办案SOP完成率</span>
-                            <span>{Math.round((stats.completed / (stats.completed + stats.pending + stats.overdue)) * 100) || 0}%</span>
+                            <span style={{ fontSize: 13, color: '#414753' }}>办案SOP完成率</span>
+                            <span style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 700, color: '#0059b5', fontSize: 15 }}>{completionRate}%</span>
                           </div>
-                          <Progress percent={Math.round((stats.completed / (stats.completed + stats.pending + stats.overdue)) * 100) || 0} />
+                          <Progress
+                            percent={completionRate}
+                            strokeColor={{ from: '#0071e3', to: '#c9a961' }}
+                            size="small"
+                            strokeWidth={6}
+                          />
                         </div>
                       </Card>
                     </Col>
-                    <Col span={12}>
-                      <Card title="合规风险分布">
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                          <div>
-                            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#fa8c16' }}>{stats.pending}</div>
-                            <div style={{ fontSize: 12, color: '#999' }}>待完成</div>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#52c41a' }}>{stats.completed}</div>
-                            <div style={{ fontSize: 12, color: '#999' }}>已完成</div>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#f5222d' }}>{stats.overdue}</div>
-                            <div style={{ fontSize: 12, color: '#999' }}>已超时</div>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#faad14' }}>{stats.violation}</div>
-                            <div style={{ fontSize: 12, color: '#999' }}>违规记录</div>
-                          </div>
+                    <Col xs={24} lg={12}>
+                      <Card
+                        title={<span style={cardTitleStyle}>合规风险分布</span>}
+                        headStyle={cardHeadStyle}
+                        style={{ height: '100%', borderRadius: 12 }}
+                      >
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                          {riskDistribution.map(item => (
+                            <div
+                              key={item.label}
+                              style={{
+                                background: '#f9f9fb',
+                                padding: 16,
+                                borderRadius: 10,
+                                border: '1px solid #e2e2e4',
+                                textAlign: 'center',
+                              }}
+                            >
+                              <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 26, fontWeight: 700, color: item.color, lineHeight: 1.2 }}>
+                                {item.value}
+                              </div>
+                              <div style={{ fontSize: 12, color: '#414753', marginTop: 4 }}>{item.label}</div>
+                            </div>
+                          ))}
                         </div>
                       </Card>
                     </Col>
@@ -302,12 +483,15 @@ export default function ComplianceCenter() {
                 </span>
               ),
               children: (
-                <Table
-                  dataSource={marketingContents}
-                  columns={marketingColumns}
-                  loading={loading}
-                  rowKey="id"
-                />
+                <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+                  <Table
+                    dataSource={marketingContents}
+                    columns={marketingColumns}
+                    loading={loading}
+                    rowKey="id"
+                    size="small"
+                  />
+                </Card>
               ),
             },
             {
@@ -319,12 +503,15 @@ export default function ComplianceCenter() {
                 </span>
               ),
               children: (
-                <Table
-                  dataSource={salesCompliance}
-                  columns={salesColumns}
-                  loading={loading}
-                  rowKey="id"
-                />
+                <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+                  <Table
+                    dataSource={salesCompliance}
+                    columns={salesColumns}
+                    loading={loading}
+                    rowKey="id"
+                    size="small"
+                  />
+                </Card>
               ),
             },
             {
@@ -336,12 +523,15 @@ export default function ComplianceCenter() {
                 </span>
               ),
               children: (
-                <Table
-                  dataSource={signingCompliance}
-                  columns={signingColumns}
-                  loading={loading}
-                  rowKey="id"
-                />
+                <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+                  <Table
+                    dataSource={signingCompliance}
+                    columns={signingColumns}
+                    loading={loading}
+                    rowKey="id"
+                    size="small"
+                  />
+                </Card>
               ),
             },
             {
@@ -353,12 +543,15 @@ export default function ComplianceCenter() {
                 </span>
               ),
               children: (
-                <Table
-                  dataSource={caseSOP}
-                  columns={sopColumns}
-                  loading={loading}
-                  rowKey="id"
-                />
+                <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+                  <Table
+                    dataSource={caseSOP}
+                    columns={sopColumns}
+                    loading={loading}
+                    rowKey="id"
+                    size="small"
+                  />
+                </Card>
               ),
             },
           ]}

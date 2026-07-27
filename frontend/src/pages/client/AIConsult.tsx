@@ -110,42 +110,46 @@ export default function AIConsult() {
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-body)' }}>
-      <div
+      <header
         style={{
-          background: '#0a0e1a',
-          padding: '16px 16px',
-          paddingTop: '52px',
-          color: '#f1f5f9',
+          position: 'sticky',
+          top: 0,
+          background: '#ffffff',
+          borderBottom: '1px solid #c1c6d6',
+          padding: '14px 16px',
+          paddingTop: 'max(14px, env(safe-area-inset-top))',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          zIndex: 50,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--gradient-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <RobotOutlined style={{ fontSize: 22 }} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: 20, fontWeight: 'bold' }}>AI法律助手</h2>
-            <p style={{ fontSize: 11, color: '#94a3b8' }}>7×24小时在线答疑</p>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <div
-              onClick={handleOpenHistory}
-              style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s ease' }}
-              onTouchStart={(e) => (e.currentTarget.style.transform = 'scale(0.92)')}
-              onTouchEnd={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-            >
-              <HistoryOutlined style={{ fontSize: 18, color: '#22d3ee' }} />
-            </div>
-            <div
-              onClick={handleTransfer}
-              style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s ease' }}
-              onTouchStart={(e) => (e.currentTarget.style.transform = 'scale(0.92)')}
-              onTouchEnd={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-            >
-              <CustomerServiceOutlined style={{ fontSize: 18, color: '#22d3ee' }} />
-            </div>
-          </div>
+        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #0059b5 0%, #0071e3 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <RobotOutlined style={{ fontSize: 22, color: '#ffffff' }} />
         </div>
-      </div>
+        <div style={{ flex: 1 }}>
+          <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#0059b5', letterSpacing: '0.01em' }}>AI法律助手</h2>
+          <p style={{ fontSize: 12, color: '#717785', marginTop: 2 }}>7×24小时在线答疑</p>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={handleOpenHistory}
+            onTouchStart={(e) => (e.currentTarget.style.transform = 'scale(0.92)')}
+            onTouchEnd={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+            style={{ width: 36, height: 36, borderRadius: 10, border: 'none', background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s ease', WebkitTapHighlightColor: 'transparent' }}
+          >
+            <HistoryOutlined style={{ fontSize: 18, color: '#0059b5' }} />
+          </button>
+          <button
+            onClick={handleTransfer}
+            onTouchStart={(e) => (e.currentTarget.style.transform = 'scale(0.92)')}
+            onTouchEnd={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+            style={{ width: 36, height: 36, borderRadius: 10, border: 'none', background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s ease', WebkitTapHighlightColor: 'transparent' }}
+          >
+            <CustomerServiceOutlined style={{ fontSize: 18, color: '#0059b5' }} />
+          </button>
+        </div>
+      </header>
 
       <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: 12, paddingBottom: '160px' }}>
         <Card
@@ -164,9 +168,9 @@ export default function AIConsult() {
                   padding: '10px 12px',
                   fontSize: 12,
                   borderRadius: 8,
-                  background: 'var(--primary-bg)',
-                  color: 'var(--primary)',
-                  border: '1px solid var(--primary-border)',
+                  background: 'rgba(0, 113, 227, 0.08)',
+                  color: '#0059b5',
+                  border: '1px solid rgba(0, 113, 227, 0.2)',
                   transition: 'transform 0.15s ease',
                   transform: activeQuestion === i ? 'scale(0.96)' : 'scale(1)',
                   textAlign: 'center',
@@ -191,7 +195,7 @@ export default function AIConsult() {
                   <Avatar
                     icon={<RobotOutlined />}
                     style={{
-                      background: 'var(--gradient-accent)',
+                      background: 'linear-gradient(135deg, #0059b5 0%, #0071e3 100%)',
                       width: 36,
                       height: 36,
                       marginRight: 8,
@@ -214,7 +218,7 @@ export default function AIConsult() {
                       marginTop: 10,
                       padding: '8px 10px',
                       background: 'var(--warning-bg)',
-                      border: '1px solid var(--warning-border)',
+                      border: '1px solid rgba(237, 108, 2, 0.2)',
                       borderRadius: 6,
                       fontSize: 12,
                       color: 'var(--warning)',
@@ -344,7 +348,7 @@ export default function AIConsult() {
         centered
       >
         <div style={{ textAlign: 'center', padding: '16px 0' }}>
-          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--primary-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
             <CustomerServiceOutlined style={{ fontSize: 32, color: 'var(--primary)' }} />
           </div>
           <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>已转人工，工单生成中</div>

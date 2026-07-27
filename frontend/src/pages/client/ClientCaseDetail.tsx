@@ -103,24 +103,40 @@ export default function ClientCaseDetail() {
   if (!caseDetail) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
-        <div
+        <header
           style={{
-            background: '#0a0e1a',
-            padding: '16px 16px',
-            paddingTop: '52px',
-            color: '#f1f5f9',
+            position: 'sticky',
+            top: 0,
+            background: '#ffffff',
+            borderBottom: '1px solid #c1c6d6',
+            padding: '14px 16px',
+            paddingTop: 'max(14px, env(safe-area-inset-top))',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            zIndex: 50,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div 
-              style={{ cursor: 'pointer', padding: 4 }} 
-              onClick={() => navigate('/client/cases')}
-            >
-              <ArrowLeftOutlined style={{ fontSize: 18, color: '#94a3b8' }} />
-            </div>
-            <h2 style={{ fontSize: 20, fontWeight: 'bold' }}>案件详情</h2>
-          </div>
-        </div>
+          <button
+            onClick={() => navigate('/client/cases')}
+            style={{
+              width: 40,
+              height: 40,
+              border: 'none',
+              background: 'transparent',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: '#0059b5',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            <ArrowLeftOutlined style={{ fontSize: 22 }} />
+          </button>
+          <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#0059b5', letterSpacing: '0.01em' }}>案件详情</h2>
+        </header>
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' }}>
           <div style={{ textAlign: 'center' }}>
             <FileTextOutlined style={{ fontSize: 48, color: 'var(--border-default)', marginBottom: 12 }} />
@@ -134,33 +150,49 @@ export default function ClientCaseDetail() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
-      <div
+      <header
         style={{
-          background: '#0a0e1a',
-          padding: '16px 16px',
-          paddingTop: '52px',
-          color: '#f1f5f9',
-          position: 'relative',
+          position: 'sticky',
+          top: 0,
+          background: '#ffffff',
+          borderBottom: '1px solid #c1c6d6',
+          padding: '14px 16px',
+          paddingTop: 'max(14px, env(safe-area-inset-top))',
+          zIndex: 50,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div 
-            style={{ cursor: 'pointer', padding: 4 }} 
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
             onClick={() => navigate('/client/cases')}
             onTouchStart={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
             onTouchEnd={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            style={{
+              width: 40,
+              height: 40,
+              border: 'none',
+              background: 'transparent',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: '#0059b5',
+              WebkitTapHighlightColor: 'transparent',
+            }}
           >
-            <ArrowLeftOutlined style={{ fontSize: 18, color: '#94a3b8' }} />
+            <ArrowLeftOutlined style={{ fontSize: 22 }} />
+          </button>
+          <div style={{ flex: 1 }}>
+            <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#0059b5', letterSpacing: '0.01em' }}>案件详情</h2>
+            <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Tag color={statusColors[caseDetail.status]} style={{ fontSize: 11, padding: '2px 8px' }}>
+                {statusLabels[caseDetail.status]}
+              </Tag>
+              <span style={{ fontSize: 12, color: '#717785' }}>{caseDetail.case_type || '未知案由'}</span>
+            </div>
           </div>
-          <h2 style={{ fontSize: 20, fontWeight: 'bold' }}>案件详情</h2>
         </div>
-        <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Tag color={statusColors[caseDetail.status]} style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(255,255,255,0.2)', border: 'none' }}>
-            {statusLabels[caseDetail.status]}
-          </Tag>
-          <span style={{ fontSize: 12, color: '#94a3b8' }}>{caseDetail.case_type || '未知案由'}</span>
-        </div>
-      </div>
+      </header>
 
       <div style={{ padding: '12px', flex: 1, paddingBottom: '120px' }}>
         <Card 
@@ -170,7 +202,7 @@ export default function ClientCaseDetail() {
             <Avatar
               icon={<UserOutlined />}
               style={{
-                background: 'var(--gradient-accent)',
+                background: 'linear-gradient(135deg, #1a2332 0%, #131c2a 100%)',
                 width: 56,
                 height: 56,
                 border: '3px solid rgba(6,182,212,0.2)',
@@ -189,7 +221,7 @@ export default function ClientCaseDetail() {
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--primary-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <FileTextOutlined style={{ fontSize: 14, color: 'var(--primary)' }} />
               </div>
               <div style={{ flex: 1 }}>
@@ -310,7 +342,7 @@ export default function ClientCaseDetail() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {documents.map((doc) => (
                 <div key={doc.id} style={{ padding: 12, background: 'var(--bg-sunken)', borderRadius: 8, border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--primary-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <PaperClipOutlined style={{ fontSize: 16, color: 'var(--primary)' }} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -331,10 +363,10 @@ export default function ClientCaseDetail() {
         {/* 结案评价入口 */}
         {caseDetail.status === 'closed' && (
           <Card
-            style={{ marginBottom: 12, borderRadius: borderRadiusLG, background: 'linear-gradient(135deg, rgba(0,113,227,0.06) 0%, rgba(59,130,246,0.04) 100%)', border: '1px solid var(--primary-border)', boxShadow: 'var(--shadow-sm)' }}
+            style={{ marginBottom: 12, borderRadius: borderRadiusLG, background: 'linear-gradient(135deg, rgba(0,113,227,0.06) 0%, rgba(59,130,246,0.04) 100%)', border: '1px solid rgba(0, 113, 227, 0.2)', boxShadow: 'var(--shadow-sm)' }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--primary-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <StarOutlined style={{ fontSize: 24, color: 'var(--primary)' }} />
               </div>
               <div style={{ flex: 1 }}>

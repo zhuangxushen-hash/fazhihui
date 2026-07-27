@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Layout as AntLayout, Menu, Button, Dropdown, Avatar, theme } from 'antd'
+import { Layout as AntLayout, Menu, Dropdown, Avatar } from 'antd'
 import logo from '../assets/fazhihui-logo.svg'
 import {
   DashboardOutlined,
@@ -15,6 +15,8 @@ import {
   MenuUnfoldOutlined,
   MenuFoldOutlined,
   BellOutlined,
+  SearchOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 
@@ -186,32 +188,35 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }
 
   const menuItems = menuGroups.map(group => {
-    const isGroupActive = group.key === activeGroupKey
     return {
       key: group.key,
-      icon: <span style={{ color: isGroupActive ? '#b8941e' : '#64748b' }}>{group.icon}</span>,
-      label: <span style={{ color: isGroupActive ? '#f1f5f9' : '#94a3b8', fontWeight: isGroupActive ? 500 : 400 }}>{group.label}</span>,
+      icon: <span style={{ fontSize: 20 }}>{group.icon}</span>,
+      label: group.label,
       children: group.children.map(child => ({
         key: child.key,
-        label: (
-          <span style={{ color: location.pathname === child.key ? '#b8941e' : '#94a3b8', fontWeight: location.pathname === child.key ? 500 : 400 }}>
-            {child.label}
-          </span>
-        ),
+        label: child.label,
       })),
     }
   })
 
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken()
+  const roleLabels: Record<string, string> = {
+    super_admin: '超级管理员',
+    org_admin: '律所管理者',
+    marketing: '投放专员',
+    sales: '谈案销售',
+    lawyer: '办案律师',
+    assistant: '律师助理',
+    finance: '财务人员',
+    client: '客户',
+  }
 
   return (
-    <AntLayout style={{ minHeight: '100vh' }}>
+    <AntLayout style={{ minHeight: '100vh', background: '#f9f9fb' }}>
       <Sider
         collapsible
         collapsed={collapsed}
         onCollapse={setCollapsed}
+        trigger={null}
         theme="dark"
         style={{
           overflow: 'auto',
@@ -220,32 +225,57 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           left: 0,
           top: 0,
           bottom: 0,
-          width: collapsed ? 80 : 220,
-          background: 'linear-gradient(180deg, #0d1b2a 0%, #1b2638 100%)',
-          boxShadow: '2px 0 12px rgba(13, 27, 42, 0.2)',
-          transition: 'width 0.3s ease',
+          width: collapsed ? 80 : 260,
+          background: 'linear-gradient(180deg, #131c2a 0%, #1a2332 100%)',
+          boxShadow: '2px 0 16px rgba(13, 27, 42, 0.15)',
+          transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           zIndex: 200,
         }}
       >
+        {/* Brand Header */}
         <div
           style={{
-            padding: collapsed ? '12px' : '20px 16px',
-            marginBottom: 24,
-            background: 'rgba(156, 124, 45, 0.06)',
-            borderRadius: collapsed ? '50%' : borderRadiusLG,
-            height: collapsed ? 60 : 'auto',
+            padding: collapsed ? '16px 12px' : '24px 24px 20px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'flex-start',
             gap: 12,
-            borderTop: '2px solid rgba(156, 124, 45, 0.15)',
+            borderBottom: '1px solid rgba(228, 194, 120, 0.1)',
           }}
         >
-          <img src={logo} style={{ width: collapsed ? 40 : 48, height: collapsed ? 40 : 48, flexShrink: 0 }} alt="法智汇" />
+          <div
+            style={{
+              width: collapsed ? 36 : 44,
+              height: collapsed ? 36 : 44,
+              borderRadius: 10,
+              background: 'rgba(228, 194, 120, 0.08)',
+              border: '1px solid rgba(228, 194, 120, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              overflow: 'hidden',
+            }}
+          >
+            <img src={logo} style={{ width: '70%', height: '70%', objectFit: 'contain' }} alt="法智汇" />
+          </div>
           {!collapsed && (
-            <span style={{ fontSize: 22, fontWeight: 800, color: '#b8941e', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
-              法智汇
-            </span>
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+              <span
+                style={{
+                  fontFamily: "'Noto Serif SC', serif",
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                法智汇
+              </span>
+              <span style={{ fontSize: 11, color: 'rgba(228, 194, 120, 0.6)', marginTop: 2 }}>
+                智慧法律管理平台
+              </span>
+            </div>
           )}
         </div>
         <Menu
@@ -258,15 +288,80 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           style={{
             borderRight: 0,
             background: 'transparent',
-            marginTop: 16,
+            marginTop: 12,
+            paddingInline: 12,
           }}
           theme="dark"
         />
+        {/* User Info Footer */}
+        {!collapsed && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              padding: '16px 20px',
+              borderTop: '1px solid rgba(228, 194, 120, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+            }}
+          >
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: 'rgba(228, 194, 120, 0.15)',
+                border: '1px solid rgba(228, 194, 120, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <Avatar
+                icon={<UserOutlined />}
+                size={34}
+                style={{ background: 'transparent', color: '#e4c278' }}
+              />
+            </div>
+            <div style={{ overflow: 'hidden', flex: 1 }}>
+              <p
+                style={{
+                  fontSize: 13,
+                  color: '#ffffff',
+                  fontWeight: 500,
+                  margin: 0,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {user.real_name || '用户'}
+              </p>
+              <p
+                style={{
+                  fontSize: 11,
+                  color: 'rgba(228, 194, 120, 0.5)',
+                  margin: 0,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {roleLabels[user.role] || '用户'}
+              </p>
+            </div>
+          </div>
+        )}
       </Sider>
       <AntLayout
         style={{
-          marginLeft: collapsed ? 80 : 220,
-          transition: 'margin-left 0.3s ease',
+          marginLeft: collapsed ? 80 : 260,
+          transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          background: '#f9f9fb',
         }}
       >
         <Header
@@ -275,67 +370,179 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: '0 24px',
-            background: colorBgContainer,
-            borderBottom: '1px solid #f0f0f0',
+            background: '#ffffff',
+            borderBottom: '1px solid #c1c6d6',
             position: 'fixed',
             top: 0,
             right: 0,
-            left: collapsed ? 80 : 220,
+            left: collapsed ? 80 : 260,
             zIndex: 100,
-            transition: 'left 0.3s ease',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+            transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             height: 64,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <Button
-              type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24, flex: 1 }}>
+            <button
               onClick={() => setCollapsed(!collapsed)}
-              style={{ fontSize: 18, color: '#4a5568' }}
-            />
-            <span style={{
-              fontFamily: "'Noto Serif SC', serif",
-              fontSize: 18,
-              fontWeight: 600,
-              color: '#1a202c',
-              letterSpacing: '0.02em',
-            }}>
-              {currentPageLabel}
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <Button
-              type="text"
-              icon={<BellOutlined />}
-              style={{ fontSize: 18, color: '#4a5568', position: 'relative' }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 18,
+                color: '#414753',
+                padding: 8,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background 0.2s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#f3f3f5')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
-              <span style={{ position: 'absolute', top: 4, right: 4, width: 6, height: 6, background: '#c53030', borderRadius: '50%' }} />
-            </Button>
-            <Dropdown menu={{ items: userMenu, onClick: handleUserMenuClick }}>
-              <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: 10, padding: '8px 12px', borderRadius: 6, transition: 'background 0.2s' }}>
+              {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            </button>
+            <h2
+              style={{
+                fontFamily: "'Noto Serif SC', serif",
+                fontSize: 22,
+                fontWeight: 600,
+                color: '#1a1c1d',
+                margin: 0,
+                letterSpacing: '0.01em',
+              }}
+            >
+              {currentPageLabel}
+            </h2>
+            <div
+              style={{
+                position: 'relative',
+                width: 360,
+                maxWidth: '40vw',
+              }}
+            >
+              <SearchOutlined
+                style={{
+                  position: 'absolute',
+                  left: 14,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#717785',
+                  fontSize: 16,
+                }}
+              />
+              <input
+                type="text"
+                placeholder="搜索客户、案件或功能..."
+                style={{
+                  width: '100%',
+                  height: 38,
+                  paddingLeft: 40,
+                  paddingRight: 16,
+                  background: '#f3f3f5',
+                  border: '1px solid transparent',
+                  borderRadius: 999,
+                  fontSize: 14,
+                  color: '#1a1c1d',
+                  outline: 'none',
+                  transition: 'all 0.2s',
+                }}
+                onFocus={e => {
+                  e.currentTarget.style.background = '#ffffff'
+                  e.currentTarget.style.borderColor = '#0071e3'
+                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0, 113, 227, 0.1)'
+                }}
+                onBlur={e => {
+                  e.currentTarget.style.background = '#f3f3f5'
+                  e.currentTarget.style.borderColor = 'transparent'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+              />
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                color: '#414753',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 20,
+                position: 'relative',
+                transition: 'background 0.2s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#f3f3f5')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              <BellOutlined />
+              <span
+                style={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  width: 6,
+                  height: 6,
+                  background: '#ba1a1a',
+                  borderRadius: '50%',
+                }}
+              />
+            </button>
+            <button
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                color: '#414753',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 18,
+                transition: 'background 0.2s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#f3f3f5')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              <AppstoreOutlined />
+            </button>
+            <div style={{ width: 1, height: 24, background: '#c1c6d6', margin: '0 8px' }} />
+            <Dropdown menu={{ items: userMenu, onClick: handleUserMenuClick }} placement="bottomRight">
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  cursor: 'pointer',
+                  padding: '6px 10px',
+                  borderRadius: 8,
+                  transition: 'background 0.2s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#f3f3f5')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+              >
                 <Avatar
                   icon={<UserOutlined />}
+                  size={32}
                   style={{
-                    background: '#1a365d',
-                    border: '2px solid #b8941e',
-                    boxShadow: '0 2px 8px rgba(26, 54, 93, 0.2)',
-                    width: 36,
-                    height: 36,
+                    background: '#1a2332',
+                    border: '2px solid #c9a961',
                   }}
                 />
-                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', justifyContent: 'center', lineHeight: 1.4 }}>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: '#1a202c', marginBottom: 2 }}>{user.real_name || '用户'}</div>
-                  <div style={{ fontSize: 12, color: '#a0aec0' }}>{({
-                    super_admin: '超级管理员',
-                    org_admin: '律所管理者',
-                    marketing: '投放专员',
-                    sales: '谈案销售',
-                    lawyer: '办案律师',
-                    assistant: '律师助理',
-                    finance: '财务人员',
-                    client: '客户',
-                  } as Record<string, string>)[user.role] || '用户'}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.3 }}>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1c1d' }}>
+                    {user.real_name || '用户'}
+                  </span>
+                  <span style={{ fontSize: 11, color: '#717785' }}>
+                    {roleLabels[user.role] || '用户'}
+                  </span>
                 </div>
               </div>
             </Dropdown>
@@ -343,12 +550,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </Header>
         <Content
           style={{
-            margin: 24,
+            marginTop: 64,
             padding: 24,
-            paddingTop: 100,
-            background: '#f0f2f5',
-            minHeight: 'calc(100vh - 48px)',
-            borderRadius: borderRadiusLG,
+            background: '#f9f9fb',
+            minHeight: 'calc(100vh - 64px)',
           }}
         >
           {children}

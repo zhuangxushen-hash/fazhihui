@@ -36,31 +36,35 @@ export default function Complaint() {
   }
 
   const complaintTypes = [
-    { value: 'service_quality', label: '服务质量', icon: WarningOutlined, bgVar: 'var(--error-bg)', colorVar: 'var(--error)', desc: '律师服务态度、专业水平等' },
+    { value: 'service_quality', label: '服务质量', icon: WarningOutlined, bgVar: 'rgba(186, 26, 26, 0.08)', colorVar: 'var(--error)', desc: '律师服务态度、专业水平等' },
     { value: 'fee_issue', label: '费用问题', icon: ClockCircleOutlined, bgVar: 'var(--warning-bg)', colorVar: 'var(--warning)', desc: '收费标准、退费纠纷等' },
-    { value: 'other', label: '其他', icon: MessageOutlined, bgVar: 'var(--primary-bg)', colorVar: 'var(--primary)', desc: '其他问题或建议' },
+    { value: 'other', label: '其他', icon: MessageOutlined, bgVar: 'rgba(0, 113, 227, 0.08)', colorVar: 'var(--primary)', desc: '其他问题或建议' },
   ]
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
-      <div
+      <header
         style={{
-          background: '#0a0e1a',
-          padding: '16px 16px',
-          paddingTop: '52px',
-          color: '#f1f5f9',
+          position: 'sticky',
+          top: 0,
+          background: '#ffffff',
+          borderBottom: '1px solid #c1c6d6',
+          padding: '14px 16px',
+          paddingTop: 'max(14px, env(safe-area-inset-top))',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          zIndex: 50,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--gradient-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <BellOutlined style={{ fontSize: 22 }} />
-          </div>
-          <div>
-            <h2 style={{ fontSize: 20, fontWeight: 'bold' }}>投诉反馈</h2>
-            <p style={{ fontSize: 11, color: '#94a3b8' }}>我们会在24小时内响应您的投诉</p>
-          </div>
+        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #1a2332 0%, #131c2a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <BellOutlined style={{ fontSize: 22, color: '#e4c278' }} />
         </div>
-      </div>
+        <div>
+          <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#0059b5', letterSpacing: '0.01em' }}>投诉反馈</h2>
+          <p style={{ fontSize: 12, color: '#717785', marginTop: 2 }}>我们会在24小时内响应您的投诉</p>
+        </div>
+      </header>
 
       <div style={{ padding: '12px', flex: 1, paddingBottom: '80px' }}>
         <Card 
@@ -77,7 +81,7 @@ export default function Complaint() {
                 style={{ 
                   flex: 1, 
                   padding: '14px 10px', 
-                  background: activeType === type.value ? 'var(--primary-bg)' : 'var(--bg-card)', 
+                  background: activeType === type.value ? 'rgba(0, 113, 227, 0.08)' : 'var(--bg-card)',
                   borderRadius: 8,
                   border: activeType === type.value ? '1px solid var(--primary)' : '1px solid var(--border-default)',
                   cursor: 'pointer',
@@ -166,7 +170,7 @@ export default function Complaint() {
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--error-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(186, 26, 26, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <WarningOutlined style={{ fontSize: 14, color: 'var(--error)' }} />
               </div>
               <div>
@@ -193,7 +197,7 @@ export default function Complaint() {
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--primary-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <MessageOutlined style={{ fontSize: 14, color: 'var(--primary)' }} />
               </div>
               <div>

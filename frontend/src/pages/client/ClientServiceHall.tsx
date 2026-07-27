@@ -74,7 +74,7 @@ export default function ClientServiceHall() {
       desc: '查看合同内容并完成电子签约',
       icon: FileTextOutlined,
       color: '#3b82f6',
-      bg: 'var(--primary-bg)',
+      bg: 'rgba(0, 113, 227, 0.08)',
       action: () => openSignModal(),
     },
     {
@@ -98,7 +98,7 @@ export default function ClientServiceHall() {
       desc: '上传案件相关证据材料',
       icon: UploadOutlined,
       color: '#06b6d4',
-      bg: 'var(--accent-bg)',
+      bg: 'rgba(6, 182, 212, 0.08)',
       action: () => openEvidenceModal(),
     },
     {
@@ -106,7 +106,7 @@ export default function ClientServiceHall() {
       desc: '提交投诉与意见反馈',
       icon: BellOutlined,
       color: '#ef4444',
-      bg: 'var(--error-bg)',
+      bg: 'rgba(186, 26, 26, 0.08)',
       action: () => navigate('/client/complaint'),
     },
     {
@@ -240,24 +240,43 @@ export default function ClientServiceHall() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
-      <div
+      <header
         style={{
-          background: '#0a0e1a',
-          padding: '16px 16px',
-          paddingTop: '52px',
-          color: '#f1f5f9',
+          position: 'sticky',
+          top: 0,
+          background: '#ffffff',
+          borderBottom: '1px solid #c1c6d6',
+          padding: '14px 16px',
+          paddingTop: 'max(14px, env(safe-area-inset-top))',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          zIndex: 50,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ cursor: 'pointer', padding: 4 }} onClick={() => navigate('/client')}>
-            <ArrowLeftOutlined style={{ fontSize: 18, color: '#94a3b8' }} />
-          </div>
-          <div>
-            <h2 style={{ fontSize: 20, fontWeight: 'bold' }}>线上服务大厅</h2>
-            <p style={{ fontSize: 11, color: '#94a3b8' }}>一站式法律服务办理中心</p>
-          </div>
+        <button
+          onClick={() => navigate('/client')}
+          style={{
+            width: 40,
+            height: 40,
+            border: 'none',
+            background: 'transparent',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            color: '#0059b5',
+            WebkitTapHighlightColor: 'transparent',
+          }}
+        >
+          <ArrowLeftOutlined style={{ fontSize: 22 }} />
+        </button>
+        <div>
+          <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#0059b5', letterSpacing: '0.01em' }}>线上服务大厅</h2>
+          <p style={{ fontSize: 12, color: '#717785', marginTop: 2 }}>一站式法律服务办理中心</p>
         </div>
-      </div>
+      </header>
 
       <div style={{ padding: '12px', flex: 1, paddingBottom: '80px' }}>
         <Card
@@ -301,7 +320,7 @@ export default function ClientServiceHall() {
           style={{ borderRadius: borderRadiusLG, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}
         >
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--primary-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <SafetyCertificateOutlined style={{ fontSize: 16, color: 'var(--primary)' }} />
             </div>
             <div>
