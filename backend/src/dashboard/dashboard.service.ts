@@ -10,7 +10,7 @@ import { Case } from '../case/case.entity';
 import { Fee } from '../finance/fee.entity';
 import { ProfitShare } from '../finance/profit-share.entity';
 import { ComplianceRecord } from '../compliance/compliance-record.entity';
-import { LeadStatus, CaseStatus, ComplianceResult, FeeRole, ConversionEventType } from '../types';
+import { LeadStatus, CaseStatus, ComplianceResult, FeeRole, ConversionEventType, UserRole } from '../types';
 import { User } from '../user/user.entity';
 import { ConversionEvent } from '../marketing/conversion-event.entity';
 import { InviteTask } from '../lead/invite-task.entity';
@@ -22,6 +22,7 @@ import { ComplianceCheckResult } from '../compliance/compliance-check-result.ent
 import { ComplaintTicket } from '../compliance/complaint-ticket.entity';
 import { ReportTemplate } from './report-template.entity';
 import { ReportExportLog } from './report-export-log.entity';
+import { ServiceRating } from '../client/service-rating.entity';
 
 @Injectable()
 export class DashboardService {
@@ -60,6 +61,8 @@ export class DashboardService {
     private reportTemplateRepository: Repository<ReportTemplate>,
     @InjectRepository(ReportExportLog)
     private reportExportLogRepository: Repository<ReportExportLog>,
+    @InjectRepository(ServiceRating)
+    private serviceRatingRepository: Repository<ServiceRating>,
   ) {}
 
   async getConversionFunnel(orgId: string, startDate?: Date, endDate?: Date): Promise<{
@@ -1460,5 +1463,306 @@ export class DashboardService {
       }
     }
     this.logger.log('订阅报表推送定时任务完成');
+  }
+
+  // ==================== 8.7 人效分析 ====================
+
+  /**
+   * 人效统计：律师人均产值、案件平均周期、团队利用率、客户满意度
+   */
+  async getHREfficiencyStats(orgId: string, startDate?: Date, endDate?: Date): Promise<any> {
+    // 获取律师列表
+    const lawyers = await this.userRepository.find({
+      where: { organization_id: orgId, role: UserRole.LAWYER },
+    });
+    const lawyerIds = lawyers.map(l => l.id);
+    const lawyerCount = lawyerIds.length;
+
+    // 律师人均产值：律师总创收 / 律师人数
+    let totalRevenue = 0;
+    if (lawyerIds.length > 0) {
+      const revenueBuilder = this.feeRepository.createQueryBuilder('fee')
+        .innerJoin(Case, 'case', 'case.id = fee.case_id')
+        .where('case.assignee_lawyer_id IN (:...lawyerIds)', { lawyerIds })
+        .andWhere('fee.organization_id = :orgId', { orgId });
+      if (startDate) {
+        revenueBuilder.andWhere('fee.created_at >= :startDate', { startDate });
+      }
+      if (endDate) {
+        revenueBuilder.andWhere('fee.created_at <= :endDate', { endDate });
+      }
+      const revenueResult = await revenueBuilder
+        .select('COALESCE(SUM(fee.amount), 0)', 'total')
+        .getRawOne();
+      totalRevenue = parseFloat(revenueResult?.total || '0');
+    }
+    const avgRevenuePerLawyer = lawyerCount > 0 ? totalRevenue / lawyerCount : 0;
+
+    // 案件平均周期（天）
+    const cycleBuilder = this.caseRepository.createQueryBuilder('case')
+      .where('case.organization_id = :orgId', { orgId })
+      .andWhere('case.status = :status', { status: CaseStatus.CLOSED });
+    if (startDate) {
+      cycleBuilder.andWhere('case.created_at >= :startDate', { startDate });
+    }
+    if (endDate) {
+      cycleBuilder.andWhere('case.created_at <= :endDate', { endDate });
+    }
+    const cycleResult = await cycleBuilder
+      .select('AVG(JULIANDAY(case.updated_at) - JULIANDAY(case.created_at))', 'avg_cycle')
+      .getRawOne();
+    const avgCycleDays = cycleResult?.avg_cycle ? parseFloat(cycleResult.avg_cycle) : 0;
+
+    // 团队利用率：正在办理案件的律师数 / 总律师数
+    let activeLawyerCount = 0;
+    if (lawyerIds.length > 0) {
+      const activeCaseBuilder = this.caseRepository.createQueryBuilder('case')
+        .select('COUNT(DISTINCT case.assignee_lawyer_id)', 'active_lawyers')
+        .where('case.organization_id = :orgId', { orgId })
+        .andWhere('case.assignee_lawyer_id IN (:...lawyerIds)', { lawyerIds })
+        .andWhere('case.status != :status', { status: CaseStatus.CLOSED });
+      if (startDate) {
+        activeCaseBuilder.andWhere('case.created_at >= :startDate', { startDate });
+      }
+      const activeResult = await activeCaseBuilder.getRawOne();
+      activeLawyerCount = parseInt(activeResult?.active_lawyers || '0');
+    }
+    const teamUtilizationRate = lawyerCount > 0 ? (activeLawyerCount / lawyerCount) * 100 : 0;
+
+    // 客户满意度：ServiceRating 平均评分
+    let avgSatisfaction = 0;
+    const ratingBuilder = this.serviceRatingRepository.createQueryBuilder('rating')
+      .where('rating.organization_id = :orgId', { orgId })
+      .andWhere('rating.status = :status', { status: 'approved' });
+    if (startDate) {
+      ratingBuilder.andWhere('rating.created_at >= :startDate', { startDate });
+    }
+    if (endDate) {
+      ratingBuilder.andWhere('rating.created_at <= :endDate', { endDate });
+    }
+    const ratingResult = await ratingBuilder
+      .select('AVG(rating.rating)', 'avg_rating')
+      .getRawOne();
+    avgSatisfaction = ratingResult?.avg_rating ? parseFloat(ratingResult.avg_rating) : 0;
+
+    return {
+      lawyer_count: lawyerCount,
+      total_revenue: totalRevenue,
+      avg_revenue_per_lawyer: Math.round(avgRevenuePerLawyer * 100) / 100,
+      avg_cycle_days: Math.round(avgCycleDays * 10) / 10,
+      active_lawyer_count: activeLawyerCount,
+      team_utilization_rate: Math.round(teamUtilizationRate * 100) / 100,
+      avg_satisfaction: Math.round(avgSatisfaction * 100) / 100,
+    };
+  }
+
+  /**
+   * 律师人效排名
+   */
+  async getLawyerEfficiencyRanking(orgId: string, startDate?: Date, endDate?: Date): Promise<any[]> {
+    // 获取所有律师
+    const lawyers = await this.userRepository.find({
+      where: { organization_id: orgId, role: UserRole.LAWYER },
+    });
+
+    const result = [];
+    for (const lawyer of lawyers) {
+      // 办案数
+      const caseBuilder = this.caseRepository.createQueryBuilder('case')
+        .where('case.organization_id = :orgId', { orgId })
+        .andWhere('case.assignee_lawyer_id = :lawyerId', { lawyerId: lawyer.id });
+      if (startDate) {
+        caseBuilder.andWhere('case.created_at >= :startDate', { startDate });
+      }
+      if (endDate) {
+        caseBuilder.andWhere('case.created_at <= :endDate', { endDate });
+      }
+      const totalCases = await caseBuilder.getCount();
+      const closedCases = await caseBuilder.clone()
+        .andWhere('case.status = :status', { status: CaseStatus.CLOSED })
+        .getCount();
+
+      // 总收入
+      const feeBuilder = this.feeRepository.createQueryBuilder('fee')
+        .innerJoin(Case, 'case', 'case.id = fee.case_id')
+        .where('case.assignee_lawyer_id = :lawyerId', { lawyerId: lawyer.id })
+        .andWhere('fee.organization_id = :orgId', { orgId });
+      if (startDate) {
+        feeBuilder.andWhere('fee.created_at >= :startDate', { startDate });
+      }
+      if (endDate) {
+        feeBuilder.andWhere('fee.created_at <= :endDate', { endDate });
+      }
+      const feeResult = await feeBuilder
+        .select('COALESCE(SUM(fee.amount), 0)', 'total')
+        .getRawOne();
+      const totalRevenue = parseFloat(feeResult?.total || '0');
+
+      // 平均周期
+      const cycleBuilder = this.caseRepository.createQueryBuilder('case')
+        .where('case.organization_id = :orgId', { orgId })
+        .andWhere('case.assignee_lawyer_id = :lawyerId', { lawyerId: lawyer.id })
+        .andWhere('case.status = :status', { status: CaseStatus.CLOSED });
+      if (startDate) {
+        cycleBuilder.andWhere('case.created_at >= :startDate', { startDate });
+      }
+      if (endDate) {
+        cycleBuilder.andWhere('case.created_at <= :endDate', { endDate });
+      }
+      const cycleResult = await cycleBuilder
+        .select('AVG(JULIANDAY(case.updated_at) - JULIANDAY(case.created_at))', 'avg_cycle')
+        .getRawOne();
+      const avgCycleDays = cycleResult?.avg_cycle ? parseFloat(cycleResult.avg_cycle) : 0;
+
+      // 客户满意度（该律师经办案件的平均评分）
+      let lawyerSatisfaction = 0;
+      if (totalCases > 0) {
+        const caseIds = await this.caseRepository.find({
+          where: { organization_id: orgId, assignee_lawyer_id: lawyer.id },
+        });
+        const caseIdList = caseIds.map(c => c.id);
+        if (caseIdList.length > 0) {
+          const ratingResult = await this.serviceRatingRepository.createQueryBuilder('rating')
+            .where('rating.organization_id = :orgId', { orgId })
+            .andWhere('rating.case_id IN (:...caseIds)', { caseIds: caseIdList })
+            .andWhere('rating.status = :status', { status: 'approved' })
+            .select('AVG(rating.rating)', 'avg_rating')
+            .getRawOne();
+          lawyerSatisfaction = ratingResult?.avg_rating ? parseFloat(ratingResult.avg_rating) : 0;
+        }
+      }
+
+      // 人效评分 = 满意度 * 0.4 + 结案率 * 0.3 + 创收评分 * 0.3
+      const closeRate = totalCases > 0 ? (closedCases / totalCases) * 100 : 0;
+      const revenueScore = Math.min(100, totalRevenue / 10000);
+      const efficiencyScore =
+        lawyerSatisfaction * 20 * 0.4 +
+        Math.min(100, closeRate) * 0.3 +
+        revenueScore * 0.3;
+
+      result.push({
+        lawyer_id: lawyer.id,
+        lawyer_name: lawyer.real_name,
+        cases_count: totalCases,
+        closed_cases: closedCases,
+        total_revenue: Math.round(totalRevenue * 100) / 100,
+        avg_cycle_days: Math.round(avgCycleDays * 10) / 10,
+        satisfaction: Math.round(lawyerSatisfaction * 100) / 100,
+        efficiency_score: Math.round(efficiencyScore * 10) / 10,
+      });
+    }
+
+    // 按人效评分排序
+    result.sort((a, b) => b.efficiency_score - a.efficiency_score);
+    return result;
+  }
+
+  // ==================== 8.8 盈利模型模拟器 ====================
+
+  /**
+   * 盈利模型计算：盈亏平衡点、利润率模拟
+   */
+  calculateProfitModel(params: {
+    caseType: string;
+    avgFee: number;
+    avgCost: number;
+    conversionRate: number;
+    orgMargin: number;
+    lawyerMargin: number;
+    salesMargin: number;
+    marketingMargin: number;
+  }): any {
+    const {
+      caseType,
+      avgFee,
+      avgCost,
+      conversionRate,
+      orgMargin,
+      lawyerMargin,
+      salesMargin,
+      marketingMargin,
+    } = params;
+
+    // 按比例合计校验
+    const totalMargin = orgMargin + lawyerMargin + salesMargin + marketingMargin;
+
+    // 假设每月线索量 100 条进行模拟
+    const monthlyLeads = 100;
+    const signedCases = Math.round(monthlyLeads * (conversionRate / 100));
+
+    // 预计收入
+    const expectedRevenue = signedCases * avgFee;
+
+    // 预计成本
+    const marketingCost = signedCases * avgFee * (marketingMargin / 100);
+    const salesCost = signedCases * avgFee * (salesMargin / 100);
+    const lawyerCost = signedCases * avgFee * (lawyerMargin / 100);
+    const directCost = signedCases * avgCost;
+    const totalCost = marketingCost + salesCost + lawyerCost + directCost;
+
+    // 预计利润
+    const expectedProfit = expectedRevenue - totalCost;
+    const profitMargin = expectedRevenue > 0 ? (expectedProfit / expectedRevenue) * 100 : 0;
+
+    // 盈亏平衡点：利润为 0 时的签约数量
+    const perCaseProfit = avgFee - avgFee * (lawyerMargin / 100) - avgFee * (salesMargin / 100) - avgFee * (marketingMargin / 100) - avgCost;
+    const breakEvenCases = perCaseProfit > 0 ? Math.ceil(avgCost * 3 / perCaseProfit) : 0;
+    const breakEvenLeads = conversionRate > 0 ? Math.ceil(breakEvenCases / (conversionRate / 100)) : 0;
+
+    // 敏感性分析：转化率对利润的影响
+    const sensitivityByConversionRate = [];
+    for (let rate = Math.max(1, conversionRate - 10); rate <= conversionRate + 10; rate += 5) {
+      const cases = Math.round(monthlyLeads * (rate / 100));
+      const revenue = cases * avgFee;
+      const cost = cases * (avgFee * (lawyerMargin / 100) + avgFee * (salesMargin / 100) + avgFee * (marketingMargin / 100) + avgCost);
+      const profit = revenue - cost;
+      sensitivityByConversionRate.push({
+        conversion_rate: rate,
+        cases,
+        profit: Math.round(profit * 100) / 100,
+      });
+    }
+
+    // 敏感性分析：费率对利润的影响
+    const sensitivityByFee = [];
+    for (let feeFactor = 0.7; feeFactor <= 1.3; feeFactor += 0.1) {
+      const fee = avgFee * feeFactor;
+      const revenue = signedCases * fee;
+      const cost = signedCases * (fee * (lawyerMargin / 100) + fee * (salesMargin / 100) + fee * (marketingMargin / 100) + avgCost);
+      const profit = revenue - cost;
+      sensitivityByFee.push({
+        fee_rate: Math.round(feeFactor * 100),
+        avg_fee: Math.round(fee * 100) / 100,
+        profit: Math.round(profit * 100) / 100,
+      });
+    }
+
+    return {
+      case_type: caseType,
+      total_margin: Math.round(totalMargin * 100) / 100,
+      monthly_projection: {
+        leads: monthlyLeads,
+        signed_cases: signedCases,
+        expected_revenue: Math.round(expectedRevenue * 100) / 100,
+        expected_cost: Math.round(totalCost * 100) / 100,
+        expected_profit: Math.round(expectedProfit * 100) / 100,
+        profit_margin: Math.round(profitMargin * 100) / 100,
+      },
+      break_even: {
+        cases: breakEvenCases,
+        leads: breakEvenLeads,
+        per_case_profit: Math.round(perCaseProfit * 100) / 100,
+      },
+      sensitivity: {
+        conversion_rate: sensitivityByConversionRate,
+        fee_rate: sensitivityByFee,
+      },
+      distribution: {
+        org_revenue: Math.round(expectedRevenue * (orgMargin / 100) * 100) / 100,
+        lawyer_revenue: Math.round(expectedRevenue * (lawyerMargin / 100) * 100) / 100,
+        sales_revenue: Math.round(expectedRevenue * (salesMargin / 100) * 100) / 100,
+        marketing_revenue: Math.round(expectedRevenue * (marketingMargin / 100) * 100) / 100,
+      },
+    };
   }
 }

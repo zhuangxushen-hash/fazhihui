@@ -18,6 +18,7 @@ import { ComplianceCheckResult } from '../compliance/compliance-check-result.ent
 import { ComplaintTicket } from '../compliance/complaint-ticket.entity';
 import { ReportTemplate } from './report-template.entity';
 import { ReportExportLog } from './report-export-log.entity';
+import { ServiceRating } from '../client/service-rating.entity';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { ReportExportLog } from './report-export-log.entity';
       ComplaintTicket,
       ReportTemplate,
       ReportExportLog,
+      ServiceRating,
     ]),
   ],
   providers: [DashboardService],

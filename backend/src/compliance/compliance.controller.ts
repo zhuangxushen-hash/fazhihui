@@ -188,4 +188,119 @@ export class ComplianceController {
     const finalOrgId = orgId || req?.user?.organization_id;
     return this.complianceService.getCaseSOPStats(finalOrgId);
   }
+
+  // ========== 谈案AI质检接口 ==========
+
+  @Post('talk-quality-check')
+  runTalkQualityCheck(@Body() body: {
+    invite_task_id: string;
+    check_type: string;
+    content: string;
+    organization_id: string;
+    inviter_id: string;
+  }) {
+    return this.complianceService.runTalkQualityCheck(
+      body.invite_task_id,
+      body.check_type,
+      body.content,
+      body.organization_id,
+      body.inviter_id,
+    );
+  }
+
+  @Get('talk-quality-checks')
+  getTalkQualityChecks(
+    @Query('org_id') orgId: string,
+    @Query('handle_status') handleStatus?: string,
+    @Request() req?: any,
+  ) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.complianceService.getTalkQualityChecks(finalOrgId, handleStatus);
+  }
+
+  @Put('talk-quality-check/:id/handle')
+  handleQualityCheck(@Param('id') id: string, @Body() body: {
+    handler_id: string;
+    handle_note: string;
+  }) {
+    return this.complianceService.handleQualityCheck(id, body.handler_id, body.handle_note);
+  }
+
+  @Get('talk-quality-checks/stats')
+  getQualityCheckStats(@Query('org_id') orgId: string, @Request() req?: any) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.complianceService.getQualityCheckStats(finalOrgId);
+  }
+
+  // ========== 合规档案导出接口 ==========
+
+  @Get('export-templates')
+  getExportTemplates(@Query('org_id') orgId: string, @Request() req?: any) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.complianceService.getExportTemplates(finalOrgId);
+  }
+
+  @Post('export')
+  createExport(@Body() body: {
+    template_id?: string;
+    organization_id: string;
+    exporter_id: string;
+    export_format?: string;
+    filters?: any;
+  }, @Request() req?: any) {
+    const finalBody = {
+      ...body,
+      organization_id: body.organization_id || req?.user?.organization_id,
+      exporter_id: body.exporter_id || req?.user?.id,
+    };
+    return this.complianceService.createExport(finalBody);
+  }
+
+  @Get('export-history')
+  getExportHistory(@Query('org_id') orgId: string, @Request() req?: any) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.complianceService.getExportHistory(finalOrgId);
+  }
+
+  @Post('export-archive')
+  exportComplianceArchive(@Body() body: {
+    organization_id: string;
+    filters?: any;
+  }, @Request() req?: any) {
+    const finalOrgId = body.organization_id || req?.user?.organization_id;
+    return this.complianceService.exportComplianceArchive(finalOrgId, body.filters);
+  }
+
+  // ========== 销售合规审查接口 ==========
+
+  @Get('sales-reviews')
+  getSalesComplianceReviews(
+    @Query('org_id') orgId: string,
+    @Query('status') status?: string,
+    @Request() req?: any,
+  ) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.complianceService.getSalesComplianceReviews(finalOrgId, status);
+  }
+
+  @Put('sales-reviews/:id/review')
+  reviewSalesCompliance(
+    @Param('id') id: string,
+    @Body() body: {
+      reviewer_id: string;
+      result: string;
+      note?: string;
+      risk_level?: string;
+    },
+    @Request() req?: any,
+  ) {
+    const reviewerId = body.reviewer_id || req?.user?.id;
+    return this.complianceService.reviewSalesCompliance(id, reviewerId, body.result, body.note, body.risk_level);
+  }
+
+  @Get('sales-reviews/stats')
+  getSalesReviewStats(@Query('org_id') orgId: string, @Request() req?: any) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.complianceService.getSalesReviewStats(finalOrgId);
+  }
 }

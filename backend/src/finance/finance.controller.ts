@@ -99,4 +99,24 @@ export class FinanceController {
   cancelInvoice(@Param('id') id: string, @Body() body?: { note?: string }) {
     return this.financeService.cancelInvoice(id, body?.note);
   }
+
+  @Post('refund/tiered-calculate')
+  async calculateTieredRefund(
+    @Body() body: { case_id: string; organization_id?: string },
+    @Request() req?: any,
+  ) {
+    const orgId = body.organization_id || req?.user?.organization_id;
+    return this.financeService.calculateTieredRefund(body.case_id, orgId);
+  }
+
+  @Get('case-profit/:caseId')
+  async getCaseProfitAnalysis(@Param('caseId') caseId: string) {
+    return this.financeService.getCaseProfitAnalysis(caseId);
+  }
+
+  @Get('profit-stats')
+  async getProfitAnalysisStats(@Query('org_id') orgId: string, @Request() req?: any) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.financeService.getProfitAnalysisStats(finalOrgId);
+  }
 }

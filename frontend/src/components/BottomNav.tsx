@@ -1,4 +1,4 @@
-import { FileTextOutlined, MessageOutlined, CreditCardOutlined, BellOutlined } from '@ant-design/icons'
+import { FileTextOutlined, MessageOutlined, CreditCardOutlined, BellOutlined, UserOutlined, CloudOutlined } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 
 export default function BottomNav() {
@@ -6,10 +6,12 @@ export default function BottomNav() {
   const location = useLocation()
 
   const menuItems = [
-    { key: '/client', label: '案件', icon: FileTextOutlined },
+    { key: '/client', label: '首页', icon: FileTextOutlined },
     { key: '/client/ai-consult', label: '咨询', icon: MessageOutlined },
-    { key: '/client/complaint', label: '投诉', icon: BellOutlined },
+    { key: '/client/service-hall', label: '大厅', icon: BellOutlined },
+    { key: '/client/archive', label: '归档', icon: CloudOutlined },
     { key: '/client/payment', label: '签约', icon: CreditCardOutlined },
+    { key: '/client/profile', label: '我的', icon: UserOutlined },
   ]
 
   return (

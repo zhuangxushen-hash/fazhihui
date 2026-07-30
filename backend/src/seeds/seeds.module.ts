@@ -4,6 +4,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../user/user.entity';
 import { Organization } from '../user/organization.entity';
+import { Role } from '../user/role.entity';
+import { Menu } from '../user/menu.entity';
+import { Notification } from '../user/notification.entity';
+import { Permission } from '../user/permission.entity';
 import { Lead } from '../lead/lead.entity';
 import { FollowUp } from '../lead/follow-up.entity';
 import { Case } from '../case/case.entity';
@@ -91,10 +95,23 @@ import { ReachTask } from '../scrm/reach-task.entity';
 import { ChatArchive } from '../scrm/chat-archive.entity';
 import { ScriptLibrary } from '../scrm/script-library.entity';
 
+// Phase 5 新增实体
+import { DigitalHumanLive, DigitalHumanLiveStatus } from '../marketing/digital-human-live.entity';
+import { LegalDocument } from '../case/legal-document.entity';
+import { ClientArchive } from '../client/client-archive.entity';
+import { Reconciliation, ReconciliationStatus } from '../finance/reconciliation.entity';
+import { DeploymentConfig } from '../system/deployment-config.entity';
+import { BrandConfig } from '../system/brand-config.entity';
+import { Integration } from '../system/integration.entity';
+
 @Module({
   imports: [TypeOrmModule.forFeature([
     User,
     Organization,
+    Role,
+    Menu,
+    Notification,
+    Permission,
     Lead,
     FollowUp,
     Case,
@@ -156,6 +173,14 @@ import { ScriptLibrary } from '../scrm/script-library.entity';
     ReachTask,
     ChatArchive,
     ScriptLibrary,
+    // Phase 5 新增
+    DigitalHumanLive,
+    LegalDocument,
+    ClientArchive,
+    Reconciliation,
+    DeploymentConfig,
+    BrandConfig,
+    Integration,
   ])],
 })
 export class SeedsModule implements OnModuleInit {
@@ -164,6 +189,14 @@ export class SeedsModule implements OnModuleInit {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Organization)
     private readonly orgRepository: Repository<Organization>,
+    @InjectRepository(Role)
+    private readonly roleRepository: Repository<Role>,
+    @InjectRepository(Menu)
+    private readonly menuRepository: Repository<Menu>,
+    @InjectRepository(Notification)
+    private readonly notificationRepository: Repository<Notification>,
+    @InjectRepository(Permission)
+    private readonly permissionRepository: Repository<Permission>,
     @InjectRepository(Lead)
     private readonly leadRepository: Repository<Lead>,
     @InjectRepository(FollowUp)
@@ -276,6 +309,21 @@ export class SeedsModule implements OnModuleInit {
     private readonly chatArchiveRepository: Repository<ChatArchive>,
     @InjectRepository(ScriptLibrary)
     private readonly scriptLibraryRepository: Repository<ScriptLibrary>,
+    // Phase 5 新增
+    @InjectRepository(DigitalHumanLive)
+    private readonly digitalHumanLiveRepository: Repository<DigitalHumanLive>,
+    @InjectRepository(LegalDocument)
+    private readonly legalDocumentRepository: Repository<LegalDocument>,
+    @InjectRepository(ClientArchive)
+    private readonly clientArchiveRepository: Repository<ClientArchive>,
+    @InjectRepository(Reconciliation)
+    private readonly reconciliationRepository: Repository<Reconciliation>,
+    @InjectRepository(DeploymentConfig)
+    private readonly deploymentConfigRepository: Repository<DeploymentConfig>,
+    @InjectRepository(BrandConfig)
+    private readonly brandConfigRepository: Repository<BrandConfig>,
+    @InjectRepository(Integration)
+    private readonly integrationRepository: Repository<Integration>,
   ) {}
 
   async onModuleInit() {
@@ -393,6 +441,28 @@ export class SeedsModule implements OnModuleInit {
     await this.seedReachTasks(orgId, userMap);
     await this.seedChatArchives(orgId, userMap);
     await this.seedScriptLibraries(orgId, userMap);
+
+    // 系统管理模块数据
+    await this.seedPermissions();
+    await this.seedRoles(orgId);
+    await this.seedMenus();
+    await this.seedNotifications(userMap);
+
+    // Phase 5 新增数据
+    // 数字人直播数据
+    await this.seedDigitalHumanLives(orgId, userMap);
+    // AI文书模板数据
+    await this.seedLegalDocuments(orgId, userMap);
+    // 云归档数据
+    await this.seedClientArchives(orgId, userMap);
+    // 智能对账数据
+    await this.seedReconciliations(orgId, userMap);
+    // 系统部署配置
+    await this.seedDeploymentConfigs(orgId);
+    // 品牌定制配置
+    await this.seedBrandConfigs(orgId);
+    // 第三方对接配置
+    await this.seedIntegrations(orgId);
   }
 
   private async seedLeads(orgId: string, userMap: Record<string, User>) {
@@ -4042,6 +4112,968 @@ export class SeedsModule implements OnModuleInit {
           organization_id: orgId,
           created_by: salesUser?.id,
         });
+      }
+    }
+  }
+
+  private async seedPermissions() {
+    const count = await this.permissionRepository.count();
+    if (count > 0) return;
+
+    const permissions = [
+      // 系统管理
+      { name: '查看用户列表', code: 'user:read', module: 'user', type: 'read', description: '查看用户管理页面和用户列表', sort_order: 1 },
+      { name: '新增用户', code: 'user:create', module: 'user', type: 'create', description: '创建新用户', sort_order: 2 },
+      { name: '编辑用户', code: 'user:update', module: 'user', type: 'update', description: '编辑用户信息', sort_order: 3 },
+      { name: '删除用户', code: 'user:delete', module: 'user', type: 'delete', description: '删除用户', sort_order: 4 },
+      { name: '查看角色列表', code: 'role:read', module: 'role', type: 'read', description: '查看角色管理页面和角色列表', sort_order: 5 },
+      { name: '新增角色', code: 'role:create', module: 'role', type: 'create', description: '创建新角色', sort_order: 6 },
+      { name: '编辑角色', code: 'role:update', module: 'role', type: 'update', description: '编辑角色信息和权限', sort_order: 7 },
+      { name: '删除角色', code: 'role:delete', module: 'role', type: 'delete', description: '删除角色', sort_order: 8 },
+      { name: '查看权限列表', code: 'permission:read', module: 'system', type: 'read', description: '查看权限管理页面和权限列表', sort_order: 9 },
+      { name: '查看菜单列表', code: 'menu:read', module: 'menu', type: 'read', description: '查看菜单管理页面和菜单列表', sort_order: 10 },
+      { name: '编辑菜单', code: 'menu:update', module: 'menu', type: 'update', description: '编辑菜单配置', sort_order: 11 },
+      // 线索CRM
+      { name: '查看线索列表', code: 'crm:lead:read', module: 'crm', type: 'read', description: '查看线索管理页面和线索列表', sort_order: 20 },
+      { name: '新增线索', code: 'crm:lead:create', module: 'crm', type: 'create', description: '创建新线索', sort_order: 21 },
+      { name: '编辑线索', code: 'crm:lead:update', module: 'crm', type: 'update', description: '编辑线索信息', sort_order: 22 },
+      { name: '删除线索', code: 'crm:lead:delete', module: 'crm', type: 'delete', description: '删除线索', sort_order: 23 },
+      { name: '分配线索', code: 'crm:lead:assign', module: 'crm', type: 'approve', description: '分配线索给销售人员', sort_order: 24 },
+      { name: '查看邀约工作台', code: 'crm:invite:read', module: 'crm', type: 'read', description: '查看邀约工作台', sort_order: 25 },
+      { name: '查看谈案工作台', code: 'crm:talk:read', module: 'crm', type: 'read', description: '查看谈案工作台', sort_order: 26 },
+      // 案件办案
+      { name: '查看案件列表', code: 'case:read', module: 'case', type: 'read', description: '查看案件管理页面和案件列表', sort_order: 30 },
+      { name: '新增案件', code: 'case:create', module: 'case', type: 'create', description: '创建新案件', sort_order: 31 },
+      { name: '编辑案件', code: 'case:update', module: 'case', type: 'update', description: '编辑案件信息', sort_order: 32 },
+      { name: '删除案件', code: 'case:delete', module: 'case', type: 'delete', description: '删除案件', sort_order: 33 },
+      { name: '查看案件预警', code: 'case:warning:read', module: 'case', type: 'read', description: '查看案件预警中心', sort_order: 34 },
+      { name: '处理案件预警', code: 'case:warning:handle', module: 'case', type: 'update', description: '处理案件预警', sort_order: 35 },
+      // 合规风控
+      { name: '查看合规记录', code: 'compliance:read', module: 'compliance', type: 'read', description: '查看合规管理页面', sort_order: 40 },
+      { name: '发起合规检查', code: 'compliance:check', module: 'compliance', type: 'create', description: '发起合规检查', sort_order: 41 },
+      { name: '处理合规问题', code: 'compliance:handle', module: 'compliance', type: 'update', description: '处理合规问题', sort_order: 42 },
+      // 财务分润
+      { name: '查看财务数据', code: 'finance:read', module: 'finance', type: 'read', description: '查看财务管理页面和财务数据', sort_order: 50 },
+      { name: '新增财务记录', code: 'finance:create', module: 'finance', type: 'create', description: '创建财务记录', sort_order: 51 },
+      { name: '审核财务记录', code: 'finance:approve', module: 'finance', type: 'approve', description: '审核财务记录', sort_order: 52 },
+      { name: '导出财务报表', code: 'finance:export', module: 'finance', type: 'export', description: '导出财务报表', sort_order: 53 },
+      // 投放营销
+      { name: '查看投放数据', code: 'marketing:read', module: 'marketing', type: 'read', description: '查看投放营销数据', sort_order: 60 },
+      { name: '管理广告账户', code: 'marketing:account:manage', module: 'marketing', type: 'update', description: '管理广告账户', sort_order: 61 },
+      { name: '创建投放计划', code: 'marketing:plan:create', module: 'marketing', type: 'create', description: '创建投放计划', sort_order: 62 },
+      { name: '管理素材', code: 'marketing:material:manage', module: 'marketing', type: 'update', description: '管理营销素材', sort_order: 63 },
+      // SCRM私域
+      { name: '查看客户标签', code: 'scrm:tag:read', module: 'scrm', type: 'read', description: '查看客户标签', sort_order: 70 },
+      { name: '管理客户标签', code: 'scrm:tag:manage', module: 'scrm', type: 'update', description: '管理客户标签', sort_order: 71 },
+      { name: '发起私域触达', code: 'scrm:reach:create', module: 'scrm', type: 'create', description: '发起私域触达任务', sort_order: 72 },
+      { name: '查看聊天存档', code: 'scrm:chat:read', module: 'scrm', type: 'read', description: '查看聊天存档', sort_order: 73 },
+      // 数据看板
+      { name: '查看经营总览', code: 'dashboard:overview', module: 'dashboard', type: 'read', description: '查看经营总览仪表盘', sort_order: 80 },
+      { name: '查看销售绩效', code: 'dashboard:sales', module: 'dashboard', type: 'read', description: '查看销售绩效看板', sort_order: 81 },
+      { name: '查看办案效能', code: 'dashboard:case', module: 'dashboard', type: 'read', description: '查看办案效能看板', sort_order: 82 },
+      { name: '查看财务经营', code: 'dashboard:finance', module: 'dashboard', type: 'read', description: '查看财务经营看板', sort_order: 83 },
+      { name: '查看合规风险', code: 'dashboard:compliance', module: 'dashboard', type: 'read', description: '查看合规风险看板', sort_order: 84 },
+      { name: '导出报表', code: 'dashboard:export', module: 'dashboard', type: 'export', description: '导出数据报表', sort_order: 85 },
+      // C端服务
+      { name: '查看我的案件', code: 'client:case:read', module: 'client', type: 'read', description: '客户查看自己的案件', sort_order: 90 },
+      { name: '发起投诉', code: 'client:complaint:create', module: 'client', type: 'create', description: '客户发起投诉', sort_order: 91 },
+      { name: '提交服务评价', code: 'client:rating:create', module: 'client', type: 'create', description: '客户提交服务评价', sort_order: 92 },
+      // 消息通知
+      { name: '查看消息通知', code: 'notification:read', module: 'system', type: 'read', description: '查看消息通知', sort_order: 100 },
+      { name: '发送系统通知', code: 'notification:send', module: 'system', type: 'create', description: '发送系统通知', sort_order: 101 },
+    ];
+
+    for (const perm of permissions) {
+      const existing = await this.permissionRepository.findOne({ where: { code: perm.code } });
+      if (!existing) {
+        await this.permissionRepository.save(perm);
+      }
+    }
+  }
+
+  private async seedRoles(orgId: string) {
+    const count = await this.roleRepository.count({ where: { organization_id: orgId } });
+    if (count > 0) return;
+
+    const allPermissions = await this.permissionRepository.find();
+    const allPermCodes = allPermissions.map(p => p.code);
+
+    const roles = [
+      {
+        name: '超级管理员',
+        code: 'super_admin',
+        description: '拥有系统所有功能的最高权限',
+        permissions: allPermCodes,
+        status: true,
+      },
+      {
+        name: '律所管理员',
+        code: 'org_admin',
+        description: '管理律所内部用户、角色和配置',
+        permissions: allPermCodes.filter(c => !c.startsWith('client:')),
+        status: true,
+      },
+      {
+        name: '投放专员',
+        code: 'marketing',
+        description: '负责广告投放和营销素材管理',
+        permissions: [
+          'marketing:read',
+          'marketing:account:manage',
+          'marketing:plan:create',
+          'marketing:material:manage',
+          'crm:lead:read',
+          'crm:lead:create',
+          'dashboard:overview',
+          'notification:read',
+        ],
+        status: true,
+      },
+      {
+        name: '谈案销售',
+        code: 'sales',
+        description: '负责线索跟进、邀约和谈案签约',
+        permissions: [
+          'crm:lead:read',
+          'crm:lead:create',
+          'crm:lead:update',
+          'crm:invite:read',
+          'crm:talk:read',
+          'case:read',
+          'case:create',
+          'dashboard:sales',
+          'notification:read',
+        ],
+        status: true,
+      },
+      {
+        name: '办案律师',
+        code: 'lawyer',
+        description: '负责案件办理和出庭诉讼',
+        permissions: [
+          'case:read',
+          'case:update',
+          'case:warning:read',
+          'case:warning:handle',
+          'compliance:read',
+          'dashboard:case',
+          'notification:read',
+        ],
+        status: true,
+      },
+      {
+        name: '律师助理',
+        code: 'assistant',
+        description: '协助律师处理案件相关事务',
+        permissions: [
+          'case:read',
+          'case:warning:read',
+          'compliance:read',
+          'notification:read',
+        ],
+        status: true,
+      },
+      {
+        name: '财务人员',
+        code: 'finance',
+        description: '负责财务核算、分润和报表',
+        permissions: [
+          'finance:read',
+          'finance:create',
+          'finance:approve',
+          'finance:export',
+          'case:read',
+          'dashboard:finance',
+          'notification:read',
+        ],
+        status: true,
+      },
+      {
+        name: '客户',
+        code: 'client',
+        description: 'C端客户角色，仅限查看自己的案件和服务',
+        permissions: [
+          'client:case:read',
+          'client:complaint:create',
+          'client:rating:create',
+          'notification:read',
+        ],
+        status: true,
+      },
+    ];
+
+    for (const role of roles) {
+      const existing = await this.roleRepository.findOne({
+        where: { code: role.code, organization_id: orgId },
+      });
+      if (!existing) {
+        await this.roleRepository.save({
+          ...role,
+          organization_id: orgId,
+        });
+      }
+    }
+  }
+
+  private async seedMenus() {
+    const count = await this.menuRepository.count();
+    if (count > 0) return;
+
+    const menus = [
+      // 一级菜单
+      { name: '数据看板', path: '/dashboard', icon: 'DashboardOutlined', sort_order: 1, is_visible: true, component: 'Dashboard' },
+      { name: '线索CRM', path: '/crm', icon: 'TeamOutlined', sort_order: 2, is_visible: true, component: 'LeadManagement' },
+      { name: '案件办案', path: '/case', icon: 'FileTextOutlined', sort_order: 3, is_visible: true, component: 'CaseManagement' },
+      { name: '合规风控', path: '/compliance', icon: 'SecurityScanOutlined', sort_order: 4, is_visible: true, component: 'ComplianceManagement' },
+      { name: '财务分润', path: '/finance', icon: 'DollarOutlined', sort_order: 5, is_visible: true, component: 'FinanceManagement' },
+      { name: '投放营销', path: '/marketing', icon: 'NotificationOutlined', sort_order: 6, is_visible: true, component: 'AdAccountManagement' },
+      { name: 'SCRM私域', path: '/scrm', icon: 'MessageOutlined', sort_order: 7, is_visible: true, component: 'LiveCodeManagement' },
+      { name: '系统管理', path: '/system', icon: 'SettingOutlined', sort_order: 8, is_visible: true, component: 'UserManagement' },
+    ];
+
+    const savedMenus: Record<string, string> = {};
+    for (const menu of menus) {
+      const existing = await this.menuRepository.findOne({ where: { path: menu.path } });
+      if (!existing) {
+        const saved = await this.menuRepository.save(menu);
+        savedMenus[menu.path] = saved.id;
+      } else {
+        savedMenus[menu.path] = existing.id;
+      }
+    }
+
+    // 二级菜单
+    const subMenus = [
+      // 数据看板
+      { name: '经营总览', path: '/', parent_path: '/dashboard', sort_order: 1, is_visible: true, component: 'Dashboard' },
+      { name: '投放转化漏斗', path: '/dashboard/conversion-funnel', parent_path: '/dashboard', sort_order: 2, is_visible: true, component: 'ConversionFunnelDashboard' },
+      { name: '销售团队绩效', path: '/dashboard/sales-performance', parent_path: '/dashboard', sort_order: 3, is_visible: true, component: 'SalesPerformanceDashboard' },
+      { name: '办案效能分析', path: '/dashboard/case-efficiency', parent_path: '/dashboard', sort_order: 4, is_visible: true, component: 'CaseEfficiencyDashboard' },
+      { name: '财务经营', path: '/dashboard/finance', parent_path: '/dashboard', sort_order: 5, is_visible: true, component: 'FinanceDashboard' },
+      { name: '合规风险监控', path: '/dashboard/compliance-risk', parent_path: '/dashboard', sort_order: 6, is_visible: true, component: 'ComplianceRiskDashboard' },
+      { name: '自定义报表', path: '/dashboard/custom-report', parent_path: '/dashboard', sort_order: 7, is_visible: true, component: 'CustomReport' },
+      // 线索CRM
+      { name: '线索管理', path: '/leads', parent_path: '/crm', sort_order: 1, is_visible: true, component: 'LeadManagement' },
+      { name: '公海池', path: '/lead-pool', parent_path: '/crm', sort_order: 2, is_visible: true, component: 'LeadPool' },
+      { name: '邀约工作台', path: '/invite-workbench', parent_path: '/crm', sort_order: 3, is_visible: true, component: 'InviteWorkbench' },
+      { name: '谈案工作台', path: '/talk-workbench', parent_path: '/crm', sort_order: 4, is_visible: true, component: 'TalkWorkbench' },
+      { name: '谈案SOP', path: '/talk-sop', parent_path: '/crm', sort_order: 5, is_visible: true, component: 'TalkSOPConfig' },
+      // 案件办案
+      { name: '案件管理', path: '/cases', parent_path: '/case', sort_order: 1, is_visible: true, component: 'CaseManagement' },
+      { name: '办案SOP', path: '/case-sop', parent_path: '/case', sort_order: 2, is_visible: true, component: 'CaseSOPConfig' },
+      { name: '案件预警', path: '/case-warning', parent_path: '/case', sort_order: 3, is_visible: true, component: 'CaseWarningCenter' },
+      // 合规风控
+      { name: '合规管理', path: '/compliance', parent_path: '/compliance', sort_order: 1, is_visible: true, component: 'ComplianceManagement' },
+      { name: '合规风控中心', path: '/compliance-center', parent_path: '/compliance', sort_order: 2, is_visible: true, component: 'ComplianceCenter' },
+      // 财务分润
+      { name: '财务管理', path: '/finance', parent_path: '/finance', sort_order: 1, is_visible: true, component: 'FinanceManagement' },
+      { name: '分润配置', path: '/commission-config', parent_path: '/finance', sort_order: 2, is_visible: true, component: 'CommissionConfig' },
+      { name: '评价管理', path: '/service-ratings', parent_path: '/finance', sort_order: 3, is_visible: true, component: 'ServiceRatingManagement' },
+      // 投放营销
+      { name: '广告账户', path: '/marketing/ad-accounts', parent_path: '/marketing', sort_order: 1, is_visible: true, component: 'AdAccountManagement' },
+      { name: '投放计划', path: '/marketing/ad-plans', parent_path: '/marketing', sort_order: 2, is_visible: true, component: 'AdPlanManagement' },
+      { name: '转化归因', path: '/marketing/conversion', parent_path: '/marketing', sort_order: 3, is_visible: true, component: 'ConversionReport' },
+      { name: '素材管理', path: '/marketing/materials', parent_path: '/marketing', sort_order: 4, is_visible: true, component: 'MaterialManagement' },
+      { name: 'AI内容生成', path: '/marketing/ai-content', parent_path: '/marketing', sort_order: 5, is_visible: true, component: 'AIContentGenerator' },
+      { name: '公域账号', path: '/marketing/social-accounts', parent_path: '/marketing', sort_order: 6, is_visible: true, component: 'SocialAccountMatrix' },
+      // SCRM私域
+      { name: '活码管理', path: '/scrm/live-codes', parent_path: '/scrm', sort_order: 1, is_visible: true, component: 'LiveCodeManagement' },
+      { name: '渠道追踪', path: '/scrm/channels', parent_path: '/scrm', sort_order: 2, is_visible: true, component: 'ChannelTracking' },
+      { name: '客户标签', path: '/scrm/tags', parent_path: '/scrm', sort_order: 3, is_visible: true, component: 'ClientTagManagement' },
+      { name: '企微侧边栏', path: '/scrm/sidebar', parent_path: '/scrm', sort_order: 4, is_visible: true, component: 'ScrmSidebar' },
+      { name: '私域触达', path: '/scrm/reach', parent_path: '/scrm', sort_order: 5, is_visible: true, component: 'ReachTool' },
+      { name: '聊天存档', path: '/scrm/chat-archives', parent_path: '/scrm', sort_order: 6, is_visible: true, component: 'ChatArchiveManagement' },
+      // 系统管理
+      { name: '用户管理', path: '/users', parent_path: '/system', sort_order: 1, is_visible: true, component: 'UserManagement' },
+      { name: '角色管理', path: '/roles', parent_path: '/system', sort_order: 2, is_visible: true, component: 'RoleManagement' },
+      { name: '权限管理', path: '/permissions', parent_path: '/system', sort_order: 3, is_visible: true, component: 'PermissionManagement' },
+      { name: '菜单管理', path: '/menus', parent_path: '/system', sort_order: 4, is_visible: true, component: 'MenuManagement' },
+      { name: '消息通知', path: '/notifications', parent_path: '/system', sort_order: 5, is_visible: true, component: 'NotificationList' },
+      { name: 'AI工具', path: '/ai-tools', parent_path: '/system', sort_order: 6, is_visible: true, component: 'AITools' },
+    ];
+
+    for (const sub of subMenus) {
+      const existing = await this.menuRepository.findOne({ where: { path: sub.path } });
+      if (!existing) {
+        const parentId = savedMenus[sub.parent_path];
+        await this.menuRepository.save({
+          name: sub.name,
+          path: sub.path,
+          parent_id: parentId,
+          sort_order: sub.sort_order,
+          is_visible: sub.is_visible,
+          component: sub.component,
+        });
+      }
+    }
+  }
+
+  private async seedNotifications(userMap: Record<string, User>) {
+    const adminUser = userMap['13800138001'];
+    const salesUser = userMap['13800138003'];
+    const lawyerUser = userMap['13800138004'];
+    const marketingUser = userMap['13800138002'];
+
+    if (!adminUser) return;
+
+    const count = await this.notificationRepository.count({ where: { receiver_id: adminUser.id } });
+    if (count > 0) return;
+
+    const notifications = [
+      // 管理员通知
+      {
+        title: '系统部署完成',
+        content: '法智汇系统已成功部署，请登录并开始使用。',
+        type: 'system',
+        level: 'high',
+        receiver_id: adminUser.id,
+        is_read: true,
+        related_type: 'system',
+      },
+      {
+        title: '新用户注册提醒',
+        content: '有 3 个新用户注册等待审核。',
+        type: 'system',
+        level: 'normal',
+        receiver_id: adminUser.id,
+        is_read: false,
+        related_type: 'user',
+      },
+      {
+        title: '月度经营报表已生成',
+        content: '2026年6月经营报表已生成，点击查看详情。',
+        type: 'system',
+        level: 'high',
+        receiver_id: adminUser.id,
+        is_read: false,
+        related_type: 'report',
+      },
+      {
+        title: '广告账户余额不足',
+        content: '抖音广告账户余额已不足1000元，请及时充值。',
+        type: 'warning',
+        level: 'urgent',
+        receiver_id: adminUser.id,
+        is_read: false,
+        related_type: 'ad_account',
+      },
+      {
+        title: '新案件待分配',
+        content: '有 2 个新创建的案件待分配律师。',
+        type: 'case',
+        level: 'high',
+        receiver_id: adminUser.id,
+        is_read: true,
+        related_type: 'case',
+      },
+      {
+        title: '合规检查发现问题',
+        content: '营销内容合规检查发现 5 条待整改内容。',
+        type: 'warning',
+        level: 'high',
+        receiver_id: adminUser.id,
+        is_read: false,
+        related_type: 'compliance',
+      },
+      {
+        title: '系统维护通知',
+        content: '系统将于本周六凌晨2点-4点进行例行维护，期间服务可能短暂中断。',
+        type: 'system',
+        level: 'normal',
+        receiver_id: adminUser.id,
+        is_read: true,
+        related_type: 'system',
+      },
+      {
+        title: '财务审批待处理',
+        content: '有 3 笔费用报销待您审批。',
+        type: 'approval',
+        level: 'high',
+        receiver_id: adminUser.id,
+        is_read: false,
+        related_type: 'finance',
+      },
+      // 销售通知
+      {
+        title: '新线索分配',
+        content: '您有 5 条新线索待跟进，请及时处理。',
+        type: 'system',
+        level: 'high',
+        receiver_id: salesUser?.id,
+        is_read: false,
+        related_type: 'lead',
+      },
+      {
+        title: '邀约任务提醒',
+        content: '今日有 3 个邀约需要确认到所情况。',
+        type: 'task',
+        level: 'normal',
+        receiver_id: salesUser?.id,
+        is_read: false,
+        related_type: 'invite',
+      },
+      {
+        title: '客户投诉提醒',
+        content: '您负责的客户提交了一条投诉，请关注处理。',
+        type: 'warning',
+        level: 'urgent',
+        receiver_id: salesUser?.id,
+        is_read: false,
+        related_type: 'complaint',
+      },
+      {
+        title: '签约成功通知',
+        content: '恭喜！您的客户张女士已完成签约。',
+        type: 'system',
+        level: 'high',
+        receiver_id: salesUser?.id,
+        is_read: true,
+        related_type: 'contract',
+      },
+      // 律师通知
+      {
+        title: '新案件分配',
+        content: '您有 2 个新分配的案件，请查看案件详情。',
+        type: 'case',
+        level: 'high',
+        receiver_id: lawyerUser?.id,
+        is_read: false,
+        related_type: 'case',
+      },
+      {
+        title: '案件预警提醒',
+        content: '您负责的案件中有 3 条预警待处理。',
+        type: 'warning',
+        level: 'urgent',
+        receiver_id: lawyerUser?.id,
+        is_read: false,
+        related_type: 'case_warning',
+      },
+      {
+        title: '开庭提醒',
+        content: '明天上午10点有交通事故案开庭，请做好准备。',
+        type: 'task',
+        level: 'urgent',
+        receiver_id: lawyerUser?.id,
+        is_read: false,
+        related_type: 'hearing',
+      },
+      {
+        title: '客户提交新证据',
+        content: '您的客户提交了新的证据材料，请查收。',
+        type: 'case',
+        level: 'normal',
+        receiver_id: lawyerUser?.id,
+        is_read: true,
+        related_type: 'evidence',
+      },
+      {
+        title: '合规检查通过',
+        content: '您提交的案件文书合规检查已通过。',
+        type: 'system',
+        level: 'normal',
+        receiver_id: lawyerUser?.id,
+        is_read: true,
+        related_type: 'compliance',
+      },
+      // 投放专员通知
+      {
+        title: '投放计划已启动',
+        content: '您创建的"离婚律师推广"计划已开始投放。',
+        type: 'system',
+        level: 'normal',
+        receiver_id: marketingUser?.id,
+        is_read: true,
+        related_type: 'ad_plan',
+      },
+      {
+        title: '素材审核通过',
+        content: '您上传的 5 条素材已通过合规审核。',
+        type: 'system',
+        level: 'normal',
+        receiver_id: marketingUser?.id,
+        is_read: true,
+        related_type: 'material',
+      },
+      {
+        title: '消耗超标提醒',
+        content: '抖音投放账户今日消耗已超过日预算的80%。',
+        type: 'warning',
+        level: 'high',
+        receiver_id: marketingUser?.id,
+        is_read: false,
+        related_type: 'budget',
+      },
+    ];
+
+    for (const notif of notifications) {
+      if (!notif.receiver_id) continue;
+      await this.notificationRepository.save(notif);
+    }
+  }
+
+  // ============ Phase 5 种子数据 ============
+
+  // 数字人直播种子数据
+  private async seedDigitalHumanLives(orgId: string, userMap: Record<string, User>) {
+    const marketingUser = userMap['13800138002'];
+
+    const liveData = [
+      {
+        title: '婚姻家事法律专场直播',
+        anchor_name: 'AI律师小法',
+        status: DigitalHumanLiveStatus.DRAFT,
+        scheduled_start: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        duration: 90,
+        viewer_count: 0,
+        like_count: 0,
+        organization_id: orgId,
+        created_by: marketingUser?.id,
+        script_content: '',
+        cover_url: '',
+        live_url: '',
+        case_type: '',
+      },
+      {
+        title: '交通事故赔偿实战直播',
+        anchor_name: 'AI律师小律',
+        status: DigitalHumanLiveStatus.LIVE,
+        scheduled_start: new Date(Date.now() - 1 * 60 * 60 * 1000),
+        actual_start: new Date(Date.now() - 30 * 60 * 1000),
+        duration: 120,
+        viewer_count: 356,
+        like_count: 128,
+        organization_id: orgId,
+        created_by: marketingUser?.id,
+        script_content: '',
+        cover_url: '',
+        live_url: '',
+        case_type: '',
+      },
+      {
+        title: '劳动仲裁维权直播回放',
+        anchor_name: 'AI律师小师',
+        status: DigitalHumanLiveStatus.ENDED,
+        scheduled_start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        actual_start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        actual_end: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000),
+        duration: 90,
+        viewer_count: 520,
+        like_count: 230,
+        organization_id: orgId,
+        created_by: marketingUser?.id,
+        script_content: '',
+        cover_url: '',
+        live_url: '',
+        case_type: '',
+      },
+    ];
+
+    for (const data of liveData) {
+      const existing = await this.digitalHumanLiveRepository.findOne({ where: { title: data.title, organization_id: orgId } });
+      if (!existing) {
+        await this.digitalHumanLiveRepository.save(data as any);
+      }
+    }
+  }
+
+  // AI文书模板种子数据
+  private async seedLegalDocuments(orgId: string, userMap: Record<string, User>) {
+    const lawyerUser = userMap['13800138004'];
+
+    const docData = [
+      {
+        template_name: '离婚起诉状',
+        case_type: '婚姻',
+        document_type: 'complaint',
+        content_template: '原告：____，男/女，____年__月__日出生，民族____，身份证号码____，住址____，联系电话____。\n被告：____，男/女，____年__月__日出生，民族____，身份证号码____，住址____，联系电话____。\n\n诉讼请求：\n1. 请求判令原被告离婚；\n2. 请求判令婚生子/女____由原告抚养，被告每月支付抚养费____元；\n3. 请求判令依法分割夫妻共同财产；\n4. 请求判令被告承担本案诉讼费用。\n\n事实与理由：\n____年__月__日，原被告登记结婚，婚后生育一子/女____。婚后初期夫妻感情尚可，后因____导致夫妻感情破裂，已无和好可能。为维护原告合法权益，特向贵院提起诉讼，恳请依法判决。\n\n此致\n____人民法院\n\n具状人：____\n____年__月__日',
+        variables: JSON.stringify(['原告信息', '被告信息', '婚生子女信息', '财产信息', '离婚原因']),
+        is_system: true,
+        status: 'active',
+        organization_id: orgId,
+        created_by: lawyerUser?.id,
+      },
+      {
+        template_name: '交通事故赔偿起诉状',
+        case_type: '交通',
+        document_type: 'complaint',
+        content_template: '原告：____，男/女，____年__月__日出生，民族____，身份证号码____，住址____，联系电话____。\n被告：____，男/女，____年__月__日出生，民族____，身份证号码____，住址____，联系电话____。\n第三人：____保险公司\n\n诉讼请求：\n1. 请求判令被告赔偿原告医疗费____元、误工费____元、护理费____元、交通费____元、住院伙食补助费____元、营养费____元、残疾赔偿金____元、精神损害抚慰金____元，共计____元；\n2. 请求判令第三人在保险责任范围内承担连带赔偿责任；\n3. 请求判令被告承担本案诉讼费用。\n\n事实与理由：\n____年__月__日，原告在____路段发生交通事故，造成原告受伤。经交警认定，被告负事故全部责任。原告受伤后被送往____医院救治，经诊断为____。____司法鉴定所鉴定原告伤残等级为____级。就赔偿事宜协商未果，特向贵院提起诉讼。\n\n此致\n____人民法院\n\n具状人：____\n____年__月__日',
+        variables: JSON.stringify(['原告信息', '被告信息', '事故信息', '伤情信息', '赔偿金额']),
+        is_system: true,
+        status: 'active',
+        organization_id: orgId,
+        created_by: lawyerUser?.id,
+      },
+      {
+        template_name: '劳动仲裁申请书',
+        case_type: '劳动',
+        document_type: 'application',
+        content_template: '申请人：____，男/女，____年__月__日出生，民族____，身份证号码____，住址____，联系电话____。\n被申请人：____公司，住所地____，法定代表人____，联系电话____。\n\n仲裁请求：\n1. 请求裁令被申请人支付申请人____年__月__日至____年__月__日期间拖欠的工资____元；\n2. 请求裁令被申请人支付申请人违法解除劳动合同赔偿金____元；\n3. 请求裁令被申请人支付申请人未签订书面劳动合同双倍工资差额____元；\n4. 请求裁令被申请人为申请人补缴____年__月至____年__月期间的社会保险；\n\n事实与理由：\n申请人于____年__月__日入职被申请人处，担任____岗位，月工资____元。工作期间，被申请人存在____违法行为，侵害了申请人的合法权益。为维护申请人合法权益，特向贵委申请仲裁。\n\n此致\n____劳动人事争议仲裁委员会\n\n申请人：____\n____年__月__日',
+        variables: JSON.stringify(['申请人信息', '被申请人信息', '工资信息', '在职时间', '违法事实']),
+        is_system: true,
+        status: 'active',
+        organization_id: orgId,
+        created_by: lawyerUser?.id,
+      },
+      {
+        template_name: '借款合同纠纷起诉状',
+        case_type: '债务',
+        document_type: 'complaint',
+        content_template: '原告：____，男/女，____年__月__日出生，民族____，身份证号码____，住址____，联系电话____。\n被告：____，男/女，____年__月__日出生，民族____，身份证号码____，住址____，联系电话____。\n\n诉讼请求：\n1. 请求判令被告偿还原告借款本金____元及利息____元（利息暂计算至____年__月__日，此后按____标准计算至实际清偿之日止）；\n2. 请求判令被告承担本案诉讼费用。\n\n事实与理由：\n____年__月__日，被告因____需要向原告借款____元，约定借款期限为____，利息为____。原告通过____方式向被告交付了借款。借款到期后，经原告多次催讨，被告至今未归还。为维护原告合法权益，特向贵院提起诉讼。\n\n此致\n____人民法院\n\n具状人：____\n____年__月__日',
+        variables: JSON.stringify(['原告信息', '被告信息', '借款金额', '借款时间', '利息约定']),
+        is_system: true,
+        status: 'active',
+        organization_id: orgId,
+        created_by: lawyerUser?.id,
+      },
+      {
+        template_name: '刑事辩护委托书',
+        case_type: '刑事',
+        document_type: 'power_of_attorney',
+        content_template: '委托人：____，男/女，____年__月__日出生，民族____，身份证号码____，住址____。\n受托人：____律师，执业证号____，执业机构____律师事务所。\n\n委托事项：\n委托人因涉嫌____罪，现委托受托人作为委托人在____阶段的辩护律师。\n\n代理权限：\n1. 会见犯罪嫌疑人/被告人；\n2. 查阅、摘抄、复制本案材料；\n3. 收集、调取有关证据；\n4. 出庭辩护；\n5. 代为提出上诉；\n6. 代为申请取保候审；\n7. 其他与本案辩护相关的事项。\n\n委托期限：自本委托书签署之日起至本案____阶段终结止。\n\n委托人：____\n受托人：____\n____年__月__日',
+        variables: JSON.stringify(['委托人信息', '受托人信息', '涉嫌罪名', '案件阶段', '代理权限']),
+        is_system: true,
+        status: 'active',
+        organization_id: orgId,
+        created_by: lawyerUser?.id,
+      },
+      {
+        template_name: '民事委托代理合同',
+        case_type: '合同',
+        document_type: 'contract',
+        content_template: '甲方（委托人）：____，身份证号码____，住址____，联系电话____。\n乙方（受托人）：____律师事务所，地址____，联系电话____。\n\n根据《中华人民共和国民法典》及相关法律法规的规定，甲乙双方经平等协商，就甲方委托乙方代理民事案件事宜达成如下协议：\n\n一、委托事项\n甲方委托乙方作为甲方与____之间____纠纷一案的代理人。\n\n二、代理权限\n1. 代为承认、变更、放弃诉讼请求；\n2. 代为进行和解、调解；\n3. 代为提起上诉；\n4. 代为签收法律文书；\n5. 代为申请执行；\n6. 其他特别授权事项。\n\n三、律师费\n1. 甲方同意向乙方支付律师费人民币____元；\n2. 上述费用不包括办理本案所需的差旅费、诉讼费、鉴定费等实际支出的费用；\n3. 付款方式：____。\n\n四、双方权利义务\n1. 甲方应如实向乙方陈述案件事实，提供必要的证据材料；\n2. 甲方应按约定及时支付律师费；\n3. 乙方应勤勉尽责地代理甲方处理委托事项；\n4. 乙方应及时向甲方通报案件进展。\n\n五、违约责任\n1. 因甲方原因导致委托事项无法完成的，乙方已收取的律师费不予退还；\n2. 因乙方过错给甲方造成损失的，乙方应承担相应赔偿责任。\n\n六、其他约定\n本合同一式两份，甲乙双方各执一份，自双方签字盖章之日起生效。\n\n甲方（签字）：____\n乙方（盖章）：____\n____年__月__日',
+        variables: JSON.stringify(['甲方信息', '乙方信息', '案件信息', '律师费', '代理权限']),
+        is_system: true,
+        status: 'active',
+        organization_id: orgId,
+        created_by: lawyerUser?.id,
+      },
+      {
+        template_name: '房屋买卖合同纠纷起诉状',
+        case_type: '房产',
+        document_type: 'complaint',
+        content_template: '原告：____，男/女，____年__月__日出生，民族____，身份证号码____，住址____，联系电话____。\n被告：____，男/女，____年__月__日出生，民族____，身份证号码____，住址____，联系电话____。\n\n诉讼请求：\n1. 请求判令被告继续履行房屋买卖合同，配合原告办理房屋过户手续；\n2. 请求判令被告支付违约金____元；\n3. 请求判令被告承担本案诉讼费用。\n\n事实与理由：\n____年__月__日，原被告签订房屋买卖合同，约定被告将位于____的房屋出售给原告，总价____元。原告已按约定支付了____房款，但被告至今未配合办理过户手续。经原告多次催告，被告仍不履行合同义务。为维护原告合法权益，特向贵院提起诉讼。\n\n此致\n____人民法院\n\n具状人：____\n____年__月__日',
+        variables: JSON.stringify(['原告信息', '被告信息', '房屋信息', '合同信息', '违约情况']),
+        is_system: true,
+        status: 'active',
+        organization_id: orgId,
+        created_by: lawyerUser?.id,
+      },
+      {
+        template_name: '知识产权侵权起诉状',
+        case_type: '知识产权',
+        document_type: 'complaint',
+        content_template: '原告：____，住所地____，法定代表人____，联系电话____。\n被告：____，住所地____，法定代表人____，联系电话____。\n\n诉讼请求：\n1. 请求判令被告立即停止侵犯原告____（商标/专利/著作权）的行为；\n2. 请求判令被告赔偿原告经济损失____元及合理维权费用____元；\n3. 请求判令被告在____媒体上刊登声明消除影响；\n4. 请求判令被告承担本案诉讼费用。\n\n事实与理由：\n原告系____（知识产权类型）的权利人，依法享有____权。____年__月__日，原告发现被告未经原告许可，擅自使用原告的____，侵犯了原告的合法权益。原告已通过公证方式固定了被告的侵权行为证据。为维护原告合法权益，特向贵院提起诉讼。\n\n此致\n____人民法院\n\n具状人：____\n____年__月__日',
+        variables: JSON.stringify(['原告信息', '被告信息', '知识产权信息', '侵权行为', '赔偿金额']),
+        is_system: true,
+        status: 'active',
+        organization_id: orgId,
+        created_by: lawyerUser?.id,
+      },
+    ];
+
+    for (const data of docData) {
+      const existing = await this.legalDocumentRepository.findOne({ where: { template_name: data.template_name, organization_id: orgId } });
+      if (!existing) {
+        await this.legalDocumentRepository.save(data as any);
+      }
+    }
+  }
+
+  // 云归档种子数据
+  private async seedClientArchives(orgId: string, userMap: Record<string, User>) {
+    const lawyerUser = userMap['13800138004'];
+    const assistantUser = userMap['13800138005'];
+    const cases = await this.caseRepository.find({ where: { organization_id: orgId }, take: 10 });
+    if (cases.length === 0) return;
+
+    const archiveConfigs = [
+      {
+        file_name: '离婚协议草稿.pdf',
+        file_type: '合同',
+        file_path: '/archives/divorce-agreement-draft.pdf',
+        file_size: 256000,
+        case_id: '',
+        description: '离婚协议初稿，待客户确认',
+        is_encrypted: true,
+        retention_period: 7,
+      },
+      {
+        file_name: '结婚证扫描件.pdf',
+        file_type: '证据',
+        file_path: '/archives/marriage-cert-scan.pdf',
+        file_size: 128000,
+        case_id: '',
+        description: '客户提交的结婚证扫描件',
+        is_encrypted: true,
+        retention_period: 10,
+      },
+      {
+        file_name: '收款发票.pdf',
+        file_type: '发票',
+        file_path: '/archives/payment-invoice.pdf',
+        file_size: 64000,
+        case_id: '',
+        description: '律师费收款发票',
+        is_encrypted: false,
+        retention_period: 5,
+      },
+      {
+        file_name: '律师函.pdf',
+        file_type: '函件',
+        file_path: '/archives/lawyer-letter.pdf',
+        file_size: 35840,
+        case_id: '',
+        description: '向对方发送的律师催款函',
+        is_encrypted: false,
+        retention_period: 3,
+      },
+      {
+        file_name: '交通事故认定书.pdf',
+        file_type: '证据',
+        file_path: '/archives/traffic-accident-report.pdf',
+        file_size: 153600,
+        case_id: '',
+        description: '交警出具的事故责任认定书',
+        is_encrypted: true,
+        retention_period: 10,
+      },
+      {
+        file_name: '伤残鉴定报告.pdf',
+        file_type: '证据',
+        file_path: '/archives/disability-report.pdf',
+        file_size: 512000,
+        case_id: '',
+        description: '司法鉴定机构出具的伤残鉴定报告',
+        is_encrypted: true,
+        retention_period: 10,
+      },
+      {
+        file_name: '劳动合同.pdf',
+        file_type: '合同',
+        file_path: '/archives/labor-contract.pdf',
+        file_size: 204800,
+        case_id: '',
+        description: '客户与公司签订的劳动合同',
+        is_encrypted: true,
+        retention_period: 7,
+      },
+      {
+        file_name: '工资流水.pdf',
+        file_type: '证据',
+        file_path: '/archives/salary-records.pdf',
+        file_size: 307200,
+        case_id: '',
+        description: '近12个月银行工资流水',
+        is_encrypted: true,
+        retention_period: 10,
+      },
+      {
+        file_name: '借条扫描件.pdf',
+        file_type: '证据',
+        file_path: '/archives/iou-scan.pdf',
+        file_size: 102400,
+        case_id: '',
+        description: '借款50万元的借条原件扫描',
+        is_encrypted: true,
+        retention_period: 10,
+      },
+      {
+        file_name: '还款计划函.pdf',
+        file_type: '函件',
+        file_path: '/archives/repayment-plan-letter.pdf',
+        file_size: 51200,
+        case_id: '',
+        description: '向债务人发送的还款计划函',
+        is_encrypted: false,
+        retention_period: 3,
+      },
+    ];
+
+    for (let i = 0; i < archiveConfigs.length; i++) {
+      const config = archiveConfigs[i];
+      const caseEntity = cases[i % cases.length];
+      const uploader = i % 2 === 0 ? lawyerUser : assistantUser;
+      const existing = await this.clientArchiveRepository.findOne({
+        where: { case_id: caseEntity.id, file_name: config.file_name },
+      });
+      if (!existing) {
+        await this.clientArchiveRepository.save({
+          ...config,
+          case_id: caseEntity.id,
+          upload_by_id: uploader?.id,
+          organization_id: orgId,
+        });
+      }
+    }
+  }
+
+  // 智能对账种子数据
+  private async seedReconciliations(orgId: string, userMap: Record<string, User>) {
+    const financeUser = userMap['13800138006'];
+
+    const reconciliationData = [
+      {
+        reconciliation_no: 'REC-2026-001',
+        period_start: new Date('2026-06-01'),
+        period_end: new Date('2026-06-30'),
+        total_receivable: 50000,
+        total_received: 50000,
+        total_overdue: 0,
+        status: ReconciliationStatus.CONFIRMED,
+        organization_id: orgId,
+        created_by: financeUser?.id,
+        match_count: 1,
+        mismatch_count: 0,
+      },
+      {
+        reconciliation_no: 'REC-2026-002',
+        period_start: new Date('2026-07-01'),
+        period_end: new Date('2026-07-31'),
+        total_receivable: 30000,
+        total_received: 15000,
+        total_overdue: 15000,
+        status: ReconciliationStatus.DRAFT,
+        organization_id: orgId,
+        created_by: financeUser?.id,
+        match_count: 0,
+        mismatch_count: 1,
+      },
+    ];
+
+    for (const data of reconciliationData) {
+      const existing = await this.reconciliationRepository.findOne({
+        where: { reconciliation_no: data.reconciliation_no },
+      });
+      if (!existing) {
+        await this.reconciliationRepository.save(data as any);
+      }
+    }
+  }
+
+  // 系统部署配置种子数据
+  private async seedDeploymentConfigs(orgId: string) {
+    const configData = [
+      {
+        config_name: '生产环境部署',
+        server_type: 'cluster' as const,
+        server_host: '10.0.0.1',
+        server_port: 8080,
+        db_type: 'mysql',
+        db_host: '10.0.0.10',
+        db_name: 'fazhihui_prod',
+        db_user: 'fazhihui',
+        cache_type: 'redis',
+        cache_host: '10.0.0.11:6379',
+        config_status: 'active' as const,
+        organization_id: orgId,
+      },
+      {
+        config_name: '测试环境部署',
+        server_type: 'single' as const,
+        server_host: 'test.fazhihui.com',
+        server_port: 8080,
+        db_type: 'mysql',
+        db_host: 'test-db.fazhihui.com',
+        db_name: 'fazhihui_test',
+        db_user: 'fazhihui_test',
+        cache_type: 'redis',
+        cache_host: 'test-redis.fazhihui.com:6379',
+        config_status: 'inactive' as const,
+        organization_id: orgId,
+      },
+    ];
+
+    for (const data of configData) {
+      const existing = await this.deploymentConfigRepository.findOne({
+        where: { config_name: data.config_name, organization_id: data.organization_id },
+      });
+      if (!existing) {
+        await this.deploymentConfigRepository.save(data as any);
+      }
+    }
+  }
+
+  // 品牌定制配置种子数据
+  private async seedBrandConfigs(orgId: string) {
+    const brandData = [
+      {
+        brand_name: '法智汇',
+        logo_url: '/brands/default-logo.png',
+        favicon_url: '/brands/default-favicon.ico',
+        primary_color: '#1890FF',
+        secondary_color: '#52C41A',
+        theme_type: 'light' as const,
+        copyright_text: 'Copyright 2026 法智汇. All Rights Reserved.',
+        icp_number: '京ICP备2026000000号',
+        status: 'active' as const,
+        organization_id: orgId,
+      },
+    ];
+
+    for (const data of brandData) {
+      const existing = await this.brandConfigRepository.findOne({
+        where: { organization_id: data.organization_id },
+      });
+      if (!existing) {
+        await this.brandConfigRepository.save(data as any);
+      }
+    }
+  }
+
+  // 第三方对接配置种子数据
+  private async seedIntegrations(orgId: string) {
+    const integrationData = [
+      {
+        integration_name: '微信公众号',
+        integration_type: 'wechat' as const,
+        app_id: 'wx_demo_app_id',
+        app_secret: 'wx_demo_app_secret',
+        api_url: 'https://api.weixin.qq.com',
+        webhook_url: 'https://api.fazhihui.com/wechat/callback',
+        config: JSON.stringify({
+          token: 'wx_demo_token',
+          encoding_aes_key: 'wx_demo_encoding_aes_key',
+        }),
+        status: 'active' as const,
+        organization_id: orgId,
+      },
+      {
+        integration_name: '企业微信',
+        integration_type: 'wework' as const,
+        app_id: 'ww_demo_corp_id',
+        app_secret: 'ww_demo_secret',
+        api_url: 'https://work.weixin.qq.com',
+        webhook_url: 'https://api.fazhihui.com/wework/callback',
+        config: JSON.stringify({
+          agent_id: 'ww_demo_agent_id',
+          token: 'ww_demo_token',
+        }),
+        status: 'active' as const,
+        organization_id: orgId,
+      },
+      {
+        integration_name: '支付宝',
+        integration_type: 'alipay' as const,
+        app_id: '2026000000000001',
+        app_secret: 'alipay_demo_private_key',
+        api_url: 'https://openapi.alipaydev.com',
+        webhook_url: 'https://api.fazhihui.com/alipay/notify',
+        config: JSON.stringify({
+          public_key: 'alipay_demo_public_key',
+          gateway_url: 'https://openapi.alipaydev.com/gateway.do',
+        }),
+        status: 'active' as const,
+        organization_id: orgId,
+      },
+    ];
+
+    for (const data of integrationData) {
+      const existing = await this.integrationRepository.findOne({
+        where: { integration_type: data.integration_type, organization_id: data.organization_id } as any,
+      });
+      if (!existing) {
+        await this.integrationRepository.save(data as any);
       }
     }
   }

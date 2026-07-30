@@ -8,9 +8,12 @@ import { MarketingContent } from './marketing-content.entity';
 import { SalesCompliance } from './sales-compliance.entity';
 import { SigningCompliance } from './signing-compliance.entity';
 import { CaseSOP } from './case-sop.entity';
+import { TalkQualityCheck } from './talk-quality-check.entity';
+import { ReportTemplate } from '../dashboard/report-template.entity';
+import { ReportExportLog } from '../dashboard/report-export-log.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ComplianceRecord, Complaint, MarketingContent, SalesCompliance, SigningCompliance, CaseSOP])],
+  imports: [TypeOrmModule.forFeature([ComplianceRecord, Complaint, MarketingContent, SalesCompliance, SigningCompliance, CaseSOP, TalkQualityCheck, ReportTemplate, ReportExportLog])],
   providers: [ComplianceService],
   controllers: [ComplianceController],
   exports: [ComplianceService],

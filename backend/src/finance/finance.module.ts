@@ -10,10 +10,12 @@ import { PaymentRecord } from './payment-record.entity';
 
 // 控制器
 import { CommissionController } from './commission.controller';
+import { ReconciliationController } from './reconciliation.controller';
 
 // 服务
 import { CommissionService } from './commission.service';
 import { OverdueWarningService } from './overdue-warning.service';
+import { ReconciliationService } from './reconciliation.service';
 
 // 实体
 import { CommissionRule } from './commission-rule.entity';
@@ -21,6 +23,7 @@ import { CommissionRecord } from './commission-record.entity';
 import { CaseCost } from './case-cost.entity';
 import { Receivable } from './receivable.entity';
 import { OverdueWarning } from './overdue-warning.entity';
+import { Reconciliation } from './reconciliation.entity';
 import { Case } from '../case/case.entity';
 import { User } from '../user/user.entity';
 
@@ -42,6 +45,8 @@ import { User } from '../user/user.entity';
       Receivable,
       // 逾期预警
       OverdueWarning,
+      // 对账
+      Reconciliation,
       // 关联实体
       Case,
       User,
@@ -54,12 +59,16 @@ import { User } from '../user/user.entity';
     CommissionService,
     // 逾期预警服务
     OverdueWarningService,
+    // 对账服务
+    ReconciliationService,
   ],
   controllers: [
     // 保留原有控制器
     FinanceController,
     // 佣金控制器
     CommissionController,
+    // 对账控制器
+    ReconciliationController,
   ],
 })
 export class FinanceModule {}

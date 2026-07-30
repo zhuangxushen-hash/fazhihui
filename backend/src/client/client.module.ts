@@ -16,6 +16,7 @@ import { User } from '../user/user.entity';
 import { CasePushNotification } from './case-push-notification.entity';
 import { ClientConsultation } from './client-consultation.entity';
 import { ServiceRating } from './service-rating.entity';
+import { ClientArchive } from './client-archive.entity';
 
 @Module({
   imports: [
@@ -35,6 +36,8 @@ import { ServiceRating } from './service-rating.entity';
       CasePushNotification,
       ClientConsultation,
       ServiceRating,
+      // 模块7.6 云归档
+      ClientArchive,
     ]),
   ],
   providers: [ClientService],

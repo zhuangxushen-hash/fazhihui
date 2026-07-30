@@ -13,6 +13,7 @@ import { SocialAccountController } from './social-account.controller';
 import { ConversionController } from './conversion.controller';
 import { SocialPostController } from './social-post.controller';
 import { MarketingContentController } from './marketing-content.controller';
+import { DigitalHumanLiveController } from './digital-human-live.controller';
 
 // 服务
 import { AdAccountService } from './ad-account.service';
@@ -23,6 +24,7 @@ import { ConversionService } from './conversion.service';
 import { SocialPostService } from './social-post.service';
 import { MarketingComplianceService } from './marketing-compliance.service';
 import { ContentGeneratorService } from './content-generator.service';
+import { DigitalHumanLiveService } from './digital-human-live.service';
 
 // 实体
 import { AdAccount } from './ad-account.entity';
@@ -34,6 +36,7 @@ import { SocialAccount } from './social-account.entity';
 import { SocialPost } from './social-post.entity';
 import { ConversionEvent } from './conversion-event.entity';
 import { ContentTemplate } from './content-template.entity';
+import { DigitalHumanLive } from './digital-human-live.entity';
 import { Lead } from '../lead/lead.entity';
 import { Case } from '../case/case.entity';
 import { User } from '../user/user.entity';
@@ -56,6 +59,8 @@ import { User } from '../user/user.entity';
       ConversionEvent,
       // 内容模板
       ContentTemplate,
+      // 数字人直播
+      DigitalHumanLive,
       // 关联实体
       Lead,
       Case,
@@ -80,6 +85,8 @@ import { User } from '../user/user.entity';
     MarketingComplianceService,
     // 内容生成服务
     ContentGeneratorService,
+    // 数字人直播服务
+    DigitalHumanLiveService,
   ],
   controllers: [
     // 保留原有控制器
@@ -96,6 +103,8 @@ import { User } from '../user/user.entity';
     ConversionController,
     // 营销内容控制器
     MarketingContentController,
+    // 数字人直播控制器
+    DigitalHumanLiveController,
   ],
 })
 export class MarketingModule {}

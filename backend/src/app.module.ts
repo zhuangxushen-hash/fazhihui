@@ -13,6 +13,7 @@ import { MarketingModule } from './marketing/marketing.module';
 import { SeedsModule } from './seeds/seeds.module';
 import { AiModule } from './ai/ai.module';
 import { ScrmModule } from './scrm/scrm.module';
+import { SystemModule } from './system/system.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { ScrmModule } from './scrm/scrm.module';
     SeedsModule,
     AiModule,
     ScrmModule,
+    SystemModule,
   ],
 })
 export class AppModule {}

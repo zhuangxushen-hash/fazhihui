@@ -13,6 +13,18 @@ export enum SalesCheckResult {
   VIOLATION = 'violation',
 }
 
+export enum SalesReviewStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}
+
+export enum SalesRiskLevel {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
+}
+
 @Entity('sales_compliance')
 export class SalesCompliance {
   @PrimaryGeneratedColumn('uuid')
@@ -47,6 +59,21 @@ export class SalesCompliance {
 
   @Column({ type: 'text', nullable: true })
   risk_disclosure_content: string;
+
+  @Column({ type: 'varchar', default: 'pending' })
+  review_status: SalesReviewStatus;
+
+  @Column({ type: 'varchar', nullable: true })
+  reviewer_id: string;
+
+  @Column({ type: 'datetime', nullable: true })
+  review_time: Date;
+
+  @Column({ type: 'text', nullable: true })
+  review_note: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  risk_level: SalesRiskLevel;
 
   @Column({ type: 'varchar', nullable: false })
   organization_id: string;

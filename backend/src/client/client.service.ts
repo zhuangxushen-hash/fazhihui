@@ -16,6 +16,7 @@ import { ComplaintType, ComplaintStatus, AdMaterialType, AdMaterialStatus, Mater
 import { CasePushNotification } from './case-push-notification.entity';
 import { ClientConsultation } from './client-consultation.entity';
 import { ServiceRating } from './service-rating.entity';
+import { ClientArchive } from './client-archive.entity';
 
 // 触发转人工的复杂问题关键词
 const TRANSFER_KEYWORDS = ['投诉', '转人工', '人工', '律师', '无法解决'];
@@ -51,6 +52,8 @@ export class ClientService {
     private evidenceRepository: Repository<Evidence>,
     @InjectRepository(AdMaterial)
     private adMaterialRepository: Repository<AdMaterial>,
+    @InjectRepository(ClientArchive)
+    private clientArchiveRepository: Repository<ClientArchive>,
   ) {}
 
   async getClientCases(clientId: string): Promise<any[]> {
@@ -518,5 +521,111 @@ export class ClientService {
       organization_id: rating.organization_id,
     });
     return this.complaintTicketRepository.save(ticket);
+  }
+
+  // ==================== 模块7.6 客户云归档管理 ====================
+
+  /**
+   * 获取客户归档列表
+   */
+  async getClientArchives(clientId: string, filters?: { case_id?: string; file_type?: string }): Promise<ClientArchive[]> {
+    const where: any = { client_id: clientId };
+    if (filters?.case_id) {
+      where.case_id = filters.case_id;
+    }
+    if (filters?.file_type) {
+      where.file_type = filters.file_type;
+    }
+    return this.clientArchiveRepository.find({
+      where,
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  /**
+   * 上传归档文件
+   */
+  async uploadArchive(clientId: string, archiveData: {
+    case_id?: string;
+    file_name: string;
+    file_type: string;
+    file_size?: number;
+    file_url?: string;
+    description?: string;
+    organization_id?: string;
+  }): Promise<ClientArchive> {
+    const archive = this.clientArchiveRepository.create({
+      ...archiveData,
+      client_id: clientId,
+      archived_at: new Date(),
+      archived_by: clientId,
+    });
+    return this.clientArchiveRepository.save(archive);
+  }
+
+  /**
+   * 删除归档
+   */
+  async deleteArchive(id: string, clientId: string): Promise<{ success: boolean; message: string }> {
+    const archive = await this.clientArchiveRepository.findOne({ where: { id } });
+    if (!archive) {
+      throw new Error('归档记录不存在');
+    }
+    if (archive.client_id !== clientId) {
+      throw new Error('无权删除该归档记录');
+    }
+    await this.clientArchiveRepository.delete(id);
+    return { success: true, message: '归档已删除' };
+  }
+
+  /**
+   * 按案件查询归档
+   */
+  async getArchiveByCase(caseId: string, clientId: string): Promise<ClientArchive[]> {
+    return this.clientArchiveRepository.find({
+      where: { case_id: caseId, client_id: clientId },
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  /**
+   * 管理员 - 获取所有归档记录（带分页与筛选）
+   */
+  async listAllArchives(filters: {
+    keyword?: string;
+    file_type?: string;
+    page?: number;
+    page_size?: number;
+  }): Promise<{ data: ClientArchive[]; total: number }> {
+    const page = filters.page || 1;
+    const pageSize = filters.page_size || 10;
+    const skip = (page - 1) * pageSize;
+
+    const queryBuilder = this.clientArchiveRepository.createQueryBuilder('a');
+
+    if (filters.keyword) {
+      queryBuilder.andWhere('a.file_name LIKE :keyword', { keyword: `%${filters.keyword}%` });
+    }
+    if (filters.file_type) {
+      queryBuilder.andWhere('a.file_type = :fileType', { fileType: filters.file_type });
+    }
+
+    queryBuilder.orderBy('a.created_at', 'DESC');
+    queryBuilder.skip(skip).take(pageSize);
+
+    const [data, total] = await queryBuilder.getManyAndCount();
+    return { data, total };
+  }
+
+  /**
+   * 管理员 - 删除任意归档
+   */
+  async adminDeleteArchive(id: string): Promise<{ success: boolean; message: string }> {
+    const archive = await this.clientArchiveRepository.findOne({ where: { id } });
+    if (!archive) {
+      throw new Error('归档记录不存在');
+    }
+    await this.clientArchiveRepository.delete(id);
+    return { success: true, message: '归档已删除' };
   }
 }

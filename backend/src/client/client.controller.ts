@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { ClientService } from './client.service';
 import { ComplaintType } from '../types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -185,5 +185,61 @@ export class ClientController {
   @Post('service-ratings/:id/convert')
   convertRatingToMaterial(@Param('id') id: string) {
     return this.clientService.convertRatingToMaterial(id);
+  }
+
+  // ==================== 模块7.6 客户云归档管理 ====================
+
+  // 上传归档（C端 POST）
+  @Post('archives')
+  uploadArchive(@Body() body: {
+    client_id: string;
+    case_id?: string;
+    file_name: string;
+    file_type: string;
+    file_size?: number;
+    file_url?: string;
+    description?: string;
+    organization_id?: string;
+  }) {
+    return this.clientService.uploadArchive(body.client_id, body);
+  }
+
+  // 获取归档列表（C端 POST）
+  @Post('archives/list')
+  getClientArchives(@Body() body: { client_id: string; case_id?: string; file_type?: string }) {
+    return this.clientService.getClientArchives(body.client_id, {
+      case_id: body.case_id,
+      file_type: body.file_type,
+    });
+  }
+
+  // 按案件查询归档（C端 POST）
+  @Post('archives/:caseId')
+  getArchiveByCase(
+    @Param('caseId') caseId: string,
+    @Body() body: { client_id: string },
+  ) {
+    return this.clientService.getArchiveByCase(caseId, body.client_id);
+  }
+
+  // 删除归档（C端 DELETE）
+  @Delete('archives/:id')
+  deleteArchive(
+    @Param('id') id: string,
+    @Body() body: { client_id: string },
+  ) {
+    return this.clientService.deleteArchive(id, body.client_id);
+  }
+
+  // 管理员 - 获取所有归档列表
+  @Post('admin/archives/list')
+  listAllArchives(@Body() body: { keyword?: string; file_type?: string; page?: number; page_size?: number }) {
+    return this.clientService.listAllArchives(body);
+  }
+
+  // 管理员 - 删除任意归档
+  @Delete('admin/archives/:id')
+  adminDeleteArchive(@Param('id') id: string) {
+    return this.clientService.adminDeleteArchive(id);
   }
 }

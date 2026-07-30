@@ -11,6 +11,8 @@ import { CaseTaskController } from './case-task.controller';
 import { CaseWarningController } from './case-warning.controller';
 import { EvidenceController } from './evidence.controller';
 import { CaseSopTemplateController } from './case-sop-template.controller';
+import { LegalDocumentController } from './legal-document.controller';
+import { SimilarCaseController } from './similar-case.controller';
 
 // 服务
 import { CaseTaskService } from './case-task.service';
@@ -18,6 +20,8 @@ import { CaseWarningService } from './case-warning.service';
 import { EvidenceService } from './evidence.service';
 import { CaseSopTemplateService } from './case-sop-template.service';
 import { CaseTaskCommentService } from './case-task-comment.service';
+import { LegalDocumentService } from './legal-document.service';
+import { SimilarCaseService } from './similar-case.service';
 
 // 实体
 import { CaseTask } from './case-task.entity';
@@ -25,6 +29,7 @@ import { CaseTaskComment } from './case-task-comment.entity';
 import { CaseWarning } from './case-warning.entity';
 import { Evidence } from './evidence.entity';
 import { CaseSOPTemplate } from './case-sop-template.entity';
+import { LegalDocument } from './legal-document.entity';
 
 @Module({
   imports: [
@@ -42,6 +47,8 @@ import { CaseSOPTemplate } from './case-sop-template.entity';
       Evidence,
       // 案件SOP模板
       CaseSOPTemplate,
+      // 法律文书模板
+      LegalDocument,
     ]),
   ],
   providers: [
@@ -56,6 +63,10 @@ import { CaseSOPTemplate } from './case-sop-template.entity';
     EvidenceService,
     // 案件SOP模板服务
     CaseSopTemplateService,
+    // 法律文书服务
+    LegalDocumentService,
+    // 类案匹配服务
+    SimilarCaseService,
   ],
   controllers: [
     // 保留原有控制器
@@ -68,6 +79,10 @@ import { CaseSOPTemplate } from './case-sop-template.entity';
     EvidenceController,
     // 案件SOP模板控制器
     CaseSopTemplateController,
+    // 法律文书控制器
+    LegalDocumentController,
+    // 类案匹配控制器
+    SimilarCaseController,
   ],
 })
 export class CaseModule {}

@@ -239,4 +239,44 @@ export class DashboardController {
   ) {
     return this.dashboardService.subscribeReport(id, body.user_ids, body.frequency);
   }
+
+  // ==================== 8.7 人效分析 ====================
+
+  @Get('hr-efficiency')
+  getHREfficiencyStats(
+    @Query('org_id') orgId: string,
+    @Query('start_date') startDate?: Date,
+    @Query('end_date') endDate?: Date,
+    @Request() req?: any,
+  ) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.dashboardService.getHREfficiencyStats(finalOrgId, startDate, endDate);
+  }
+
+  @Get('hr-ranking')
+  getLawyerEfficiencyRanking(
+    @Query('org_id') orgId: string,
+    @Query('start_date') startDate?: Date,
+    @Query('end_date') endDate?: Date,
+    @Request() req?: any,
+  ) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.dashboardService.getLawyerEfficiencyRanking(finalOrgId, startDate, endDate);
+  }
+
+  // ==================== 8.8 盈利模型模拟器 ====================
+
+  @Post('profit-model/simulate')
+  calculateProfitModel(@Body() body: {
+    caseType: string;
+    avgFee: number;
+    avgCost: number;
+    conversionRate: number;
+    orgMargin: number;
+    lawyerMargin: number;
+    salesMargin: number;
+    marketingMargin: number;
+  }) {
+    return this.dashboardService.calculateProfitModel(body);
+  }
 }

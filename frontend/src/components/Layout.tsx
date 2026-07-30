@@ -47,6 +47,8 @@ const menuGroups: MenuGroup[] = [
       { key: '/dashboard/finance', label: '财务经营' },
       { key: '/dashboard/compliance-risk', label: '合规风险监控' },
       { key: '/dashboard/custom-report', label: '自定义报表' },
+      { key: '/dashboard/hr-efficiency', label: '人效分析' },
+      { key: '/dashboard/profit-model', label: '盈利模型' },
     ],
   },
   {
@@ -59,6 +61,7 @@ const menuGroups: MenuGroup[] = [
       { key: '/invite-workbench', label: '邀约工作台' },
       { key: '/talk-workbench', label: '谈案工作台' },
       { key: '/talk-sop', label: '谈案SOP' },
+      { key: '/compliance/sales-review', label: '销售合规审查' },
     ],
   },
   {
@@ -69,6 +72,10 @@ const menuGroups: MenuGroup[] = [
       { key: '/cases', label: '案件管理' },
       { key: '/case-sop', label: '办案SOP' },
       { key: '/case-warning', label: '案件预警' },
+      { key: '/legal-documents', label: 'AI文书' },
+      { key: '/similar-cases', label: '类案匹配' },
+      { key: '/compliance/export', label: '案件归档' },
+      { key: '/cloud-archive', label: '云归档管理' },
     ],
   },
   {
@@ -78,6 +85,7 @@ const menuGroups: MenuGroup[] = [
     children: [
       { key: '/compliance', label: '合规管理' },
       { key: '/compliance-center', label: '合规风控中心' },
+      { key: '/talk-quality-check', label: '谈案AI质检' },
     ],
   },
   {
@@ -87,7 +95,9 @@ const menuGroups: MenuGroup[] = [
     children: [
       { key: '/finance', label: '财务管理' },
       { key: '/commission-config', label: '分润配置' },
-      { key: '/service-ratings', label: '评价管理' },
+      { key: '/finance/reconciliation', label: '智能对账' },
+      { key: '/finance/refund-tier', label: '阶梯退费' },
+      { key: '/finance/case-profit', label: '单案利润分析' },
     ],
   },
   {
@@ -101,6 +111,7 @@ const menuGroups: MenuGroup[] = [
       { key: '/marketing/materials', label: '素材管理' },
       { key: '/marketing/ai-content', label: 'AI内容生成' },
       { key: '/marketing/social-accounts', label: '公域账号' },
+      { key: '/marketing/digital-human-live', label: '数字人直播' },
     ],
   },
   {
@@ -122,7 +133,15 @@ const menuGroups: MenuGroup[] = [
     label: '系统管理',
     children: [
       { key: '/users', label: '用户管理' },
+      { key: '/roles', label: '角色管理' },
+      { key: '/permissions', label: '权限管理' },
+      { key: '/menus', label: '菜单管理' },
+      { key: '/notifications', label: '消息通知' },
+      { key: '/service-ratings', label: '评价管理' },
       { key: '/ai-tools', label: 'AI工具' },
+      { key: '/system/deployment-config', label: '部署配置' },
+      { key: '/system/brand-customization', label: '品牌定制' },
+      { key: '/system/integrations', label: '第三方对接' },
     ],
   },
 ]
@@ -293,69 +312,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           }}
           theme="dark"
         />
-        {/* User Info Footer */}
-        {!collapsed && (
-          <div
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              padding: '16px 20px',
-              borderTop: '1px solid rgba(228, 194, 120, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-            }}
-          >
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                background: 'rgba(228, 194, 120, 0.15)',
-                border: '1px solid rgba(228, 194, 120, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <Avatar
-                icon={<UserOutlined />}
-                size={34}
-                style={{ background: 'transparent', color: '#e4c278' }}
-              />
-            </div>
-            <div style={{ overflow: 'hidden', flex: 1 }}>
-              <p
-                style={{
-                  fontSize: 13,
-                  color: '#ffffff',
-                  fontWeight: 500,
-                  margin: 0,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {user.real_name || '用户'}
-              </p>
-              <p
-                style={{
-                  fontSize: 11,
-                  color: 'rgba(228, 194, 120, 0.5)',
-                  margin: 0,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {roleLabels[user.role] || '用户'}
-              </p>
-            </div>
-          </div>
-        )}
       </Sider>
       <AntLayout
         style={{

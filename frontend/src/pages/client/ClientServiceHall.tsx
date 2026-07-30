@@ -10,6 +10,7 @@ import {
   CheckCircleOutlined,
   SafetyCertificateOutlined,
   DownloadOutlined,
+  CloudOutlined,
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import axios from '../../api/axios'
@@ -116,6 +117,14 @@ export default function ClientServiceHall() {
       color: '#8b5cf6',
       bg: 'rgba(139,92,246,0.06)',
       action: () => navigate('/client/service-rating'),
+    },
+    {
+      title: '云归档',
+      desc: '归档管理案件相关文件',
+      icon: CloudOutlined,
+      color: '#0ea5e9',
+      bg: 'rgba(14,165,233,0.08)',
+      action: () => navigate('/client/archive'),
     },
   ]
 
