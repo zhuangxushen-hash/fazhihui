@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
-import { Table, Button, Modal, Form, Input, InputNumber, Select, Switch, Space, message, Tree, Tag } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
-import { getMenus, getMenuTree, createMenu, updateMenu, deleteMenu, toggleMenuVisibility } from '../api/menu'
+import { useState, useEffect, useMemo } from 'react'
+import { Tree, Button, Modal, Form, Input, InputNumber, Select, Switch, Space, Tag, message, Spin } from 'antd'
+import { PlusOutlined, EditOutlined, DeleteOutlined, AppstoreOutlined, EyeInvisibleOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
+import { getMenus, createMenu, updateMenu, deleteMenu, toggleMenuVisibility } from '../api/menu'
 
 const iconOptions = [
   { value: 'DashboardOutlined', label: '仪表盘' },
@@ -14,23 +14,25 @@ const iconOptions = [
   { value: 'SettingOutlined', label: '设置' },
   { value: 'AppstoreOutlined', label: '应用' },
   { value: 'SolutionOutlined', label: '解决方案' },
+  { value: 'MessageOutlined', label: '消息' },
 ]
 
 export default function MenuManagement() {
   const [data, setData] = useState<any[]>([])
-  const [treeData, setTreeData] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [editingMenu, setEditingMenu] = useState<any>(null)
   const [form] = Form.useForm()
-  const [viewMode, setViewMode] = useState<'table' | 'tree'>('table')
+  const [searchForm] = Form.useForm()
+  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([])
+  const [keyword, setKeyword] = useState('')
+  const [visibleFilter, setVisibleFilter] = useState<string | undefined>(undefined)
 
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [menus, tree] = await Promise.all([getMenus(), getMenuTree()])
-      setData(menus || [])
-      setTreeData(tree || [])
+      const list = await getMenus()
+      setData(list || [])
     } catch (error) {
       message.error('获取菜单列表失败')
     } finally {
@@ -41,6 +43,86 @@ export default function MenuManagement() {
   useEffect(() => {
     fetchData()
   }, [])
+
+  // 从扁平数据构建树形结构（包含所有菜单，含隐藏的），支持前端过滤
+  const treeData = useMemo(() => {
+    // 先过滤
+    let filtered = [...data]
+    if (keyword) {
+      const kw = keyword.toLowerCase()
+      filtered = filtered.filter(m =>
+        m.name?.toLowerCase().includes(kw) ||
+        m.path?.toLowerCase().includes(kw) ||
+        m.component?.toLowerCase().includes(kw)
+      )
+    }
+    if (visibleFilter !== undefined) {
+      filtered = filtered.filter(m => m.is_visible === (visibleFilter === 'true'))
+    }
+
+    const menuMap = new Map<string, any>()
+    const rootMenus: any[] = []
+
+    // 按 sort_order 排序
+    const sorted = [...filtered].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+
+    for (const menu of sorted) {
+      menuMap.set(menu.id, { ...menu, children: [] })
+    }
+
+    for (const menu of sorted) {
+      const node = menuMap.get(menu.id)
+      if (menu.parent_id && menuMap.has(menu.parent_id)) {
+        menuMap.get(menu.parent_id).children.push(node)
+      } else {
+        rootMenus.push(node)
+      }
+    }
+
+    // 递归构建 Tree 组件数据
+    const buildTreeNode = (item: any): any => {
+      const hasChildren = item.children && item.children.length > 0
+
+      return {
+        key: item.id,
+        title: (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingRight: 8 }}>
+            <Space size={8}>
+              <AppstoreOutlined style={{ color: '#1890ff' }} />
+              <span style={{ fontWeight: hasChildren ? 600 : 400 }}>{item.name}</span>
+              <Tag color="blue" style={{ margin: 0 }}>{item.path}</Tag>
+              {item.component && <Tag color="default" style={{ margin: 0 }}>{item.component}</Tag>}
+              {!item.is_visible && <Tag color="warning" style={{ margin: 0 }}><EyeInvisibleOutlined /> 隐藏</Tag>}
+              <span style={{ color: '#999', fontSize: 12 }}>排序: {item.sort_order ?? 0}</span>
+            </Space>
+            <Space size={4}>
+              <Switch
+                size="small"
+                checked={item.is_visible}
+                onChange={() => handleToggleVisibility(item.id)}
+                checkedChildren="显示"
+                unCheckedChildren="隐藏"
+              />
+              <Button type="link" size="small" icon={<PlusOutlined />} onClick={() => handleAdd(item.id)}>子菜单</Button>
+              <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(item)}>编辑</Button>
+              <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(item.id)}>删除</Button>
+            </Space>
+          </div>
+        ),
+        selectable: false,
+        children: hasChildren ? item.children.map(buildTreeNode) : [],
+      }
+    }
+
+    return rootMenus.map(buildTreeNode)
+  }, [data, keyword, visibleFilter])
+
+  // 默认展开所有一级菜单
+  useEffect(() => {
+    if (treeData.length > 0 && expandedKeys.length === 0) {
+      setExpandedKeys(treeData.map(n => n.key))
+    }
+  }, [treeData, expandedKeys])
 
   const handleAdd = (parentId?: string) => {
     setEditingMenu(parentId ? { parent_id: parentId } : null)
@@ -100,95 +182,79 @@ export default function MenuManagement() {
     }
   }
 
-  const columns = [
-    { title: '菜单名称', dataIndex: 'name', key: 'name' },
-    { title: '路径', dataIndex: 'path', key: 'path', render: (text: string) => <Tag color="blue">{text}</Tag> },
-    {
-      title: '图标',
-      dataIndex: 'icon',
-      key: 'icon',
-      render: (icon: string) => {
-        const option = iconOptions.find(o => o.value === icon)
-        return option ? option.label : icon || '-'
-      },
-    },
-    { title: '排序', dataIndex: 'sort_order', key: 'sort_order' },
-    {
-      title: '可见性',
-      dataIndex: 'is_visible',
-      key: 'is_visible',
-      render: (visible: boolean, record: any) => (
-        <Switch
-          checked={visible}
-          onChange={() => handleToggleVisibility(record.id)}
-          checkedChildren="显示"
-          unCheckedChildren="隐藏"
-        />
-      ),
-    },
-    {
-      title: '操作',
-      key: 'action',
-      render: (_: any, record: any) => (
-        <Space>
-          <Button type="link" icon={<PlusOutlined />} onClick={() => handleAdd(record.id)}>添加子菜单</Button>
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
-          <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)}>删除</Button>
-        </Space>
-      ),
-    },
-  ]
-
-  const convertToTreeData = (items: any[]): any[] => {
-    return items.map(item => ({
-      key: item.id,
-      title: (
-        <span>
-          {item.name} <Tag color="blue" style={{ marginLeft: 8 }}>{item.path}</Tag>
-          {!item.is_visible && <Tag color="default" style={{ marginLeft: 4 }}>已隐藏</Tag>}
-        </span>
-      ),
-      children: item.children ? convertToTreeData(item.children) : [],
-    }))
+  const handleSearch = () => {
+    const values = searchForm.getFieldsValue()
+    setKeyword(values.keyword || '')
+    setVisibleFilter(values.visible)
+    setExpandedKeys([])
   }
+
+  const handleReset = () => {
+    searchForm.resetFields()
+    setKeyword('')
+    setVisibleFilter(undefined)
+  }
+
+  // 构建父菜单选择选项（树形）
+  const parentMenuOptions = useMemo(() => {
+    const buildOption = (item: any, depth: number = 0): any => {
+      const prefix = '\u00A0\u00A0'.repeat(depth)
+      const options: any[] = [{ label: `${prefix}${item.name}`, value: item.id }]
+      if (item.children && item.children.length > 0) {
+        for (const child of item.children) {
+          options.push(...buildOption(child, depth + 1))
+        }
+      }
+      return options
+    }
+    return data
+      .filter(m => !m.parent_id)
+      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+      .flatMap(m => buildOption(m))
+  }, [data])
 
   return (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-        <div>
-          <h2 style={{ margin: 0 }}>菜单管理</h2>
-        </div>
-        <Space>
-          <Select
-            value={viewMode}
-            onChange={setViewMode}
-            style={{ width: 120 }}
-            options={[
-              { value: 'table', label: '表格视图' },
-              { value: 'tree', label: '树形视图' },
-            ]}
-          />
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => handleAdd()}>添加顶级菜单</Button>
-        </Space>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2 style={{ margin: 0 }}>菜单管理</h2>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => handleAdd()}>添加顶级菜单</Button>
       </div>
 
-      {viewMode === 'table' ? (
-        <Table
-          dataSource={data}
-          columns={columns}
-          loading={loading}
-          rowKey="id"
-          pagination={{ pageSize: 20 }}
-        />
-      ) : (
-        <div style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
+      <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+        <Form form={searchForm} layout="inline" style={{ gap: 8 }}>
+          <Form.Item name="keyword" label="关键词">
+            <Input placeholder="搜索菜单名称/路径/组件" allowClear style={{ width: 220 }} onPressEnter={handleSearch} />
+          </Form.Item>
+          <Form.Item name="visible" label="可见性">
+            <Select placeholder="全部" allowClear style={{ width: 100 }} options={[
+              { value: 'true', label: '显示' },
+              { value: 'false', label: '隐藏' },
+            ]} />
+          </Form.Item>
+          <Form.Item>
+            <Space>
+              <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>查询</Button>
+              <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </div>
+
+      <Spin spinning={loading}>
+        <div style={{ background: '#fff', borderRadius: 8, padding: 16, minHeight: 400 }}>
           {treeData.length > 0 ? (
-            <Tree treeData={convertToTreeData(treeData)} defaultExpandAll />
+            <Tree
+              treeData={treeData}
+              expandedKeys={expandedKeys}
+              onExpand={setExpandedKeys}
+              showLine={{ showLeafIcon: false }}
+              blockNode
+            />
           ) : (
             <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>暂无菜单数据</div>
           )}
         </div>
-      )}
+      </Spin>
 
       <Modal
         title={editingMenu?.id ? '编辑菜单' : '添加菜单'}
@@ -198,8 +264,8 @@ export default function MenuManagement() {
         width={600}
       >
         <Form form={form} onFinish={handleSubmit} layout="vertical">
-          <Form.Item name="parent_id" label="父菜单" hidden>
-            <Input />
+          <Form.Item name="parent_id" label="父菜单">
+            <Select placeholder="不选则为顶级菜单" allowClear options={parentMenuOptions} />
           </Form.Item>
           <Form.Item name="name" label="菜单名称" rules={[{ required: true, message: '请输入菜单名称' }]}>
             <Input placeholder="请输入菜单名称" />

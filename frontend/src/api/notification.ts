@@ -1,13 +1,26 @@
 import axios from './axios'
 
-export const getNotifications = (isRead?: boolean) => {
+// 管理端查询所有通知
+export const getNotifications = (params?: { type?: string; level?: string; isRead?: boolean; keyword?: string; admin?: boolean }) => {
+  const query: any = { admin: true }
+  if (params) {
+    if (params.type) query.type = params.type
+    if (params.level) query.level = params.level
+    if (params.isRead !== undefined) query.is_read = params.isRead
+    if (params.keyword) query.keyword = params.keyword
+  }
+  return axios.get('/notifications', { params: query })
+}
+
+// 获取当前用户通知
+export const getMyNotifications = (isRead?: boolean) => {
   const params: any = {}
   if (isRead !== undefined) params.is_read = isRead
-  return axios.get('/notifications', { params }).then(res => res.data || [])
+  return axios.get('/notifications', { params })
 }
 
 export const getUnreadCount = () =>
-  axios.get('/notifications/unread-count').then(res => res.data || 0)
+  axios.get('/notifications/unread-count')
 
 export const markNotificationAsRead = (id: string) =>
   axios.put(`/notifications/${id}/read`)

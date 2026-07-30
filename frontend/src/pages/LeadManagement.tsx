@@ -1,109 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Table, Button, Modal, Form, Input, Select, Space, message, InputNumber, Card } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, InputNumber } from 'antd'
 import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, HistoryOutlined, SaveOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
-
-// === Material Design 3 Style Tokens ===
-const pageH2Style: React.CSSProperties = {
-  fontFamily: "'Noto Serif SC', serif",
-  fontSize: 22,
-  fontWeight: 600,
-  color: '#1a1c1d',
-  margin: 0,
-  letterSpacing: '0.01em',
-}
-
-const searchBarStyle: React.CSSProperties = {
-  background: '#ffffff',
-  padding: 16,
-  borderRadius: 12,
-  border: '1px solid #c1c6d6',
-  marginBottom: 16,
-  display: 'flex',
-  gap: 12,
-  flexWrap: 'wrap',
-  alignItems: 'center',
-}
-
-const tableCardStyle: React.CSSProperties = {
-  borderRadius: 16,
-  overflow: 'hidden',
-}
-
-const infoBlockStyle: React.CSSProperties = {
-  background: '#f3f3f5',
-  padding: 16,
-  borderRadius: 8,
-  fontSize: 13,
-  color: '#414753',
-  lineHeight: 1.7,
-}
-
-const sectionTitleStyle: React.CSSProperties = {
-  fontFamily: "'Noto Serif SC', serif",
-  fontSize: 15,
-  fontWeight: 600,
-  color: '#1a1c1d',
-  marginBottom: 8,
-}
-
-// === MD3 Status Pill (Soft Background Style) ===
-type PillKind = 'neutral' | 'blue' | 'gold' | 'green' | 'red' | 'orange' | 'purple' | 'cyan' | 'geekblue'
-
-const pillColorMap: Record<PillKind, { bg: string; color: string }> = {
-  neutral: { bg: 'rgba(113, 119, 133, 0.12)', color: '#5f6672' },
-  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: '#0071e3' },
-  gold: { bg: 'rgba(201, 169, 97, 0.15)', color: '#8c702e' },
-  green: { bg: 'rgba(46, 125, 50, 0.1)', color: '#2e7d32' },
-  red: { bg: 'rgba(186, 26, 26, 0.1)', color: '#ba1a1a' },
-  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: '#ed6c02' },
-  purple: { bg: 'rgba(114, 46, 209, 0.1)', color: '#722ed1' },
-  cyan: { bg: 'rgba(0, 166, 167, 0.1)', color: '#00a6a7' },
-  geekblue: { bg: 'rgba(47, 84, 235, 0.1)', color: '#2f54eb' },
-}
-
-const StatusPill = ({ text, kind }: { text: string; kind: PillKind }) => {
-  const c = pillColorMap[kind] || pillColorMap.neutral
-  return (
-    <span
-      style={{
-        display: 'inline-block',
-        padding: '2px 10px',
-        borderRadius: 999,
-        background: c.bg,
-        color: c.color,
-        fontSize: 12,
-        fontWeight: 500,
-        lineHeight: '20px',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {text}
-    </span>
-  )
-}
-
-// === Lead Status Mapping (Preserved) ===
-const leadStatusKindMap: Record<string, PillKind> = {
-  new: 'neutral',
-  pending_follow: 'orange',
-  following: 'blue',
-  inviting: 'purple',
-  negotiating: 'gold',
-  pending_sign: 'gold',
-  lost: 'red',
-}
-
-const leadStatusLabelMap: Record<string, string> = {
-  new: '新线索',
-  pending_follow: '待跟进',
-  following: '跟进中',
-  inviting: '邀约中',
-  negotiating: '谈判中',
-  pending_sign: '待签约',
-  lost: '已流失',
-}
 
 export default function LeadManagement() {
   const [data, setData] = useState<any[]>([])
@@ -300,18 +199,34 @@ export default function LeadManagement() {
       wechat: '微信',
       other: '其他',
     }[channel]) },
-    { title: '服务费用', dataIndex: 'service_fee', key: 'service_fee', render: (fee: number) => fee ? (
-      <span style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 600, color: '#0059b5' }}>¥{fee.toFixed(2)}</span>
-    ) : '-' },
-    { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => (
-      <StatusPill text={leadStatusLabelMap[status] || status} kind={leadStatusKindMap[status] || 'neutral'} />
-    )},
+    { title: '服务费用', dataIndex: 'service_fee', key: 'service_fee', render: (fee: number) => fee ? `¥${fee.toFixed(2)}` : '-' },
+    { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => {
+      const colors: Record<string, string> = {
+        new: 'default',
+        pending_follow: 'processing',
+        following: 'blue',
+        inviting: 'purple',
+        negotiating: 'orange',
+        pending_sign: 'gold',
+        lost: 'red',
+      }
+      const labels: Record<string, string> = {
+        new: '新线索',
+        pending_follow: '待跟进',
+        following: '跟进中',
+        inviting: '邀约中',
+        negotiating: '谈判中',
+        pending_sign: '待签约',
+        lost: '已流失',
+      }
+      return <Tag color={colors[status]}>{labels[status]}</Tag>
+    }},
     { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
     { title: '操作', key: 'action', render: (_: any, record: any) => (
       <Space>
-        <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
-        <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleChangeStatus(record)}>状态</Button>
-        <Button type="link" size="small" icon={<SaveOutlined />} onClick={() => handleEditFee(record)}>设置费用</Button>
+        <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
+        <Button size="small" icon={<EditOutlined />} onClick={() => handleChangeStatus(record)}>状态</Button>
+        <Button size="small" icon={<SaveOutlined />} onClick={() => handleEditFee(record)}>设置费用</Button>
         {record.status === 'new' && (
           <Button size="small" type="primary" onClick={() => handleAssign(record)}>分配</Button>
         )}
@@ -320,13 +235,13 @@ export default function LeadManagement() {
   ]
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div className="page-header" style={{ marginBottom: 0 }}>
-        <h2 style={pageH2Style}>线索管理</h2>
+    <div>
+      <div className="page-header">
+        <h2>线索管理</h2>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAddLead}>添加线索</Button>
       </div>
 
-      <div className="search-bar" style={searchBarStyle}>
+      <div className="search-bar">
         <Input
           placeholder="手机号搜索"
           prefix={<SearchOutlined />}
@@ -365,9 +280,7 @@ export default function LeadManagement() {
         <Button onClick={handleReset}>重置</Button>
       </div>
 
-      <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
-        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" size="small" />
-      </Card>
+      <Table dataSource={data} columns={columns} loading={loading} rowKey="id" />
 
       <Modal
         title="添加线索"
@@ -432,34 +345,52 @@ export default function LeadManagement() {
                   other: '其他',
                 }[currentLead.source_channel as string])}</span></div>
               <div className="detail-item"><span className="detail-label">状态</span><span className="detail-value">
-                <StatusPill text={leadStatusLabelMap[currentLead.status as string] || currentLead.status} kind={leadStatusKindMap[currentLead.status as string] || 'neutral'} />
+                <Tag color={{
+                  new: 'default',
+                  pending_follow: 'processing',
+                  following: 'blue',
+                  inviting: 'purple',
+                  negotiating: 'orange',
+                  pending_sign: 'gold',
+                  lost: 'red',
+                }[currentLead.status as string]}>
+                  {{
+                    new: '新线索',
+                    pending_follow: '待跟进',
+                    following: '跟进中',
+                    inviting: '邀约中',
+                    negotiating: '谈判中',
+                    pending_sign: '待签约',
+                    lost: '已流失',
+                  }[currentLead.status as string]}
+                </Tag>
               </span></div>
               <div className="detail-item"><span className="detail-label">来源关键词</span><span className="detail-value">{currentLead.source_keyword || '-'}</span></div>
               <div className="detail-item"><span className="detail-label">创建时间</span><span className="detail-value">{formatDateTime(currentLead.created_at)}</span></div>
             </div>
             <div style={{ marginBottom: 24 }}>
-              <div style={sectionTitleStyle}>咨询内容</div>
-              <div className="info-block" style={infoBlockStyle}>
+              <div style={{ fontWeight: 'bold', marginBottom: 8 }}>咨询内容</div>
+              <div className="info-block">
                 {currentLead.case_description || '-'}
               </div>
             </div>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                <div style={sectionTitleStyle}>跟进记录</div>
+                <div style={{ fontWeight: 'bold' }}>跟进记录</div>
                 <Button icon={<HistoryOutlined />} onClick={handleAddFollowUp}>添加跟进</Button>
               </div>
               <div style={{ maxHeight: 300, overflow: 'auto' }}>
                 {followUps.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#717785', padding: 24, fontSize: 13 }}>暂无跟进记录</div>
+                  <div style={{ textAlign: 'center', color: '#999', padding: 24 }}>暂无跟进记录</div>
                 ) : (
                   followUps.map((item) => (
-                    <div key={item.id} style={{ borderBottom: '1px solid #e2e2e4', padding: '12px 0' }}>
+                    <div key={item.id} style={{ borderBottom: '1px solid #f0f0f0', padding: '12px 0' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 600, color: '#1a1c1d', fontSize: 13 }}>{item.created_at}</span>
+                        <span style={{ fontWeight: 'bold' }}>{item.created_at}</span>
                       </div>
-                      <div style={{ marginTop: 8, color: '#1a1c1d', fontSize: 13 }}>{item.content}</div>
+                      <div style={{ marginTop: 8 }}>{item.content}</div>
                       {item.next_action && (
-                        <div style={{ marginTop: 4, color: '#717785', fontSize: 12 }}>
+                        <div style={{ marginTop: 4, color: '#666', fontSize: 13 }}>
                           下一步：{item.next_action}
                           {item.next_action_time && ` (${item.next_action_time})`}
                         </div>
@@ -521,11 +452,11 @@ export default function LeadManagement() {
       >
         <div style={{ padding: '16px 0' }}>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: 13, color: '#414753', fontWeight: 500, marginBottom: 8 }}>服务费用（元）</label>
+            <label style={{ display: 'block', fontSize: 14, color: '#666', marginBottom: 8 }}>服务费用（元）</label>
             <InputNumber
               value={feeValue}
               onChange={(value) => setFeeValue(value || 0)}
-              style={{ width: '100%', fontSize: 18, fontFamily: "'Noto Serif SC', serif", fontWeight: 600 }}
+              style={{ width: '100%', fontSize: 18 }}
               prefix="¥"
               min={0}
               step={100}

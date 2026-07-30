@@ -1,13 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
-import { List, Button, Tag, Space, message, Badge, Empty, Tabs, Modal } from 'antd'
-import { ReadOutlined, ClearOutlined } from '@ant-design/icons'
+import { Table, Button, Tag, Space, message, Modal, Input, Select, Form } from 'antd'
+import { ReadOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import {
   getNotifications,
-  getUnreadCount,
   markNotificationAsRead,
-  markAllNotificationsAsRead,
   deleteNotification,
-  clearAllNotifications,
 } from '../api/notification'
 
 const typeLabels: Record<string, string> = {
@@ -26,63 +23,59 @@ const levelColors: Record<string, string> = {
   urgent: 'red',
 }
 
-export default function NotificationList() {
-  const [notifications, setNotifications] = useState<any[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<string>('all')
+const levelLabels: Record<string, string> = {
+  low: '低',
+  normal: '普通',
+  high: '重要',
+  urgent: '紧急',
+}
 
-  const fetchData = useCallback(async () => {
+export default function NotificationList() {
+  const [data, setData] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [searchForm] = Form.useForm()
+
+  const fetchData = useCallback(async (params?: any) => {
     setLoading(true)
     try {
-      let list: any[] = []
-      if (activeTab === 'unread') {
-        list = await getNotifications(false)
-      } else if (activeTab === 'read') {
-        list = await getNotifications(true)
-      } else {
-        list = await getNotifications()
-      }
-      setNotifications(list || [])
-      const count = await getUnreadCount()
-      setUnreadCount(count || 0)
+      const list = await getNotifications(params)
+      setData(list || [])
     } catch (error) {
       message.error('获取通知列表失败')
     } finally {
       setLoading(false)
     }
-  }, [activeTab])
+  }, [])
 
   useEffect(() => {
     fetchData()
   }, [fetchData])
 
+  const handleSearch = () => {
+    const values = searchForm.getFieldsValue()
+    const params: any = {}
+    if (values.keyword) params.keyword = values.keyword
+    if (values.type) params.type = values.type
+    if (values.level) params.level = values.level
+    if (values.isRead !== undefined && values.isRead !== null && values.isRead !== 'all') {
+      params.isRead = values.isRead === 'true'
+    }
+    fetchData(params)
+  }
+
+  const handleReset = () => {
+    searchForm.resetFields()
+    fetchData()
+  }
+
   const handleMarkAsRead = async (id: string) => {
     try {
       await markNotificationAsRead(id)
       message.success('已标记为已读')
-      fetchData()
+      handleSearch()
     } catch (error) {
       message.error('操作失败')
     }
-  }
-
-  const handleMarkAllAsRead = async () => {
-    Modal.confirm({
-      title: '确认操作',
-      content: '确定要将所有通知标记为已读吗？',
-      okText: '确定',
-      cancelText: '取消',
-      onOk: async () => {
-        try {
-          await markAllNotificationsAsRead()
-          message.success('已全部标记为已读')
-          fetchData()
-        } catch (error) {
-          message.error('操作失败')
-        }
-      },
-    })
   }
 
   const handleDelete = async (id: string) => {
@@ -95,7 +88,7 @@ export default function NotificationList() {
         try {
           await deleteNotification(id)
           message.success('删除成功')
-          fetchData()
+          handleSearch()
         } catch (error) {
           message.error('删除失败')
         }
@@ -103,99 +96,71 @@ export default function NotificationList() {
     })
   }
 
-  const handleClearAll = async () => {
-    Modal.confirm({
-      title: '确认清空',
-      content: '确定要清空所有通知吗？此操作不可恢复！',
-      okText: '确定',
-      okButtonProps: { danger: true },
-      cancelText: '取消',
-      onOk: async () => {
-        try {
-          await clearAllNotifications()
-          message.success('已清空所有通知')
-          fetchData()
-        } catch (error) {
-          message.error('操作失败')
-        }
-      },
-    })
-  }
-
-  const renderList = () => {
-    if (notifications.length === 0) {
-      return <Empty description="暂无通知" style={{ padding: 60 }} />
-    }
-
-    return (
-      <List
-        dataSource={notifications}
-        loading={loading}
-        renderItem={(item) => (
-          <List.Item
-            style={{
-              background: item.is_read ? '#fff' : 'rgba(24, 144, 255, 0.04)',
-              padding: '16px 24px',
-            }}
-            actions={[
-              !item.is_read && (
-                <Button type="link" size="small" onClick={() => handleMarkAsRead(item.id)}>
-                  标记已读
-                </Button>
-              ),
-              <Button type="link" size="small" danger onClick={() => handleDelete(item.id)}>
-                删除
-              </Button>,
-            ].filter(Boolean)}
-          >
-            <List.Item.Meta
-              avatar={
-                <Tag color={levelColors[item.level] || 'default'} style={{ marginRight: 8 }}>
-                  {(typeLabels[item.type] || '通知').slice(0, 2)}
-                </Tag>
-              }
-              title={
-                <Space>
-                  <span style={{ fontWeight: item.is_read ? 400 : 600 }}>{item.title}</span>
-                  {item.level === 'urgent' && <Tag color="red">紧急</Tag>}
-                  {item.level === 'high' && <Tag color="orange">重要</Tag>}
-                </Space>
-              }
-              description={
-                <div>
-                  {item.content && <div style={{ color: '#666', marginBottom: 4 }}>{item.content}</div>}
-                  <div style={{ fontSize: 12, color: '#999' }}>
-                    <Tag color={levelColors[item.level] || 'default'}>
-                      {typeLabels[item.type] || '系统通知'}
-                    </Tag>
-                    <span style={{ marginLeft: 8 }}>
-                      {new Date(item.created_at).toLocaleString('zh-CN')}
-                    </span>
-                  </div>
-                </div>
-              }
-            />
-          </List.Item>
-        )}
-      />
-    )
-  }
-
-  const tabItems = [
+  const columns = [
     {
-      key: 'all',
-      label: '全部通知',
-      children: renderList(),
+      title: '标题',
+      dataIndex: 'title',
+      key: 'title',
+      width: 220,
+      render: (text: string, record: any) => (
+        <Space>
+          <span style={{ fontWeight: record.is_read ? 400 : 600 }}>{text}</span>
+          {!record.is_read && <Tag color="blue">未读</Tag>}
+        </Space>
+      ),
     },
     {
-      key: 'unread',
-      label: <Badge count={unreadCount} offset={[10, 0]}>未读通知</Badge>,
-      children: renderList(),
+      title: '内容',
+      dataIndex: 'content',
+      key: 'content',
+      ellipsis: true,
     },
     {
-      key: 'read',
-      label: '已读通知',
-      children: renderList(),
+      title: '类型',
+      dataIndex: 'type',
+      key: 'type',
+      width: 100,
+      render: (type: string) => <Tag>{typeLabels[type] || type}</Tag>,
+    },
+    {
+      title: '级别',
+      dataIndex: 'level',
+      key: 'level',
+      width: 80,
+      render: (level: string) => (
+        <Tag color={levelColors[level] || 'default'}>{levelLabels[level] || level}</Tag>
+      ),
+    },
+    {
+      title: '关联类型',
+      dataIndex: 'related_type',
+      key: 'related_type',
+      width: 100,
+      render: (text: string) => text || '-',
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      width: 170,
+      render: (time: string) => new Date(time).toLocaleString('zh-CN'),
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 130,
+      render: (_: any, record: any) => (
+        <Space>
+          {!record.is_read && (
+            <Button type="link" size="small" icon={<ReadOutlined />} onClick={() => handleMarkAsRead(record.id)}>
+              标记已读
+            </Button>
+          )}
+          <Button type="link" size="small" danger onClick={() => handleDelete(record.id)}>
+            删除
+          </Button>
+        </Space>
+      ),
     },
   ]
 
@@ -203,17 +168,42 @@ export default function NotificationList() {
     <div>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ margin: 0 }}>消息通知</h2>
-        <Space>
-          <Button icon={<ReadOutlined />} onClick={handleMarkAllAsRead} disabled={unreadCount === 0}>
-            全部已读
-          </Button>
-          <Button icon={<ClearOutlined />} danger onClick={handleClearAll}>
-            清空全部
-          </Button>
-        </Space>
       </div>
 
-      <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
+      <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+        <Form form={searchForm} layout="inline" style={{ gap: 8 }}>
+          <Form.Item name="keyword" label="关键词">
+            <Input placeholder="搜索标题或内容" allowClear style={{ width: 200 }} onPressEnter={handleSearch} />
+          </Form.Item>
+          <Form.Item name="type" label="类型">
+            <Select placeholder="全部类型" allowClear style={{ width: 120 }} options={Object.entries(typeLabels).map(([value, label]) => ({ value, label }))} />
+          </Form.Item>
+          <Form.Item name="level" label="级别">
+            <Select placeholder="全部级别" allowClear style={{ width: 120 }} options={Object.entries(levelLabels).map(([value, label]) => ({ value, label }))} />
+          </Form.Item>
+          <Form.Item name="isRead" label="状态">
+            <Select placeholder="全部" allowClear style={{ width: 100 }} options={[
+              { value: 'true', label: '已读' },
+              { value: 'false', label: '未读' },
+            ]} />
+          </Form.Item>
+          <Form.Item>
+            <Space>
+              <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>查询</Button>
+              <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </div>
+
+      <Table
+        dataSource={data}
+        columns={columns}
+        loading={loading}
+        rowKey="id"
+        pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
+        scroll={{ x: 1000 }}
+      />
     </div>
   )
 }

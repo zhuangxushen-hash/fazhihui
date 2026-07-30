@@ -370,54 +370,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             >
               {currentPageLabel}
             </h2>
-            <div
-              style={{
-                position: 'relative',
-                width: 360,
-                maxWidth: '40vw',
-              }}
-            >
-              <SearchOutlined
-                style={{
-                  position: 'absolute',
-                  left: 14,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: '#717785',
-                  fontSize: 16,
-                }}
-              />
-              <input
-                type="text"
-                placeholder="搜索客户、案件或功能..."
-                style={{
-                  width: '100%',
-                  height: 38,
-                  paddingLeft: 40,
-                  paddingRight: 16,
-                  background: '#f3f3f5',
-                  border: '1px solid transparent',
-                  borderRadius: 999,
-                  fontSize: 14,
-                  color: '#1a1c1d',
-                  outline: 'none',
-                  transition: 'all 0.2s',
-                }}
-                onFocus={e => {
-                  e.currentTarget.style.background = '#ffffff'
-                  e.currentTarget.style.borderColor = '#0071e3'
-                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0, 113, 227, 0.1)'
-                }}
-                onBlur={e => {
-                  e.currentTarget.style.background = '#f3f3f5'
-                  e.currentTarget.style.borderColor = 'transparent'
-                  e.currentTarget.style.boxShadow = 'none'
-                }}
-              />
-            </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
+              onClick={() => navigate('/notifications')}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -435,6 +391,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               }}
               onMouseEnter={e => (e.currentTarget.style.background = '#f3f3f5')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+              title="消息通知"
             >
               <BellOutlined />
               <span

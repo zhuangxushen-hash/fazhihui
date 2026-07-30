@@ -26,6 +26,28 @@ export class NotificationService {
     return query.orderBy('notification.created_at', 'DESC').getMany();
   }
 
+  // 管理端查询所有通知，支持按类型、级别、已读状态筛选和关键词搜索
+  async findAll(params: { type?: string; level?: string; isRead?: boolean; keyword?: string }): Promise<Notification[]> {
+    const query = this.notificationRepository.createQueryBuilder('notification');
+
+    if (params.type) {
+      query.andWhere('notification.type = :type', { type: params.type });
+    }
+    if (params.level) {
+      query.andWhere('notification.level = :level', { level: params.level });
+    }
+    if (params.isRead !== undefined) {
+      query.andWhere('notification.is_read = :isRead', { isRead: params.isRead });
+    }
+    if (params.keyword) {
+      query.andWhere('(notification.title LIKE :keyword OR notification.content LIKE :keyword)', {
+        keyword: `%${params.keyword}%`,
+      });
+    }
+
+    return query.orderBy('notification.created_at', 'DESC').getMany();
+  }
+
   async getUnreadCount(userId: string): Promise<number> {
     return this.notificationRepository.count({
       where: { receiver_id: userId, is_read: false },

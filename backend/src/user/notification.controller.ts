@@ -13,8 +13,28 @@ export class NotificationController {
   }
 
   @Get()
-  findAll(@Query('is_read') isRead: boolean, @Request() req: any) {
-    return this.notificationService.findAllByUserId(req.user.id, isRead);
+  findAll(
+    @Query('is_read') isRead: string,
+    @Query('type') type: string,
+    @Query('level') level: string,
+    @Query('keyword') keyword: string,
+    @Query('admin') admin: string,
+    @Request() req: any,
+  ) {
+    // 管理端模式：返回所有通知
+    if (admin === 'true') {
+      const params: any = {};
+      if (type) params.type = type;
+      if (level) params.level = level;
+      if (isRead !== undefined && isRead !== '') params.isRead = isRead === 'true';
+      if (keyword) params.keyword = keyword;
+      return this.notificationService.findAll(params);
+    }
+    // 普通模式：返回当前用户通知
+    return this.notificationService.findAllByUserId(
+      req.user.id,
+      isRead !== undefined && isRead !== '' ? isRead === 'true' : undefined,
+    );
   }
 
   @Get('unread-count')

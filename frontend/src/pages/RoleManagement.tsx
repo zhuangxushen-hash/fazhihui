@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
-import { Table, Button, Modal, Form, Input, Switch, Space, message, Tag } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import { useState, useEffect, useMemo } from 'react'
+import { Table, Button, Modal, Form, Input, Switch, Space, message, Tag, Select } from 'antd'
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, ReloadOutlined } from '@ant-design/icons'
 import { getRoles, createRole, updateRole, deleteRole, toggleRoleStatus } from '../api/role'
 
 export default function RoleManagement() {
@@ -9,6 +9,9 @@ export default function RoleManagement() {
   const [modalVisible, setModalVisible] = useState(false)
   const [editingRole, setEditingRole] = useState<any>(null)
   const [form] = Form.useForm()
+  const [searchForm] = Form.useForm()
+  const [keyword, setKeyword] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
 
   const fetchData = async () => {
     setLoading(true)
@@ -111,6 +114,35 @@ export default function RoleManagement() {
     },
   ]
 
+  // 前端过滤
+  const filteredData = useMemo(() => {
+    let result = [...data]
+    if (keyword) {
+      const kw = keyword.toLowerCase()
+      result = result.filter(r =>
+        r.name?.toLowerCase().includes(kw) ||
+        r.code?.toLowerCase().includes(kw) ||
+        r.description?.toLowerCase().includes(kw)
+      )
+    }
+    if (statusFilter !== undefined) {
+      result = result.filter(r => r.status === (statusFilter === 'true'))
+    }
+    return result
+  }, [data, keyword, statusFilter])
+
+  const handleSearch = () => {
+    const values = searchForm.getFieldsValue()
+    setKeyword(values.keyword || '')
+    setStatusFilter(values.status)
+  }
+
+  const handleReset = () => {
+    searchForm.resetFields()
+    setKeyword('')
+    setStatusFilter(undefined)
+  }
+
   return (
     <div>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
@@ -118,12 +150,32 @@ export default function RoleManagement() {
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>创建角色</Button>
       </div>
 
+      <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+        <Form form={searchForm} layout="inline" style={{ gap: 8 }}>
+          <Form.Item name="keyword" label="关键词">
+            <Input placeholder="搜索角色名称/代码/描述" allowClear style={{ width: 220 }} onPressEnter={handleSearch} />
+          </Form.Item>
+          <Form.Item name="status" label="状态">
+            <Select placeholder="全部" allowClear style={{ width: 100 }} options={[
+              { value: 'true', label: '启用' },
+              { value: 'false', label: '禁用' },
+            ]} />
+          </Form.Item>
+          <Form.Item>
+            <Space>
+              <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>查询</Button>
+              <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </div>
+
       <Table
-        dataSource={data}
+        dataSource={filteredData}
         columns={columns}
         loading={loading}
         rowKey="id"
-        pagination={{ pageSize: 20 }}
+        pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
       />
 
       <Modal
