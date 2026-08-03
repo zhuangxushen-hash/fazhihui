@@ -471,6 +471,12 @@ export class SeedsModule implements OnModuleInit {
   }
 
   private async seedData() {
+    // 生产环境只初始化超管+基础配置，不创建测试业务数据
+    if (process.env.NODE_ENV === 'production') {
+      await this.seedProductionData();
+      return;
+    }
+
     const existingOrg = await this.orgRepository.findOne({ where: { name: '测试律所' } });
     let orgId: string;
 
@@ -644,6 +650,52 @@ export class SeedsModule implements OnModuleInit {
     await this.seedSocialPosts(orgId, userMap);
     // 邮件数据
     await this.seedMails(orgId, userMap);
+  }
+
+  /**
+   * 生产环境初始化：仅创建超管+基础配置，不创建测试业务数据
+   * 包含：默认组织、超级管理员(15820275356/zxs123456)、权限、角色、菜单、系统配置
+   */
+  private async seedProductionData(): Promise<void> {
+    // 创建默认组织
+    let orgId: string;
+    const existingOrg = await this.orgRepository.findOne({ where: { name: '法智汇律所' } });
+    if (!existingOrg) {
+      const org = this.orgRepository.create({
+        name: '法智汇律所',
+        address: '',
+        license_no: '',
+      });
+      const savedOrg = await this.orgRepository.save(org);
+      orgId = savedOrg.id;
+    } else {
+      orgId = existingOrg.id;
+    }
+
+    // 创建超级管理员（仅不存在时创建，密码更新由管理员自行操作）
+    const adminPhone = '15820275356';
+    const adminPassword = 'zxs123456';
+    const existingAdmin = await this.userRepository.findOne({ where: { phone: adminPhone } });
+    if (!existingAdmin) {
+      const hashedPassword = await bcrypt.hash(adminPassword, 10);
+      await this.userRepository.save({
+        phone: adminPhone,
+        real_name: '超级管理员',
+        role: UserRole.SUPER_ADMIN,
+        password: hashedPassword,
+        organization_id: orgId,
+      });
+    }
+
+    // 基础配置：权限、角色、菜单
+    await this.seedPermissions();
+    await this.seedRoles(orgId);
+    await this.seedMenus();
+
+    // 系统配置：部署、品牌、第三方对接
+    await this.seedDeploymentConfigs(orgId);
+    await this.seedBrandConfigs(orgId);
+    await this.seedIntegrations(orgId);
   }
 
   private async seedLeads(orgId: string, userMap: Record<string, User>) {
