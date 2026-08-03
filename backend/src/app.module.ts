@@ -41,7 +41,9 @@ import { AuditModule } from './audit/audit.module';
     }),
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',
-      database: 'fazhihui.sqlite',
+      // 测试/生产使用独立数据库文件，避免数据混淆
+      // 测试环境: fazhihui.sqlite  生产环境: fazhihui_prod.sqlite
+      database: process.env.NODE_ENV === 'production' ? 'fazhihui_prod.sqlite' : 'fazhihui.sqlite',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       // 生产环境关闭 synchronize，避免结构同步风险
       synchronize: process.env.NODE_ENV !== 'production',

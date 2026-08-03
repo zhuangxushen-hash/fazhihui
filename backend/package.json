@@ -6,7 +6,9 @@
   "scripts": {
     "start": "nest start",
     "start:dev": "nest start --watch",
-    "start:prod": "node dist/main",
+    "start:test": "cross-env NODE_ENV=development PORT=3000 nest start --watch",
+    "start:prod": "cross-env NODE_ENV=production PORT=3001 node dist/main",
+    "start:prod:watch": "cross-env NODE_ENV=production PORT=3001 nest start --watch",
     "build": "nest build"
   },
   "keywords": [],
@@ -44,6 +46,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^26.1.1",
     "@types/passport-jwt": "^4.0.1",
+    "cross-env": "^10.1.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
