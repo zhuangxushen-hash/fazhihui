@@ -19,6 +19,11 @@ import { ComplaintTicket } from '../compliance/complaint-ticket.entity';
 import { ReportTemplate } from './report-template.entity';
 import { ReportExportLog } from './report-export-log.entity';
 import { ServiceRating } from '../client/service-rating.entity';
+// Phase5+6 L5: 补全 DashboardService 注入所需的财务相关实体
+import { PaymentRecord } from '../finance/payment-record.entity';
+import { Receivable } from '../finance/receivable.entity';
+import { Invoice } from '../finance/invoice.entity';
+import { CommissionRecord } from '../finance/commission-record.entity';
 // Phase5+6 L5: 注入用户模块，获取 NotificationService 用于风险推送
 import { UserModule } from '../user/user.module';
 
@@ -42,6 +47,11 @@ import { UserModule } from '../user/user.module';
       ReportTemplate,
       ReportExportLog,
       ServiceRating,
+      // Phase5+6 L5: 补全 DashboardService 注入所需的财务相关实体
+      PaymentRecord,
+      Receivable,
+      Invoice,
+      CommissionRecord,
     ]),
     // Phase5+6 L5: 注入用户模块，获取 NotificationService 用于风险推送
     UserModule,
