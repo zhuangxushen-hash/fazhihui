@@ -118,5 +118,7 @@ import { ConflictCheck } from './conflict-check.entity';
     // 利冲检索控制器
     ConflictCheckController,
   ],
+  // Phase4: 导出 ConflictCheckService，供 LeadModule 等模块使用（利冲检查）
+  exports: [ConflictCheckService],
 })
 export class CaseModule {}

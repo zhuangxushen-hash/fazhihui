@@ -97,5 +97,7 @@ import { AuditModule } from '../audit/audit.module';
     // 案件成本控制器
     CaseCostController,
   ],
+  // Phase5: 导出 CommissionService，供 CaseModule 案件结案时计算佣金使用
+  exports: [CommissionService],
 })
 export class FinanceModule {}
