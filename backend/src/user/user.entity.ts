@@ -1,4 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany } from 'typeorm';
+import { Exclude } from 'class-transformer';
 import { Organization } from './organization.entity';
 import { Lead } from '../lead/lead.entity';
 import { Case } from '../case/case.entity';
@@ -19,6 +20,7 @@ export class User {
   email: string;
 
   @Column({ nullable: true })
+  @Exclude()
   password: string;
 
   @Column({ type: 'varchar', nullable: false })
@@ -44,6 +46,14 @@ export class User {
 
   @OneToMany(() => Case, caseEntity => caseEntity.assignee_lawyer)
   assigned_cases: Case[];
+
+  // 经验值（工作日志审批/任务完成等积累）
+  @Column({ type: 'int', default: 0, comment: '经验值' })
+  experience: number;
+
+  // 等级（Lv1起，根据经验值自动计算，每1000经验升1级）
+  @Column({ type: 'int', default: 1, comment: '等级' })
+  level: number;
 
   @CreateDateColumn()
   created_at: Date;

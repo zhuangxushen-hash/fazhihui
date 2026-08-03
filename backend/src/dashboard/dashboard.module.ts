@@ -19,6 +19,8 @@ import { ComplaintTicket } from '../compliance/complaint-ticket.entity';
 import { ReportTemplate } from './report-template.entity';
 import { ReportExportLog } from './report-export-log.entity';
 import { ServiceRating } from '../client/service-rating.entity';
+// Phase5+6 L5: 注入用户模块，获取 NotificationService 用于风险推送
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
@@ -41,6 +43,8 @@ import { ServiceRating } from '../client/service-rating.entity';
       ReportExportLog,
       ServiceRating,
     ]),
+    // Phase5+6 L5: 注入用户模块，获取 NotificationService 用于风险推送
+    UserModule,
   ],
   providers: [DashboardService],
   controllers: [DashboardController],

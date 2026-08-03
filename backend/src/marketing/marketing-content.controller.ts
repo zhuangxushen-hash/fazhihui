@@ -14,12 +14,15 @@ import {
 } from './marketing-compliance.service';
 import { MaterialService } from './material.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '../types';
 
 /**
  * AI 营销内容生成 + 合规预审控制器（Task 1.5 + 1.6）
  */
 @Controller('marketing-content')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.MARKETING)
 export class MarketingContentController {
   constructor(
     private contentGeneratorService: ContentGeneratorService,

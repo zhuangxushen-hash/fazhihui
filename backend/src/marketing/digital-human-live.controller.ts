@@ -13,6 +13,8 @@ import {
 } from '@nestjs/common';
 import { DigitalHumanLiveService } from './digital-human-live.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '../types';
 import { DigitalHumanLiveStatus } from './digital-human-live.entity';
 
 /**
@@ -21,6 +23,7 @@ import { DigitalHumanLiveStatus } from './digital-human-live.entity';
  */
 @Controller('marketing/digital-human-lives')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.MARKETING)
 export class DigitalHumanLiveController {
   constructor(private digitalHumanLiveService: DigitalHumanLiveService) {}
 

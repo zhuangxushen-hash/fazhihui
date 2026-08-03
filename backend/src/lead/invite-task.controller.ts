@@ -2,10 +2,12 @@ import { Controller, Get, Post, Put, Body, Param, Query, UseGuards, Request, Use
 import { FileInterceptor } from '@nestjs/platform-express';
 import { InviteTaskService } from './invite-task.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { InviteMethod, InviteTaskStatus, InviteResult } from '../types';
+import { Roles } from '../auth/roles.decorator';
+import { InviteMethod, InviteTaskStatus, InviteResult, UserRole} from '../types';
 
 @UseGuards(JwtAuthGuard)
 @Controller('invite-tasks')
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.SALES)
 export class InviteTaskController {
   constructor(private readonly inviteTaskService: InviteTaskService) {}
 

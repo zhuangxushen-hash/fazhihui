@@ -104,6 +104,45 @@ import { DeploymentConfig } from '../system/deployment-config.entity';
 import { BrandConfig } from '../system/brand-config.entity';
 import { Integration } from '../system/integration.entity';
 
+// kinglex 模块实体
+import { Seal } from '../seal/seal.entity';
+import { SealApplication } from '../seal/seal-application.entity';
+import { SealRecord } from '../seal/seal-record.entity';
+import { Contract } from '../contract/contract.entity';
+import { ApprovalRequest } from '../approval/approval-request.entity';
+import { ApprovalStep } from '../approval/approval-step.entity';
+import { Worklog } from '../worklog/worklog.entity';
+import { Schedule } from '../schedule/schedule.entity';
+import { MeetingRoom } from '../schedule/meeting-room.entity';
+import { MeetingRoomBooking } from '../schedule/meeting-room-booking.entity';
+import { Task } from '../task/task.entity';
+import { KnowledgeArticle } from '../knowledge/knowledge-article.entity';
+import { LawRegulation } from '../knowledge/law-regulation.entity';
+import { CasePrecedent } from '../knowledge/case-precedent.entity';
+import { Bid } from '../bid/bid.entity';
+import { BidRecord } from '../bid/bid-record.entity';
+import { DueDiligence } from '../due-diligence/due-diligence.entity';
+import { Diagram } from '../diagram/diagram.entity';
+import { PaymentReminder } from '../finance/payment-reminder.entity';
+import { BusinessFund } from '../finance/business-fund.entity';
+import { ConflictCheck } from '../case/conflict-check.entity';
+import { ClientProfile } from '../client/client-profile.entity';
+
+// HR模块实体
+import { HrLeave, LeaveStatus } from '../hr/leave.entity';
+import { Attendance, AttendanceStatus } from '../hr/attendance.entity';
+import { MaterialRequisition, MaterialStatus, MaterialType } from '../hr/material-requisition.entity';
+import { HrActivity, ActivityStatus, ActivityType } from '../hr/activity.entity';
+import { ActivityRegistration } from '../hr/activity-registration.entity';
+
+// 同事圆社交模块实体
+import { SocialPost, PostType } from '../social/social-post.entity';
+import { SocialComment } from '../social/social-comment.entity';
+import { SocialLike } from '../social/social-like.entity';
+
+// 邮件模块实体
+import { Mail, MailType } from '../mail/mail.entity';
+
 @Module({
   imports: [TypeOrmModule.forFeature([
     User,
@@ -181,6 +220,41 @@ import { Integration } from '../system/integration.entity';
     DeploymentConfig,
     BrandConfig,
     Integration,
+    // kinglex 模块实体
+    Seal,
+    SealApplication,
+    SealRecord,
+    Contract,
+    ApprovalRequest,
+    ApprovalStep,
+    Worklog,
+    Schedule,
+    MeetingRoom,
+    MeetingRoomBooking,
+    Task,
+    KnowledgeArticle,
+    LawRegulation,
+    CasePrecedent,
+    Bid,
+    BidRecord,
+    DueDiligence,
+    Diagram,
+    PaymentReminder,
+    BusinessFund,
+    ConflictCheck,
+    ClientProfile,
+    // HR模块实体
+    HrLeave,
+    Attendance,
+    MaterialRequisition,
+    HrActivity,
+    ActivityRegistration,
+    // 同事圆社交模块
+    SocialPost,
+    SocialComment,
+    SocialLike,
+    // 邮件模块
+    Mail,
   ])],
 })
 export class SeedsModule implements OnModuleInit {
@@ -324,6 +398,72 @@ export class SeedsModule implements OnModuleInit {
     private readonly brandConfigRepository: Repository<BrandConfig>,
     @InjectRepository(Integration)
     private readonly integrationRepository: Repository<Integration>,
+    // kinglex 模块实体
+    @InjectRepository(Seal)
+    private readonly sealRepository: Repository<Seal>,
+    @InjectRepository(SealApplication)
+    private readonly sealApplicationRepository: Repository<SealApplication>,
+    @InjectRepository(SealRecord)
+    private readonly sealRecordRepository: Repository<SealRecord>,
+    @InjectRepository(Contract)
+    private readonly contractRepository: Repository<Contract>,
+    @InjectRepository(ApprovalRequest)
+    private readonly approvalRequestRepository: Repository<ApprovalRequest>,
+    @InjectRepository(ApprovalStep)
+    private readonly approvalStepRepository: Repository<ApprovalStep>,
+    @InjectRepository(Worklog)
+    private readonly worklogRepository: Repository<Worklog>,
+    @InjectRepository(Schedule)
+    private readonly scheduleRepository: Repository<Schedule>,
+    @InjectRepository(MeetingRoom)
+    private readonly meetingRoomRepository: Repository<MeetingRoom>,
+    @InjectRepository(MeetingRoomBooking)
+    private readonly meetingRoomBookingRepository: Repository<MeetingRoomBooking>,
+    @InjectRepository(Task)
+    private readonly taskRepository: Repository<Task>,
+    @InjectRepository(KnowledgeArticle)
+    private readonly knowledgeArticleRepository: Repository<KnowledgeArticle>,
+    @InjectRepository(LawRegulation)
+    private readonly lawRegulationRepository: Repository<LawRegulation>,
+    @InjectRepository(CasePrecedent)
+    private readonly casePrecedentRepository: Repository<CasePrecedent>,
+    @InjectRepository(Bid)
+    private readonly bidRepository: Repository<Bid>,
+    @InjectRepository(BidRecord)
+    private readonly bidRecordRepository: Repository<BidRecord>,
+    @InjectRepository(DueDiligence)
+    private readonly dueDiligenceRepository: Repository<DueDiligence>,
+    @InjectRepository(Diagram)
+    private readonly diagramRepository: Repository<Diagram>,
+    @InjectRepository(PaymentReminder)
+    private readonly paymentReminderRepository: Repository<PaymentReminder>,
+    @InjectRepository(BusinessFund)
+    private readonly businessFundRepository: Repository<BusinessFund>,
+    @InjectRepository(ConflictCheck)
+    private readonly conflictCheckRepository: Repository<ConflictCheck>,
+    @InjectRepository(ClientProfile)
+    private readonly clientProfileRepository: Repository<ClientProfile>,
+    // HR模块Repository注入
+    @InjectRepository(HrLeave)
+    private readonly hrLeaveRepository: Repository<HrLeave>,
+    @InjectRepository(Attendance)
+    private readonly attendanceRepository: Repository<Attendance>,
+    @InjectRepository(MaterialRequisition)
+    private readonly materialRepository: Repository<MaterialRequisition>,
+    @InjectRepository(HrActivity)
+    private readonly hrActivityRepository: Repository<HrActivity>,
+    @InjectRepository(ActivityRegistration)
+    private readonly activityRegistrationRepository: Repository<ActivityRegistration>,
+    // 同事圆社交模块
+    @InjectRepository(SocialPost)
+    private readonly socialPostRepository: Repository<SocialPost>,
+    @InjectRepository(SocialComment)
+    private readonly socialCommentRepository: Repository<SocialComment>,
+    @InjectRepository(SocialLike)
+    private readonly socialLikeRepository: Repository<SocialLike>,
+    // 邮件模块
+    @InjectRepository(Mail)
+    private readonly mailRepository: Repository<Mail>,
   ) {}
 
   async onModuleInit() {
@@ -463,6 +603,47 @@ export class SeedsModule implements OnModuleInit {
     await this.seedBrandConfigs(orgId);
     // 第三方对接配置
     await this.seedIntegrations(orgId);
+
+    // kinglex 模块种子数据
+    // 用印管理数据
+    await this.seedSeals(orgId, userMap);
+    // 合同数据
+    await this.seedContracts(orgId, userMap);
+    // 审批数据
+    await this.seedApprovals(orgId, userMap);
+    // 工作日志数据
+    await this.seedWorkLogs(orgId, userMap);
+    // 日程数据
+    await this.seedSchedules(orgId, userMap);
+    // 任务数据
+    await this.seedTasks(orgId, userMap);
+    // 知识库数据
+    await this.seedKnowledge(orgId, userMap);
+    // 投标数据
+    await this.seedBids(orgId, userMap);
+    // 尽调数据
+    await this.seedDueDiligence(orgId, userMap);
+    // 绘图数据
+    await this.seedDiagrams(orgId, userMap);
+    // 催款数据
+    await this.seedPaymentReminders(orgId, userMap);
+    // 发票数据
+    await this.seedInvoices(orgId, userMap);
+    // 业务款数据
+    await this.seedBusinessFunds(orgId, userMap);
+    // 利冲检索数据
+    await this.seedConflictChecks(orgId, userMap);
+    // 客户档案数据
+    await this.seedClientProfiles(orgId, userMap);
+    // HR模块数据
+    await this.seedHrLeaves(orgId, userMap);
+    await this.seedAttendances(orgId, userMap);
+    await this.seedMaterials(orgId, userMap);
+    await this.seedHrActivities(orgId, userMap);
+    // 同事圆社交数据
+    await this.seedSocialPosts(orgId, userMap);
+    // 邮件数据
+    await this.seedMails(orgId, userMap);
   }
 
   private async seedLeads(orgId: string, userMap: Record<string, User>) {
@@ -590,11 +771,28 @@ export class SeedsModule implements OnModuleInit {
       },
     ];
 
-    for (const data of leadData) {
+    for (let i = 0; i < leadData.length; i++) {
+      const data = leadData[i];
       const existing = await this.leadRepository.findOne({ where: { phone: data.phone } });
       if (!existing) {
+        // === 新增字段生成 ===
+        // 是否公共线索池（约30%为true）
+        const isPublic = i % 3 === 0;
+        // 转化状态（根据线索状态映射）
+        const conversionStatusMap: Record<string, string> = {
+          [LeadStatus.PENDING_SIGN]: 'converted',
+          [LeadStatus.FOLLOWING]: 'converting',
+          [LeadStatus.INVITING]: 'converting',
+          [LeadStatus.NEGOTIATING]: 'converting',
+          [LeadStatus.NEW]: 'not_converted',
+          [LeadStatus.LOST]: 'not_converted',
+        };
+        const conversionStatus = conversionStatusMap[data.status] || 'not_converted';
+
         const lead = await this.leadRepository.save({
           ...data,
+          is_public: isPublic,
+          conversion_status: conversionStatus,
           organization_id: orgId,
         });
 
@@ -794,11 +992,73 @@ export class SeedsModule implements OnModuleInit {
       },
     ];
 
-    for (const data of caseData) {
+    for (let i = 0; i < caseData.length; i++) {
+      const data = caseData[i];
       const existing = await this.caseRepository.findOne({ where: { case_no: data.case_no } });
       if (!existing) {
+        // === 新增字段：根据案件类型和状态生成 ===
+        // 案件类型到名称和大类的映射
+        const caseTypeMap: Record<string, { name: string; category: string }> = {
+          [CaseType.MARRIAGE]: { name: '离婚纠纷', category: 'civil' },
+          [CaseType.TRAFFIC]: { name: '交通事故赔偿', category: 'civil' },
+          [CaseType.LABOR]: { name: '劳动争议', category: 'civil' },
+          [CaseType.DEBT]: { name: '债务追讨', category: 'civil' },
+          [CaseType.OTHER]: { name: '民事纠纷', category: 'civil' },
+        };
+        const typeInfo = caseTypeMap[data.case_type] || { name: '民事纠纷', category: 'civil' };
+        // 刑事案件判断（描述中包含刑事相关关键词）
+        const isCriminal = data.description && (data.description.includes('刑事') || data.description.includes('故意伤害'));
+        const caseCategory = isCriminal ? 'criminal' : typeInfo.category;
+        // 对方当事人
+        const opposingParties = ['李某', '王某', '某保险公司', '某科技公司', '赵某', '某房地产公司', '某医院', '某建设公司'];
+        const opposingParty = opposingParties[i % opposingParties.length];
+        // 案件名称
+        const caseName = `${data.client_name}诉${opposingParty}${typeInfo.name}案`;
+        // 客户类型（客户名包含"公司"为企业，否则为个人）
+        const clientType = data.client_name.includes('公司') ? 'enterprise' : 'individual';
+        // 对方代理人（部分案件有）
+        const opposingAgents = ['王某律师', '张某律师', '李某律师', null, '赵某律师', null, '钱某律师', null];
+        const opposingAgent = opposingAgents[i % opposingAgents.length];
+        // 审判庭地点
+        const courtRoom = data.court ? `${data.court}第三审判庭` : null;
+        // 协助律师ID数组（JSON序列化）
+        const assistantLawyerIds = JSON.stringify([lawyerUser2?.id, lawyerUser?.id].filter(Boolean));
+        // 律师团队
+        const teamList = ['团队A', '团队B', '团队C'];
+        const teamId = teamList[i % teamList.length];
+        // 案件来源
+        const caseSources = ['线上咨询', '老客户介绍', '律所推广', '朋友推荐', '线上咨询'];
+        const caseSource = caseSources[i % caseSources.length];
+        // 质保金（1000-5000）
+        const qualityDeposit = 1000 + (i * 350) % 4001;
+        // 涉密标记（刑事案件或少数案件为true）
+        const isConfidential = isCriminal || i % 7 === 0;
+        // 案件阶段映射
+        const stageMap: Record<string, string> = {
+          [CaseStatus.PENDING_ASSIGN]: 'intake',
+          [CaseStatus.FILING]: 'intake',
+          [CaseStatus.EVIDENCE]: 'processing',
+          [CaseStatus.PROCESSING]: 'processing',
+          [CaseStatus.HEARING]: 'closing',
+          [CaseStatus.CLOSED]: 'closed',
+        };
+        const stage = stageMap[data.status] || 'intake';
+
         const caseEntity = await this.caseRepository.save({
           ...data,
+          case_name: caseName,
+          case_category: caseCategory,
+          client_type: clientType,
+          opposing_party: opposingParty,
+          opposing_agent: opposingAgent,
+          court_room: courtRoom,
+          assistant_lawyer_ids: assistantLawyerIds,
+          team_id: teamId,
+          case_source: caseSource,
+          quality_deposit: qualityDeposit,
+          contract_id: null,
+          is_confidential: isConfidential,
+          stage,
           organization_id: orgId,
         });
 
@@ -5047,6 +5307,1887 @@ export class SeedsModule implements OnModuleInit {
       if (!existing) {
         await this.integrationRepository.save(data as any);
       }
+    }
+  }
+
+  // ============== kinglex 模块种子数据 ==============
+
+  // 用印管理种子数据
+  private async seedSeals(orgId: string, userMap: Record<string, User>) {
+    // 检查印章表是否已有数据
+    const existingSealCount = await this.sealRepository.count({ where: { organization_id: orgId } });
+    if (existingSealCount > 0) return;
+
+    const orgAdmin = userMap['13800138001'];
+    const lawyerUser = userMap['13800138004'];
+    const lawyerUser2 = userMap['13800138008'];
+    const salesUser = userMap['13800138003'];
+    const assistantUser = userMap['13800138005'];
+    const cases = await this.caseRepository.find({ where: { organization_id: orgId }, take: 10 });
+
+    // 5个印章：公章、财务章、合同章、法人章、发票章
+    const sealConfigs = [
+      { name: '律所公章', type: 'official', status: 'active', manager_id: orgAdmin?.id, is_electronic: true, support_watermark: true, support_paging_seal: true },
+      { name: '财务专用章', type: 'financial', status: 'active', manager_id: orgAdmin?.id, is_electronic: false, support_watermark: false, support_paging_seal: false },
+      { name: '合同专用章', type: 'contract', status: 'active', manager_id: orgAdmin?.id, is_electronic: true, support_watermark: true, support_paging_seal: true },
+      { name: '法人章', type: 'personal', status: 'active', manager_id: orgAdmin?.id, is_electronic: false, support_watermark: false, support_paging_seal: false },
+      { name: '发票专用章', type: 'invoice', status: 'active', manager_id: orgAdmin?.id, is_electronic: true, support_watermark: false, support_paging_seal: false },
+    ];
+
+    const savedSeals: Seal[] = [];
+    for (const config of sealConfigs) {
+      const seal = await this.sealRepository.save({
+        ...config,
+        organization_id: orgId,
+      });
+      savedSeals.push(seal);
+    }
+
+    // 10条用印申请（不同状态：pending/approved/rejected/used）
+    const applicantUsers = [lawyerUser, lawyerUser2, salesUser, assistantUser, orgAdmin];
+    const applicationConfigs = [
+      { document_name: '授权委托书', purpose: '案件立案授权委托书盖章', usage_count: 1, status: 'pending', apply_offset: -1, approve_offset: null, approver_index: null, approve_comment: null },
+      { document_name: '律师函', purpose: '发送律师函催告对方当事人', usage_count: 2, status: 'approved', apply_offset: -3, approve_offset: -2, approver_index: 0, approve_comment: '同意用印' },
+      { document_name: '起诉状', purpose: '民事起诉状盖章提交法院', usage_count: 1, status: 'used', apply_offset: -7, approve_offset: -6, approver_index: 0, approve_comment: '同意用印' },
+      { document_name: '代理合同', purpose: '委托代理合同盖章', usage_count: 1, status: 'used', apply_offset: -10, approve_offset: -9, approver_index: 0, approve_comment: '同意用印' },
+      { document_name: '调查函', purpose: '律师调查取证函件', usage_count: 1, status: 'approved', apply_offset: -2, approve_offset: -1, approver_index: 0, approve_comment: '同意用印' },
+      { document_name: '收入证明', purpose: '客户收入证明盖章', usage_count: 1, status: 'rejected', apply_offset: -4, approve_offset: -3, approver_index: 0, approve_comment: '材料不全，请补充后重新申请' },
+      { document_name: '和解协议', purpose: '案件和解协议盖章', usage_count: 3, status: 'used', apply_offset: -15, approve_offset: -14, approver_index: 0, approve_comment: '同意用印' },
+      { document_name: '证据目录', purpose: '证据材料目录盖章', usage_count: 1, status: 'pending', apply_offset: -1, approve_offset: null, approver_index: null, approve_comment: null },
+      { document_name: '撤诉申请', purpose: '撤回起诉申请书盖章', usage_count: 1, status: 'approved', apply_offset: -5, approve_offset: -4, approver_index: 0, approve_comment: '同意用印' },
+      { document_name: '执行申请', purpose: '强制执行申请书盖章', usage_count: 1, status: 'used', apply_offset: -20, approve_offset: -19, approver_index: 0, approve_comment: '同意用印' },
+    ];
+
+    const savedApplications: SealApplication[] = [];
+    for (let i = 0; i < applicationConfigs.length; i++) {
+      const config = applicationConfigs[i];
+      const applicant = applicantUsers[i % applicantUsers.length];
+      const seal = savedSeals[i % savedSeals.length];
+      const caseEntity = cases.length > 0 ? cases[i % cases.length] : null;
+      const approver = config.approver_index !== null ? applicantUsers[config.approver_index] : null;
+
+      const application = await this.sealApplicationRepository.save({
+        applicant_id: applicant?.id,
+        case_id: caseEntity?.id,
+        seal_id: seal.id,
+        document_name: config.document_name,
+        purpose: config.purpose,
+        usage_count: config.usage_count,
+        status: config.status,
+        apply_time: new Date(Date.now() + config.apply_offset * 24 * 60 * 60 * 1000),
+        approve_time: config.approve_offset !== null ? new Date(Date.now() + config.approve_offset * 24 * 60 * 60 * 1000) : null,
+        approver_id: approver?.id,
+        approve_comment: config.approve_comment,
+        is_confidential: i % 5 === 0,
+        seal_type: ['normal', 'watermark', 'paging'][i % 3],
+        organization_id: orgId,
+      });
+      savedApplications.push(application);
+    }
+
+    // 为 approved 和 used 状态的申请创建盖章记录
+    for (const app of savedApplications) {
+      if (app.status === 'approved' || app.status === 'used') {
+        await this.sealRecordRepository.save({
+          application_id: app.id,
+          seal_id: app.seal_id,
+          operator_id: app.approver_id || orgAdmin?.id,
+          document_name: app.document_name,
+          usage_count: app.usage_count,
+          seal_time: app.status === 'used' ? new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) : new Date(),
+          organization_id: orgId,
+        });
+      }
+    }
+  }
+
+  // 合同种子数据
+  private async seedContracts(orgId: string, userMap: Record<string, User>) {
+    // 检查合同表是否已有数据
+    const existingContractCount = await this.contractRepository.count({ where: { organization_id: orgId } });
+    if (existingContractCount > 0) return;
+
+    const cases = await this.caseRepository.find({ where: { organization_id: orgId }, take: 15 });
+    if (cases.length === 0) return;
+
+    const orgAdmin = userMap['13800138001'];
+    // 合同阶段：drafting起草 / reviewing审查 / signed已签 / performing履行 / completed完成 / terminated解约 / voided作废
+    const contractConfigs = [
+      { title: '婚姻纠纷委托代理合同', type: 'entrust', client_name: '张女士', client_phone: '13900139001', amount: 50000, stage: 'performing', sign_offset: -30, start_offset: -30, end_offset: 60, remarks: '财产分割与子女抚养权' },
+      { title: '交通事故赔偿代理合同', type: 'entrust', client_name: '李先生', client_phone: '13900139002', amount: 30000, stage: 'completed', sign_offset: -90, start_offset: -90, end_offset: -10, remarks: '已完成理赔' },
+      { title: '劳动仲裁委托合同', type: 'entrust', client_name: '王先生', client_phone: '13900139003', amount: 15000, stage: 'signed', sign_offset: -7, start_offset: -7, end_offset: 90, remarks: '仲裁程序进行中' },
+      { title: '债务纠纷代理合同', type: 'entrust', client_name: '赵先生', client_phone: '13900139004', amount: 80000, stage: 'performing', sign_offset: -45, start_offset: -45, end_offset: 45, remarks: '诉讼阶段' },
+      { title: '企业常年法律顾问合同', type: 'consultant', client_name: '某科技有限公司', client_phone: '010-88880001', amount: 120000, stage: 'performing', sign_offset: -60, start_offset: -60, end_offset: 305, remarks: '年度顾问服务' },
+      { title: '合同审查服务协议', type: 'consultant', client_name: '某贸易公司', client_phone: '010-88880002', amount: 20000, stage: 'reviewing', sign_offset: null, start_offset: null, end_offset: null, remarks: '审查中' },
+      { title: '医疗纠纷委托合同', type: 'entrust', client_name: '孙女士', client_phone: '13900139005', amount: 55000, stage: 'drafting', sign_offset: null, start_offset: null, end_offset: null, remarks: '合同起草中' },
+      { title: '房产纠纷代理合同', type: 'entrust', client_name: '周先生', client_phone: '13900139006', amount: 65000, stage: 'terminated', sign_offset: -120, start_offset: -120, end_offset: -30, remarks: '客户解约' },
+      { title: '知识产权维权合同', type: 'entrust', client_name: '某科技公司', client_phone: '010-88880003', amount: 90000, stage: 'performing', sign_offset: -20, start_offset: -20, end_offset: 100, remarks: '专利侵权诉讼' },
+      { title: '股权转让顾问合同', type: 'consultant', client_name: '某投资公司', client_phone: '010-88880004', amount: 150000, stage: 'signed', sign_offset: -5, start_offset: -5, end_offset: 180, remarks: '股权交易全程顾问' },
+      { title: '刑事辩护委托合同', type: 'entrust', client_name: '吴先生', client_phone: '13900139007', amount: 70000, stage: 'performing', sign_offset: -15, start_offset: -15, end_offset: 60, remarks: '审查起诉阶段' },
+      { title: '建筑工程合同纠纷', type: 'entrust', client_name: '某建设公司', client_phone: '010-88880005', amount: 200000, stage: 'completed', sign_offset: -200, start_offset: -200, end_offset: -50, remarks: '调解结案' },
+      { title: '拆迁补偿代理合同', type: 'entrust', client_name: '郑先生', client_phone: '13900139008', amount: 45000, stage: 'voided', sign_offset: -80, start_offset: -80, end_offset: null, remarks: '合同作废，重新签订' },
+      { title: '商事仲裁委托合同', type: 'entrust', client_name: '某商贸公司', client_phone: '010-88880006', amount: 110000, stage: 'reviewing', sign_offset: null, start_offset: null, end_offset: null, remarks: '合同审查阶段' },
+      { title: '私人法律顾问合同', type: 'consultant', client_name: '陈先生', client_phone: '13900139009', amount: 36000, stage: 'performing', sign_offset: -100, start_offset: -100, end_offset: 265, remarks: '年度私人顾问' },
+    ];
+
+    for (let i = 0; i < contractConfigs.length; i++) {
+      const config = contractConfigs[i];
+      const caseEntity = cases[i % cases.length];
+      const contractNo = `HT${new Date().getFullYear()}${String(i + 1).padStart(4, '0')}`;
+      const existing = await this.contractRepository.findOne({ where: { contract_no: contractNo } });
+      if (!existing) {
+        // === 新增字段生成 ===
+        // 对方当事人
+        const opposingParties = ['李某', '某保险公司', '某科技公司', '赵某', '某商贸公司', '某医院', '周某', '某房地产公司'];
+        const opposingParty = opposingParties[i % opposingParties.length];
+        // 分配比例（JSON序列化）
+        const allocationRatio = JSON.stringify([{ role: '主办律师', ratio: 0.7 }, { role: '协办律师', ratio: 0.3 }]);
+        // 原件回收状态
+        const originalStatuses = ['not_received', 'received', 'na'];
+        const originalStatus = originalStatuses[i % originalStatuses.length];
+        // 质保金（2000-8000）
+        const qualityDeposit = 2000 + (i * 400) % 6001;
+        // 合同模板ID
+        const templateIds = ['standard', 'simple'];
+        const templateId = templateIds[i % templateIds.length];
+        // 已审查的合同阶段（reviewing之后的阶段视为已审查）
+        const reviewedStages = ['signed', 'performing', 'completed', 'terminated'];
+        const isReviewed = reviewedStages.includes(config.stage);
+        // 审查意见
+        const reviewComment = isReviewed ? '审查通过，条款完备' : null;
+        // 审查人ID
+        const reviewerId = isReviewed ? orgAdmin?.id : null;
+        // 审查时间（签订日期后3天）
+        const reviewTime = isReviewed && config.sign_offset !== null
+          ? new Date(Date.now() + config.sign_offset * 24 * 60 * 60 * 1000 + 3 * 24 * 60 * 60 * 1000)
+          : null;
+
+        await this.contractRepository.save({
+          contract_no: contractNo,
+          title: config.title,
+          type: config.type,
+          case_id: caseEntity.id,
+          client_name: config.client_name,
+          client_phone: config.client_phone,
+          amount: config.amount,
+          sign_date: config.sign_offset !== null ? new Date(Date.now() + config.sign_offset * 24 * 60 * 60 * 1000) : null,
+          start_date: config.start_offset !== null ? new Date(Date.now() + config.start_offset * 24 * 60 * 60 * 1000) : null,
+          end_date: config.end_offset !== null ? new Date(Date.now() + config.end_offset * 24 * 60 * 60 * 1000) : null,
+          stage: config.stage,
+          status: 'active',
+          remarks: config.remarks,
+          opposing_party: opposingParty,
+          allocation_ratio: allocationRatio,
+          original_status: originalStatus,
+          quality_deposit: qualityDeposit,
+          template_id: templateId,
+          review_comment: reviewComment,
+          reviewer_id: reviewerId,
+          review_time: reviewTime,
+          organization_id: orgId,
+        });
+      }
+    }
+  }
+
+  // 审批种子数据
+  private async seedApprovals(orgId: string, userMap: Record<string, User>) {
+    // 检查审批申请表是否已有数据
+    const existingApprovalCount = await this.approvalRequestRepository.count({ where: { organization_id: orgId } });
+    if (existingApprovalCount > 0) return;
+
+    const orgAdmin = userMap['13800138001'];
+    const lawyerUser = userMap['13800138004'];
+    const lawyerUser2 = userMap['13800138008'];
+    const salesUser = userMap['13800138003'];
+    const financeUser = userMap['13800138006'];
+    const assistantUser = userMap['13800138005'];
+    const cases = await this.caseRepository.find({ where: { organization_id: orgId }, take: 10 });
+
+    const applicantPool = [lawyerUser, lawyerUser2, salesUser, financeUser, assistantUser];
+    const approverPool = [orgAdmin];
+
+    // 审批类型：seal用印 / case立案 / contract合同 / finance财务 / other其他
+    // 状态：pending待审批 / approved已通过 / rejected已驳回 / cancelled已撤销
+    const approvalConfigs = [
+      { title: '用印申请-授权委托书', type: 'seal', status: 'pending', applicant_index: 0, content: { document_name: '授权委托书', usage_count: 1 }, target_type: 'seal_application', apply_offset: -1 },
+      { title: '立案审批-婚姻纠纷案件', type: 'case', status: 'approved', applicant_index: 2, content: { case_name: '婚姻纠纷', fee_amount: 50000 }, target_type: 'case', apply_offset: -5 },
+      { title: '合同审批-企业顾问合同', type: 'contract', status: 'approved', applicant_index: 1, content: { contract_title: '企业常年法律顾问合同', amount: 120000 }, target_type: 'contract', apply_offset: -8 },
+      { title: '财务审批-退款申请', type: 'finance', status: 'pending', applicant_index: 3, content: { refund_amount: 5000, reason: '客户申请部分退款' }, target_type: 'refund', apply_offset: -2 },
+      { title: '用印申请-律师函', type: 'seal', status: 'approved', applicant_index: 0, content: { document_name: '律师函', usage_count: 2 }, target_type: 'seal_application', apply_offset: -3 },
+      { title: '立案审批-交通事故案件', type: 'case', status: 'approved', applicant_index: 2, content: { case_name: '交通事故赔偿', fee_amount: 30000 }, target_type: 'case', apply_offset: -10 },
+      { title: '合同审批-债务纠纷合同', type: 'contract', status: 'rejected', applicant_index: 1, content: { contract_title: '债务纠纷代理合同', amount: 80000 }, target_type: 'contract', apply_offset: -7 },
+      { title: '财务审批-费用报销', type: 'finance', status: 'approved', applicant_index: 4, content: { expense_amount: 3200, category: '诉讼费' }, target_type: 'expense', apply_offset: -4 },
+      { title: '用印申请-起诉状', type: 'seal', status: 'approved', applicant_index: 0, content: { document_name: '起诉状', usage_count: 1 }, target_type: 'seal_application', apply_offset: -6 },
+      { title: '其他审批-外出调查申请', type: 'other', status: 'approved', applicant_index: 1, content: { destination: '某市不动产登记中心', purpose: '调查房产信息' }, target_type: null, apply_offset: -12 },
+      { title: '立案审批-劳动仲裁案件', type: 'case', status: 'pending', applicant_index: 2, content: { case_name: '劳动仲裁', fee_amount: 15000 }, target_type: 'case', apply_offset: -1 },
+      { title: '合同审批-知识产权合同', type: 'contract', status: 'approved', applicant_index: 1, content: { contract_title: '知识产权维权合同', amount: 90000 }, target_type: 'contract', apply_offset: -15 },
+      { title: '财务审批-大额支出', type: 'finance', status: 'rejected', applicant_index: 3, content: { expense_amount: 50000, category: '鉴定费' }, target_type: 'expense', apply_offset: -9 },
+      { title: '用印申请-和解协议', type: 'seal', status: 'cancelled', applicant_index: 0, content: { document_name: '和解协议', usage_count: 3 }, target_type: 'seal_application', apply_offset: -20 },
+      { title: '立案审批-医疗纠纷案件', type: 'case', status: 'approved', applicant_index: 2, content: { case_name: '医疗纠纷', fee_amount: 55000 }, target_type: 'case', apply_offset: -18 },
+      { title: '合同审批-股权转让合同', type: 'contract', status: 'pending', applicant_index: 1, content: { contract_title: '股权转让顾问合同', amount: 150000 }, target_type: 'contract', apply_offset: -2 },
+      { title: '财务审批-提成发放', type: 'finance', status: 'approved', applicant_index: 3, content: { total_amount: 28000, month: '本月提成' }, target_type: 'commission', apply_offset: -25 },
+      { title: '其他审批-休假申请', type: 'other', status: 'approved', applicant_index: 4, content: { leave_type: '年假', days: 3 }, target_type: null, apply_offset: -14 },
+      { title: '用印申请-调查函', type: 'seal', status: 'approved', applicant_index: 0, content: { document_name: '调查函', usage_count: 1 }, target_type: 'seal_application', apply_offset: -11 },
+      { title: '立案审批-刑事辩护案件', type: 'case', status: 'approved', applicant_index: 2, content: { case_name: '刑事辩护', fee_amount: 70000 }, target_type: 'case', apply_offset: -16 },
+    ];
+
+    for (let i = 0; i < approvalConfigs.length; i++) {
+      const config = approvalConfigs[i];
+      const applicant = applicantPool[config.applicant_index];
+      const caseEntity = cases.length > 0 ? cases[i % cases.length] : null;
+
+      // 根据状态确定当前步骤
+      let currentStep = 0;
+      if (config.status === 'pending') {
+        currentStep = 1;
+      } else if (config.status === 'approved' || config.status === 'rejected') {
+        currentStep = 1;
+      } else if (config.status === 'cancelled') {
+        currentStep = 0;
+      }
+
+      const request = await this.approvalRequestRepository.save({
+        title: config.title,
+        type: config.type,
+        applicant_id: applicant?.id,
+        target_type: config.target_type,
+        target_id: caseEntity?.id,
+        content: config.content,
+        status: config.status,
+        current_step: currentStep,
+        organization_id: orgId,
+      });
+
+      // 创建审批步骤记录
+      const approver = approverPool[0];
+      let stepResult = 'pending';
+      if (config.status === 'approved') {
+        stepResult = 'approved';
+      } else if (config.status === 'rejected') {
+        stepResult = 'rejected';
+      } else if (config.status === 'cancelled') {
+        stepResult = 'pending';
+      }
+
+      await this.approvalStepRepository.save({
+        request_id: request.id,
+        step_order: 1,
+        approver_id: approver?.id,
+        result: stepResult,
+        comment: stepResult === 'approved' ? '同意' : stepResult === 'rejected' ? '不同意' : null,
+        approve_time: stepResult !== 'pending' ? new Date(Date.now() + config.apply_offset * 24 * 60 * 60 * 1000 + 12 * 60 * 60 * 1000) : null,
+      });
+    }
+  }
+
+  // 工作日志种子数据
+  private async seedWorkLogs(orgId: string, userMap: Record<string, User>) {
+    // 检查工作日志表是否已有数据
+    const existingWorklogCount = await this.worklogRepository.count({ where: { organization_id: orgId } });
+    if (existingWorklogCount > 0) return;
+
+    const lawyerUser = userMap['13800138004'];
+    const lawyerUser2 = userMap['13800138008'];
+    const assistantUser = userMap['13800138005'];
+    const orgAdmin = userMap['13800138001'];
+    const cases = await this.caseRepository.find({ where: { organization_id: orgId }, take: 10 });
+    if (cases.length === 0) return;
+
+    const lawyerPool = [lawyerUser, lawyerUser2, assistantUser, orgAdmin];
+    const workContents = [
+      '与客户面谈，了解案件详情，梳理案件事实',
+      '整理证据材料，制作证据目录',
+      '起草民事起诉状，准备立案材料',
+      '前往法院提交立案材料，缴纳诉讼费',
+      '参加庭审，进行法庭辩论',
+      '与对方律师进行证据交换',
+      '撰写代理词，提交法院',
+      '与客户沟通案件进展，确认后续方案',
+      '调查取证，前往相关单位调取证据',
+      '整理案卷材料，归档备查',
+      '参加案件讨论会，分析案件难点',
+      '撰写法律意见书，为客户提供法律分析',
+      '与法官沟通案件审理进度',
+      '准备庭审质证提纲',
+      '起草和解协议，与对方协商',
+      '前往不动产登记中心查询房产信息',
+      '制作案件时间轴，梳理关键时间节点',
+      '整理同类案件裁判文书，分析裁判规则',
+      '撰写上诉状，准备上诉材料',
+      '参加调解会议，促成双方和解',
+      '整理办案笔记，总结办案经验',
+      '检索相关法律法规，完善法律论证',
+      '准备证人出庭材料',
+      '计算赔偿金额，制作赔偿清单',
+      '与鉴定机构沟通鉴定事宜',
+      '起草财产保全申请书',
+      '审查对方提交的证据材料',
+      '准备法庭询问提纲',
+      '撰写案件结案报告',
+      '整理客户档案，更新案件管理系统',
+    ];
+
+    // 状态分布：draft草稿 / submitted已提交 / approved已通过 / rejected已驳回
+    const statusCycle = ['approved', 'approved', 'submitted', 'approved', 'draft', 'approved', 'rejected', 'submitted', 'approved', 'draft'];
+
+    for (let i = 0; i < 30; i++) {
+      const lawyer = lawyerPool[i % lawyerPool.length];
+      const caseEntity = cases[i % cases.length];
+      const status = statusCycle[i % statusCycle.length];
+      // 工作日期在最近3个月内
+      const workDate = new Date(Date.now() - (i * 3 + 1) * 24 * 60 * 60 * 1000);
+      const workHours = [6, 7, 8, 4, 5, 8, 6, 7, 8, 5][i % 10];
+
+      const existing = await this.worklogRepository.findOne({
+        where: { user_id: lawyer?.id, work_date: workDate.toISOString().slice(0, 10) } as any,
+      });
+      if (!existing) {
+        // === 新增字段：日志类型和关联账单 ===
+        // 日志类型（大部分为办案工作，少数为非办案工作）
+        const logType = i % 6 === 0 ? 'non_case_work' : 'case_work';
+        // 关联账单ID（部分日志关联账单）
+        const billId = i % 4 === 0 ? `BILL${new Date().getFullYear()}${String(i + 1).padStart(4, '0')}` : null;
+
+        await this.worklogRepository.save({
+          user_id: lawyer?.id,
+          case_id: caseEntity.id,
+          work_date: workDate.toISOString().slice(0, 10),
+          content: workContents[i],
+          work_hours: workHours,
+          billable: i % 5 !== 0, // 80%计费
+          status: status,
+          approver_id: status === 'approved' || status === 'rejected' ? orgAdmin?.id : null,
+          approve_comment: status === 'approved' ? '审核通过' : status === 'rejected' ? '工时填写不准确，请核实' : null,
+          approve_time: status === 'approved' || status === 'rejected' ? new Date(Date.now() - (i * 3) * 24 * 60 * 60 * 1000 + 12 * 60 * 60 * 1000) : null,
+          log_type: logType,
+          bill_id: billId,
+          organization_id: orgId,
+        });
+      }
+    }
+  }
+
+  // 日程种子数据
+  private async seedSchedules(orgId: string, userMap: Record<string, User>) {
+    // 检查日程表是否已有数据
+    const existingScheduleCount = await this.scheduleRepository.count({ where: { organization_id: orgId } });
+    if (existingScheduleCount > 0) return;
+
+    const lawyerUser = userMap['13800138004'];
+    const lawyerUser2 = userMap['13800138008'];
+    const salesUser = userMap['13800138003'];
+    const orgAdmin = userMap['13800138001'];
+    const assistantUser = userMap['13800138005'];
+    const cases = await this.caseRepository.find({ where: { organization_id: orgId }, take: 10 });
+
+    const creatorPool = [lawyerUser, lawyerUser2, salesUser, orgAdmin, assistantUser];
+
+    // 3个会议室
+    const roomConfigs = [
+      { name: '第一会议室', location: '3楼301室', capacity: 12 },
+      { name: '第二会议室', location: '3楼302室', capacity: 6 },
+      { name: '小型洽谈室', location: '2楼205室', capacity: 4 },
+    ];
+
+    const savedRooms: MeetingRoom[] = [];
+    for (const config of roomConfigs) {
+      const existingRoom = await this.meetingRoomRepository.findOne({ where: { name: config.name, organization_id: orgId } });
+      if (!existingRoom) {
+        const room = await this.meetingRoomRepository.save({
+          ...config,
+          status: 'available',
+          organization_id: orgId,
+        });
+        savedRooms.push(room);
+      } else {
+        savedRooms.push(existingRoom);
+      }
+    }
+
+    // 20条日程（未来2周内）
+    const scheduleConfigs = [
+      { title: '客户面谈-婚姻纠纷', location: '律所接待室', all_day: false, duration_hours: 2, reminder: 'before15min', related_case: true, status: 'active' },
+      { title: '团队周会', location: '第一会议室', all_day: false, duration_hours: 1, reminder: 'before5min', related_case: false, status: 'active' },
+      { title: '法院开庭', location: '朝阳区人民法院', all_day: false, duration_hours: 4, reminder: 'before1day', related_case: true, status: 'active' },
+      { title: '客户签约', location: '律所接待室', all_day: false, duration_hours: 1, reminder: 'before30min', related_case: false, status: 'active' },
+      { title: '案件讨论会', location: '第一会议室', all_day: false, duration_hours: 2, reminder: 'before15min', related_case: true, status: 'active' },
+      { title: '外出调查', location: '不动产登记中心', all_day: true, duration_hours: 8, reminder: 'before1day', related_case: true, status: 'active' },
+      { title: '电话会议', location: null, all_day: false, duration_hours: 1, reminder: 'before5min', related_case: false, status: 'active' },
+      { title: '调解会议', location: '法院调解室', all_day: false, duration_hours: 3, reminder: 'before1hour', related_case: true, status: 'active' },
+      { title: '法律培训', location: '第二会议室', all_day: false, duration_hours: 2, reminder: 'before15min', related_case: false, status: 'active' },
+      { title: '客户回访', location: '客户公司', all_day: false, duration_hours: 2, reminder: 'before1hour', related_case: false, status: 'active' },
+      { title: '证据交换', location: '朝阳区人民法院', all_day: false, duration_hours: 2, reminder: 'before1day', related_case: true, status: 'active' },
+      { title: '律所月度总结会', location: '第一会议室', all_day: false, duration_hours: 2, reminder: 'before15min', related_case: false, status: 'active' },
+      { title: '商标注册咨询', location: '律所接待室', all_day: false, duration_hours: 1, reminder: 'before15min', related_case: false, status: 'active' },
+      { title: '合同审查会议', location: '第二会议室', all_day: false, duration_hours: 2, reminder: 'before5min', related_case: false, status: 'active' },
+      { title: '法庭质证', location: '海淀区人民法院', all_day: false, duration_hours: 3, reminder: 'before1day', related_case: true, status: 'done' },
+      { title: '团队建设活动', location: '外部场地', all_day: true, duration_hours: 8, reminder: 'before1day', related_case: false, status: 'active' },
+      { title: '专家论证会', location: '第一会议室', all_day: false, duration_hours: 3, reminder: 'before1hour', related_case: true, status: 'active' },
+      { title: '财务报销审批', location: '财务室', all_day: false, duration_hours: 1, reminder: 'none', related_case: false, status: 'active' },
+      { title: '新员工入职培训', location: '小型洽谈室', all_day: false, duration_hours: 2, reminder: 'before15min', related_case: false, status: 'cancelled' },
+      { title: '仲裁庭审', location: '仲裁委员会', all_day: false, duration_hours: 4, reminder: 'before1day', related_case: true, status: 'active' },
+    ];
+
+    const savedSchedules: Schedule[] = [];
+    for (let i = 0; i < scheduleConfigs.length; i++) {
+      const config = scheduleConfigs[i];
+      const creator = creatorPool[i % creatorPool.length];
+      const caseEntity = config.related_case && cases.length > 0 ? cases[i % cases.length] : null;
+      // 未来2周内（14天），按天分布
+      const dayOffset = Math.floor(i / 2) + 1; // 第1天到第10天
+      const startHour = 9 + (i % 8); // 9点到16点开始
+      const startTime = new Date(Date.now() + dayOffset * 24 * 60 * 60 * 1000);
+      startTime.setHours(startHour, 0, 0, 0);
+      const endTime = new Date(startTime.getTime() + config.duration_hours * 60 * 60 * 1000);
+
+      // 计算提醒时间
+      let reminderTime: Date | null = null;
+      if (config.reminder === 'before5min') reminderTime = new Date(startTime.getTime() - 5 * 60 * 1000);
+      else if (config.reminder === 'before15min') reminderTime = new Date(startTime.getTime() - 15 * 60 * 1000);
+      else if (config.reminder === 'before1hour') reminderTime = new Date(startTime.getTime() - 60 * 60 * 1000);
+      else if (config.reminder === 'before1day') reminderTime = new Date(startTime.getTime() - 24 * 60 * 60 * 1000);
+
+      const schedule = await this.scheduleRepository.save({
+        title: config.title,
+        description: `${config.title} - 律所日常工作安排`,
+        start_time: startTime,
+        end_time: endTime,
+        all_day: config.all_day,
+        location: config.location,
+        creator_id: creator?.id,
+        related_case_id: caseEntity?.id,
+        reminder_type: config.reminder,
+        reminder_time: reminderTime,
+        status: config.status,
+        // 附件（部分日程填写，JSON序列化）
+        attachments: i % 3 === 0 ? JSON.stringify(['会议资料.pdf', '客户名单.xlsx']) : null,
+        // 共享团队（部分日程填写）
+        shared_team_id: i % 4 === 0 ? '团队A' : null,
+        // 主题（根据标题关键词推断）
+        theme: config.title.includes('客户') ? '客户会议'
+          : config.title.includes('案件') || config.title.includes('讨论') ? '案件讨论'
+          : config.title.includes('法院') || config.title.includes('庭审') || config.title.includes('仲裁') ? '庭审准备'
+          : '日常工作',
+        organization_id: orgId,
+      });
+      savedSchedules.push(schedule);
+    }
+
+    // 5条会议室预约记录
+    const bookingStatuses = ['approved', 'approved', 'pending', 'approved', 'rejected'];
+    for (let i = 0; i < 5 && i < savedSchedules.length; i++) {
+      const schedule = savedSchedules[i];
+      const room = savedRooms[i % savedRooms.length];
+      const booker = creatorPool[i % creatorPool.length];
+      const bookingDate = new Date(schedule.start_time);
+      bookingDate.setHours(0, 0, 0, 0);
+
+      await this.meetingRoomBookingRepository.save({
+        room_id: room.id,
+        schedule_id: schedule.id,
+        booking_date: bookingDate.toISOString().slice(0, 10),
+        start_time: schedule.start_time,
+        end_time: schedule.end_time,
+        booker_id: booker?.id,
+        status: bookingStatuses[i],
+        organization_id: orgId,
+      });
+    }
+  }
+
+  // 任务种子数据
+  private async seedTasks(orgId: string, userMap: Record<string, User>) {
+    // 检查任务表是否已有数据
+    const existingTaskCount = await this.taskRepository.count({ where: { organization_id: orgId } });
+    if (existingTaskCount > 0) return;
+
+    const lawyerUser = userMap['13800138004'];
+    const lawyerUser2 = userMap['13800138008'];
+    const salesUser = userMap['13800138003'];
+    const orgAdmin = userMap['13800138001'];
+    const assistantUser = userMap['13800138005'];
+    const marketingUser = userMap['13800138002'];
+    const cases = await this.caseRepository.find({ where: { organization_id: orgId }, take: 10 });
+    const leads = await this.leadRepository.find({ where: { organization_id: orgId }, take: 10 });
+    if (cases.length === 0 && leads.length === 0) return;
+
+    const assigneePool = [lawyerUser, lawyerUser2, salesUser, assistantUser, marketingUser];
+    const creatorPool = [orgAdmin, salesUser, lawyerUser];
+
+    // 25条任务（不同优先级和状态）
+    const taskConfigs = [
+      { title: '起草婚姻纠纷起诉状', priority: 'high', status: 'completed', due_offset: -5, related_type: 'case', desc: '根据客户提供的材料起草民事起诉状' },
+      { title: '整理交通事故证据材料', priority: 'normal', status: 'processing', due_offset: 3, related_type: 'case', desc: '整理医疗费发票、交警责任认定书等证据' },
+      { title: '联系劳动仲裁委确认开庭时间', priority: 'urgent', status: 'processing', due_offset: 1, related_type: 'case', desc: '电话联系仲裁委员会确认开庭日期' },
+      { title: '跟进债务纠纷案件执行进度', priority: 'high', status: 'processing', due_offset: 7, related_type: 'case', desc: '与执行法官沟通执行进度' },
+      { title: '撰写法律意见书', priority: 'normal', status: 'pending', due_offset: 5, related_type: 'case', desc: '为企业客户撰写合同审查法律意见书' },
+      { title: '回访潜在客户张女士', priority: 'high', status: 'pending', due_offset: 2, related_type: 'lead', desc: '电话回访，了解客户意向' },
+      { title: '准备庭审质证提纲', priority: 'urgent', status: 'completed', due_offset: -2, related_type: 'case', desc: '准备对方证据的质证意见' },
+      { title: '整理案卷归档', priority: 'low', status: 'pending', due_offset: 14, related_type: 'case', desc: '将已结案案件材料整理归档' },
+      { title: '制作案件时间轴', priority: 'normal', status: 'completed', due_offset: -3, related_type: 'case', desc: '梳理案件关键时间节点' },
+      { title: '联系鉴定机构安排鉴定', priority: 'high', status: 'processing', due_offset: 4, related_type: 'case', desc: '安排伤残鉴定事宜' },
+      { title: '审查合同条款', priority: 'normal', status: 'processing', due_offset: 3, related_type: 'case', desc: '审查客户提交的商业合同条款' },
+      { title: '准备调解方案', priority: 'high', status: 'pending', due_offset: 2, related_type: 'case', desc: '根据案件情况准备调解方案' },
+      { title: '跟进线索转化情况', priority: 'normal', status: 'completed', due_offset: -1, related_type: 'lead', desc: '跟进本周新线索的转化情况' },
+      { title: '撰写代理词', priority: 'high', status: 'processing', due_offset: 5, related_type: 'case', desc: '撰写庭审代理词' },
+      { title: '准备上诉材料', priority: 'urgent', status: 'pending', due_offset: 3, related_type: 'case', desc: '准备上诉状及相关证据材料' },
+      { title: '更新案件管理系统', priority: 'low', status: 'pending', due_offset: 7, related_type: 'case', desc: '更新案件进展和办案记录' },
+      { title: '安排客户面谈', priority: 'normal', status: 'completed', due_offset: -4, related_type: 'lead', desc: '预约客户到所面谈时间' },
+      { title: '检索类案裁判文书', priority: 'normal', status: 'processing', due_offset: 6, related_type: 'case', desc: '检索同类案件裁判规则' },
+      { title: '起草和解协议', priority: 'high', status: 'pending', due_offset: 2, related_type: 'case', desc: '根据调解结果起草和解协议' },
+      { title: '准备证人出庭材料', priority: 'normal', status: 'processing', due_offset: 4, related_type: 'case', desc: '准备证人出庭作证相关材料' },
+      { title: '计算赔偿金额', priority: 'normal', status: 'completed', due_offset: -5, related_type: 'case', desc: '计算人身损害赔偿各项金额' },
+      { title: '跟进新线索分配', priority: 'urgent', status: 'processing', due_offset: 1, related_type: 'lead', desc: '确保新线索及时分配给销售' },
+      { title: '撰写案件结案报告', priority: 'low', status: 'cancelled', due_offset: 10, related_type: 'case', desc: '撰写已结案案件的结案报告' },
+      { title: '准备财产保全申请', priority: 'high', status: 'pending', due_offset: 3, related_type: 'case', desc: '准备财产保全申请书及担保材料' },
+      { title: '整理办案笔记', priority: 'low', status: 'pending', due_offset: 14, related_type: 'case', desc: '总结本月办案经验和教训' },
+    ];
+
+    for (let i = 0; i < taskConfigs.length; i++) {
+      const config = taskConfigs[i];
+      const assignee = assigneePool[i % assigneePool.length];
+      const creator = creatorPool[i % creatorPool.length];
+      let relatedCaseId: string | null = null;
+      let relatedLeadId: string | null = null;
+
+      if (config.related_type === 'case' && cases.length > 0) {
+        relatedCaseId = cases[i % cases.length].id;
+      } else if (config.related_type === 'lead' && leads.length > 0) {
+        relatedLeadId = leads[i % leads.length].id;
+      }
+
+      const dueDate = new Date(Date.now() + config.due_offset * 24 * 60 * 60 * 1000);
+      // 多负责人ID数组（JSON序列化，取主负责人和次负责人）
+      const secondaryAssignee = assigneePool[(i + 1) % assigneePool.length];
+      const assigneeIds = JSON.stringify([assignee?.id, secondaryAssignee?.id].filter(Boolean));
+      // 任务进度（根据状态映射）
+      const progressMap: Record<string, number> = {
+        pending: 0,
+        processing: 20 + (i * 15) % 61,
+        completed: 100,
+        cancelled: 0,
+      };
+      const progress = progressMap[config.status] !== undefined ? progressMap[config.status] : 0;
+
+      await this.taskRepository.save({
+        title: config.title,
+        description: config.desc,
+        assignee_id: assignee?.id,
+        creator_id: creator?.id,
+        priority: config.priority,
+        status: config.status,
+        due_date: dueDate.toISOString().slice(0, 10),
+        related_case_id: relatedCaseId,
+        related_lead_id: relatedLeadId,
+        parent_task_id: null,
+        completed_at: config.status === 'completed' ? new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) : null,
+        assignee_ids: assigneeIds,
+        progress,
+        organization_id: orgId,
+      });
+    }
+  }
+
+  // 知识库种子数据
+  private async seedKnowledge(orgId: string, userMap: Record<string, User>) {
+    const lawyerUser = userMap['13800138004'];
+    const lawyerUser2 = userMap['13800138008'];
+    const orgAdmin = userMap['13800138001'];
+
+    // ===== 20篇知识文章（不同分类）=====
+    const existingArticleCount = await this.knowledgeArticleRepository.count({ where: { organization_id: orgId } });
+    if (existingArticleCount === 0) {
+      const authorPool = [lawyerUser, lawyerUser2, orgAdmin];
+      // 分类：experience实务经验 / research法律研究 / skill办案技巧 / template模板范本
+      const articleConfigs = [
+        { title: '婚姻案件中财产分割的实务要点', category: 'experience', content: '本文总结婚姻案件中财产分割的常见问题与处理思路，包括婚前财产认定、婚后共同财产分割、隐匿财产查处等内容。', tags: ['婚姻', '财产分割', '实务经验'], views: 156 },
+        { title: '交通事故伤残鉴定流程详解', category: 'experience', content: '详细介绍交通事故案件中的伤残鉴定流程，包括鉴定机构选择、鉴定时机、鉴定材料准备等实务要点。', tags: ['交通事故', '伤残鉴定', '实务经验'], views: 203 },
+        { title: '劳动仲裁时效问题研究', category: 'research', content: '对劳动仲裁时效制度进行系统研究，分析时效起算点、时效中断与中止等法律问题。', tags: ['劳动仲裁', '时效', '法律研究'], views: 89 },
+        { title: '民事诉讼证据规则新解', category: 'research', content: '结合最新司法解释，对民事诉讼证据规则进行解读，分析举证责任分配、证据采信标准等问题。', tags: ['民事诉讼', '证据规则', '法律研究'], views: 178 },
+        { title: '庭审质证技巧与策略', category: 'skill', content: '分享庭审质证的实用技巧，包括如何有效质疑对方证据、如何组织己方证据链等策略。', tags: ['庭审', '质证', '办案技巧'], views: 245 },
+        { title: '合同审查的关键风险点排查', category: 'skill', content: '总结合同审查中的常见风险点，提供系统化的排查方法和审查清单。', tags: ['合同审查', '风险防控', '办案技巧'], views: 312 },
+        { title: '民事起诉状范本及撰写要点', category: 'template', content: '提供民事起诉状的标准范本，详细说明各部分的撰写要点和注意事项。', tags: ['起诉状', '文书模板', '范本'], views: 456 },
+        { title: '律师函标准模板', category: 'template', content: '提供律师函的标准模板，涵盖催告函、警告函等不同类型的撰写要点。', tags: ['律师函', '文书模板', '范本'], views: 389 },
+        { title: '执行异议之诉的实务处理', category: 'experience', content: '分析执行异议之诉的实务操作要点，包括提起条件、举证要点、审理思路等。', tags: ['执行异议', '实务经验'], views: 67 },
+        { title: '知识产权侵权赔偿计算方法', category: 'research', content: '研究知识产权侵权案件的赔偿金额计算方法，分析法定赔偿与酌定赔偿的适用。', tags: ['知识产权', '赔偿计算', '法律研究'], views: 134 },
+        { title: '刑事辩护中非法证据排除申请技巧', category: 'skill', content: '分享刑事辩护中申请非法证据排除的实务技巧和注意事项。', tags: ['刑事辩护', '非法证据排除', '办案技巧'], views: 198 },
+        { title: '调解谈判的心理学技巧', category: 'skill', content: '从心理学角度分析调解谈判中的沟通技巧，帮助律师更好地促成调解。', tags: ['调解', '谈判技巧', '办案技巧'], views: 276 },
+        { title: '授权委托书标准模板', category: 'template', content: '提供民事诉讼授权委托书的标准模板，说明授权范围的填写要点。', tags: ['授权委托书', '文书模板', '范本'], views: 423 },
+        { title: '财产保全申请书范本', category: 'template', content: '提供财产保全申请书的标准范本，包括担保材料的准备要点。', tags: ['财产保全', '文书模板', '范本'], views: 287 },
+        { title: '建工合同纠纷实务问题研究', category: 'research', content: '研究建设工程施工合同纠纷中的常见法律问题，包括工程款结算、工期顺延、质量争议等。', tags: ['建设工程', '合同纠纷', '法律研究'], views: 112 },
+        { title: '医疗纠纷案件鉴定要点', category: 'experience', content: '总结医疗损害责任纠纷案件中的司法鉴定要点，包括鉴定申请、鉴定材料准备等。', tags: ['医疗纠纷', '司法鉴定', '实务经验'], views: 145 },
+        { title: '企业合规审查操作指南', category: 'skill', content: '提供企业合规审查的操作指南，帮助律师系统化开展企业合规法律服务。', tags: ['企业合规', '法律顾问', '办案技巧'], views: 167 },
+        { title: '股权转让合同审查要点', category: 'experience', content: '总结股权转让合同审查的关键要点，包括交易结构设计、风险条款排查等。', tags: ['股权转让', '合同审查', '实务经验'], views: 234 },
+        { title: '和解协议书标准模板', category: 'template', content: '提供民事和解协议书的标准模板，涵盖常见和解条款的撰写要点。', tags: ['和解协议', '文书模板', '范本'], views: 345 },
+        { title: '行政诉讼举证规则研究', category: 'research', content: '研究行政诉讼中的举证责任分配规则，分析被告举证与原告举证的范围。', tags: ['行政诉讼', '举证规则', '法律研究'], views: 98 },
+      ];
+
+      for (let i = 0; i < articleConfigs.length; i++) {
+        const config = articleConfigs[i];
+        const author = authorPool[i % authorPool.length];
+        const existing = await this.knowledgeArticleRepository.findOne({ where: { title: config.title } });
+        if (!existing) {
+          await this.knowledgeArticleRepository.save({
+            title: config.title,
+            category: config.category,
+            content: config.content,
+            author_id: author?.id,
+            tags: config.tags,
+            view_count: config.views,
+            status: 'published',
+            organization_id: orgId,
+          });
+        }
+      }
+    }
+
+    // ===== 30条法律法规（不同分类）=====
+    const existingLawCount = await this.lawRegulationRepository.count();
+    if (existingLawCount === 0) {
+      // 分类：constitution宪法 / law法律 / regulation行政法规 / interpretation司法解释 / department部门规章
+      const lawConfigs = [
+        { title: '中华人民共和国民法典', category: 'law', authority: '全国人民代表大会', effective_offset: -180, content: '民法典是新中国第一部以法典命名的法律，涵盖物权、合同、人格权、婚姻家庭、继承、侵权责任等内容。' },
+        { title: '中华人民共和国民事诉讼法', category: 'law', authority: '全国人民代表大会常务委员会', effective_offset: -365, content: '规范民事诉讼程序的基本法律，规定管辖、证据、审判程序、执行等内容。' },
+        { title: '中华人民共和国刑法', category: 'law', authority: '全国人民代表大会', effective_offset: -730, content: '规定犯罪与刑罚的基本法律，涵盖各类刑事犯罪的构成要件与刑罚标准。' },
+        { title: '中华人民共和国劳动合同法', category: 'law', authority: '全国人民代表大会常务委员会', effective_offset: -540, content: '规范劳动合同的订立、履行、变更、解除与终止，保护劳动者合法权益。' },
+        { title: '中华人民共和国公司法', category: 'law', authority: '全国人民代表大会常务委员会', effective_offset: -200, content: '规范公司的设立、组织机构、股权转让、清算等内容，最新修订于2024年实施。' },
+        { title: '中华人民共和国行政诉讼法', category: 'law', authority: '全国人民代表大会常务委员会', effective_offset: -400, content: '规范行政诉讼程序，保障公民、法人对行政行为的司法救济权利。' },
+        { title: '中华人民共和国知识产权法', category: 'law', authority: '全国人民代表大会常务委员会', effective_offset: -300, content: '保护专利权、商标权、著作权等知识产权，规范知识产权的取得、行使与保护。' },
+        { title: '最高人民法院关于适用《中华人民共和国民法典》婚姻家庭编的解释（一）', category: 'interpretation', authority: '最高人民法院', effective_offset: -180, content: '对民法典婚姻家庭编的适用问题进行司法解释，细化相关规定。' },
+        { title: '最高人民法院关于适用《中华人民共和国民法典》合同编通则若干问题的解释', category: 'interpretation', authority: '最高人民法院', effective_offset: -180, content: '对民法典合同编通则的适用问题进行司法解释，明确合同效力、履行等规则。' },
+        { title: '最高人民法院关于审理人身损害赔偿案件适用法律若干问题的解释', category: 'interpretation', authority: '最高人民法院', effective_offset: -365, content: '规范人身损害赔偿案件的审理，明确赔偿范围、计算标准等问题。' },
+        { title: '最高人民法院关于审理劳动争议案件适用法律若干问题的解释', category: 'interpretation', authority: '最高人民法院', effective_offset: -400, content: '规范劳动争议案件的审理，明确仲裁与诉讼的衔接等问题。' },
+        { title: '最高人民法院关于适用《中华人民共和国民事诉讼法》的解释', category: 'interpretation', authority: '最高人民法院', effective_offset: -365, content: '对民事诉讼法的适用问题进行全面司法解释，细化程序规定。' },
+        { title: '最高人民法院关于审理建设工程施工合同纠纷案件适用法律问题的解释', category: 'interpretation', authority: '最高人民法院', effective_offset: -500, content: '规范建设工程施工合同纠纷案件的审理，明确工程款结算等问题。' },
+        { title: '诉讼费用交纳办法', category: 'regulation', authority: '国务院', effective_offset: -600, content: '规范诉讼费用的交纳标准与办法，明确各类案件的收费标准。' },
+        { title: '中华人民共和国律师法实施条例', category: 'regulation', authority: '国务院', effective_offset: -700, content: '对律师法的实施进行细化规定，规范律师执业行为。' },
+        { title: '法律援助条例', category: 'regulation', authority: '国务院', effective_offset: -800, content: '规范法律援助的范围、申请程序与实施办法。' },
+        { title: '人民法院在线诉讼规则', category: 'regulation', authority: '最高人民法院', effective_offset: -150, content: '规范人民法院在线诉讼程序，明确电子诉讼的适用范围与操作规则。' },
+        { title: '律师执业管理办法', category: 'department', authority: '司法部', effective_offset: -900, content: '规范律师执业准入、执业行为和执业监管。' },
+        { title: '律师事务所管理办法', category: 'department', authority: '司法部', effective_offset: -900, content: '规范律师事务所的设立、变更、终止及监督管理。' },
+        { title: '律师服务收费管理办法', category: 'department', authority: '国家发展改革委 司法部', effective_offset: -850, content: '规范律师服务收费行为，明确收费方式与标准。' },
+        { title: '中华人民共和国宪法', category: 'constitution', authority: '全国人民代表大会', effective_offset: -2000, content: '国家根本大法，规定国家的根本制度和根本任务，公民的基本权利和义务。' },
+        { title: '最高人民法院关于审理民间借贷案件适用法律若干问题的规定', category: 'interpretation', authority: '最高人民法院', effective_offset: -450, content: '规范民间借贷案件的审理，明确利率上限、证据认定等问题。' },
+        { title: '最高人民法院关于审理商品房买卖合同纠纷案件适用法律若干问题的解释', category: 'interpretation', authority: '最高人民法院', effective_offset: -550, content: '规范商品房买卖合同纠纷案件的审理，明确违约责任等问题。' },
+        { title: '工伤保险条例', category: 'regulation', authority: '国务院', effective_offset: -650, content: '规范工伤保险的适用范围、认定标准、待遇支付等内容。' },
+        { title: '中华人民共和国仲裁法', category: 'law', authority: '全国人民代表大会常务委员会', effective_offset: -1000, content: '规范仲裁程序，明确仲裁协议、仲裁程序、裁决执行等问题。' },
+        { title: '医疗事故处理条例', category: 'regulation', authority: '国务院', effective_offset: -750, content: '规范医疗事故的处理程序，明确医疗事故的认定与赔偿。' },
+        { title: '最高人民法院关于民事诉讼证据的若干规定', category: 'interpretation', authority: '最高人民法院', effective_offset: -480, content: '规范民事诉讼证据的举证、质证、认证规则。' },
+        { title: '公证程序规则', category: 'department', authority: '司法部', effective_offset: -880, content: '规范公证程序的适用，明确公证事项的办理流程。' },
+        { title: '中华人民共和国消费者权益保护法', category: 'law', authority: '全国人民代表大会常务委员会', effective_offset: -620, content: '保护消费者合法权益，规范经营者的义务与责任。' },
+        { title: '最高人民法院关于执行程序中计算迟延履行期间的债务利息适用法律若干问题的解释', category: 'interpretation', authority: '最高人民法院', effective_offset: -420, content: '规范执行程序中迟延履行期间债务利息的计算方法。' },
+      ];
+
+      for (const config of lawConfigs) {
+        const existing = await this.lawRegulationRepository.findOne({ where: { title: config.title } });
+        if (!existing) {
+          await this.lawRegulationRepository.save({
+            title: config.title,
+            category: config.category,
+            promulgating_authority: config.authority,
+            effective_date: new Date(Date.now() + config.effective_offset * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+            content: config.content,
+            source: '国家法律法规数据库',
+          });
+        }
+      }
+    }
+
+    // ===== 20条裁判文书（不同类型）=====
+    const existingPrecedentCount = await this.casePrecedentRepository.count();
+    if (existingPrecedentCount === 0) {
+      // 类型：judgment判决 / ruling裁定 / mediation调解
+      const precedentConfigs = [
+        { case_name: '张某与李某离婚纠纷案', case_no: '(2025)京0105民初1234号', court: '北京市朝阳区人民法院', case_type: '婚姻家庭', judgment_type: 'judgment', parties: '张某、李某', judgment_offset: -30, summary: '法院判决准予离婚，婚后共同房产按贡献比例分割，子女抚养权归女方。' },
+        { case_name: '王某诉赵某交通事故责任纠纷案', case_no: '(2025)京0105民初2345号', court: '北京市朝阳区人民法院', case_type: '交通事故', judgment_type: 'judgment', parties: '王某、赵某、某保险公司', judgment_offset: -45, summary: '法院判决保险公司与肇事方连带赔偿医疗费、误工费等共计12万元。' },
+        { case_name: '某科技公司与孙某劳动争议仲裁案', case_no: '(2025)京0105民初3456号', court: '北京市朝阳区人民法院', case_type: '劳动争议', judgment_type: 'judgment', parties: '某科技公司、孙某', judgment_offset: -60, summary: '法院判决公司支付违法解除劳动合同赔偿金8万元。' },
+        { case_name: '周某与吴某民间借贷纠纷调解案', case_no: '(2025)京0105民初4567号', court: '北京市朝阳区人民法院', case_type: '民间借贷', judgment_type: 'mediation', parties: '周某、吴某', judgment_offset: -20, summary: '经法院主持调解，双方达成还款协议，被告分期偿还原告借款。' },
+        { case_name: '某建设公司与某房产公司建工合同纠纷案', case_no: '(2024)京01民终5678号', court: '北京市第一中级人民法院', case_type: '建设工程', judgment_type: 'judgment', parties: '某建设公司、某房产公司', judgment_offset: -90, summary: '法院判决发包方支付拖欠工程款及违约金共计350万元。' },
+        { case_name: '郑某诉某医院医疗损害责任纠纷案', case_no: '(2025)京0105民初6789号', court: '北京市朝阳区人民法院', case_type: '医疗纠纷', judgment_type: 'judgment', parties: '郑某、某医院', judgment_offset: -50, summary: '经鉴定医院存在过错，法院判决医院赔偿各项损失25万元。' },
+        { case_name: '某公司与陈某股权转让合同纠纷案', case_no: '(2024)京01民终7890号', court: '北京市第一中级人民法院', case_type: '股权转让', judgment_type: 'judgment', parties: '某公司、陈某', judgment_offset: -120, summary: '法院判决股权转让合同有效，被告配合办理股权变更登记。' },
+        { case_name: '林某与某贸易公司买卖合同纠纷管辖异议案', case_no: '(2025)京0105民初8901号', court: '北京市朝阳区人民法院', case_type: '合同纠纷', judgment_type: 'ruling', parties: '林某、某贸易公司', judgment_offset: -15, summary: '法院裁定驳回被告管辖异议申请。' },
+        { case_name: '黄某诉某保险公司理赔纠纷案', case_no: '(2025)京0105民初9012号', court: '北京市朝阳区人民法院', case_type: '保险理赔', judgment_type: 'judgment', parties: '黄某、某保险公司', judgment_offset: -40, summary: '法院判决保险公司按照保险合同约定支付理赔款18万元。' },
+        { case_name: '某科技公司与某商贸公司商标侵权纠纷案', case_no: '(2024)京73民初0123号', court: '北京知识产权法院', case_type: '知识产权', judgment_type: 'judgment', parties: '某科技公司、某商贸公司', judgment_offset: -100, summary: '法院认定被告构成商标侵权，判决停止侵权并赔偿损失50万元。' },
+        { case_name: '高某与某物业公司物业服务合同纠纷调解案', case_no: '(2025)京0105民初1233号', court: '北京市朝阳区人民法院', case_type: '物业服务', judgment_type: 'mediation', parties: '高某、某物业公司', judgment_offset: -25, summary: '经调解，物业公司同意减免部分物业费，业主补缴欠费。' },
+        { case_name: '曾某诉某单位工伤保险待遇纠纷案', case_no: '(2025)京0105民初2344号', court: '北京市朝阳区人民法院', case_type: '工伤保险', judgment_type: 'judgment', parties: '曾某、某单位', judgment_offset: -55, summary: '法院判决单位支付工伤保险待遇差额15万元。' },
+        { case_name: '马某与何某房屋买卖合同纠纷案', case_no: '(2024)京01民终3455号', court: '北京市第一中级人民法院', case_type: '房屋买卖', judgment_type: 'judgment', parties: '马某、何某', judgment_offset: -80, summary: '法院判决解除房屋买卖合同，卖方双倍返还定金。' },
+        { case_name: '某投资公司与某集团合同纠纷财产保全案', case_no: '(2025)京0105财保012号', court: '北京市朝阳区人民法院', case_type: '财产保全', judgment_type: 'ruling', parties: '某投资公司、某集团', judgment_offset: -10, summary: '法院裁定准许财产保全申请，冻结被申请人银行账户。' },
+        { case_name: '罗某诉某教育培训机构退费纠纷案', case_no: '(2025)京0105民初4566号', court: '北京市朝阳区人民法院', case_type: '教育培训', judgment_type: 'judgment', parties: '罗某、某教育培训机构', judgment_offset: -35, summary: '法院判决培训机构退还培训费用并支付利息。' },
+        { case_name: '杨某与梁某继承纠纷调解案', case_no: '(2025)京0105民初5677号', court: '北京市朝阳区人民法院', case_type: '继承纠纷', judgment_type: 'mediation', parties: '杨某、梁某', judgment_offset: -28, summary: '经调解，双方就遗产分割达成一致意见。' },
+        { case_name: '某广告公司与某传媒公司服务合同纠纷案', case_no: '(2024)京01民终6788号', court: '北京市第一中级人民法院', case_type: '合同纠纷', judgment_type: 'judgment', parties: '某广告公司、某传媒公司', judgment_offset: -110, summary: '法院判决被告支付服务费及违约金共计42万元。' },
+        { case_name: '许某诉某保险公司保险合同纠纷撤诉案', case_no: '(2025)京0105民初7899号', court: '北京市朝阳区人民法院', case_type: '保险合同', judgment_type: 'ruling', parties: '许某、某保险公司', judgment_offset: -12, summary: '法院裁定准许原告撤回起诉。' },
+        { case_name: '田某与某公司竞业限制纠纷案', case_no: '(2025)京0105民初8900号', court: '北京市朝阳区人民法院', case_type: '劳动争议', judgment_type: 'judgment', parties: '田某、某公司', judgment_offset: -42, summary: '法院判决劳动者违反竞业限制约定，支付违约金20万元。' },
+        { case_name: '韩某诉某开发商商品房买卖合同纠纷案', case_no: '(2024)京01民初9011号', court: '北京市第一中级人民法院', case_type: '商品房买卖', judgment_type: 'judgment', parties: '韩某、某开发商', judgment_offset: -130, summary: '法院判决开发商逾期交房承担违约责任，赔偿业主损失。' },
+      ];
+
+      for (const config of precedentConfigs) {
+        const existing = await this.casePrecedentRepository.findOne({ where: { case_name: config.case_name } });
+        if (!existing) {
+          await this.casePrecedentRepository.save({
+            case_name: config.case_name,
+            case_no: config.case_no,
+            court: config.court,
+            case_type: config.case_type,
+            judgment_date: new Date(Date.now() + config.judgment_offset * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+            judgment_type: config.judgment_type,
+            parties: config.parties,
+            summary: config.summary,
+            full_text: `${config.case_name}：${config.summary}本案经${config.court}审理，案号为${config.case_no}。当事人：${config.parties}。裁判要旨：${config.summary}`,
+            source: '中国裁判文书网',
+          });
+        }
+      }
+    }
+  }
+
+  // 投标种子数据
+  private async seedBids(orgId: string, userMap: Record<string, User>) {
+    const orgAdmin = userMap['13800138001'];
+    const lawyerUser = userMap['13800138004'];
+    const lawyerUser2 = userMap['13800138008'];
+    const salesUser = userMap['13800138003'];
+
+    const managerPool = [orgAdmin, lawyerUser, lawyerUser2, salesUser];
+
+    // ===== 10条投标记录（不同状态）=====
+    const existingBidCount = await this.bidRepository.count({ where: { organization_id: orgId } });
+    if (existingBidCount === 0) {
+      // 投标状态：preparing准备中 / submitted已投标 / won中标 / lost未中标
+      const bidConfigs = [
+        { project_name: '某集团常年法律顾问服务招标', tenderer: '某集团股份有限公司', bid_amount: 150000, deadline_offset: 7, bid_offset: null, status: 'preparing', result_offset: null, manager_index: 0, remarks: '准备投标文件中' },
+        { project_name: '某国企法律服务体系采购', tenderer: '某国有企业', bid_amount: 280000, deadline_offset: -3, bid_offset: -5, status: 'submitted', result_offset: null, manager_index: 1, remarks: '已提交投标文件，等待开标' },
+        { project_name: '某科技公司知识产权专项服务', tenderer: '某科技有限公司', bid_amount: 120000, deadline_offset: -10, bid_offset: -12, status: 'won', result_offset: -2, manager_index: 2, remarks: '成功中标，已签订服务合同' },
+        { project_name: '某央企合规体系建设服务', tenderer: '某央企集团', bid_amount: 500000, deadline_offset: -15, bid_offset: -18, status: 'lost', result_offset: -5, manager_index: 0, remarks: '竞争对手报价更低，未中标' },
+        { project_name: '某银行不良资产处置法律服务', tenderer: '某商业银行', bid_amount: 350000, deadline_offset: 14, bid_offset: null, status: 'preparing', result_offset: null, manager_index: 1, remarks: '组建项目团队，准备方案' },
+        { project_name: '某上市公司证券诉讼代理', tenderer: '某上市公司', bid_amount: 200000, deadline_offset: -7, bid_offset: -10, status: 'won', result_offset: -1, manager_index: 3, remarks: '中标，正在准备诉讼材料' },
+        { project_name: '某地产公司建设工程纠纷代理', tenderer: '某房地产开发公司', bid_amount: 300000, deadline_offset: -20, bid_offset: -25, status: 'lost', result_offset: -8, manager_index: 2, remarks: '案源竞争激烈，未能中标' },
+        { project_name: '某保险公司年度法律服务招标', tenderer: '某保险股份有限公司', bid_amount: 180000, deadline_offset: 3, bid_offset: null, status: 'preparing', result_offset: null, manager_index: 0, remarks: '准备投标方案' },
+        { project_name: '某政府部门法律顾问服务', tenderer: '某市人民政府', bid_amount: 260000, deadline_offset: -5, bid_offset: -8, status: 'submitted', result_offset: null, manager_index: 1, remarks: '已投标，等待评标结果' },
+        { project_name: '某互联网企业劳动合规专项', tenderer: '某互联网科技有限公司', bid_amount: 90000, deadline_offset: -30, bid_offset: -35, status: 'won', result_offset: -10, manager_index: 3, remarks: '中标，项目已启动' },
+      ];
+
+      for (let i = 0; i < bidConfigs.length; i++) {
+        const config = bidConfigs[i];
+        const manager = managerPool[config.manager_index];
+        const existing = await this.bidRepository.findOne({ where: { project_name: config.project_name, organization_id: orgId } });
+        if (!existing) {
+          await this.bidRepository.save({
+            project_name: config.project_name,
+            tenderer: config.tenderer,
+            bid_amount: config.bid_amount,
+            deadline: new Date(Date.now() + config.deadline_offset * 24 * 60 * 60 * 1000),
+            bid_date: config.bid_offset !== null ? new Date(Date.now() + config.bid_offset * 24 * 60 * 60 * 1000) : null,
+            status: config.status,
+            result_date: config.result_offset !== null ? new Date(Date.now() + config.result_offset * 24 * 60 * 60 * 1000) : null,
+            manager_id: manager?.id,
+            remarks: config.remarks,
+            organization_id: orgId,
+          });
+        }
+      }
+    }
+
+    // ===== 15条业绩记录 =====
+    const existingBidRecordCount = await this.bidRecordRepository.count({ where: { organization_id: orgId } });
+    if (existingBidRecordCount === 0) {
+      // 业绩分类：litigation诉讼 / non_litigation非诉 / consultant顾问
+      const bidRecordConfigs = [
+        { project_name: '某集团合同纠纷诉讼代理', client: '某集团股份有限公司', amount: 850000, start_offset: -400, end_offset: -100, category: 'litigation', description: '代理集团处理重大合同纠纷诉讼，胜诉' },
+        { project_name: '某科技公司IPO法律服务', client: '某科技有限公司', amount: 1200000, start_offset: -300, end_offset: -50, category: 'non_litigation', description: '提供IPO全程法律服务，协助企业成功上市' },
+        { project_name: '某央企常年法律顾问', client: '某央企集团', amount: 360000, start_offset: -365, end_offset: null, category: 'consultant', description: '年度法律顾问服务，涵盖合规咨询、合同审查等' },
+        { project_name: '某地产公司建工纠纷代理', client: '某房地产开发公司', amount: 420000, start_offset: -250, end_offset: -80, category: 'litigation', description: '代理建设工程施工合同纠纷，调解结案' },
+        { project_name: '某银行不良资产处置专项', client: '某商业银行', amount: 680000, start_offset: -200, end_offset: -30, category: 'non_litigation', description: '协助银行处置不良资产包，回收率高' },
+        { project_name: '某上市公司证券合规顾问', client: '某上市公司', amount: 280000, start_offset: -365, end_offset: null, category: 'consultant', description: '提供证券合规咨询及信息披露指导' },
+        { project_name: '某贸易公司债权追收诉讼', client: '某贸易公司', amount: 150000, start_offset: -180, end_offset: -60, category: 'litigation', description: '代理债权追收诉讼，全额回款' },
+        { project_name: '某互联网企业股权激励设计', client: '某互联网科技有限公司', amount: 200000, start_offset: -120, end_offset: -20, category: 'non_litigation', description: '设计股权激励方案并协助实施' },
+        { project_name: '某保险公司法律顾问服务', client: '某保险股份有限公司', amount: 240000, start_offset: -365, end_offset: null, category: 'consultant', description: '年度法律顾问，处理保险理赔纠纷等' },
+        { project_name: '某建设集团工程款仲裁案', client: '某建设集团', amount: 520000, start_offset: -300, end_offset: -90, category: 'litigation', description: '代理工程款仲裁，获得有利裁决' },
+        { project_name: '某投资公司并购专项法律服务', client: '某投资公司', amount: 800000, start_offset: -150, end_offset: -40, category: 'non_litigation', description: '提供并购全程法律服务，完成交易交割' },
+        { project_name: '某政府部门法律顾问', client: '某市人民政府', amount: 180000, start_offset: -365, end_offset: null, category: 'consultant', description: '为政府部门提供行政法律顾问服务' },
+        { project_name: '某物流公司劳动纠纷诉讼', client: '某物流有限公司', amount: 95000, start_offset: -100, end_offset: -30, category: 'litigation', description: '代理劳动争议系列案件，维护企业权益' },
+        { project_name: '某科技公司知识产权维权', client: '某科技有限公司', amount: 350000, start_offset: -220, end_offset: -70, category: 'litigation', description: '代理专利侵权诉讼，获得高额赔偿' },
+        { project_name: '某医疗机构合规审查专项', client: '某医疗集团', amount: 160000, start_offset: -90, end_offset: -15, category: 'non_litigation', description: '开展全面合规审查并出具整改方案' },
+      ];
+
+      for (const config of bidRecordConfigs) {
+        const existing = await this.bidRecordRepository.findOne({ where: { project_name: config.project_name, organization_id: orgId } });
+        if (!existing) {
+          await this.bidRecordRepository.save({
+            project_name: config.project_name,
+            client: config.client,
+            amount: config.amount,
+            start_date: new Date(Date.now() + config.start_offset * 24 * 60 * 60 * 1000),
+            end_date: config.end_offset !== null ? new Date(Date.now() + config.end_offset * 24 * 60 * 60 * 1000) : null,
+            category: config.category,
+            description: config.description,
+            organization_id: orgId,
+          });
+        }
+      }
+    }
+  }
+
+  // 尽调种子数据
+  private async seedDueDiligence(orgId: string, userMap: Record<string, User>) {
+    // 检查尽调表是否已有数据
+    const existingDDCount = await this.dueDiligenceRepository.count({ where: { organization_id: orgId } });
+    if (existingDDCount > 0) return;
+
+    const lawyerUser = userMap['13800138004'];
+    const lawyerUser2 = userMap['13800138008'];
+    const orgAdmin = userMap['13800138001'];
+    const operatorPool = [lawyerUser, lawyerUser2, orgAdmin];
+
+    // 查询类型：basic基本信息 / shareholder股东信息 / legal法人信息 / financial财务信息 / risk风险信息
+    const ddConfigs = [
+      {
+        company_name: '某科技有限公司',
+        query_type: 'basic',
+        status: 'completed',
+        operator_index: 0,
+        report: '企业名称：某科技有限公司；统一社会信用代码：91110000XXXXXXX；注册资本：5000万元；成立日期：2015年6月；企业类型：有限责任公司；经营范围：技术开发、技术咨询、技术服务等。',
+      },
+      {
+        company_name: '某投资集团股份有限公司',
+        query_type: 'shareholder',
+        status: 'completed',
+        operator_index: 1,
+        report: '股东信息：第一大股东某国资公司持股45%，第二大股东某基金持股20%，其余为自然人股东。股东结构稳定，无近期股权变动。',
+      },
+      {
+        company_name: '某建设工程有限公司',
+        query_type: 'legal',
+        status: 'completed',
+        operator_index: 2,
+        report: '法人信息：法定代表人张某，任职时间2018年至今；同时担任2家企业法定代表人；无失信记录；无法限高记录。',
+      },
+      {
+        company_name: '某商贸有限公司',
+        query_type: 'financial',
+        status: 'completed',
+        operator_index: 0,
+        report: '财务概况：2024年度营业收入1.2亿元，净利润800万元；资产总额8500万元，负债总额4200万元；资产负债率49%；经营状况良好。',
+      },
+      {
+        company_name: '某文化传媒有限公司',
+        query_type: 'risk',
+        status: 'pending',
+        operator_index: 1,
+        report: '风险信息查询进行中：已发现3条司法案件记录，2条被执行人记录正在核实，1条行政处罚记录待确认详情。',
+      },
+    ];
+
+    for (let i = 0; i < ddConfigs.length; i++) {
+      const config = ddConfigs[i];
+      const operator = operatorPool[config.operator_index];
+      const existing = await this.dueDiligenceRepository.findOne({ where: { company_name: config.company_name, query_type: config.query_type, organization_id: orgId } });
+      if (!existing) {
+        // === 新增字段生成 ===
+        // 股东信息（JSON序列化）
+        const shareholderInfo = JSON.stringify([
+          { name: '张三', ratio: '60%', amount: '600万' },
+          { name: '李四', ratio: '40%', amount: '400万' },
+        ]);
+        // 法人信息（JSON序列化）
+        const legalRepInfo = JSON.stringify({
+          name: '王五',
+          position: '法定代表人',
+          id_card: '110*****1234',
+          phone: '138****5678',
+        });
+        // 财务信息（JSON序列化）
+        const financialInfo = JSON.stringify({
+          registered_capital: '1000万',
+          paid_capital: '1000万',
+          revenue: '5000万',
+          profit: '500万',
+        });
+        // 风险信息（JSON序列化）
+        const riskInfo = JSON.stringify({
+          litigation_count: 3,
+          admin_penalty: 1,
+          dishonest_count: 0,
+          abnormal_operation: false,
+        });
+        // 模板ID
+        const templateIds = ['standard', 'simple', 'deep'];
+        const templateId = templateIds[i % templateIds.length];
+
+        await this.dueDiligenceRepository.save({
+          company_name: config.company_name,
+          query_type: config.query_type,
+          report_content: config.report,
+          shareholder_info: shareholderInfo,
+          legal_rep_info: legalRepInfo,
+          financial_info: financialInfo,
+          risk_info: riskInfo,
+          template_id: templateId,
+          status: config.status,
+          operator_id: operator?.id,
+          organization_id: orgId,
+        });
+      }
+    }
+  }
+
+  // 绘图种子数据
+  private async seedDiagrams(orgId: string, userMap: Record<string, User>) {
+    // 检查图表表是否已有数据
+    const existingDiagramCount = await this.diagramRepository.count({ where: { organization_id: orgId } });
+    if (existingDiagramCount > 0) return;
+
+    const lawyerUser = userMap['13800138004'];
+    const lawyerUser2 = userMap['13800138008'];
+    const orgAdmin = userMap['13800138001'];
+    const creatorPool = [lawyerUser, lawyerUser2, orgAdmin];
+    const cases = await this.caseRepository.find({ where: { organization_id: orgId }, take: 8 });
+
+    // 图表类型: mindmap思维导图 / flowchart流程图 / relation法律关系图 / organization组织架构
+    const diagramConfigs = [
+      {
+        title: '婚姻纠纷案件思路导图',
+        type: 'mindmap',
+        case_index: 0,
+        creator_index: 0,
+        content: { nodes: [
+          { id: 'n1', x: 300, y: 50, text: '婚姻纠纷', color: '#5B8FF9' },
+          { id: 'n2', x: 150, y: 150, text: '财产分割', color: '#5AD8A6' },
+          { id: 'n3', x: 450, y: 150, text: '子女抚养', color: '#5AD8A6' },
+          { id: 'n4', x: 80, y: 250, text: '婚前财产', color: '#F6BD16' },
+          { id: 'n5', x: 220, y: 250, text: '婚后共同财产', color: '#F6BD16' },
+          { id: 'n6', x: 380, y: 250, text: '抚养权', color: '#F6BD16' },
+          { id: 'n7', x: 520, y: 250, text: '抚养费', color: '#F6BD16' },
+        ], edges: [
+          { from: 'n1', to: 'n2', label: '' },
+          { from: 'n1', to: 'n3', label: '' },
+          { from: 'n2', to: 'n4', label: '' },
+          { from: 'n2', to: 'n5', label: '' },
+          { from: 'n3', to: 'n6', label: '' },
+          { from: 'n3', to: 'n7', label: '' },
+        ] },
+      },
+      {
+        title: '民事诉讼流程图',
+        type: 'flowchart',
+        case_index: 1,
+        creator_index: 1,
+        content: { nodes: [
+          { id: 'n1', x: 300, y: 50, text: '立案', color: '#5B8FF9' },
+          { id: 'n2', x: 300, y: 150, text: '受理', color: '#5B8FF9' },
+          { id: 'n3', x: 300, y: 250, text: '庭前准备', color: '#5AD8A6' },
+          { id: 'n4', x: 300, y: 350, text: '开庭审理', color: '#5AD8A6' },
+          { id: 'n5', x: 300, y: 450, text: '判决', color: '#F6BD16' },
+          { id: 'n6', x: 500, y: 350, text: '调解', color: '#F6BD16' },
+        ], edges: [
+          { from: 'n1', to: 'n2', label: '提交材料' },
+          { from: 'n2', to: 'n3', label: '7日内' },
+          { from: 'n3', to: 'n4', label: '排期' },
+          { from: 'n4', to: 'n5', label: '判决' },
+          { from: 'n4', to: 'n6', label: '调解' },
+        ] },
+      },
+      {
+        title: '交通事故法律关系图',
+        type: 'relation',
+        case_index: 2,
+        creator_index: 0,
+        content: { nodes: [
+          { id: 'n1', x: 300, y: 50, text: '受害人', color: '#5B8FF9' },
+          { id: 'n2', x: 150, y: 150, text: '肇事方', color: '#F6BD16' },
+          { id: 'n3', x: 450, y: 150, text: '保险公司', color: '#5AD8A6' },
+          { id: 'n4', x: 150, y: 250, text: '车主', color: '#F6BD16' },
+          { id: 'n5', x: 450, y: 250, text: '鉴定机构', color: '#5AD8A6' },
+        ], edges: [
+          { from: 'n1', to: 'n2', label: '侵权' },
+          { from: 'n1', to: 'n3', label: '理赔' },
+          { from: 'n2', to: 'n4', label: '雇佣' },
+          { from: 'n1', to: 'n5', label: '鉴定' },
+          { from: 'n3', to: 'n2', label: '代位求偿' },
+        ] },
+      },
+      {
+        title: '律所组织架构图',
+        type: 'organization',
+        case_index: null,
+        creator_index: 2,
+        content: { nodes: [
+          { id: 'n1', x: 300, y: 50, text: '主任', color: '#5B8FF9' },
+          { id: 'n2', x: 150, y: 150, text: '管委会', color: '#5B8FF9' },
+          { id: 'n3', x: 450, y: 150, text: '监事会', color: '#5B8FF9' },
+          { id: 'n4', x: 80, y: 250, text: '诉讼部', color: '#5AD8A6' },
+          { id: 'n5', x: 220, y: 250, text: '非诉部', color: '#5AD8A6' },
+          { id: 'n6', x: 380, y: 250, text: '行政部', color: '#5AD8A6' },
+          { id: 'n7', x: 520, y: 250, text: '财务部', color: '#5AD8A6' },
+        ], edges: [
+          { from: 'n1', to: 'n2', label: '' },
+          { from: 'n1', to: 'n3', label: '' },
+          { from: 'n2', to: 'n4', label: '' },
+          { from: 'n2', to: 'n5', label: '' },
+          { from: 'n2', to: 'n6', label: '' },
+          { from: 'n2', to: 'n7', label: '' },
+        ] },
+      },
+      {
+        title: '劳动仲裁案件思路导图',
+        type: 'mindmap',
+        case_index: 3,
+        creator_index: 1,
+        content: { nodes: [
+          { id: 'n1', x: 300, y: 50, text: '劳动仲裁', color: '#5B8FF9' },
+          { id: 'n2', x: 150, y: 150, text: '仲裁时效', color: '#5AD8A6' },
+          { id: 'n3', x: 450, y: 150, text: '仲裁请求', color: '#5AD8A6' },
+          { id: 'n4', x: 80, y: 250, text: '一年时效', color: '#F6BD16' },
+          { id: 'n5', x: 380, y: 250, text: '经济补偿', color: '#F6BD16' },
+          { id: 'n6', x: 520, y: 250, text: '工资差额', color: '#F6BD16' },
+        ], edges: [
+          { from: 'n1', to: 'n2', label: '' },
+          { from: 'n1', to: 'n3', label: '' },
+          { from: 'n2', to: 'n4', label: '' },
+          { from: 'n3', to: 'n5', label: '' },
+          { from: 'n3', to: 'n6', label: '' },
+        ] },
+      },
+      {
+        title: '合同纠纷诉讼流程图',
+        type: 'flowchart',
+        case_index: 4,
+        creator_index: 0,
+        content: { nodes: [
+          { id: 'n1', x: 300, y: 50, text: '发送律师函', color: '#5B8FF9' },
+          { id: 'n2', x: 300, y: 150, text: '协商解决', color: '#5AD8A6' },
+          { id: 'n3', x: 200, y: 250, text: '提起诉讼', color: '#F6BD16' },
+          { id: 'n4', x: 400, y: 250, text: '达成和解', color: '#5AD8A6' },
+          { id: 'n5', x: 200, y: 350, text: '申请执行', color: '#F6BD16' },
+        ], edges: [
+          { from: 'n1', to: 'n2', label: '' },
+          { from: 'n2', to: 'n3', label: '协商不成' },
+          { from: 'n2', to: 'n4', label: '协商成功' },
+          { from: 'n3', to: 'n5', label: '判决后' },
+        ] },
+      },
+      {
+        title: '公司股权结构图',
+        type: 'relation',
+        case_index: 5,
+        creator_index: 2,
+        content: { nodes: [
+          { id: 'n1', x: 300, y: 50, text: '目标公司', color: '#5B8FF9' },
+          { id: 'n2', x: 150, y: 150, text: '大股东A', color: '#5AD8A6' },
+          { id: 'n3', x: 300, y: 150, text: '二股东B', color: '#5AD8A6' },
+          { id: 'n4', x: 450, y: 150, text: '小股东C', color: '#5AD8A6' },
+          { id: 'n5', x: 150, y: 250, text: '子公司D', color: '#F6BD16' },
+        ], edges: [
+          { from: 'n2', to: 'n1', label: '持股51%' },
+          { from: 'n3', to: 'n1', label: '持股30%' },
+          { from: 'n4', to: 'n1', label: '持股19%' },
+          { from: 'n1', to: 'n5', label: '全资控股' },
+        ] },
+      },
+      {
+        title: '案件办理流程图',
+        type: 'flowchart',
+        case_index: 6,
+        creator_index: 1,
+        content: { nodes: [
+          { id: 'n1', x: 300, y: 50, text: '接收案件', color: '#5B8FF9' },
+          { id: 'n2', x: 300, y: 150, text: '案件评估', color: '#5B8FF9' },
+          { id: 'n3', x: 300, y: 250, text: '签订合同', color: '#5AD8A6' },
+          { id: 'n4', x: 200, y: 350, text: '调查取证', color: '#5AD8A6' },
+          { id: 'n5', x: 400, y: 350, text: '法律研究', color: '#5AD8A6' },
+          { id: 'n6', x: 300, y: 450, text: '庭审代理', color: '#F6BD16' },
+          { id: 'n7', x: 300, y: 550, text: '案件归档', color: '#F6BD16' },
+        ], edges: [
+          { from: 'n1', to: 'n2', label: '' },
+          { from: 'n2', to: 'n3', label: '' },
+          { from: 'n3', to: 'n4', label: '' },
+          { from: 'n3', to: 'n5', label: '' },
+          { from: 'n4', to: 'n6', label: '' },
+          { from: 'n5', to: 'n6', label: '' },
+          { from: 'n6', to: 'n7', label: '' },
+        ] },
+      },
+    ];
+
+    for (let i = 0; i < diagramConfigs.length; i++) {
+      const config = diagramConfigs[i];
+      const creator = creatorPool[config.creator_index];
+      const caseEntity = config.case_index !== null && cases.length > 0 ? cases[config.case_index % cases.length] : null;
+      const existing = await this.diagramRepository.findOne({ where: { title: config.title, organization_id: orgId } });
+      if (!existing) {
+        await this.diagramRepository.save({
+          title: config.title,
+          type: config.type,
+          content: JSON.stringify(config.content),
+          case_id: caseEntity?.id,
+          creator_id: creator?.id,
+          organization_id: orgId,
+        });
+      }
+    }
+  }
+
+  // 催款种子数据
+  private async seedPaymentReminders(orgId: string, userMap: Record<string, User>) {
+    // 检查催款表是否已有数据
+    const existingReminderCount = await this.paymentReminderRepository.count({ where: { organization_id: orgId } });
+    if (existingReminderCount > 0) return;
+
+    const cases = await this.caseRepository.find({ where: { organization_id: orgId }, take: 10 });
+
+    // 催款状态：pending待催款 / reminding催款中 / paid已回款 / given_up已放弃
+    const reminderConfigs = [
+      { client_name: '张女士', client_phone: '13900139001', receivable_amount: 50000, received_amount: 25000, overdue_amount: 25000, reminder_count: 1, last_offset: -7, next_offset: 3, status: 'reminding', case_index: 0, remarks: '二期款项逾期，已电话催收' },
+      { client_name: '李先生', client_phone: '13900139002', receivable_amount: 30000, received_amount: 30000, overdue_amount: 0, reminder_count: 2, last_offset: -15, next_offset: null, status: 'paid', case_index: 1, remarks: '已全额回款' },
+      { client_name: '某科技有限公司', client_phone: '010-88880001', receivable_amount: 120000, received_amount: 60000, overdue_amount: 60000, reminder_count: 3, last_offset: -3, next_offset: 1, status: 'reminding', case_index: 2, remarks: '顾问费尾款逾期，多次催收' },
+      { client_name: '王先生', client_phone: '13900139003', receivable_amount: 15000, received_amount: 0, overdue_amount: 15000, reminder_count: 0, last_offset: null, next_offset: 7, status: 'pending', case_index: 3, remarks: '待开始催收' },
+      { client_name: '某建设公司', client_phone: '010-88880005', receivable_amount: 200000, received_amount: 100000, overdue_amount: 100000, reminder_count: 5, last_offset: -30, next_offset: null, status: 'given_up', case_index: 4, remarks: '多次催收无果，暂时搁置' },
+      { client_name: '赵先生', client_phone: '13900139004', receivable_amount: 80000, received_amount: 80000, overdue_amount: 0, reminder_count: 1, last_offset: -10, next_offset: null, status: 'paid', case_index: 5, remarks: '已全额回款' },
+      { client_name: '某贸易公司', client_phone: '010-88880002', receivable_amount: 45000, received_amount: 20000, overdue_amount: 25000, reminder_count: 2, last_offset: -5, next_offset: 5, status: 'reminding', case_index: 6, remarks: '部分付款，继续催收尾款' },
+      { client_name: '孙女士', client_phone: '13900139005', receivable_amount: 55000, received_amount: 0, overdue_amount: 55000, reminder_count: 0, last_offset: null, next_offset: 10, status: 'pending', case_index: 7, remarks: '待开始催收' },
+      { client_name: '某投资公司', client_phone: '010-88880004', receivable_amount: 150000, received_amount: 100000, overdue_amount: 50000, reminder_count: 4, last_offset: -2, next_offset: 2, status: 'reminding', case_index: 8, remarks: '尾款催收中' },
+      { client_name: '周先生', client_phone: '13900139006', receivable_amount: 65000, received_amount: 65000, overdue_amount: 0, reminder_count: 1, last_offset: -20, next_offset: null, status: 'paid', case_index: 9, remarks: '已全额回款' },
+    ];
+
+    for (let i = 0; i < reminderConfigs.length; i++) {
+      const config = reminderConfigs[i];
+      const caseEntity = cases.length > 0 ? cases[config.case_index % cases.length] : null;
+      const existing = await this.paymentReminderRepository.findOne({ where: { client_name: config.client_name, receivable_amount: config.receivable_amount, organization_id: orgId } });
+      if (!existing) {
+        await this.paymentReminderRepository.save({
+          case_id: caseEntity?.id,
+          client_name: config.client_name,
+          client_phone: config.client_phone,
+          receivable_amount: config.receivable_amount,
+          received_amount: config.received_amount,
+          overdue_amount: config.overdue_amount,
+          reminder_count: config.reminder_count,
+          last_reminder_date: config.last_offset !== null ? new Date(Date.now() + config.last_offset * 24 * 60 * 60 * 1000) : null,
+          next_reminder_date: config.next_offset !== null ? new Date(Date.now() + config.next_offset * 24 * 60 * 60 * 1000) : null,
+          status: config.status,
+          remarks: config.remarks,
+          organization_id: orgId,
+        });
+      }
+    }
+  }
+
+  // 发票种子数据
+  private async seedInvoices(orgId: string, userMap: Record<string, User>) {
+    // 检查发票表是否已有数据
+    const existingInvoiceCount = await this.invoiceRepository.count({ where: { organization_id: orgId } });
+    if (existingInvoiceCount > 0) return;
+
+    const cases = await this.caseRepository.find({ where: { organization_id: orgId }, take: 15 });
+    if (cases.length === 0) return;
+
+    const orgAdmin = userMap['13800138001'];
+    // 发票状态：pending待开票 / issued已开票 / paid已付款 / cancelled已作废
+    // 发票类型：company企业 / personal个人
+    const invoiceConfigs = [
+      { amount: 50000, invoice_type: 'company', status: InvoiceStatus.PAID, payer_name: '某科技有限公司', payer_tax_id: '91110000XXXXXXX1', issue_offset: -30, due_offset: -10, buyer: '某科技有限公司', buyer_tax: '91110000XXXXXXX1', seller: '测试律所', tax_rate: 0.06 },
+      { amount: 30000, invoice_type: 'company', status: InvoiceStatus.PAID, payer_name: '某商贸有限公司', payer_tax_id: '91110000XXXXXXX2', issue_offset: -25, due_offset: -5, buyer: '某商贸有限公司', buyer_tax: '91110000XXXXXXX2', seller: '测试律所', tax_rate: 0.06 },
+      { amount: 15000, invoice_type: 'personal', status: InvoiceStatus.ISSUED, payer_name: '王先生', payer_tax_id: null, issue_offset: -10, due_offset: 10, buyer: '王先生', buyer_tax: null, seller: '测试律所', tax_rate: 0.06 },
+      { amount: 80000, invoice_type: 'company', status: InvoiceStatus.ISSUED, payer_name: '某建设集团', payer_tax_id: '91110000XXXXXXX3', issue_offset: -7, due_offset: 23, buyer: '某建设集团', buyer_tax: '91110000XXXXXXX3', seller: '测试律所', tax_rate: 0.06 },
+      { amount: 120000, invoice_type: 'company', status: InvoiceStatus.PAID, payer_name: '某投资股份有限公司', payer_tax_id: '91110000XXXXXXX4', issue_offset: -45, due_offset: -15, buyer: '某投资股份有限公司', buyer_tax: '91110000XXXXXXX4', seller: '测试律所', tax_rate: 0.06 },
+      { amount: 20000, invoice_type: 'company', status: InvoiceStatus.PENDING, payer_name: '某贸易公司', payer_tax_id: '91110000XXXXXXX5', issue_offset: null, due_offset: null, buyer: '某贸易公司', buyer_tax: '91110000XXXXXXX5', seller: '测试律所', tax_rate: 0.06 },
+      { amount: 55000, invoice_type: 'personal', status: InvoiceStatus.ISSUED, payer_name: '孙女士', payer_tax_id: null, issue_offset: -5, due_offset: 25, buyer: '孙女士', buyer_tax: null, seller: '测试律所', tax_rate: 0.06 },
+      { amount: 90000, invoice_type: 'company', status: InvoiceStatus.PAID, payer_name: '某科技股份有限公司', payer_tax_id: '91110000XXXXXXX6', issue_offset: -60, due_offset: -30, buyer: '某科技股份有限公司', buyer_tax: '91110000XXXXXXX6', seller: '测试律所', tax_rate: 0.06 },
+      { amount: 65000, invoice_type: 'company', status: InvoiceStatus.CANCELLED, payer_name: '某房地产开发公司', payer_tax_id: '91110000XXXXXXX7', issue_offset: -20, due_offset: null, buyer: '某房地产开发公司', buyer_tax: '91110000XXXXXXX7', seller: '测试律所', tax_rate: 0.06, void_reason: '合同作废，发票作废重开', void_offset: -10 },
+      { amount: 70000, invoice_type: 'company', status: InvoiceStatus.ISSUED, payer_name: '某金融服务公司', payer_tax_id: '91110000XXXXXXX8', issue_offset: -3, due_offset: 27, buyer: '某金融服务公司', buyer_tax: '91110000XXXXXXX8', seller: '测试律所', tax_rate: 0.06 },
+      { amount: 110000, invoice_type: 'company', status: InvoiceStatus.PENDING, payer_name: '某商贸集团', payer_tax_id: '91110000XXXXXXX9', issue_offset: null, due_offset: null, buyer: '某商贸集团', buyer_tax: '91110000XXXXXXX9', seller: '测试律所', tax_rate: 0.06 },
+      { amount: 36000, invoice_type: 'personal', status: InvoiceStatus.PAID, payer_name: '陈先生', payer_tax_id: null, issue_offset: -90, due_offset: -60, buyer: '陈先生', buyer_tax: null, seller: '测试律所', tax_rate: 0.06 },
+      { amount: 45000, invoice_type: 'company', status: InvoiceStatus.ISSUED, payer_name: '某物流有限公司', payer_tax_id: '91110000XXXX10', issue_offset: -15, due_offset: 15, buyer: '某物流有限公司', buyer_tax: '91110000XXXX10', seller: '测试律所', tax_rate: 0.06 },
+      { amount: 180000, invoice_type: 'company', status: InvoiceStatus.PAID, payer_name: '某保险股份有限公司', payer_tax_id: '91110000XXXX11', issue_offset: -75, due_offset: -45, buyer: '某保险股份有限公司', buyer_tax: '91110000XXXX11', seller: '测试律所', tax_rate: 0.06 },
+      { amount: 95000, invoice_type: 'company', status: InvoiceStatus.PENDING, payer_name: '某文化传媒公司', payer_tax_id: '91110000XXXX12', issue_offset: null, due_offset: null, buyer: '某文化传媒公司', buyer_tax: '91110000XXXX12', seller: '测试律所', tax_rate: 0.06 },
+    ];
+
+    for (let i = 0; i < invoiceConfigs.length; i++) {
+      const config = invoiceConfigs[i];
+      const caseEntity = cases[i % cases.length];
+      const invoiceNo = config.status === InvoiceStatus.PENDING ? null : `FP${new Date().getFullYear()}${String(i + 1).padStart(5, '0')}`;
+      const taxAmount = config.amount * config.tax_rate;
+      const totalAmount = config.amount + taxAmount;
+      const existing = await this.invoiceRepository.findOne({ where: { case_id: caseEntity.id, amount: config.amount, invoice_type: config.invoice_type } });
+      if (!existing) {
+        // === 新增字段生成 ===
+        // 冲红原因和日期（作废发票填冲红信息）
+        const isCancelled = config.status === InvoiceStatus.CANCELLED;
+        const redFlushReason = isCancelled ? '开票信息错误' : null;
+        const redFlushDate = isCancelled && config.void_offset
+          ? new Date(Date.now() + config.void_offset * 24 * 60 * 60 * 1000)
+          : null;
+        // 退款金额和日期（少数发票有退款）
+        const hasRefund = i % 5 === 0 && config.status !== InvoiceStatus.PENDING;
+        const refundAmount = hasRefund ? Math.round(config.amount * 0.1) : 0;
+        const refundDate = hasRefund && config.issue_offset !== null
+          ? new Date(Date.now() + config.issue_offset * 24 * 60 * 60 * 1000 + 5 * 24 * 60 * 60 * 1000)
+          : null;
+        // 税盘编号
+        const taxDiskNos = ['税盘001', '税盘002'];
+        const taxDiskNo = taxDiskNos[i % taxDiskNos.length];
+        // 调账记录（部分发票有调账）
+        const hasAdjustment = i % 3 === 0 && config.status !== InvoiceStatus.PENDING;
+        const adjustmentRecords = hasAdjustment
+          ? JSON.stringify([{ time: new Date(Date.now() + (config.issue_offset || 0) * 24 * 60 * 60 * 1000 + 7 * 24 * 60 * 60 * 1000).toISOString(), reason: '科目调整', amount: taxAmount, operator_id: orgAdmin?.id }])
+          : null;
+
+        await this.invoiceRepository.save({
+          case_id: caseEntity.id,
+          amount: config.amount,
+          invoice_no: invoiceNo,
+          status: config.status,
+          invoice_type: config.invoice_type,
+          payer_name: config.payer_name,
+          payer_tax_id: config.payer_tax_id,
+          payer_address: null,
+          payer_bank: null,
+          payer_account: null,
+          issue_date: config.issue_offset !== null ? new Date(Date.now() + config.issue_offset * 24 * 60 * 60 * 1000) : null,
+          due_date: config.due_offset !== null ? new Date(Date.now() + config.due_offset * 24 * 60 * 60 * 1000) : null,
+          notes: '种子数据发票',
+          buyer_name: config.buyer,
+          buyer_tax_no: config.buyer_tax,
+          buyer_address: null,
+          buyer_phone: null,
+          buyer_bank: null,
+          buyer_account: null,
+          seller_name: config.seller,
+          seller_tax_no: '91110000XXXXXX00',
+          tax_rate: config.tax_rate,
+          tax_amount: taxAmount,
+          total_amount: totalAmount,
+          void_reason: config.void_reason || null,
+          void_date: config.void_offset ? new Date(Date.now() + config.void_offset * 24 * 60 * 60 * 1000) : null,
+          red_flush_reason: redFlushReason,
+          red_flush_date: redFlushDate,
+          refund_amount: refundAmount,
+          refund_date: refundDate,
+          tax_disk_no: taxDiskNo,
+          adjustment_records: adjustmentRecords,
+          organization_id: orgId,
+        });
+      }
+    }
+  }
+
+  // 业务款种子数据
+  private async seedBusinessFunds(orgId: string, userMap: Record<string, User>) {
+    // 检查业务款表是否已有数据
+    const existingFundCount = await this.businessFundRepository.count({ where: { organization_id: orgId } });
+    if (existingFundCount > 0) return;
+
+    const cases = await this.caseRepository.find({ where: { organization_id: orgId }, take: 10 });
+    if (cases.length === 0) return;
+
+    // 类型：income收入 / expense支出
+    // 分类：lawyer_fee律师费 / agency_fee代理费 / preservation_fee保全费 / appraisal_fee鉴定费 / other其他
+    const fundConfigs = [
+      { type: 'income', category: 'lawyer_fee', amount: 50000, payer: '张女士', payee: '测试律所', payment_offset: -30, method: 'bank_transfer', case_index: 0, remarks: '婚姻案件律师费' },
+      { type: 'income', category: 'lawyer_fee', amount: 30000, payer: '李先生', payee: '测试律所', payment_offset: -25, method: 'alipay', case_index: 1, remarks: '交通事故案件律师费' },
+      { type: 'income', category: 'agency_fee', amount: 15000, payer: '王先生', payee: '测试律所', payment_offset: -20, method: 'wechat', case_index: 2, remarks: '劳动仲裁代理费' },
+      { type: 'income', category: 'lawyer_fee', amount: 80000, payer: '赵先生', payee: '测试律所', payment_offset: -45, method: 'bank_transfer', case_index: 3, remarks: '债务纠纷律师费' },
+      { type: 'income', category: 'lawyer_fee', amount: 120000, payer: '某科技有限公司', payee: '测试律所', payment_offset: -60, method: 'bank_transfer', case_index: 4, remarks: '企业顾问年度费用' },
+      { type: 'income', category: 'lawyer_fee', amount: 55000, payer: '孙女士', payee: '测试律所', payment_offset: -15, method: 'bank_transfer', case_index: 5, remarks: '医疗纠纷律师费' },
+      { type: 'income', category: 'lawyer_fee', amount: 90000, payer: '某科技公司', payee: '测试律所', payment_offset: -10, method: 'bank_transfer', case_index: 6, remarks: '知识产权案件律师费' },
+      { type: 'income', category: 'lawyer_fee', amount: 70000, payer: '吴先生', payee: '测试律所', payment_offset: -5, method: 'alipay', case_index: 7, remarks: '刑事辩护律师费' },
+      { type: 'income', category: 'agency_fee', amount: 200000, payer: '某建设公司', payee: '测试律所', payment_offset: -90, method: 'bank_transfer', case_index: 8, remarks: '建工纠纷代理费' },
+      { type: 'income', category: 'lawyer_fee', amount: 36000, payer: '陈先生', payee: '测试律所', payment_offset: -100, method: 'wechat', case_index: 9, remarks: '私人顾问年度费用' },
+      { type: 'expense', category: 'preservation_fee', amount: 2300, payer: '测试律所', payee: '法院', payment_offset: -28, method: 'bank_transfer', case_index: 0, remarks: '婚姻案件保全费' },
+      { type: 'expense', category: 'appraisal_fee', amount: 3500, payer: '测试律所', payee: '某鉴定机构', payment_offset: -22, method: 'bank_transfer', case_index: 1, remarks: '交通事故伤残鉴定费' },
+      { type: 'expense', category: 'preservation_fee', amount: 1800, payer: '测试律所', payee: '仲裁委', payment_offset: -18, method: 'bank_transfer', case_index: 2, remarks: '劳动仲裁受理费' },
+      { type: 'expense', category: 'other', amount: 5000, payer: '测试律所', payee: '某公证处', payment_offset: -40, method: 'bank_transfer', case_index: 3, remarks: '债务公证费用' },
+      { type: 'expense', category: 'other', amount: 8000, payer: '测试律所', payee: '某评估公司', payment_offset: -55, method: 'bank_transfer', case_index: 4, remarks: '企业资产评估费' },
+      { type: 'expense', category: 'appraisal_fee', amount: 12000, payer: '测试律所', payee: '某司法鉴定中心', payment_offset: -12, method: 'bank_transfer', case_index: 5, remarks: '医疗过错鉴定费' },
+      { type: 'expense', category: 'preservation_fee', amount: 4500, payer: '测试律所', payee: '法院', payment_offset: -8, method: 'bank_transfer', case_index: 6, remarks: '知识产权保全费' },
+      { type: 'expense', category: 'other', amount: 2000, payer: '测试律所', payee: '某翻译公司', payment_offset: -3, method: 'alipay', case_index: 7, remarks: '案件材料翻译费' },
+      { type: 'expense', category: 'appraisal_fee', amount: 15000, payer: '测试律所', payee: '某工程造价公司', payment_offset: -85, method: 'bank_transfer', case_index: 8, remarks: '工程造价鉴定费' },
+      { type: 'expense', category: 'other', amount: 1500, payer: '测试律所', payee: '某档案馆', payment_offset: -95, method: 'wechat', case_index: 9, remarks: '档案查询费' },
+    ];
+
+    for (let i = 0; i < fundConfigs.length; i++) {
+      const config = fundConfigs[i];
+      const caseEntity = cases[config.case_index % cases.length];
+      const existing = await this.businessFundRepository.findOne({ where: { type: config.type, category: config.category, amount: config.amount, organization_id: orgId } });
+      if (!existing) {
+        // === 新增字段生成 ===
+        // 入账状态（收入类轮换，支出类默认已入账）
+        const accountStatus = config.type === 'income'
+          ? (i % 3 === 0 ? 'pending' : 'accounted')
+          : 'accounted';
+        // 入账时间（已入账的状态填）
+        const accountTime = accountStatus === 'accounted'
+          ? new Date(Date.now() + config.payment_offset * 24 * 60 * 60 * 1000 + 1 * 24 * 60 * 60 * 1000)
+          : null;
+        // 分账记录（仅收入类填写）
+        const allocationRecords = config.type === 'income'
+          ? JSON.stringify([
+              { role: '主办律师', amount: Math.round(config.amount * 0.7) },
+              { role: '律所', amount: Math.round(config.amount * 0.3) },
+            ])
+          : null;
+        // 税费分摊（收入类按6%计算）
+        const taxShare = config.type === 'income' ? Math.round(config.amount * 0.06) : 0;
+        // 质保金（收入类1000-3000）
+        const qualityDeposit = config.type === 'income' ? 1000 + (i * 200) % 2001 : 0;
+
+        await this.businessFundRepository.save({
+          case_id: caseEntity.id,
+          type: config.type,
+          category: config.category,
+          amount: config.amount,
+          payer: config.payer,
+          payee: config.payee,
+          payment_date: new Date(Date.now() + config.payment_offset * 24 * 60 * 60 * 1000),
+          payment_method: config.method,
+          remarks: config.remarks,
+          account_status: accountStatus,
+          account_time: accountTime,
+          allocation_records: allocationRecords,
+          tax_share: taxShare,
+          quality_deposit: qualityDeposit,
+          organization_id: orgId,
+        });
+      }
+    }
+  }
+
+  // 利冲检索种子数据
+  private async seedConflictChecks(orgId: string, userMap: Record<string, User>) {
+    // 检查利冲检索表是否已有数据
+    const existingCheckCount = await this.conflictCheckRepository.count({ where: { organization_id: orgId } });
+    if (existingCheckCount > 0) return;
+
+    const lawyerUser = userMap['13800138004'];
+    const lawyerUser2 = userMap['13800138008'];
+    const salesUser = userMap['13800138003'];
+    const orgAdmin = userMap['13800138001'];
+    const checkerPool = [lawyerUser, lawyerUser2, salesUser];
+    const cases = await this.caseRepository.find({ where: { organization_id: orgId }, take: 5 });
+
+    // 检索结果：clear无冲突 / warning有风险 / conflict有冲突
+    const checkConfigs = [
+      { party_name: '张女士', opposing_party: '李某', party_phone: '13900139001', check_result: 'clear', conflict_detail: null, case_index: 0, checker_index: 0 },
+      { party_name: '某科技有限公司', opposing_party: '某商贸有限公司', party_phone: '010-88880001', check_result: 'warning', conflict_detail: '检索到对方当事人曾与本所客户存在关联交易记录，建议进一步核实。', case_index: 1, checker_index: 1 },
+      { party_name: '王先生', opposing_party: '赵某', party_phone: '13900139003', check_result: 'clear', conflict_detail: null, case_index: 2, checker_index: 0 },
+      { party_name: '某建设集团', opposing_party: '某房地产开发公司', party_phone: '010-88880005', check_result: 'conflict', conflict_detail: '检索到对方当事人某房地产开发公司为本所现有客户，存在利益冲突，不得代理。', case_index: 3, checker_index: 2 },
+      { party_name: '孙女士', opposing_party: '某医院', party_phone: '13900139005', check_result: 'clear', conflict_detail: null, case_index: 4, checker_index: 1 },
+    ];
+
+    for (let i = 0; i < checkConfigs.length; i++) {
+      const config = checkConfigs[i];
+      const checker = checkerPool[config.checker_index];
+      const caseEntity = cases.length > 0 ? cases[config.case_index % cases.length] : null;
+      const existing = await this.conflictCheckRepository.findOne({ where: { party_name: config.party_name, opposing_party: config.opposing_party, organization_id: orgId } });
+      if (!existing) {
+        // === 新增字段生成 ===
+        // 本案角色
+        const partyRoles = ['client', 'opposing'];
+        const partyRole = partyRoles[i % partyRoles.length];
+        // 冲突项目名称（仅冲突/风险记录填写）
+        const conflictCaseName = config.check_result !== 'clear' ? `${config.opposing_party}合同纠纷案` : null;
+        // 审批状态（clear->approved, warning->pending, conflict->rejected）
+        const approvalStatusMap: Record<string, string> = {
+          clear: 'approved',
+          warning: 'pending',
+          conflict: 'rejected',
+        };
+        const approvalStatus = approvalStatusMap[config.check_result] || 'pending';
+        // 业务主管ID
+        const supervisorId = orgAdmin?.id;
+        // 所属团队
+        const teamList = ['团队A', '团队B', '团队C'];
+        const teamId = teamList[i % teamList.length];
+
+        await this.conflictCheckRepository.save({
+          case_id: caseEntity?.id,
+          party_name: config.party_name,
+          opposing_party: config.opposing_party,
+          party_phone: config.party_phone,
+          check_result: config.check_result,
+          conflict_detail: config.conflict_detail,
+          party_role: partyRole,
+          conflict_case_name: conflictCaseName,
+          approval_status: approvalStatus,
+          supervisor_id: supervisorId,
+          team_id: teamId,
+          checker_id: checker?.id,
+          organization_id: orgId,
+        });
+      }
+    }
+  }
+
+  // 客户档案种子数据
+  private async seedClientProfiles(orgId: string, userMap: Record<string, User>) {
+    // 检查客户档案表是否已有数据
+    const existingCount = await this.clientProfileRepository.count({ where: { organization_id: orgId } });
+    if (existingCount > 0) return;
+
+    // 从已创建的案件中提取不重复的客户信息
+    const cases = await this.caseRepository.find({ where: { organization_id: orgId }, take: 20 });
+    if (cases.length === 0) return;
+
+    // 提取不重复的 client_name 和 client_phone
+    const clientMap = new Map<string, { name: string; phone: string }>();
+    for (const c of cases) {
+      if (c.client_name && c.client_phone && !clientMap.has(c.client_name)) {
+        clientMap.set(c.client_name, { name: c.client_name, phone: c.client_phone });
+      }
+    }
+
+    const sources = ['线上咨询', '老客户介绍', '律所推广', '朋友推荐'];
+    const valueLevels = ['high', 'medium', 'low'];
+    const addresses = [
+      '北京市朝阳区建国路88号',
+      '北京市海淀区中关村大街1号',
+      '北京市西城区西直门外大街18号',
+      '北京市东城区东直门内大街5号',
+      '北京市丰台区南三环西路6号',
+    ];
+    const enterpriseContacts = ['张总', '李经理', '王主任', '赵总监', '陈主管'];
+
+    let count = 0;
+    for (const [, client] of clientMap) {
+      if (count >= 15) break;
+      // 检查是否已存在
+      const existing = await this.clientProfileRepository.findOne({ where: { name: client.name, organization_id: orgId } });
+      if (!existing) {
+        // 客户类型（包含"公司"为企业，否则为个人）
+        const isEnterprise = client.name.includes('公司');
+        const type = isEnterprise ? 'enterprise' : 'individual';
+        // 联系人（个人类型用客户名，企业类型生成联系人名）
+        const contactName = isEnterprise ? enterpriseContacts[count % enterpriseContacts.length] : client.name;
+        // 邮箱（部分生成，使用客户编号避免中文邮箱）
+        const email = count % 2 === 0 ? `client${count + 1}@example.com` : null;
+        // 地址
+        const address = addresses[count % addresses.length];
+        // 客户来源
+        const source = sources[count % sources.length];
+        // 价值等级
+        const valueLevel = valueLevels[count % valueLevels.length];
+        // 满意度3-5
+        const satisfaction = 3 + (count % 3);
+        // 备注（部分填写）
+        const remarks = count % 3 === 0 ? 'VIP客户' : count % 4 === 0 ? '长期合作' : null;
+
+        await this.clientProfileRepository.save({
+          name: client.name,
+          type,
+          contact_name: contactName,
+          phone: client.phone,
+          email,
+          address,
+          source,
+          value_level: valueLevel,
+          satisfaction,
+          remarks,
+          organization_id: orgId,
+        });
+        count++;
+      }
+    }
+  }
+
+  // ==================== HR模块种子数据 ====================
+
+  // 请假数据：10条不同类型和状态的请假记录
+  private async seedHrLeaves(orgId: string, userMap: Record<string, User>) {
+    const existingCount = await this.hrLeaveRepository.count({ where: { organization_id: orgId } });
+    if (existingCount > 0) return;
+
+    const users = Object.values(userMap);
+    if (users.length === 0) return;
+
+    const leaveConfigs = [
+      { leave_type: 'personal', days: 1, reason: '处理家庭事务', status: 'approved' },
+      { leave_type: 'sick', days: 2, reason: '感冒发烧需要休息', status: 'approved' },
+      { leave_type: 'annual', days: 5, reason: '年度休假', status: 'pending' },
+      { leave_type: 'personal', days: 1, reason: '办理证件', status: 'pending' },
+      { leave_type: 'sick', days: 3, reason: '医院检查', status: 'rejected' },
+      { leave_type: 'annual', days: 7, reason: '旅游度假', status: 'approved' },
+      { leave_type: 'personal', days: 0.5, reason: '处理私人事务', status: 'cancelled' },
+      { leave_type: 'maternity', days: 30, reason: '产假', status: 'approved' },
+      { leave_type: 'sick', days: 1, reason: '牙痛就医', status: 'pending' },
+      { leave_type: 'other', days: 2, reason: '其他事由', status: 'approved' },
+    ];
+
+    let count = 0;
+    for (const config of leaveConfigs) {
+      const user = users[count % users.length];
+      const startDate = new Date(Date.now() - (count - 5) * 24 * 60 * 60 * 1000);
+      const endDate = new Date(startDate.getTime() + config.days * 24 * 60 * 60 * 1000);
+      const startStr = startDate.toISOString().slice(0, 10);
+      const endStr = endDate.toISOString().slice(0, 10);
+
+      const leaveData: Partial<HrLeave> = {
+        user_id: user.id,
+        leave_type: config.leave_type,
+        start_date: startStr,
+        end_date: endStr,
+        days: config.days,
+        reason: config.reason,
+        status: config.status,
+        organization_id: orgId,
+      };
+
+      // 已审批的记录添加审批信息
+      if (config.status === 'approved' || config.status === 'rejected') {
+        const approver = users[(count + 1) % users.length];
+        leaveData.approver_id = approver.id;
+        leaveData.approve_comment = config.status === 'approved' ? '同意请假' : '事由不充分';
+        leaveData.approve_time = new Date(Date.now() - count * 60 * 60 * 1000);
+      }
+
+      await this.hrLeaveRepository.save(leaveData);
+      count++;
+    }
+  }
+
+  // 考勤数据：最近30天的考勤记录
+  private async seedAttendances(orgId: string, userMap: Record<string, User>) {
+    const existingCount = await this.attendanceRepository.count({ where: { organization_id: orgId } });
+    if (existingCount > 0) return;
+
+    const users = Object.values(userMap).filter(u => u.role !== 'client');
+    if (users.length === 0) return;
+
+    // 为每个用户生成最近30天的考勤记录
+    for (const user of users) {
+      for (let i = 0; i < 30; i++) {
+        const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+        const dayOfWeek = date.getDay();
+        // 周末不生成考勤
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+
+        const dateStr = date.toISOString().slice(0, 10);
+        // 随机生成打卡时间和状态
+        const isLate = i % 7 === 0;
+        const isEarlyLeave = i % 11 === 0;
+        const clockInHour = isLate ? 9 : 8;
+        const clockInMinute = isLate ? 30 : 50 + Math.floor(Math.random() * 10);
+        const clockOutHour = isEarlyLeave ? 17 : 18;
+        const clockOutMinute = isEarlyLeave ? 30 : Math.floor(Math.random() * 30);
+
+        const clockInTime = new Date(date);
+        clockInTime.setHours(clockInHour, clockInMinute, 0, 0);
+        const clockOutTime = new Date(date);
+        clockOutTime.setHours(clockOutHour, clockOutMinute, 0, 0);
+
+        const diffMs = clockOutTime.getTime() - clockInTime.getTime();
+        const workHours = Math.round((diffMs / (60 * 60 * 1000)) * 10) / 10;
+
+        let status: string = AttendanceStatus.NORMAL;
+        if (isLate) status = AttendanceStatus.LATE;
+        else if (isEarlyLeave) status = AttendanceStatus.EARLY_LEAVE;
+
+        await this.attendanceRepository.save({
+          user_id: user.id,
+          attendance_date: dateStr,
+          clock_in_time: clockInTime,
+          clock_out_time: clockOutTime,
+          status,
+          work_hours: workHours,
+          remarks: '',
+          organization_id: orgId,
+        });
+      }
+    }
+  }
+
+  // 物品申购数据：8条不同类型和状态的记录
+  private async seedMaterials(orgId: string, userMap: Record<string, User>) {
+    const existingCount = await this.materialRepository.count({ where: { organization_id: orgId } });
+    if (existingCount > 0) return;
+
+    const users = Object.values(userMap);
+    if (users.length === 0) return;
+
+    const materialConfigs = [
+      { material_name: '签字笔', quantity: 50, unit: '支', type: 'purchase', purpose: '办公用笔', status: 'fulfilled' },
+      { material_name: 'A4打印纸', quantity: 20, unit: '箱', type: 'purchase', purpose: '打印文件', status: 'approved' },
+      { material_name: '文件夹', quantity: 30, unit: '个', type: 'receive', purpose: '案件归档', status: 'fulfilled' },
+      { material_name: '订书机', quantity: 5, unit: '个', type: 'purchase', purpose: '装订文件', status: 'pending' },
+      { material_name: '计算器', quantity: 3, unit: '个', type: 'purchase', purpose: '财务计算', status: 'pending' },
+      { material_name: '便利贴', quantity: 100, unit: '本', type: 'receive', purpose: '办公记录', status: 'rejected' },
+      { material_name: '白板笔', quantity: 20, unit: '支', type: 'purchase', purpose: '会议室白板用', status: 'approved' },
+      { material_name: '文件柜', quantity: 2, unit: '个', type: 'purchase', purpose: '存放案件资料', status: 'fulfilled' },
+    ];
+
+    let count = 0;
+    for (const config of materialConfigs) {
+      const user = users[count % users.length];
+      const materialData: Partial<MaterialRequisition> = {
+        user_id: user.id,
+        material_name: config.material_name,
+        quantity: config.quantity,
+        unit: config.unit,
+        type: config.type,
+        purpose: config.purpose,
+        status: config.status,
+        organization_id: orgId,
+      };
+
+      // 已审批的记录添加审批信息
+      if (config.status === 'approved' || config.status === 'rejected' || config.status === 'fulfilled') {
+        const approver = users[(count + 1) % users.length];
+        materialData.approver_id = approver.id;
+        materialData.approve_comment = config.status === 'rejected' ? '库存充足暂不需要' : '同意';
+        materialData.approve_time = new Date(Date.now() - count * 60 * 60 * 1000);
+      }
+
+      await this.materialRepository.save(materialData);
+      count++;
+    }
+  }
+
+  // 活动数据：5条活动记录
+  private async seedHrActivities(orgId: string, userMap: Record<string, User>) {
+    const existingCount = await this.hrActivityRepository.count({ where: { organization_id: orgId } });
+    if (existingCount > 0) return;
+
+    const users = Object.values(userMap);
+    if (users.length === 0) return;
+    const organizer = users[0];
+
+    const activityConfigs = [
+      {
+        title: '法律实务培训',
+        description: '邀请资深律师分享最新法律实务经验',
+        activity_type: 'training',
+        location: '会议室A',
+        max_participants: 30,
+        offsetDays: -5,
+        duration: 2,
+        status: 'completed',
+        registered: 15,
+      },
+      {
+        title: '团队建设活动',
+        description: '户外拓展训练，增强团队凝聚力',
+        activity_type: 'team_building',
+        location: '户外拓展基地',
+        max_participants: 50,
+        offsetDays: 7,
+        duration: 8,
+        status: 'upcoming',
+        registered: 20,
+      },
+      {
+        title: '月度总结会议',
+        description: '本月工作总结及下月计划',
+        activity_type: 'meeting',
+        location: '大会议室',
+        max_participants: 0,
+        offsetDays: 3,
+        duration: 2,
+        status: 'upcoming',
+        registered: 8,
+      },
+      {
+        title: '合同法专题培训',
+        description: '合同法最新修订内容解读',
+        activity_type: 'training',
+        location: '会议室B',
+        max_participants: 20,
+        offsetDays: -2,
+        duration: 3,
+        status: 'completed',
+        registered: 18,
+      },
+      {
+        title: '年度团建聚餐',
+        description: '年度团队聚餐活动',
+        activity_type: 'team_building',
+        location: '海底捞火锅',
+        max_participants: 40,
+        offsetDays: 14,
+        duration: 3,
+        status: 'upcoming',
+        registered: 25,
+      },
+    ];
+
+    let count = 0;
+    for (const config of activityConfigs) {
+      const startTime = new Date(Date.now() + config.offsetDays * 24 * 60 * 60 * 1000);
+      startTime.setHours(14, 0, 0, 0);
+      const endTime = new Date(startTime.getTime() + config.duration * 60 * 60 * 1000);
+
+      const activity = await this.hrActivityRepository.save({
+        title: config.title,
+        description: config.description,
+        activity_type: config.activity_type,
+        start_time: startTime,
+        end_time: endTime,
+        location: config.location,
+        organizer_id: organizer.id,
+        max_participants: config.max_participants,
+        registered_count: config.registered,
+        status: config.status,
+        organization_id: orgId,
+      });
+
+      // 为已报名的活动创建报名记录
+      for (let i = 0; i < config.registered && i < users.length; i++) {
+        await this.activityRegistrationRepository.save({
+          activity_id: activity.id,
+          user_id: users[i].id,
+        });
+      }
+      count++;
+    }
+  }
+
+  // 同事圆动态种子数据
+  private async seedSocialPosts(orgId: string, userMap: Record<string, User>) {
+    const existingCount = await this.socialPostRepository.count({ where: { organization_id: orgId } });
+    if (existingCount > 0) return;
+
+    const users = Object.values(userMap);
+    if (users.length === 0) return;
+
+    // 15条动态配置（覆盖4种类型）
+    const postConfigs = [
+      { content: '今天处理了一起合同纠纷案件，客户对结果很满意。', post_type: PostType.CASE_SHARE, offsetHours: -2 },
+      { content: '分享一个办案小技巧：证据整理时按时间线排序会更清晰。', post_type: PostType.EXPERIENCE, offsetHours: -5 },
+      { content: '新的一年，继续努力为客户提供优质法律服务。', post_type: PostType.NORMAL, offsetHours: -8 },
+      { content: '关于民法典婚姻家庭编的几点实务理解，与大家交流。', post_type: PostType.KNOWLEDGE, offsetHours: -12 },
+      { content: '今天成功调解了一起劳动争议，双方都满意。', post_type: PostType.CASE_SHARE, offsetHours: -24 },
+      { content: '建议大家关注最新司法解释的变化。', post_type: PostType.KNOWLEDGE, offsetHours: -30 },
+      { content: '办案过程中与客户的沟通技巧很重要。', post_type: PostType.EXPERIENCE, offsetHours: -36 },
+      { content: '今天参加了一场法律实务培训，收获颇丰。', post_type: PostType.NORMAL, offsetHours: -48 },
+      { content: '一起民间借贷案件的代理思路分享。', post_type: PostType.CASE_SHARE, offsetHours: -60 },
+      { content: '合同审查中常见的风险点总结。', post_type: PostType.KNOWLEDGE, offsetHours: -72 },
+      { content: '如何提高庭审中的临场应变能力。', post_type: PostType.EXPERIENCE, offsetHours: -84 },
+      { content: '本周工作顺利结束，周末愉快。', post_type: PostType.NORMAL, offsetHours: -96 },
+      { content: '知识产权案件的取证要点。', post_type: PostType.KNOWLEDGE, offsetHours: -108 },
+      { content: '一起交通事故案件的赔偿计算分享。', post_type: PostType.CASE_SHARE, offsetHours: -120 },
+      { content: '时间管理对律师的重要性。', post_type: PostType.EXPERIENCE, offsetHours: -132 },
+    ];
+
+    // 评论内容模板
+    const commentTemplates = [
+      '说得好，学习了',
+      '感谢分享',
+      '很有启发',
+      '这个观点很独特',
+      '收藏了',
+      '期待更多分享',
+      '深有同感',
+      '受益匪浅',
+    ];
+
+    for (let i = 0; i < postConfigs.length; i++) {
+      const config = postConfigs[i];
+      const author = users[i % users.length];
+      const createdAt = new Date(Date.now() + config.offsetHours * 60 * 60 * 1000);
+
+      const post = await this.socialPostRepository.save({
+        user_id: author.id,
+        content: config.content,
+        post_type: config.post_type,
+        view_count: Math.floor(Math.random() * 50) + 5,
+        like_count: 0,
+        comment_count: 0,
+        organization_id: orgId,
+        created_at: createdAt,
+        updated_at: createdAt,
+      });
+
+      // 为每条动态生成0-5条评论
+      const commentCount = Math.floor(Math.random() * 6);
+      for (let j = 0; j < commentCount; j++) {
+        const commenter = users[(i + j + 1) % users.length];
+        const commentTime = new Date(createdAt.getTime() + (j + 1) * 30 * 60 * 1000);
+        await this.socialCommentRepository.save({
+          post_id: post.id,
+          user_id: commenter.id,
+          content: commentTemplates[j % commentTemplates.length],
+          organization_id: orgId,
+          created_at: commentTime,
+        });
+      }
+      // 更新评论数
+      if (commentCount > 0) {
+        await this.socialPostRepository.update(post.id, { comment_count: commentCount });
+      }
+
+      // 为每条动态生成0-10个点赞
+      const likeCount = Math.floor(Math.random() * 11);
+      for (let j = 0; j < likeCount && j < users.length; j++) {
+        const liker = users[(i + j + 2) % users.length];
+        try {
+          await this.socialLikeRepository.save({
+            post_id: post.id,
+            user_id: liker.id,
+            organization_id: orgId,
+            created_at: new Date(createdAt.getTime() + j * 60 * 1000),
+          });
+        } catch {
+          // 跳过重复点赞（唯一约束）
+        }
+      }
+      // 更新点赞数
+      if (likeCount > 0) {
+        await this.socialPostRepository.update(post.id, { like_count: likeCount });
+      }
+    }
+  }
+
+  // 邮件种子数据
+  private async seedMails(orgId: string, userMap: Record<string, User>) {
+    const existingCount = await this.mailRepository.count({ where: { organization_id: orgId } });
+    if (existingCount > 0) return;
+
+    const users = Object.values(userMap);
+    if (users.length < 2) return;
+
+    // 20条邮件配置（inbox/sent/draft/trash混合）
+    const mailConfigs = [
+      { subject: '关于合同纠纷案件的进展通知', content: '您好，您委托的合同纠纷案件已进入证据交换阶段，请关注后续通知。', type: MailType.INBOX, is_read: true, is_starred: false, offsetDays: -1 },
+      { subject: '本月工作汇报', content: '附件为本月工作总结，请查阅。本月共处理案件15件，新增客户8位。', type: MailType.SENT, is_read: true, is_starred: false, offsetDays: -2 },
+      { subject: '案件材料补充通知', content: '请补充提供身份证复印件和银行卡流水记录。', type: MailType.INBOX, is_read: false, is_starred: true, offsetDays: -3 },
+      { subject: '关于团队培训的通知', content: '本周五下午2点在会议室A举行法律实务培训，请准时参加。', type: MailType.INBOX, is_read: true, is_starred: false, offsetDays: -5 },
+      { subject: '法律意见书初稿', content: '这是关于股权转让的法律意见书初稿，请审阅。', type: MailType.DRAFT, is_read: false, is_starred: false, offsetDays: -6 },
+      { subject: '客户咨询回复', content: '关于您咨询的离婚财产分割问题，以下是我的专业建议...', type: MailType.SENT, is_read: true, is_starred: false, offsetDays: -7 },
+      { subject: '案件归档提醒', content: '您有3个已结案案件待归档，请及时处理。', type: MailType.INBOX, is_read: false, is_starred: false, offsetDays: -8 },
+      { subject: '本月账单', content: '本月律所账单已生成，请查看附件。', type: MailType.INBOX, is_read: true, is_starred: true, offsetDays: -10 },
+      { subject: '合同审查意见', content: '关于合同的审查意见详见正文...', type: MailType.DRAFT, is_read: false, is_starred: false, offsetDays: -12 },
+      { subject: '案件跟进提醒', content: '张三诉李四合同纠纷案将于下周三开庭，请做好准备。', type: MailType.INBOX, is_read: true, is_starred: false, offsetDays: -14 },
+      { subject: '工作日志提交通知', content: '请于每周五下班前提交本周工作日志。', type: MailType.INBOX, is_read: true, is_starred: false, offsetDays: -15 },
+      { subject: '关于调整提成比例的通知', content: '经律所研究决定，自下月起调整案件提成比例...', type: MailType.INBOX, is_read: false, is_starred: true, offsetDays: -18 },
+      { subject: '客户回访记录', content: '今日回访了5位老客户，均表示满意。', type: MailType.SENT, is_read: true, is_starred: false, offsetDays: -20 },
+      { subject: '法律检索报告', content: '关于XX问题的法律检索报告，请查收。', type: MailType.SENT, is_read: true, is_starred: false, offsetDays: -22 },
+      { subject: '旧邮件已清理', content: '这封邮件已被移到已删除。', type: MailType.TRASH, is_read: true, is_starred: false, offsetDays: -25 },
+      { subject: '会议纪要', content: '本周律所例会纪要，请各位同事查阅。', type: MailType.INBOX, is_read: true, is_starred: false, offsetDays: -26 },
+      { subject: '草稿：答辩状', content: '（草稿未完成）答辩意见如下...', type: MailType.DRAFT, is_read: false, is_starred: false, offsetDays: -28 },
+      { subject: '案件费用报销', content: '本月案件差旅费报销清单，请审批。', type: MailType.SENT, is_read: true, is_starred: false, offsetDays: -30 },
+      { subject: '过期通知', content: '这封邮件已过期，已移到已删除。', type: MailType.TRASH, is_read: true, is_starred: false, offsetDays: -35 },
+      { subject: '新年贺词', content: '祝各位同事新年快乐，工作顺利！', type: MailType.INBOX, is_read: true, is_starred: false, offsetDays: -40 },
+    ];
+
+    for (let i = 0; i < mailConfigs.length; i++) {
+      const config = mailConfigs[i];
+      const sender = users[i % users.length];
+      const recipient = users[(i + 1) % users.length];
+      const sentTime = new Date(Date.now() + config.offsetDays * 24 * 60 * 60 * 1000);
+
+      const mailData: Partial<Mail> = {
+        sender_id: sender.id,
+        recipient_ids: JSON.stringify([recipient.id]),
+        cc_ids: null,
+        subject: config.subject,
+        content: config.content,
+        attachments: null,
+        is_read: config.is_read,
+        is_starred: config.is_starred,
+        mail_type: config.type,
+        sent_time: config.type === MailType.DRAFT ? null : sentTime,
+        organization_id: orgId,
+      };
+
+      await this.mailRepository.save(mailData);
     }
   }
 

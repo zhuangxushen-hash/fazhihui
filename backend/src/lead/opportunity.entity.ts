@@ -46,6 +46,26 @@ export class Opportunity {
   @OneToMany(() => OpportunityStageLog, log => log.opportunity)
   stage_logs: OpportunityStageLog[];
 
+  // 转介绍人（从线索同步，或商机填写）
+  @Column({ type: 'varchar', nullable: true, comment: '转介绍人' })
+  referrer: string;
+
+  // 客户姓名
+  @Column({ type: 'varchar', nullable: true, comment: '客户姓名' })
+  client_name: string;
+
+  // 客户电话
+  @Column({ type: 'varchar', nullable: true, comment: '客户电话' })
+  client_phone: string;
+
+  // 转化后的案件ID
+  @Column({ type: 'varchar', nullable: true, comment: '转化案件ID' })
+  case_id: string;
+
+  // 转化（签约）时间
+  @Column({ type: 'datetime', nullable: true, comment: '签约转化时间' })
+  conversion_time: Date;
+
   @CreateDateColumn()
   created_at: Date;
 

@@ -65,6 +65,42 @@ export class CaseTaskService {
   }
 
   /**
+   * 重新计算父任务的 progress（基于直接子任务的 progress 平均值）。
+   * 如果所有子任务都 COMPLETED/VERIFIED 则：父 progress=100，父任务 status=COMPLETED，completed_at=now。
+   * 如果父任务没有任何子任务，则不做任何事。不抛异常，失败静默。
+   */
+  private async recalcParentProgress(parentTaskId: string): Promise<void> {
+    try {
+      if (!parentTaskId) return;
+      const parent = await this.caseTaskRepository.findOne({ where: { id: parentTaskId } });
+      if (!parent) return;
+      const children = await this.caseTaskRepository.find({ where: { parent_task_id: parentTaskId } });
+      if (!children || children.length === 0) return;
+      let sum = 0;
+      let completedCount = 0;
+      for (const c of children) {
+        sum += Number(c.progress || 0);
+        if (c.status === CaseTaskStatus.COMPLETED || c.status === CaseTaskStatus.VERIFIED) {
+          completedCount++;
+        }
+      }
+      const newProgress = Math.round(sum / children.length);
+      parent.progress = Math.max(0, Math.min(100, newProgress));
+      if (completedCount === children.length && children.length > 0) {
+        parent.progress = 100;
+        if (parent.status !== CaseTaskStatus.COMPLETED && parent.status !== CaseTaskStatus.VERIFIED
+          && parent.status !== CaseTaskStatus.CANCELLED) {
+          parent.status = CaseTaskStatus.COMPLETED;
+          parent.completed_at = new Date();
+        }
+      }
+      await this.caseTaskRepository.save(parent);
+    } catch (e) {
+      // 父子联动失败静默不影响主流程
+    }
+  }
+
+  /**
    * 查询案件的任务列表
    */
   async getCaseTasks(caseId: string): Promise<CaseTask[]> {
@@ -108,6 +144,7 @@ export class CaseTaskService {
       deadline: dto.deadline ? new Date(dto.deadline) : null,
       is_required: dto.is_required || false,
       description: dto.description,
+      parent_task_id: dto.parent_task_id,
     });
 
     return this.caseTaskRepository.save(task);
@@ -129,7 +166,11 @@ export class CaseTaskService {
     if (dto.progress !== undefined) task.progress = dto.progress;
     if (dto.result) task.result = dto.result;
 
-    return this.caseTaskRepository.save(task);
+    const saved = await this.caseTaskRepository.save(task);
+    if (saved.parent_task_id) {
+      await this.recalcParentProgress(saved.parent_task_id);
+    }
+    return saved;
   }
 
   /**
@@ -153,6 +194,9 @@ export class CaseTaskService {
     }
 
     const savedTask = await this.caseTaskRepository.save(task);
+    if (savedTask.parent_task_id) {
+      await this.recalcParentProgress(savedTask.parent_task_id);
+    }
 
     return {
       task: savedTask,
@@ -200,7 +244,11 @@ export class CaseTaskService {
       task.completed_at = new Date();
     }
 
-    return this.caseTaskRepository.save(task);
+    const saved = await this.caseTaskRepository.save(task);
+    if (saved.parent_task_id) {
+      await this.recalcParentProgress(saved.parent_task_id);
+    }
+    return saved;
   }
 
   /**

@@ -6,6 +6,7 @@ import { CommissionRecord, CommissionStatus } from './commission-record.entity';
 import { Case } from '../case/case.entity';
 import { User } from '../user/user.entity';
 import { CaseStatus } from '../types';
+import { Receivable, ReceivableStatus } from './receivable.entity';
 
 @Injectable()
 export class CommissionService {
@@ -18,6 +19,8 @@ export class CommissionService {
     private caseRepository: Repository<Case>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Receivable)
+    private receivableRepository: Repository<Receivable>,
   ) {}
 
   // ========== 分润规则管理 ==========
@@ -137,7 +140,7 @@ export class CommissionService {
 
     // 检查是否全款到账（通过应收款台账检查）
     const receivable = await this.getReceivableByCaseId(caseId);
-    if (!receivable || receivable.status !== 'completed') {
+    if (!receivable || receivable.status !== ReceivableStatus.COMPLETED) {
       throw new BadRequestException('案件款项未结清，无法计算分润');
     }
 
@@ -253,12 +256,21 @@ export class CommissionService {
   }
 
   /**
-   * 获取案件应收款台账
+   * 获取案件应收款台账聚合信息
+   * 汇总该案件所有 receivable 记录，返回总合同额、已回款额及聚合状态
    */
-  private async getReceivableByCaseId(caseId: string): Promise<any> {
-    // 这里需要从finance.service中获取应收款信息
-    // 简化实现，实际应该调用FinanceService
-    return { status: 'completed' }; // 假设已结清
+  private async getReceivableByCaseId(caseId: string): Promise<{ contract_amount: number; received_amount: number; status: string } | null> {
+    const list = await this.receivableRepository.find({ where: { case_id: caseId } });
+    if (!list || list.length === 0) return null;
+    let total = 0; let received = 0;
+    for (const r of list) {
+      total += Number(r.contract_amount) || 0;
+      received += Number(r.received_amount) || 0;
+    }
+    let status: string = ReceivableStatus.PENDING;
+    if (received >= total && total > 0) status = ReceivableStatus.COMPLETED;
+    else if (received > 0) status = ReceivableStatus.PARTIAL;
+    return { contract_amount: total, received_amount: received, status };
   }
 
   /**
@@ -277,5 +289,49 @@ export class CommissionService {
     }
 
     return results;
+  }
+
+  /**
+   * 自动检查并触发分润：扫描满足条件（案件已结案 && 全款到账）的案件，
+   * 若该案件没有已生成的分润记录则调用 calculateCommission 自动生成。
+   * 使用场景：回款成功、结案归档后被动触发；或定时任务扫描。
+   * 单条 try/catch，失败不影响其他案件。
+   *
+   * @param case_id 可选，传了则只检查指定案件；不传则扫描全 org 的所有 closed 案件
+   * @param organization_id  可选，caseId 不传时必须传
+   */
+  async checkAndTriggerCommission(options: { case_id?: string; organization_id?: string }): Promise<{ triggered: number; skipped: number; failed: number }> {
+    let triggered = 0; let skipped = 0; let failed = 0;
+
+    let casesToCheck: Case[] = [];
+    if (options.case_id) {
+      const c = await this.caseRepository.findOne({ where: { id: options.case_id } });
+      if (c) casesToCheck = [c];
+    } else if (options.organization_id) {
+      casesToCheck = await this.caseRepository.find({
+        where: {
+          organization_id: options.organization_id,
+          status: CaseStatus.CLOSED,
+        },
+      });
+    } else {
+      return { triggered: 0, skipped: 0, failed: 0 };
+    }
+
+    for (const c of casesToCheck) {
+      try {
+        if (c.status !== CaseStatus.CLOSED) { skipped++; continue; }
+        const receivable = await this.getReceivableByCaseId(c.id);
+        if (!receivable || receivable.status !== ReceivableStatus.COMPLETED) { skipped++; continue; }
+        const existing = await this.commissionRecordRepository.count({ where: { case_id: c.id } });
+        if (existing > 0) { skipped++; continue; }
+        await this.calculateCommission(c.id);
+        triggered++;
+      } catch (err) {
+        failed++;
+      }
+    }
+
+    return { triggered, skipped, failed };
   }
 }

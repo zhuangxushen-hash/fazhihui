@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Receivable, ReceivableStatus } from './receivable.entity';
 import { OverdueWarning, WarningStatus } from './overdue-warning.entity';
+import { NotificationService } from '../user/notification.service';
 
 @Injectable()
 export class OverdueWarningService {
@@ -14,6 +15,7 @@ export class OverdueWarningService {
     private receivableRepository: Repository<Receivable>,
     @InjectRepository(OverdueWarning)
     private warningRepository: Repository<OverdueWarning>,
+    private notificationService: NotificationService,
   ) {}
 
   /**
@@ -109,6 +111,16 @@ export class OverdueWarningService {
         status: WarningStatus.PENDING,
       });
       await this.warningRepository.save(warning);
+      // 财务管理员通知，暂用空字符串
+      await this.notificationService.notify({
+        receiver_id: '',
+        title: '应收账款逾期',
+        content: `案件 ${receivable.case_id} 的应收账款已逾期`,
+        type: 'finance',
+        level: 'high',
+        related_type: 'Receivable',
+        related_id: receivable.id,
+      });
     }
 
     // 更新应收台账状态为逾期

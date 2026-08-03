@@ -9,11 +9,13 @@ import {
   Request,
 } from '@nestjs/common';
 import { ConversionService, CreateConversionEventDto, RoiDimension } from './conversion.service';
-import { AdChannel, ConversionEventType } from '../types';
+import { AdChannel, ConversionEventType, UserRole} from '../types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('conversions')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.MARKETING)
 export class ConversionController {
   constructor(private conversionService: ConversionService) {}
 

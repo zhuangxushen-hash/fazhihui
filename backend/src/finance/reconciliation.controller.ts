@@ -1,9 +1,12 @@
 import { Controller, Get, Post, Body, Param, Delete, Query, UseGuards, Request } from '@nestjs/common';
 import { ReconciliationService } from './reconciliation.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '../types';
 
 @Controller('finance/reconciliations')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.FINANCE)
 export class ReconciliationController {
   constructor(private reconciliationService: ReconciliationService) {}
 

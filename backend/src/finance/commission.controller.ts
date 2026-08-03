@@ -12,10 +12,13 @@ import {
 } from '@nestjs/common';
 import { CommissionService } from './commission.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '../types';
 import { CommissionType, CommissionRoleType } from './commission-rule.entity';
 
 @Controller('commission')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.FINANCE)
 export class CommissionController {
   constructor(private readonly commissionService: CommissionService) {}
 

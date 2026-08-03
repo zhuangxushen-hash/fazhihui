@@ -1,9 +1,12 @@
 import { Controller, Get, Post, Put, Delete, Body, Query, Param, UseGuards, Request } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '../types';
 
 @Controller('dashboard')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.MARKETING, UserRole.SALES, UserRole.LAWYER, UserRole.ASSISTANT, UserRole.FINANCE)
 export class DashboardController {
   constructor(private dashboardService: DashboardService) {}
 
@@ -278,5 +281,34 @@ export class DashboardController {
     marketingMargin: number;
   }) {
     return this.dashboardService.calculateProfitModel(body);
+  }
+
+  // ==================== 数据大屏 ====================
+
+  /** 数据大屏聚合数据 */
+  @Get('screen-data')
+  getScreenData(@Query('org_id') orgId: string, @Request() req?: any) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.dashboardService.getScreenData(finalOrgId);
+  }
+
+  // ==================== T11 看板聚合新路由 ====================
+
+  @Get('finance')
+  async financeDashboard(@Request() req: any) {
+    const orgId = req?.user?.organization_id;
+    return this.dashboardService.getFinanceIntegratedDashboard(orgId);
+  }
+
+  @Get('case-efficiency-dashboard')
+  async caseEfficiencyDashboard(@Request() req: any) {
+    const orgId = req?.user?.organization_id;
+    return this.dashboardService.getCaseEfficiencyDashboard(orgId);
+  }
+
+  @Get('tasks')
+  async taskDashboard(@Request() req: any) {
+    const orgId = req?.user?.organization_id;
+    return this.dashboardService.getTaskDashboard(orgId);
   }
 }

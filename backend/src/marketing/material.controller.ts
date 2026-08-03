@@ -12,11 +12,13 @@ import {
 } from '@nestjs/common';
 import { MaterialService, CreateAdMaterialDto, UpdateEffectDto, MaterialRankingFilters, MaterialRankMetric } from './material.service';
 import { AdMaterial } from './ad-material.entity';
-import { AdMaterialType, AdMaterialStatus, MaterialComplianceStatus } from '../types';
+import { AdMaterialType, AdMaterialStatus, MaterialComplianceStatus, UserRole} from '../types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('ad-materials')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.MARKETING)
 export class MaterialController {
   constructor(private materialService: MaterialService) {}
 

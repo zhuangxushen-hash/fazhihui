@@ -3,7 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Reconciliation, ReconciliationStatus } from './reconciliation.entity';
 import { Receivable } from './receivable.entity';
-import { PaymentRecord } from './payment-record.entity';
+import { PaymentRecord, PaymentStatus } from './payment-record.entity';
+import { InvoiceService } from './invoice.service';
 
 @Injectable()
 export class ReconciliationService {
@@ -14,6 +15,8 @@ export class ReconciliationService {
     private receivableRepository: Repository<Receivable>,
     @InjectRepository(PaymentRecord)
     private paymentRecordRepository: Repository<PaymentRecord>,
+    // 注入发票服务，对账时关联发票状态
+    private invoiceService: InvoiceService,
   ) {}
 
   async create(data: Partial<Reconciliation>): Promise<Reconciliation> {
@@ -75,6 +78,45 @@ export class ReconciliationService {
       } else {
         mismatchCount++;
       }
+    }
+
+    // M5: 实际使用 paymentRecordRepository，汇总支付记录与应收对账
+    // 查询该组织在对账期间内所有已支付的支付记录，汇总支付总额用于与应收已收金额交叉验证
+    let totalPaymentAmount = 0;
+    try {
+      const paymentRecords = await this.paymentRecordRepository.find({
+        where: { status: PaymentStatus.PAID } as any,
+      });
+      // 按组织过滤（通过 receivable 的 case_id 关联判断归属）
+      const orgCaseIds = new Set(
+        receivables.map((r) => r.case_id).filter(Boolean),
+      );
+      for (const pr of paymentRecords) {
+        if (pr.case_id && orgCaseIds.has(pr.case_id)) {
+          totalPaymentAmount += Number(pr.amount) || 0;
+        }
+      }
+      // 支付记录总额与应收已收总额不一致时，追加 mismatchCount
+      if (Math.abs(totalPaymentAmount - totalReceived) > 0.01) {
+        mismatchCount++;
+      }
+    } catch (err) {
+      // 支付记录汇总失败不影响主流程，静默处理
+    }
+
+    // M5: 注入 InvoiceService，对账时关联发票状态
+    // 统计该组织发票状态，若存在已作废/已冲红的发票，追加 mismatchCount
+    try {
+      const invoices = await this.invoiceService.findAll(orgId);
+      const abnormalInvoices = invoices.filter((inv) => {
+        const s = String(inv.status || '');
+        return s === 'voided' || s === 'red_flushed';
+      });
+      if (abnormalInvoices.length > 0) {
+        mismatchCount += abnormalInvoices.length;
+      }
+    } catch (err) {
+      // 发票状态查询失败不影响主流程，静默处理
     }
 
     const reconciliationNo = `REC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;

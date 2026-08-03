@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan } from 'typeorm';
+import { Repository, LessThan, DataSource } from 'typeorm';
 import { Lead } from './lead.entity';
 import { FollowUp } from './follow-up.entity';
+import { Case } from '../case/case.entity';
+import { ConflictCheckService } from '../case/conflict-check.service';
 import { LeadStatus, CaseType, LeadSource } from '../types';
+// Phase4 M7: 线索创建后自动分配，注入同模块的 LeadAssignmentService
+import { LeadAssignmentService } from './lead-assignment.service';
 
 @Injectable()
 export class LeadService {
@@ -12,6 +16,12 @@ export class LeadService {
     private leadRepository: Repository<Lead>,
     @InjectRepository(FollowUp)
     private followUpRepository: Repository<FollowUp>,
+    @InjectRepository(Case)
+    private caseRepository: Repository<Case>,
+    private dataSource: DataSource,
+    private conflictCheckService: ConflictCheckService,
+    // Phase4 M7: 注入线索分配服务，线索创建后自动匹配分配规则
+    private leadAssignmentService: LeadAssignmentService,
   ) {}
 
   async create(leadData: Partial<Lead>): Promise<Lead> {
@@ -22,7 +32,14 @@ export class LeadService {
       return existingLead;
     }
     const lead = this.leadRepository.create(leadData);
-    return this.leadRepository.save(lead);
+    const savedLead = await this.leadRepository.save(lead);
+
+    // Phase4 M7: 线索创建后自动匹配分配规则进行分配（异常静默处理，不影响线索创建主流程）
+    try {
+      await this.leadAssignmentService.matchAndAssign(savedLead, 'system');
+    } catch (err) {}
+
+    return savedLead;
   }
 
   async findAll(orgId: string, filters?: {
@@ -31,6 +48,7 @@ export class LeadService {
     source_channel?: LeadSource;
     page?: number;
     limit?: number;
+    days_no_follow?: number; // 智能筛选：超过X天未跟进
   }): Promise<{ data: Lead[]; total: number }> {
     const query = this.leadRepository.createQueryBuilder('lead')
       .where('lead.organization_id = :orgId', { orgId });
@@ -43,6 +61,11 @@ export class LeadService {
     }
     if (filters?.source_channel) {
       query.andWhere('lead.source_channel = :source_channel', { source_channel: filters.source_channel });
+    }
+    // 智能筛选：超过X天未跟进（follow_up_time 早于阈值 或 从未跟进过）
+    if (filters?.days_no_follow) {
+      const threshold = new Date(Date.now() - filters.days_no_follow * 24 * 60 * 60 * 1000);
+      query.andWhere('(lead.follow_up_time < :threshold OR lead.follow_up_time IS NULL)', { threshold });
     }
 
     const total = await query.getCount();
@@ -95,5 +118,74 @@ export class LeadService {
       { status: LeadStatus.PENDING_FOLLOW, created_at: LessThan(timeoutDate) },
       { status: LeadStatus.LOST }
     );
+  }
+
+  /**
+   * 线索转化为案件
+   * 读取线索信息，创建对应的案件记录，转化成功后更新线索转化状态为 converted
+   */
+  async convertToCase(leadId: string, extraData?: Partial<Case>): Promise<Case> {
+    return this.dataSource.transaction(async (manager) => {
+      const lead = await manager.findOne(Lead, { where: { id: leadId } });
+      if (!lead) {
+        throw new Error('线索不存在');
+      }
+
+      // 先将线索转化状态置为转化中
+      lead.conversion_status = 'converting';
+      await manager.save(Lead, lead);
+
+      // 基于线索信息构建案件数据
+      const caseData: Partial<Case> = {
+        case_type: lead.case_type as CaseType,
+        client_name: lead.contact_name,
+        client_phone: lead.phone,
+        description: lead.case_description,
+        service_fee: lead.service_fee,
+        fee_amount: lead.service_fee,
+        lead_id: lead.id,
+        organization_id: lead.organization_id,
+        case_source: lead.source_channel,
+        referrer: lead.referrer,
+        source_detail: lead.lead_source_detail,
+        ...extraData,
+      };
+
+      const newCase = manager.create(Case, caseData);
+      const savedCase = await manager.save(Case, newCase);
+
+      // 线索转案件时在事务内执行利冲检索，若检测到明确冲突则将案件审批状态置为 conflict_hold
+      const conflictResult = await this.conflictCheckService.check({
+        partyName: savedCase.client_name,
+        opposingParty: savedCase.opposing_party,
+        partyPhone: savedCase.client_phone,
+        orgId: savedCase.organization_id,
+        caseId: savedCase.id,
+      });
+      if (conflictResult.check_result === 'conflict') {
+        await manager.update(Case, savedCase.id, { approval_status: 'conflict_hold' });
+        savedCase.approval_status = 'conflict_hold';
+      }
+
+      // 转化成功后更新线索
+      lead.conversion_status = 'converted';
+      lead.case_id = savedCase.id;
+      lead.conversion_time = new Date();
+      lead.status = LeadStatus.PENDING_SIGN;
+      await manager.save(Lead, lead);
+
+      return savedCase;
+    });
+  }
+
+  /**
+   * 查询公共线索池
+   * 返回 is_public=true 且属于指定组织的线索列表
+   */
+  async getPublicLeads(organizationId: string): Promise<Lead[]> {
+    return this.leadRepository.find({
+      where: { is_public: true, organization_id: organizationId },
+      order: { created_at: 'DESC' },
+    });
   }
 }

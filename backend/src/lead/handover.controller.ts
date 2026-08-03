@@ -12,10 +12,12 @@ import {
 } from '@nestjs/common';
 import { HandoverService } from './handover.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { HandoverType } from '../types';
+import { Roles } from '../auth/roles.decorator';
+import { HandoverType, UserRole} from '../types';
 
 @Controller('handover')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.SALES)
 export class HandoverController {
   constructor(private readonly handoverService: HandoverService) {}
 

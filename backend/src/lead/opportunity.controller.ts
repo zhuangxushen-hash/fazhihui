@@ -13,10 +13,12 @@ import {
 } from '@nestjs/common';
 import { OpportunityService } from './opportunity.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { OpportunityStage, OpportunityStatus } from '../types';
+import { Roles } from '../auth/roles.decorator';
+import { OpportunityStage, OpportunityStatus, UserRole} from '../types';
 
 @Controller('opportunities')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.SALES)
 export class OpportunityController {
   constructor(private readonly opportunityService: OpportunityService) {}
 

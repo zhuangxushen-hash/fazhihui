@@ -13,10 +13,13 @@ import {
 } from '@nestjs/common';
 import { LeadAssignmentService } from './lead-assignment.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '../types';
 import { LeadAssignment } from './lead-assignment.entity';
 
 @Controller('lead-assignments')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN)
 export class LeadAssignmentController {
   constructor(private readonly assignmentService: LeadAssignmentService) {}
 

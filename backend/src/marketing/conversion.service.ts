@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -7,7 +7,9 @@ import { AdMaterial } from './ad-material.entity';
 import { Lead } from '../lead/lead.entity';
 import { Case } from '../case/case.entity';
 import { User } from '../user/user.entity';
-import { AdChannel, ConversionEventType } from '../types';
+import { AdChannel, ConversionEventType, LeadStatus } from '../types';
+// Phase4 M12: 营销转化事件回流线索状态，注入线索服务（forwardRef 防止循环依赖）
+import { LeadService } from '../lead/lead.service';
 
 export interface CreateConversionEventDto {
   channel: AdChannel;
@@ -75,6 +77,9 @@ export class ConversionService {
     private caseRepository: Repository<Case>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    // Phase4 M12: 注入线索服务用于转化事件回流线索状态（forwardRef 防止循环依赖）
+    @Inject(forwardRef(() => LeadService))
+    private leadService: LeadService,
   ) {}
 
   /**
@@ -142,7 +147,36 @@ export class ConversionService {
       }
     }
 
-    return this.conversionEventRepository.save(event);
+    const savedEvent = await this.conversionEventRepository.save(event);
+
+    // Phase4 M12: 转化事件创建成功后回流线索状态（异常静默处理，不影响转化事件创建主流程）
+    try {
+      if (savedEvent.lead_id) {
+        const newStatus = this.mapEventTypeToLeadStatus(savedEvent.event_type);
+        if (newStatus) {
+          await this.leadService.updateStatus(savedEvent.lead_id, newStatus);
+        }
+      }
+    } catch (err) {}
+
+    return savedEvent;
+  }
+
+  /**
+   * Phase4 M12: 根据转化事件类型映射线索状态
+   * LEAD 事件不回流状态（线索本身即新建），其余事件按漏斗阶段推进
+   */
+  private mapEventTypeToLeadStatus(eventType: ConversionEventType): LeadStatus | null {
+    switch (eventType) {
+      case ConversionEventType.WECHAT_ADD:
+        return LeadStatus.FOLLOWING;
+      case ConversionEventType.INVITE:
+        return LeadStatus.INVITING;
+      case ConversionEventType.SIGN:
+        return LeadStatus.PENDING_SIGN;
+      default:
+        return null;
+    }
   }
 
   /**

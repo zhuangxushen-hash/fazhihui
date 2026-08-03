@@ -1,11 +1,14 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { InviteTask } from './invite-task.entity';
 import { Lead } from './lead.entity';
 import { User } from '../user/user.entity';
 import { InviteMethod, InviteTaskStatus, InviteResult, LeadStatus, UserRole } from '../types';
+import { NotificationService } from '../user/notification.service';
 import { Express } from 'express';
+// Phase4 M9: 邀约录音上传后自动质检，注入合规服务（forwardRef 防止循环依赖）
+import { ComplianceService } from '../compliance/compliance.service';
 
 @Injectable()
 export class InviteTaskService {
@@ -16,6 +19,10 @@ export class InviteTaskService {
     private leadRepository: Repository<Lead>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private notificationService: NotificationService,
+    // Phase4 M9: 注入合规服务用于邀约录音自动质检
+    @Inject(forwardRef(() => ComplianceService))
+    private complianceService: ComplianceService,
   ) {}
 
   // 创建邀约记录
@@ -70,6 +77,16 @@ export class InviteTaskService {
       await this.leadRepository.save(lead);
     }
 
+    // InviteTask 实体使用 inviter_id 作为接收人字段，使用 lead_id 标识线索
+    await this.notificationService.notify({
+      receiver_id: savedTask.inviter_id || '',
+      title: '新邀约任务',
+      content: `您有新的邀约任务：${savedTask.lead_id}`,
+      type: 'invite_task',
+      level: 'normal',
+      related_type: 'InviteTask',
+      related_id: savedTask.id,
+    });
     return savedTask;
   }
 
@@ -234,10 +251,33 @@ export class InviteTaskService {
   }
 
   // 上传录音文件
-  async uploadRecording(file: any): Promise<string> {
+  async uploadRecording(
+    file: any,
+    context?: {
+      inviteTaskId?: string;
+      content?: string; // 录音转写文本或邀约话术内容，用于合规质检
+      orgId?: string;
+      inviterId?: string;
+    },
+  ): Promise<string> {
     // 实际项目中这里应该上传到云存储，这里简化处理
     const fileName = `recording_${Date.now()}_${file.originalname}`;
     // 返回模拟的URL
-    return `/uploads/${fileName}`;
+    const url = `/uploads/${fileName}`;
+
+    // Phase4 M9: 录音上传后自动触发谈案质检（异常静默处理，不影响录音上传主流程）
+    try {
+      if (context && context.inviteTaskId && context.content && context.orgId && context.inviterId) {
+        await this.complianceService.runTalkQualityCheck(
+          context.inviteTaskId,
+          'recording',
+          context.content,
+          context.orgId,
+          context.inviterId,
+        );
+      }
+    } catch (err) {}
+
+    return url;
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In } from 'typeorm';
 import { TalkSOP, OpportunitySOPProgress, TalkSOPNode, TalkSOPNodeType, SOPNodeStatus } from './talk-sop.entity';
@@ -6,6 +6,9 @@ import { Opportunity } from './opportunity.entity';
 import { Lead } from './lead.entity';
 import { User } from '../user/user.entity';
 import { UserRole } from '../types';
+// Phase4 M11: 谈案SOP节点完成后触发质检，注入合规服务与邀约任务仓库
+import { ComplianceService } from '../compliance/compliance.service';
+import { InviteTask } from './invite-task.entity';
 
 @Injectable()
 export class TalkSOPService {
@@ -21,6 +24,12 @@ export class TalkSOPService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private dataSource: DataSource,
+    // Phase4 M11: 注入邀约任务仓库，用于查找节点对应线索的邀约任务以触发质检
+    @InjectRepository(InviteTask)
+    private inviteTaskRepository: Repository<InviteTask>,
+    // Phase4 M11: 注入合规服务用于节点完成后质检（forwardRef 防止循环依赖）
+    @Inject(forwardRef(() => ComplianceService))
+    private complianceService: ComplianceService,
   ) {}
 
   // ==================== SOP模板管理 ====================
@@ -364,6 +373,27 @@ export class TalkSOPService {
     }
 
     await this.progressRepository.save(progressRecord);
+
+    // Phase4 M11: 谈案SOP节点完成后触发质检（异常静默处理，不影响节点完成主流程）
+    try {
+      const lead = await this.leadRepository.findOne({ where: { id: opportunity.lead_id } });
+      if (lead && lead.organization_id) {
+        // 查找该线索对应的邀约任务，作为质检关联对象
+        const inviteTask = await this.inviteTaskRepository.findOne({
+          where: { lead_id: lead.id },
+          order: { created_at: 'DESC' },
+        });
+        // 质检内容取节点名称与描述
+        const checkContent = [node.node_name, node.description].filter(Boolean).join(' ');
+        await this.complianceService.runTalkQualityCheck(
+          inviteTask?.id || opportunityId,
+          'sop_node',
+          checkContent,
+          lead.organization_id,
+          userId,
+        );
+      }
+    } catch (err) {}
 
     return this.getOpportunitySOPProgress(opportunityId, userId);
   }

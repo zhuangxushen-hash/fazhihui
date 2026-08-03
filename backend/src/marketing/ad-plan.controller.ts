@@ -13,7 +13,8 @@ import {
 } from '@nestjs/common';
 import { AdPlanService } from './ad-plan.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { AdPlanStatus } from '../types';
+import { Roles } from '../auth/roles.decorator';
+import { AdPlanStatus, UserRole} from '../types';
 
 /**
  * 投放计划管理控制器
@@ -21,6 +22,7 @@ import { AdPlanStatus } from '../types';
  */
 @Controller('ad-plans')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.MARKETING)
 export class AdPlanController {
   constructor(private adPlanService: AdPlanService) {}
 

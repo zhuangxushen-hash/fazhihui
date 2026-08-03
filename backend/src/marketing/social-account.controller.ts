@@ -13,7 +13,8 @@ import {
 } from '@nestjs/common';
 import { SocialAccountService } from './social-account.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { SocialPlatform, SocialAuthStatus } from '../types';
+import { Roles } from '../auth/roles.decorator';
+import { SocialPlatform, SocialAuthStatus, UserRole} from '../types';
 
 /**
  * 公域账号管理控制器
@@ -21,6 +22,7 @@ import { SocialPlatform, SocialAuthStatus } from '../types';
  */
 @Controller('social-accounts')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.MARKETING)
 export class SocialAccountController {
   constructor(private readonly socialAccountService: SocialAccountService) {}
 

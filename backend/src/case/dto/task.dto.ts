@@ -41,6 +41,10 @@ export class CreateTaskDto {
   @IsEnum(['low', 'medium', 'high', 'urgent'])
   @IsOptional()
   priority?: string;
+
+  @IsOptional()
+  @IsString()
+  parent_task_id?: string;
 }
 
 /**

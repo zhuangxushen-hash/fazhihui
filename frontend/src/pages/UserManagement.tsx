@@ -151,6 +151,8 @@ export default function UserManagement() {
       }
       return <Tag color={colors[role] || 'default'}>{labels[role] || '-'}</Tag>
     }},
+    { title: '经验值', dataIndex: 'experience', key: 'experience', width: 90, render: (val: number) => val || 0 },
+    { title: '等级', dataIndex: 'level', key: 'level', width: 80, render: (val: number) => <Tag color="gold">Lv{val || 1}</Tag> },
     { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
     { title: '操作', key: 'action', render: (_: any, record: any) => (
       <Space>

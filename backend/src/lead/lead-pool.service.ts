@@ -5,6 +5,8 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { LeadPool } from './lead-pool.entity';
 import { Lead } from './lead.entity';
 import { LeadStatus, RecycleReason, LeadPoolStatus, CaseType } from '../types';
+// Phase5+6 L4: 注入通知服务，公海领取/分配时通知接收人
+import { NotificationService } from '../user/notification.service';
 
 @Injectable()
 export class LeadPoolService {
@@ -17,6 +19,8 @@ export class LeadPoolService {
     private leadPoolRepository: Repository<LeadPool>,
     @InjectRepository(Lead)
     private leadRepository: Repository<Lead>,
+    // Phase5+6 L4: 注入通知服务
+    private notificationService: NotificationService,
   ) {}
 
   // 每天凌晨1点执行超时线索回收
@@ -225,6 +229,21 @@ export class LeadPoolService {
       status: LeadStatus.PENDING_FOLLOW,
     });
 
+    // Phase5+6 L4: 公海领取通知接收人（异常静默不影响主流程）
+    try {
+      await this.notificationService.notify({
+        receiver_id: userId,
+        title: '公海线索领取成功',
+        content: `您已成功领取公海线索 ${leadPool.lead_id}`,
+        type: 'lead_pool',
+        level: 'normal',
+        related_type: 'Lead',
+        related_id: leadPool.lead_id,
+      });
+    } catch (e) {
+      // 通知失败不影响主业务
+    }
+
     return this.leadRepository.findOne({ where: { id: leadPool.lead_id } });
   }
 
@@ -261,6 +280,21 @@ export class LeadPoolService {
       assign_sales_id: targetUserId,
       status: LeadStatus.PENDING_FOLLOW,
     });
+
+    // Phase5+6 L4: 公海分配通知接收人（异常静默不影响主流程）
+    try {
+      await this.notificationService.notify({
+        receiver_id: targetUserId,
+        title: '公海线索分配通知',
+        content: `管理员已将公海线索 ${leadPool.lead_id} 分配给您`,
+        type: 'lead_pool',
+        level: 'normal',
+        related_type: 'Lead',
+        related_id: leadPool.lead_id,
+      });
+    } catch (e) {
+      // 通知失败不影响主业务
+    }
 
     return this.leadRepository.findOne({ where: { id: leadPool.lead_id } });
   }

@@ -1,9 +1,12 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { BrandConfigService } from './brand-config.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '../types';
 
 @Controller('system/brand-configs')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN)
 export class BrandConfigController {
   constructor(private brandConfigService: BrandConfigService) {}
 
@@ -20,6 +23,7 @@ export class BrandConfigController {
   }
 
   @Get('active')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.MARKETING, UserRole.SALES, UserRole.LAWYER, UserRole.ASSISTANT, UserRole.FINANCE)
   getActiveBrandConfig(@Request() req?: any) {
     const orgId = req?.user?.organization_id;
     return this.brandConfigService.getActiveBrandConfig(orgId);

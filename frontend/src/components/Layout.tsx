@@ -15,8 +15,8 @@ import {
   MenuUnfoldOutlined,
   MenuFoldOutlined,
   BellOutlined,
-  SearchOutlined,
   AppstoreOutlined,
+  SolutionOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 
@@ -49,6 +49,7 @@ const menuGroups: MenuGroup[] = [
       { key: '/dashboard/custom-report', label: '自定义报表' },
       { key: '/dashboard/hr-efficiency', label: '人效分析' },
       { key: '/dashboard/profit-model', label: '盈利模型' },
+      { key: '/data-screen', label: '数据大屏' },
     ],
   },
   {
@@ -57,6 +58,7 @@ const menuGroups: MenuGroup[] = [
     label: '线索CRM',
     children: [
       { key: '/leads', label: '线索管理' },
+      { key: '/clients', label: '客户管理' },
       { key: '/lead-pool', label: '公海池' },
       { key: '/invite-workbench', label: '邀约工作台' },
       { key: '/talk-workbench', label: '谈案工作台' },
@@ -74,6 +76,11 @@ const menuGroups: MenuGroup[] = [
       { key: '/case-warning', label: '案件预警' },
       { key: '/legal-documents', label: 'AI文书' },
       { key: '/similar-cases', label: '类案匹配' },
+      { key: '/contracts', label: '合同管理' },
+      { key: '/property-preservation', label: '财产保全' },
+      { key: '/conflict-check', label: '利冲检索' },
+      { key: '/bids', label: '投标管理' },
+      { key: '/due-diligence', label: '尽调宝' },
       { key: '/compliance/export', label: '案件归档' },
       { key: '/cloud-archive', label: '云归档管理' },
     ],
@@ -98,6 +105,9 @@ const menuGroups: MenuGroup[] = [
       { key: '/finance/reconciliation', label: '智能对账' },
       { key: '/finance/refund-tier', label: '阶梯退费' },
       { key: '/finance/case-profit', label: '单案利润分析' },
+      { key: '/finance/payment-reminder', label: '催款管理' },
+      { key: '/finance/invoices', label: '发票管理' },
+      { key: '/finance/business-funds', label: '业务款管理' },
     ],
   },
   {
@@ -142,48 +152,225 @@ const menuGroups: MenuGroup[] = [
       { key: '/system/deployment-config', label: '部署配置' },
       { key: '/system/brand-customization', label: '品牌定制' },
       { key: '/system/integrations', label: '第三方对接' },
+      { key: '/approval-center', label: '审批中心' },
+      { key: '/seals', label: '用印管理' },
+    ],
+  },
+  {
+    key: 'hr',
+    icon: <SolutionOutlined />,
+    label: '人力资源',
+    children: [
+      { key: '/hr/leaves', label: '请假管理' },
+      { key: '/hr/attendances', label: '考勤管理' },
+      { key: '/hr/materials', label: '物品管理' },
+      { key: '/hr/activities', label: '活动管理' },
+    ],
+  },
+  {
+    key: 'office',
+    icon: <UserOutlined />,
+    label: '个人办公',
+    children: [
+      { key: '/worklogs', label: '工作日志' },
+      { key: '/schedules', label: '日程管理' },
+      { key: '/tasks', label: '任务中心' },
+      { key: '/knowledge', label: '知识库' },
+      { key: '/diagram-tool', label: '可视化绘图' },
+      { key: '/social', label: '同事圆' },
+      { key: '/mail', label: '邮件' },
+      { key: '/calculator', label: '计算器' },
+      { key: '/timer', label: '计时器' },
     ],
   },
 ]
 
+// 角色-一级菜单分组访问矩阵：每个角色能看到哪些分组
+const roleGroupAccess: Record<string, string[]> = {
+  super_admin: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'marketing', 'scrm', 'system', 'hr', 'office'],
+  org_admin: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'marketing', 'scrm', 'system', 'hr', 'office'],
+  marketing: ['dashboard', 'crm', 'marketing', 'scrm', 'office'],
+  sales: ['dashboard', 'crm', 'case', 'compliance', 'scrm', 'office'],
+  lawyer: ['dashboard', 'crm', 'case', 'compliance', 'office'],
+  assistant: ['dashboard', 'crm', 'case', 'compliance', 'hr', 'office'],
+  finance: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'system', 'office'],
+  client: [],
+}
+
+// 角色-子菜单访问矩阵：分组下子菜单按角色粒度控制（未配置默认全部分组内角色可见）
+type SubMenuRule = Record<string, string[]>
+const roleSubMenuAccess: Record<string, SubMenuRule> = {
+  // 数据看板：不同角色看到的看板子项
+  dashboard: {
+    '/': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/dashboard/conversion-funnel': ['super_admin', 'org_admin', 'marketing', 'sales'],
+    '/dashboard/sales-performance': ['super_admin', 'org_admin', 'sales'],
+    '/dashboard/case-efficiency': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
+    '/dashboard/finance': ['super_admin', 'org_admin', 'finance'],
+    '/dashboard/compliance-risk': ['super_admin', 'org_admin'],
+    '/dashboard/custom-report': ['super_admin', 'org_admin'],
+    '/dashboard/hr-efficiency': ['super_admin', 'org_admin'],
+    '/dashboard/profit-model': ['super_admin', 'org_admin'],
+    '/data-screen': ['super_admin', 'org_admin'],
+  },
+  // 线索CRM：销售类角色看全，其他只看客户
+  crm: {
+    '/leads': ['super_admin', 'org_admin', 'marketing', 'sales'],
+    '/clients': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/lead-pool': ['super_admin', 'org_admin', 'sales'],
+    '/invite-workbench': ['super_admin', 'org_admin', 'sales'],
+    '/talk-workbench': ['super_admin', 'org_admin', 'sales'],
+    '/talk-sop': ['super_admin', 'org_admin', 'sales'],
+    '/compliance/sales-review': ['super_admin', 'org_admin', 'sales'],
+  },
+  // 案件办案
+  case: {
+    '/cases': ['super_admin', 'org_admin', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/case-sop': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
+    '/case-warning': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
+    '/legal-documents': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
+    '/similar-cases': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
+    '/contracts': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'finance', 'sales'],
+    '/property-preservation': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
+    '/conflict-check': ['super_admin', 'org_admin', 'sales', 'lawyer', 'assistant'],
+    '/bids': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
+    '/due-diligence': ['super_admin', 'org_admin', 'lawyer'],
+    '/compliance/export': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
+    '/cloud-archive': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
+  },
+  // 合规风控
+  compliance: {
+    '/compliance': ['super_admin', 'org_admin', 'lawyer', 'finance', 'sales', 'marketing'],
+    '/compliance-center': ['super_admin', 'org_admin'],
+    '/talk-quality-check': ['super_admin', 'org_admin', 'sales'],
+  },
+  // 财务分润
+  finance: {
+    '/finance': ['super_admin', 'org_admin', 'finance'],
+    '/commission-config': ['super_admin', 'org_admin', 'finance'],
+    '/finance/reconciliation': ['super_admin', 'org_admin', 'finance'],
+    '/finance/refund-tier': ['super_admin', 'org_admin', 'finance'],
+    '/finance/case-profit': ['super_admin', 'org_admin', 'finance'],
+    '/finance/payment-reminder': ['super_admin', 'org_admin', 'finance'],
+    '/finance/invoices': ['super_admin', 'org_admin', 'finance'],
+    '/finance/business-funds': ['super_admin', 'org_admin', 'finance'],
+  },
+  // 投放营销
+  marketing: {
+    '/marketing/ad-accounts': ['super_admin', 'org_admin', 'marketing'],
+    '/marketing/ad-plans': ['super_admin', 'org_admin', 'marketing'],
+    '/marketing/conversion': ['super_admin', 'org_admin', 'marketing'],
+    '/marketing/materials': ['super_admin', 'org_admin', 'marketing'],
+    '/marketing/ai-content': ['super_admin', 'org_admin', 'marketing'],
+    '/marketing/social-accounts': ['super_admin', 'org_admin', 'marketing'],
+    '/marketing/digital-human-live': ['super_admin', 'org_admin', 'marketing'],
+  },
+  // SCRM私域
+  scrm: {
+    '/scrm/live-codes': ['super_admin', 'org_admin', 'marketing', 'sales'],
+    '/scrm/channels': ['super_admin', 'org_admin', 'marketing', 'sales'],
+    '/scrm/tags': ['super_admin', 'org_admin', 'marketing', 'sales'],
+    '/scrm/sidebar': ['super_admin', 'org_admin', 'sales', 'lawyer', 'assistant'],
+    '/scrm/reach': ['super_admin', 'org_admin', 'sales'],
+    '/scrm/chat-archives': ['super_admin', 'org_admin', 'sales'],
+  },
+  // 系统管理：只有管理员能进（但审批中心、消息通知、用印、AI工具部分其他角色也可见）
+  system: {
+    '/users': ['super_admin', 'org_admin'],
+    '/roles': ['super_admin', 'org_admin'],
+    '/permissions': ['super_admin', 'org_admin'],
+    '/menus': ['super_admin', 'org_admin'],
+    '/notifications': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/service-ratings': ['super_admin', 'org_admin'],
+    '/ai-tools': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'sales', 'marketing', 'finance'],
+    '/system/deployment-config': ['super_admin', 'org_admin'],
+    '/system/brand-customization': ['super_admin', 'org_admin'],
+    '/system/integrations': ['super_admin', 'org_admin'],
+    '/approval-center': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'finance', 'sales', 'marketing'],
+    '/seals': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
+  },
+  // HR
+  hr: {
+    '/hr/leaves': ['super_admin', 'org_admin', 'assistant'],
+    '/hr/attendances': ['super_admin', 'org_admin', 'assistant'],
+    '/hr/materials': ['super_admin', 'org_admin', 'assistant'],
+    '/hr/activities': ['super_admin', 'org_admin', 'assistant'],
+  },
+  // 个人办公：所有内部角色都能看自己的
+  office: {
+    '/worklogs': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/schedules': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/tasks': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/knowledge': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'sales'],
+    '/diagram-tool': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
+    '/social': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/mail': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/calculator': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/timer': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+  },
+}
+
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false)
-  const [openKeys, setOpenKeys] = useState<string[]>(() => {
-    for (const group of menuGroups) {
-      if (group.children.some(child => child.key === window.location.pathname)) {
-        return [group.key]
-      }
-    }
-    return ['dashboard']
-  })
   const navigate = useNavigate()
   const location = useLocation()
 
   const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const userRole = user.role || 'super_admin'
+
+  // 基于当前用户角色过滤后的菜单
+  const filteredMenuGroups = useMemo<MenuGroup[]>(() => {
+    const allowedGroups = roleGroupAccess[userRole] || []
+    return menuGroups
+      .filter(group => allowedGroups.includes(group.key))
+      .map(group => {
+        const subRule = roleSubMenuAccess[group.key]
+        if (!subRule) return group
+        return {
+          ...group,
+          children: group.children.filter(child => {
+            const rule = subRule[child.key]
+            return !rule || rule.includes(userRole)
+          }),
+        }
+      })
+      .filter(group => group.children.length > 0)
+  }, [userRole])
+
+  const [collapsed, setCollapsed] = useState(false)
+  const [openKeys, setOpenKeys] = useState<string[]>(() => {
+    for (const group of filteredMenuGroups) {
+      if (group.children.some(child => child.key === window.location.pathname)) {
+        return [group.key]
+      }
+    }
+    return filteredMenuGroups.length > 0 ? [filteredMenuGroups[0].key] : []
+  })
 
   // 当前路由对应的子菜单分组 key
   const activeGroupKey = useMemo(() => {
-    for (const group of menuGroups) {
+    for (const group of filteredMenuGroups) {
       if (group.children.some(child => child.key === location.pathname)) {
         return group.key
       }
     }
-    return 'dashboard'
-  }, [location.pathname])
+    return filteredMenuGroups.length > 0 ? filteredMenuGroups[0].key : ''
+  }, [location.pathname, filteredMenuGroups])
 
   // 路由变化时自动展开对应分组
   useEffect(() => {
-    setOpenKeys(prev => (prev.includes(activeGroupKey) ? prev : [...prev, activeGroupKey]))
+    if (activeGroupKey) {
+      setOpenKeys(prev => (prev.includes(activeGroupKey) ? prev : [...prev, activeGroupKey]))
+    }
   }, [activeGroupKey])
 
   // 当前页面标题
   const currentPageLabel = useMemo(() => {
-    for (const group of menuGroups) {
+    for (const group of filteredMenuGroups) {
       const found = group.children.find(child => child.key === location.pathname)
       if (found) return found.label
     }
-    return '数据看板'
-  }, [location.pathname])
+    return '首页'
+  }, [location.pathname, filteredMenuGroups])
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -206,7 +393,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setOpenKeys(keys)
   }
 
-  const menuItems = menuGroups.map(group => {
+  const menuItems = filteredMenuGroups.map(group => {
     return {
       key: group.key,
       icon: <span style={{ fontSize: 20 }}>{group.icon}</span>,

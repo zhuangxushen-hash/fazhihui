@@ -15,7 +15,7 @@ import { User } from '../user/user.entity';
 import { ConversionEvent } from '../marketing/conversion-event.entity';
 import { InviteTask } from '../lead/invite-task.entity';
 import { Opportunity } from '../lead/opportunity.entity';
-import { CaseTask } from '../case/case-task.entity';
+import { CaseTask, CaseTaskStatus } from '../case/case-task.entity';
 import { CaseWarning } from '../case/case-warning.entity';
 import { CaseCost } from '../finance/case-cost.entity';
 import { ComplianceCheckResult } from '../compliance/compliance-check-result.entity';
@@ -23,6 +23,12 @@ import { ComplaintTicket } from '../compliance/complaint-ticket.entity';
 import { ReportTemplate } from './report-template.entity';
 import { ReportExportLog } from './report-export-log.entity';
 import { ServiceRating } from '../client/service-rating.entity';
+import { PaymentRecord, PaymentStatus } from '../finance/payment-record.entity';
+import { Receivable } from '../finance/receivable.entity';
+import { Invoice } from '../finance/invoice.entity';
+import { CommissionRecord } from '../finance/commission-record.entity';
+// Phase5+6 L5: 注入通知服务，高风险预警推送通知给管理员
+import { NotificationService } from '../user/notification.service';
 
 @Injectable()
 export class DashboardService {
@@ -63,6 +69,16 @@ export class DashboardService {
     private reportExportLogRepository: Repository<ReportExportLog>,
     @InjectRepository(ServiceRating)
     private serviceRatingRepository: Repository<ServiceRating>,
+    @InjectRepository(PaymentRecord)
+    private paymentRecordRepository: Repository<PaymentRecord>,
+    @InjectRepository(Receivable)
+    private receivableRepository: Repository<Receivable>,
+    @InjectRepository(Invoice)
+    private invoiceRepository: Repository<Invoice>,
+    @InjectRepository(CommissionRecord)
+    private commissionRecordRepository: Repository<CommissionRecord>,
+    // Phase5+6 L5: 注入通知服务
+    private notificationService: NotificationService,
   ) {}
 
   async getConversionFunnel(orgId: string, startDate?: Date, endDate?: Date): Promise<{
@@ -423,6 +439,36 @@ export class DashboardService {
     const warning = await this.caseRepository.count({
       where: { organization_id: orgId, risk_level: 'medium' },
     });
+
+    // Phase5+6 L5: 查询到高风险预警时推送通知给管理员（异常静默不影响主流程）
+    if (highRisk > 0 || overdue > 0) {
+      try {
+        // 查询组织内管理员用户作为接收人
+        const admins = await this.userRepository.find({
+          where: [
+            { organization_id: orgId, role: UserRole.ORG_ADMIN },
+            { organization_id: orgId, role: UserRole.SUPER_ADMIN },
+          ],
+        });
+        const receiverIds = admins.length > 0
+          ? admins.map(a => a.id)
+          : ['']; // 无管理员时用空字符串兜底
+        const alertContent = `高风险案件:${highRisk} 起, 超期案件:${overdue} 起, 中风险案件:${warning} 起`;
+        for (const receiverId of receiverIds) {
+          await this.notificationService.notify({
+            receiver_id: receiverId,
+            title: '看板风险预警',
+            content: alertContent,
+            type: 'risk_alert',
+            level: 'high',
+            related_type: 'Dashboard',
+            related_id: orgId,
+          });
+        }
+      } catch (e) {
+        // 通知失败不影响主业务
+      }
+    }
 
     return { high_risk_count: highRisk, overdue_count: overdue, warning_count: warning };
   }
@@ -1763,6 +1809,317 @@ export class DashboardService {
         sales_revenue: Math.round(expectedRevenue * (salesMargin / 100) * 100) / 100,
         marketing_revenue: Math.round(expectedRevenue * (marketingMargin / 100) * 100) / 100,
       },
+    };
+  }
+
+  // ==================== 数据大屏 ====================
+
+  /**
+   * 数据大屏聚合数据
+   * 包含：年度收结案统计、款项创收趋势、核心指标、客户价值分析、团队绩效排行、实时业务动态
+   */
+  async getScreenData(orgId: string): Promise<any> {
+    const now = new Date();
+    const yearStart = new Date(now.getFullYear(), 0, 1);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+    // 1. 年度收结案统计（每月新收、已结）
+    const monthlyReceivedRaw = await this.caseRepository.createQueryBuilder('case')
+      .select("strftime('%m', case.created_at)", 'month')
+      .addSelect('COUNT(case.id)', 'count')
+      .where('case.organization_id = :orgId', { orgId })
+      .andWhere('case.created_at >= :yearStart', { yearStart })
+      .groupBy("strftime('%m', case.created_at)")
+      .getRawMany();
+    const monthlyClosedRaw = await this.caseRepository.createQueryBuilder('case')
+      .select("strftime('%m', case.updated_at)", 'month')
+      .addSelect('COUNT(case.id)', 'count')
+      .where('case.organization_id = :orgId', { orgId })
+      .andWhere('case.status = :status', { status: CaseStatus.CLOSED })
+      .andWhere('case.updated_at >= :yearStart', { yearStart })
+      .groupBy("strftime('%m', case.updated_at)")
+      .getRawMany();
+
+    const receivedMap = new Map(monthlyReceivedRaw.map((r: any) => [r.month, parseInt(r.count)]));
+    const closedMap = new Map(monthlyClosedRaw.map((r: any) => [r.month, parseInt(r.count)]));
+    const monthlyCaseStats = [];
+    for (let m = 1; m <= 12; m++) {
+      const mm = String(m).padStart(2, '0');
+      monthlyCaseStats.push({
+        month: `${now.getFullYear()}-${mm}`,
+        received: receivedMap.get(mm) || 0,
+        closed: closedMap.get(mm) || 0,
+      });
+    }
+
+    // 2. 款项创收趋势（每月创收金额，12个月）
+    const monthlyRevenueRaw = await this.feeRepository.createQueryBuilder('fee')
+      .select("strftime('%m', fee.created_at)", 'month')
+      .addSelect('COALESCE(SUM(fee.amount), 0)', 'total')
+      .where('fee.organization_id = :orgId', { orgId })
+      .andWhere('fee.created_at >= :yearStart', { yearStart })
+      .groupBy("strftime('%m', fee.created_at)")
+      .getRawMany();
+    const revenueMap = new Map(monthlyRevenueRaw.map((r: any) => [r.month, parseFloat(r.total)]));
+    const revenueTrend = [];
+    for (let m = 1; m <= 12; m++) {
+      const mm = String(m).padStart(2, '0');
+      revenueTrend.push({
+        month: `${now.getFullYear()}-${mm}`,
+        revenue: revenueMap.get(mm) || 0,
+      });
+    }
+
+    // 3. 核心指标
+    // 在办案件数：status != closed
+    const processingCases = await this.caseRepository.createQueryBuilder('case')
+      .where('case.organization_id = :orgId', { orgId })
+      .andWhere('case.status != :status', { status: CaseStatus.CLOSED })
+      .getCount();
+    // 本月新增：created_at 在本月
+    const monthNewCases = await this.caseRepository.createQueryBuilder('case')
+      .where('case.organization_id = :orgId', { orgId })
+      .andWhere('case.created_at >= :monthStart', { monthStart })
+      .andWhere('case.created_at < :nextMonthStart', { nextMonthStart })
+      .getCount();
+    // 本月结案：status=closed 且 updated_at 在本月
+    const monthClosedCases = await this.caseRepository.createQueryBuilder('case')
+      .where('case.organization_id = :orgId', { orgId })
+      .andWhere('case.status = :status', { status: CaseStatus.CLOSED })
+      .andWhere('case.updated_at >= :monthStart', { monthStart })
+      .andWhere('case.updated_at < :nextMonthStart', { nextMonthStart })
+      .getCount();
+    // 累计创收
+    const totalRevenueResult = await this.feeRepository.createQueryBuilder('fee')
+      .select('COALESCE(SUM(fee.amount), 0)', 'total')
+      .where('fee.organization_id = :orgId', { orgId })
+      .getRawOne();
+    const totalRevenue = parseFloat(totalRevenueResult?.total || '0');
+
+    // 4. 客户价值分析（Top5客户及金额）：按 case.client_name 聚合 fee.amount
+    const clientValueRaw = await this.feeRepository.createQueryBuilder('fee')
+      .select('case.client_name', 'client_name')
+      .addSelect('COALESCE(SUM(fee.amount), 0)', 'total')
+      .innerJoin(Case, 'case', 'case.id = fee.case_id')
+      .where('fee.organization_id = :orgId', { orgId })
+      .andWhere('case.client_name IS NOT NULL')
+      .andWhere("case.client_name != ''")
+      .groupBy('case.client_name')
+      .orderBy('total', 'DESC')
+      .limit(5)
+      .getRawMany();
+    const clientValue = clientValueRaw.map((r: any) => ({
+      client_name: r.client_name,
+      total: parseFloat(r.total || '0'),
+    }));
+
+    // 5. 团队绩效排行（律师办案数、创收）
+    const lawyerPerfRaw = await this.caseRepository.createQueryBuilder('case')
+      .select('case.assignee_lawyer_id', 'lawyer_id')
+      .addSelect('COUNT(case.id)', 'cases_count')
+      .where('case.organization_id = :orgId', { orgId })
+      .andWhere('case.assignee_lawyer_id IS NOT NULL')
+      .groupBy('case.assignee_lawyer_id')
+      .getRawMany();
+    const lawyerIds = lawyerPerfRaw.map((r: any) => r.lawyer_id);
+    const lawyers = lawyerIds.length > 0
+      ? await this.userRepository.createQueryBuilder('user')
+          .where('user.id IN (:...lawyerIds)', { lawyerIds })
+          .getMany()
+      : [];
+    const lawyerMap = new Map(lawyers.map(u => [u.id, u]));
+
+    // 按律师聚合创收金额
+    const lawyerRevenueRaw = await this.feeRepository.createQueryBuilder('fee')
+      .select('case.assignee_lawyer_id', 'lawyer_id')
+      .addSelect('COALESCE(SUM(fee.amount), 0)', 'total')
+      .innerJoin(Case, 'case', 'case.id = fee.case_id')
+      .where('fee.organization_id = :orgId', { orgId })
+      .andWhere('case.assignee_lawyer_id IS NOT NULL')
+      .groupBy('case.assignee_lawyer_id')
+      .getRawMany();
+    const lawyerRevenueMap = new Map(lawyerRevenueRaw.map((r: any) => [r.lawyer_id, parseFloat(r.total || '0')]));
+
+    const teamRanking = lawyerPerfRaw.map((r: any) => ({
+      lawyer_id: r.lawyer_id,
+      lawyer_name: lawyerMap.get(r.lawyer_id)?.real_name || '未知',
+      cases_count: parseInt(r.cases_count),
+      total_revenue: lawyerRevenueMap.get(r.lawyer_id) || 0,
+    })).sort((a, b) => b.total_revenue - a.total_revenue);
+
+    // 6. 实时业务动态（最近10条案件/财务动态）
+    const recentCases = await this.caseRepository.createQueryBuilder('case')
+      .select('case.id', 'id')
+      .addSelect('case.case_no', 'case_no')
+      .addSelect('case.client_name', 'client_name')
+      .addSelect('case.status', 'status')
+      .addSelect('case.created_at', 'created_at')
+      .where('case.organization_id = :orgId', { orgId })
+      .orderBy('case.created_at', 'DESC')
+      .limit(10)
+      .getRawMany();
+    const recentFees = await this.feeRepository.createQueryBuilder('fee')
+      .select('fee.id', 'id')
+      .addSelect('fee.amount', 'amount')
+      .addSelect('fee.description', 'description')
+      .addSelect('fee.paid', 'paid')
+      .addSelect('fee.created_at', 'created_at')
+      .innerJoin(Case, 'case', 'case.id = fee.case_id')
+      .where('fee.organization_id = :orgId', { orgId })
+      .orderBy('fee.created_at', 'DESC')
+      .limit(10)
+      .getRawMany();
+
+    const activities: any[] = [];
+    for (const c of recentCases) {
+      activities.push({
+        type: 'case',
+        title: `新案件 ${c.case_no || ''}`,
+        content: c.client_name ? `客户：${c.client_name}` : '案件创建',
+        status: c.status,
+        time: c.created_at,
+      });
+    }
+    for (const f of recentFees) {
+      activities.push({
+        type: 'finance',
+        title: `款项记录 ${f.paid ? '已回款' : '待回款'}`,
+        content: f.description ? `${f.description} 金额：¥${parseFloat(f.amount || '0').toFixed(2)}` : `金额：¥${parseFloat(f.amount || '0').toFixed(2)}`,
+        status: f.paid ? 'paid' : 'unpaid',
+        time: f.created_at,
+      });
+    }
+    // 按时间倒序取前10条
+    activities.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+    const recentActivities = activities.slice(0, 10);
+
+    return {
+      monthly_case_stats: monthlyCaseStats,
+      revenue_trend: revenueTrend,
+      core_metrics: {
+        processing_cases: processingCases,
+        month_new_cases: monthNewCases,
+        month_closed_cases: monthClosedCases,
+        total_revenue: Math.round(totalRevenue * 100) / 100,
+      },
+      client_value: clientValue,
+      team_ranking: teamRanking,
+      recent_activities: recentActivities,
+    };
+  }
+
+  /**
+   * 财务贯通看板：合同额=应收台账合同额合计；已收款=PaymentRecord(PAID)合计；已开票=Invoice非作废冲红合计
+   */
+  async getFinanceIntegratedDashboard(orgId: string): Promise<{
+    contract_total: number;
+    paid_total: number;
+    pending_total: number;
+    invoiced_total: number;
+    commission_due: number;
+    commission_paid: number;
+  }> {
+    let contractTotal = 0; let paidTotal = 0; let invoicedTotal = 0;
+    let commissionDue = 0; let commissionPaid = 0;
+
+    const receivables = await this.receivableRepository.find({ where: { organization_id: orgId } as any });
+    for (const r of receivables) contractTotal += Number(r.contract_amount) || 0;
+
+    const payments = await this.paymentRecordRepository.createQueryBuilder('p')
+      .innerJoin(Case, 'c', 'c.id = p.case_id')
+      .where('c.organization_id = :orgId', { orgId })
+      .andWhere('p.status = :status', { status: PaymentStatus.PAID })
+      .getMany();
+    for (const p of payments) paidTotal += Number(p.amount) || 0;
+
+    const invoices = await this.invoiceRepository.find({ where: { organization_id: orgId } as any });
+    for (const inv of invoices) {
+      const s = String(inv.status || '');
+      if (s === 'voided' || s === 'red_flushed') continue;
+      invoicedTotal += Number(inv.total_amount || (inv as any).amount) || 0;
+    }
+
+    const commissions = await this.commissionRecordRepository.find({ where: { organization_id: orgId } as any });
+    for (const c of commissions) {
+      if (String((c as any).status) === 'pending') commissionDue += Number((c as any).commission_amount) || 0;
+      else if (String((c as any).status) === 'paid') commissionPaid += Number((c as any).commission_amount) || 0;
+    }
+
+    return {
+      contract_total: contractTotal,
+      paid_total: paidTotal,
+      pending_total: Math.max(0, contractTotal - paidTotal),
+      invoiced_total: invoicedTotal,
+      commission_due: commissionDue,
+      commission_paid: commissionPaid,
+    };
+  }
+
+  /**
+   * 办案效能看板：基于案件 fee_amount / fee_collected / invoiced_amount 展示
+   */
+  async getCaseEfficiencyDashboard(orgId: string): Promise<{
+    total_case_count: number;
+    closed_case_count: number;
+    total_fee_amount: number;
+    total_fee_collected: number;
+    total_invoiced_amount: number;
+    collection_rate: number;
+    invoice_rate: number;
+  }> {
+    const all = await this.caseRepository.find({ where: { organization_id: orgId } as any });
+    const totalCount = all.length;
+    const closedCount = all.filter(c => String((c as any).status) === 'closed').length;
+    let totalFee = 0; let totalCollected = 0; let totalInvoiced = 0;
+    for (const c of all) {
+      totalFee += Number((c as any).fee_amount) || 0;
+      totalCollected += Number((c as any).fee_collected) || 0;
+      totalInvoiced += Number((c as any).invoiced_amount) || 0;
+    }
+    return {
+      total_case_count: totalCount,
+      closed_case_count: closedCount,
+      total_fee_amount: totalFee,
+      total_fee_collected: totalCollected,
+      total_invoiced_amount: totalInvoiced,
+      collection_rate: totalFee > 0 ? Math.round((totalCollected / totalFee) * 10000) / 100 : 0,
+      invoice_rate: totalFee > 0 ? Math.round((totalInvoiced / totalFee) * 10000) / 100 : 0,
+    };
+  }
+
+  /**
+   * 任务看板：已逾期/进行中/已完成 统计（含父子任务 父级 aggregate 的 progress 字段）
+   */
+  async getTaskDashboard(orgId: string): Promise<{
+    total: number;
+    pending: number;
+    in_progress: number;
+    completed: number;
+    verified: number;
+    overdue: number;
+    cancelled: number;
+    avg_progress: number;
+  }> {
+    const tasks = await this.caseTaskRepository.createQueryBuilder('t')
+      .innerJoin(Case, 'c', 'c.id = t.case_id')
+      .where('c.organization_id = :orgId', { orgId })
+      .getMany();
+    let pending = 0; let in_progress = 0; let completed = 0; let verified = 0;
+    let overdue = 0; let cancelled = 0; let progressSum = 0;
+    for (const t of tasks) {
+      if (t.status === CaseTaskStatus.PENDING) pending++;
+      else if (t.status === CaseTaskStatus.IN_PROGRESS) in_progress++;
+      else if (t.status === CaseTaskStatus.COMPLETED) completed++;
+      else if (t.status === CaseTaskStatus.VERIFIED) verified++;
+      else if (t.status === CaseTaskStatus.OVERDUE) overdue++;
+      else if (t.status === CaseTaskStatus.CANCELLED) cancelled++;
+      progressSum += Number(t.progress) || 0;
+    }
+    return {
+      total: tasks.length,
+      pending, in_progress, completed, verified, overdue, cancelled,
+      avg_progress: tasks.length > 0 ? Math.round(progressSum / tasks.length) : 0,
     };
   }
 }

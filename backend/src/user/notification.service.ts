@@ -15,6 +15,35 @@ export class NotificationService {
     return this.notificationRepository.save(notification);
   }
 
+  /**
+   * 便捷通知方法：封装 title/content/receiver_id/related_type/related_id，失败静默不影响主流程
+   */
+  async notify(params: {
+    receiver_id: string;
+    title: string;
+    content: string;
+    type?: string;
+    level?: string;
+    sender_id?: string;
+    related_type?: string;
+    related_id?: string;
+  }): Promise<void> {
+    try {
+      await this.notificationRepository.save({
+        receiver_id: params.receiver_id,
+        title: params.title,
+        content: params.content,
+        type: params.type || 'system',
+        level: params.level || 'normal',
+        sender_id: params.sender_id || null,
+        related_type: params.related_type || null,
+        related_id: params.related_id || null,
+      });
+    } catch (e) {
+      // 通知失败不影响主流程
+    }
+  }
+
   async findAllByUserId(userId: string, isRead?: boolean): Promise<Notification[]> {
     const query = this.notificationRepository.createQueryBuilder('notification')
       .where('notification.receiver_id = :userId', { userId });

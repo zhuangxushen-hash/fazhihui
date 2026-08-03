@@ -17,11 +17,11 @@ import { SocialPostStatus } from '../types';
  * 公域内容发布记录实体
  * 用于多账号内容排期、定时发布和发布记录管理
  */
-@Entity('social_posts')
+@Entity('marketing_social_posts')
 @Index(['organization_id', 'status'])
 @Index(['organization_id', 'scheduled_time'])
 @Index(['account_id', 'status'])
-export class SocialPost {
+export class MarketingSocialPost {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

@@ -13,7 +13,8 @@ import {
 } from '@nestjs/common';
 import { AdAccountService } from './ad-account.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { AdPlatform, AdAccountStatus, AdAccountWarningStatus } from '../types';
+import { Roles } from '../auth/roles.decorator';
+import { AdPlatform, AdAccountStatus, AdAccountWarningStatus, UserRole} from '../types';
 
 /**
  * 广告账户管理控制器
@@ -21,6 +22,7 @@ import { AdPlatform, AdAccountStatus, AdAccountWarningStatus } from '../types';
  */
 @Controller('ad-accounts')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.MARKETING)
 export class AdAccountController {
   constructor(private adAccountService: AdAccountService) {}
 

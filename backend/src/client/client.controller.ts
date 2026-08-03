@@ -1,11 +1,13 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { ClientService } from './client.service';
-import { ComplaintType } from '../types';
+import { ComplaintType, UserRole } from '../types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
 import { PaymentStatus, PaymentMethod } from '../finance/payment-record.entity';
 
 @Controller('client')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.CLIENT, UserRole.LAWYER, UserRole.ASSISTANT)
 export class ClientController {
   constructor(private clientService: ClientService) {}
 

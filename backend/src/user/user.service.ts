@@ -5,6 +5,7 @@ import { User } from './user.entity';
 import { Organization } from './organization.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcryptjs';
+import { desensitizeUser } from '../utils/desensitize';
 
 @Injectable()
 export class UserService {
@@ -18,7 +19,7 @@ export class UserService {
   async create(createUserDto: CreateUserDto): Promise<User> {
     const user = this.userRepository.create(createUserDto);
     if (user.password) {
-      user.password = await bcrypt.hash(user.password, parseInt(process.env.BCRYPT_ROUNDS));
+      user.password = await bcrypt.hash(user.password, parseInt(process.env.BCRYPT_ROUNDS || '10'));
     }
     return this.userRepository.save(user);
   }
@@ -28,7 +29,8 @@ export class UserService {
   }
 
   async findById(id: string): Promise<User> {
-    return this.userRepository.findOne({ where: { id } });
+    const user = await this.userRepository.findOne({ where: { id } });
+    return desensitizeUser(user);
   }
 
   async findAll(orgId?: string, name?: string, phone?: string, role?: string): Promise<{ data: User[]; total: number }> {
@@ -49,8 +51,8 @@ export class UserService {
 
     const total = await queryBuilder.getCount();
     const data = await queryBuilder.getMany();
-    
-    return { data, total };
+
+    return { data: data.map(user => desensitizeUser(user)), total };
   }
 
   async update(id: string, updateUserDto: Partial<CreateUserDto>): Promise<User> {
@@ -63,7 +65,7 @@ export class UserService {
   }
 
   async resetPassword(id: string, password: string): Promise<User> {
-    const hashedPassword = await bcrypt.hash(password, parseInt(process.env.BCRYPT_ROUNDS));
+    const hashedPassword = await bcrypt.hash(password, parseInt(process.env.BCRYPT_ROUNDS || '10'));
     await this.userRepository.update(id, { password: hashedPassword });
     return this.userRepository.findOne({ where: { id } });
   }
@@ -75,5 +77,45 @@ export class UserService {
 
   async validatePassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
     return bcrypt.compare(plainPassword, hashedPassword);
+  }
+
+  // 根据经验值计算等级（每1000经验升1级，最低Lv1）
+  private calculateLevel(experience: number): number {
+    return Math.max(1, Math.floor(experience / 1000) + 1);
+  }
+
+  // 增加经验值，自动升级等级
+  async addExperience(userId: string, amount: number, reason?: string): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      return null;
+    }
+    const newExperience = (user.experience || 0) + amount;
+    const newLevel = this.calculateLevel(newExperience);
+    await this.userRepository.update(userId, {
+      experience: newExperience,
+      level: newLevel,
+    });
+    return this.userRepository.findOne({ where: { id: userId } });
+  }
+
+  // 获取用户经验值/等级信息
+  async getLevelInfo(userId: string): Promise<{ experience: number; level: number; nextLevelExperience: number; progress: number }> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      return null;
+    }
+    const experience = user.experience || 0;
+    const level = user.level || 1;
+    const currentLevelBaseExp = (level - 1) * 1000;
+    const nextLevelBaseExp = level * 1000;
+    const nextLevelExperience = nextLevelBaseExp - experience;
+    const progress = ((experience - currentLevelBaseExp) / 1000) * 100;
+    return {
+      experience,
+      level,
+      nextLevelExperience,
+      progress: Math.max(0, Math.min(100, progress)),
+    };
   }
 }

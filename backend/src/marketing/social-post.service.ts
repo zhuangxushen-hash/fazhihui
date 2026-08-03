@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThanOrEqual, Between, In } from 'typeorm';
-import { SocialPost } from './social-post.entity';
+import { MarketingSocialPost } from './social-post.entity';
 import { SocialAccount } from './social-account.entity';
 import { SocialPostStatus } from '../types';
 import { v4 as uuidv4 } from 'uuid';
@@ -9,8 +9,8 @@ import { v4 as uuidv4 } from 'uuid';
 @Injectable()
 export class SocialPostService {
   constructor(
-    @InjectRepository(SocialPost)
-    private readonly postRepository: Repository<SocialPost>,
+    @InjectRepository(MarketingSocialPost)
+    private readonly postRepository: Repository<MarketingSocialPost>,
     @InjectRepository(SocialAccount)
     private readonly accountRepository: Repository<SocialAccount>,
   ) {}
@@ -20,7 +20,7 @@ export class SocialPostService {
   /**
    * 创建排期内容
    */
-  async create(data: Partial<SocialPost>): Promise<SocialPost> {
+  async create(data: Partial<MarketingSocialPost>): Promise<MarketingSocialPost> {
     const account = await this.accountRepository.findOne({
       where: { id: data.account_id },
     });
@@ -48,7 +48,7 @@ export class SocialPostService {
     },
     orgId: string,
     creatorId: string,
-  ): Promise<SocialPost[]> {
+  ): Promise<MarketingSocialPost[]> {
     if (!accountIds || accountIds.length === 0) {
       throw new BadRequestException('请选择至少一个账号');
     }
@@ -60,7 +60,7 @@ export class SocialPostService {
     }
     const batchId = uuidv4();
     const mediaFilesStr = data.media_files ? JSON.stringify(data.media_files) : null;
-    const posts: Partial<SocialPost>[] = accounts.map((account) => ({
+    const posts: Partial<MarketingSocialPost>[] = accounts.map((account) => ({
       account_id: account.id,
       title: data.title,
       content: data.content,
@@ -78,7 +78,7 @@ export class SocialPostService {
   /**
    * 更新排期内容
    */
-  async update(id: string, data: Partial<SocialPost>): Promise<SocialPost> {
+  async update(id: string, data: Partial<MarketingSocialPost>): Promise<MarketingSocialPost> {
     const post = await this.postRepository.findOne({ where: { id } });
     if (!post) {
       throw new NotFoundException('内容排期不存在');
@@ -109,7 +109,7 @@ export class SocialPostService {
   /**
    * 查询单条排期
    */
-  async findById(id: string): Promise<SocialPost> {
+  async findById(id: string): Promise<MarketingSocialPost> {
     const post = await this.postRepository.findOne({
       where: { id },
       relations: { account: true },
@@ -131,7 +131,7 @@ export class SocialPostService {
       start_date?: string;
       end_date?: string;
     },
-  ): Promise<SocialPost[]> {
+  ): Promise<MarketingSocialPost[]> {
     const where: any = { organization_id: orgId };
     if (filters?.account_id) {
       where.account_id = filters.account_id;
@@ -157,7 +157,7 @@ export class SocialPostService {
   /**
    * 发布内容（标记为已发布）
    */
-  async publish(id: string): Promise<SocialPost> {
+  async publish(id: string): Promise<MarketingSocialPost> {
     const post = await this.postRepository.findOne({ where: { id } });
     if (!post) {
       throw new NotFoundException('内容排期不存在');
@@ -175,7 +175,7 @@ export class SocialPostService {
   /**
    * 标记发布失败
    */
-  async markFailed(id: string, failReason: string): Promise<SocialPost> {
+  async markFailed(id: string, failReason: string): Promise<MarketingSocialPost> {
     await this.postRepository.update(id, {
       status: SocialPostStatus.FAILED,
       fail_reason: failReason,
@@ -186,7 +186,7 @@ export class SocialPostService {
   /**
    * 取消排期（已排期回退为草稿）
    */
-  async cancelSchedule(id: string): Promise<SocialPost> {
+  async cancelSchedule(id: string): Promise<MarketingSocialPost> {
     const post = await this.postRepository.findOne({ where: { id } });
     if (!post) {
       throw new NotFoundException('内容排期不存在');
@@ -207,7 +207,7 @@ export class SocialPostService {
   async updateInteractions(
     id: string,
     data: { likes?: number; comments?: number; shares?: number },
-  ): Promise<SocialPost> {
+  ): Promise<MarketingSocialPost> {
     await this.postRepository.update(id, data);
     return this.postRepository.findOne({ where: { id } });
   }

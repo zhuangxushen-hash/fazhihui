@@ -1,10 +1,12 @@
 import { Controller, Get, Post, Body, Query, Param, UseGuards, Request } from '@nestjs/common';
 import { LeadPoolService } from './lead-pool.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RecycleReason, LeadPoolStatus, CaseType } from '../types';
+import { Roles } from '../auth/roles.decorator';
+import { RecycleReason, LeadPoolStatus, CaseType, UserRole} from '../types';
 
 @Controller('lead-pool')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.SALES)
 export class LeadPoolController {
   constructor(private readonly leadPoolService: LeadPoolService) {}
 

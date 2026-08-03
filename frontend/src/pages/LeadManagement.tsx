@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, InputNumber } from 'antd'
-import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, HistoryOutlined, SaveOutlined } from '@ant-design/icons'
+import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, InputNumber, Radio } from 'antd'
+import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, HistoryOutlined, SaveOutlined, SwapOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
+
+// 转化状态中文映射
+const conversionStatusMap: Record<string, { label: string; color: string }> = {
+  not_converted: { label: '未转化', color: 'default' },
+  converting: { label: '转化中', color: 'processing' },
+  converted: { label: '已转化', color: 'success' },
+}
 
 export default function LeadManagement() {
   const [data, setData] = useState<any[]>([])
@@ -23,29 +30,67 @@ export default function LeadManagement() {
     status: '',
     case_type: '',
     source_channel: '',
+    days_no_follow: '' as string | number,
   })
+  // 线索类型：private私有线索 / public公共线索池
+  const [leadType, setLeadType] = useState<'private' | 'public'>('private')
+  // 转化为案件的弹窗
+  const [convertVisible, setConvertVisible] = useState(false)
+  const [convertForm] = Form.useForm()
+  const [converting, setConverting] = useState(false)
 
   const user = JSON.parse(localStorage.getItem('user') || '{}')
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [leadType])
 
   const fetchData = async () => {
     setLoading(true)
     try {
-      const params: any = { org_id: user.organization_id }
-      if (searchParams.phone) params.phone = searchParams.phone
-      if (searchParams.status) params.status = searchParams.status
-      if (searchParams.case_type) params.case_type = searchParams.case_type
-      if (searchParams.source_channel) params.source_channel = searchParams.source_channel
+      // 公共线索池调用独立接口，私有线索调用原有列表接口
+      if (leadType === 'public') {
+        const res = await axios.get('/leads/public', { params: { org_id: user.organization_id } })
+        setData(res || [])
+      } else {
+        const params: any = { org_id: user.organization_id }
+        if (searchParams.phone) params.phone = searchParams.phone
+        if (searchParams.status) params.status = searchParams.status
+        if (searchParams.case_type) params.case_type = searchParams.case_type
+        if (searchParams.source_channel) params.source_channel = searchParams.source_channel
+        if (searchParams.days_no_follow) params.days_no_follow = searchParams.days_no_follow
 
-      const res = await axios.get('/leads', { params })
-      setData(res.data || [])
+        const res = await axios.get('/leads', { params })
+        setData(res.data || [])
+      }
     } catch (error) {
       console.error('Fetch leads error:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // 打开转化为案件弹窗
+  const handleConvert = (record: any) => {
+    setCurrentLead(record)
+    convertForm.resetFields()
+    convertForm.setFieldsValue({ fee_amount: record.service_fee || 0 })
+    setConvertVisible(true)
+  }
+
+  // 确认转化为案件
+  const handleConvertSubmit = async (values: any) => {
+    setConverting(true)
+    try {
+      await axios.post(`/leads/${currentLead.id}/convert`, values)
+      setConvertVisible(false)
+      message.success('线索转化案件成功')
+      fetchData()
+    } catch (error) {
+      message.error('线索转化案件失败')
+      console.error('Convert lead to case error:', error)
+    } finally {
+      setConverting(false)
     }
   }
 
@@ -54,7 +99,7 @@ export default function LeadManagement() {
   }
 
   const handleReset = () => {
-    setSearchParams({ phone: '', status: '', case_type: '', source_channel: '' })
+    setSearchParams({ phone: '', status: '', case_type: '', source_channel: '', days_no_follow: '' })
     fetchData()
   }
 
@@ -221,12 +266,19 @@ export default function LeadManagement() {
       }
       return <Tag color={colors[status]}>{labels[status]}</Tag>
     }},
+    { title: '转化状态', dataIndex: 'conversion_status', key: 'conversion_status', render: (status: string) => {
+      const info = conversionStatusMap[status] || conversionStatusMap.not_converted
+      return <Tag color={info.color}>{info.label}</Tag>
+    }},
     { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
     { title: '操作', key: 'action', render: (_: any, record: any) => (
       <Space>
         <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
         <Button size="small" icon={<EditOutlined />} onClick={() => handleChangeStatus(record)}>状态</Button>
         <Button size="small" icon={<SaveOutlined />} onClick={() => handleEditFee(record)}>设置费用</Button>
+        {record.conversion_status !== 'converted' && (
+          <Button size="small" icon={<SwapOutlined />} onClick={() => handleConvert(record)}>转化为案件</Button>
+        )}
         {record.status === 'new' && (
           <Button size="small" type="primary" onClick={() => handleAssign(record)}>分配</Button>
         )}
@@ -239,6 +291,13 @@ export default function LeadManagement() {
       <div className="page-header">
         <h2>线索管理</h2>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAddLead}>添加线索</Button>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <Radio.Group value={leadType} onChange={(e) => setLeadType(e.target.value)}>
+          <Radio.Button value="private">私有线索</Radio.Button>
+          <Radio.Button value="public">公共线索池</Radio.Button>
+        </Radio.Group>
       </div>
 
       <div className="search-bar">
@@ -275,6 +334,17 @@ export default function LeadManagement() {
           onChange={(value) => setSearchParams({ ...searchParams, source_channel: value || '' })}
         >
           {channelOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
+        </Select>
+        <Select
+          placeholder="智能筛选"
+          style={{ width: 180 }}
+          allowClear
+          value={searchParams.days_no_follow ? Number(searchParams.days_no_follow) : undefined}
+          onChange={(value) => setSearchParams({ ...searchParams, days_no_follow: value || '' })}
+        >
+          <Select.Option value={7}>超过7天未跟进</Select.Option>
+          <Select.Option value={15}>超过15天未跟进</Select.Option>
+          <Select.Option value={30}>超过30天未跟进</Select.Option>
         </Select>
         <Button type="primary" onClick={handleSearch}>搜索</Button>
         <Button onClick={handleReset}>重置</Button>
@@ -464,6 +534,28 @@ export default function LeadManagement() {
           </div>
           <Button type="primary" block onClick={handleSaveFee}>保存费用</Button>
         </div>
+      </Modal>
+
+      <Modal
+        title="转化为案件"
+        open={convertVisible}
+        onCancel={() => setConvertVisible(false)}
+        footer={null}
+      >
+        <Form onFinish={handleConvertSubmit} form={convertForm}>
+          <Form.Item name="case_no" label="案件编号">
+            <Input placeholder="选填，如不填将自动生成" />
+          </Form.Item>
+          <Form.Item name="assignee_lawyer_id" label="承办律师ID">
+            <Input placeholder="选填，可后续分配" />
+          </Form.Item>
+          <Form.Item name="fee_amount" label="案件费用（元）">
+            <InputNumber style={{ width: '100%' }} min={0} step={100} prefix="¥" />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={converting} icon={<SwapOutlined />}>确认转化</Button>
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   )

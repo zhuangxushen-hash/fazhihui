@@ -2,9 +2,12 @@ import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Requ
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '../types';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN)
 export class UserController {
   constructor(private userService: UserService) {}
 
@@ -20,6 +23,7 @@ export class UserController {
   }
 
   @Get(':id')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.MARKETING, UserRole.SALES, UserRole.LAWYER, UserRole.ASSISTANT, UserRole.FINANCE)
   findById(@Param('id') id: string) {
     return this.userService.findById(id);
   }
@@ -42,5 +46,18 @@ export class UserController {
   @Post('organization')
   createOrganization(@Body() body: { name: string }) {
     return this.userService.createOrganization(body.name);
+  }
+
+  // 获取用户经验值/等级信息
+  @Get(':id/level')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.MARKETING, UserRole.SALES, UserRole.LAWYER, UserRole.ASSISTANT, UserRole.FINANCE)
+  getLevelInfo(@Param('id') id: string) {
+    return this.userService.getLevelInfo(id);
+  }
+
+  // 增加用户经验值
+  @Post(':id/experience')
+  addExperience(@Param('id') id: string, @Body() body: { amount: number; reason?: string }) {
+    return this.userService.addExperience(id, body.amount, body.reason);
   }
 }

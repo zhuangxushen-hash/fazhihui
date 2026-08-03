@@ -6,6 +6,7 @@ import { CaseWarning } from './case-warning.entity';
 import { Case } from './case.entity';
 import { User } from '../user/user.entity';
 import { WarningType, WarningLevel, WarningStatus, CaseStatus, UserRole } from '../types';
+import { NotificationService } from '../user/notification.service';
 import { CreateWarningDto, UpdateWarningDto, WarningFilterDto } from './dto/warning.dto';
 
 interface WarningRule {
@@ -66,6 +67,7 @@ export class CaseWarningService {
     private caseRepository: Repository<Case>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private notificationService: NotificationService,
   ) {}
 
   // 创建预警
@@ -339,6 +341,16 @@ export class CaseWarningService {
     this.logger.warn(
       `预警超期通知: 案件 ${warning.case?.case_no} 的 ${warning.warning_type} 已超期`,
     );
+    // CaseWarning 实体使用 handler_id 作为接收人字段
+    await this.notificationService.notify({
+      receiver_id: warning.handler_id || '',
+      title: '案件预警超期',
+      content: `案件 ${warning.case?.case_no || warning.case_id} 的预警 ${warning.warning_type} 已超期`,
+      type: 'warning',
+      level: 'high',
+      related_type: 'CaseWarning',
+      related_id: warning.id,
+    });
   }
 
   // 手动触发预警生成（用于测试）

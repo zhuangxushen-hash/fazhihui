@@ -1,9 +1,12 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { IntegrationService } from './integration.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '../types';
 
 @Controller('system/integrations')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN)
 export class IntegrationController {
   constructor(private integrationService: IntegrationService) {}
 
@@ -20,6 +23,7 @@ export class IntegrationController {
   }
 
   @Get('active')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.MARKETING, UserRole.SALES, UserRole.LAWYER, UserRole.ASSISTANT, UserRole.FINANCE)
   getActiveIntegrations(@Request() req?: any) {
     const orgId = req?.user?.organization_id;
     return this.integrationService.getActiveIntegrations(orgId);

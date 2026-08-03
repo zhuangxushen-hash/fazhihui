@@ -11,6 +11,10 @@ import { TalkQualityCheck, TalkCheckType, TalkCheckResult, TalkHandleStatus, Tal
 import { ReportTemplate } from '../dashboard/report-template.entity';
 import { ReportExportLog } from '../dashboard/report-export-log.entity';
 import { ComplianceType, ComplianceResult, ComplaintType, ComplaintStatus } from '../types';
+import { NotificationService } from '../user/notification.service';
+// Phase4: 引入案件SOP模板与投诉工单实体（H7 SOP模板联动、M3 投诉走合规通道）
+import { CaseSOPTemplate } from '../case/case-sop-template.entity';
+import { ComplaintTicket, TicketSourceChannel, TicketSeverity, TicketStatus } from './complaint-ticket.entity';
 
 const VIOLATION_KEYWORDS = {
   absolute: ['最', '第一', '唯一', '顶级', '首选', '独家'],
@@ -74,6 +78,13 @@ export class ComplianceService {
     private reportTemplateRepository: Repository<ReportTemplate>,
     @InjectRepository(ReportExportLog)
     private reportExportLogRepository: Repository<ReportExportLog>,
+    // Phase4 H7: 注入案件SOP模板仓库，createCaseSOP 改为读取模板表
+    @InjectRepository(CaseSOPTemplate)
+    private caseSOPTemplateRepository: Repository<CaseSOPTemplate>,
+    // Phase4 M3: 注入投诉工单仓库，客户投诉走合规通道时创建工单
+    @InjectRepository(ComplaintTicket)
+    private complaintTicketRepository: Repository<ComplaintTicket>,
+    private notificationService: NotificationService,
   ) {}
 
   async checkCompliance(content: string, type: ComplianceType, orgId: string, operatorId: string, sourceId?: string): Promise<ComplianceRecord> {
@@ -297,9 +308,43 @@ export class ComplianceService {
   }
 
   async createCaseSOP(caseId: string, caseType: string, orgId: string): Promise<CaseSOP[]> {
-    const templates = CASE_SOP_TEMPLATES[caseType] || CASE_SOP_TEMPLATES['other'];
     const today = new Date();
     const sops: CaseSOP[] = [];
+
+    // Phase4 H7: 优先从案件SOP模板表读取默认模板，按阶段/任务展开为CaseSOP节点
+    const template = await this.caseSOPTemplateRepository.findOne({
+      where: { case_type: caseType as any, is_default: true, enabled: true },
+      order: { created_at: 'DESC' },
+    });
+
+    if (template && Array.isArray(template.stages) && template.stages.length > 0) {
+      // 将模板的阶段/任务扁平化为有序的SOP步骤
+      let stepOrder = 0;
+      for (const stage of template.stages) {
+        const tasks = Array.isArray(stage.tasks) ? stage.tasks : [];
+        for (const task of tasks) {
+          stepOrder += 1;
+          const deadline = new Date(today);
+          deadline.setDate(today.getDate() + (task.deadline_days || 0));
+
+          const sop = this.caseSOPRepository.create({
+            case_id: caseId,
+            case_type: caseType,
+            step_name: task.task_name,
+            step_order: stepOrder,
+            deadline,
+            organization_id: orgId,
+          });
+          sops.push(await this.caseSOPRepository.save(sop));
+        }
+      }
+      if (sops.length > 0) {
+        return sops;
+      }
+    }
+
+    // 模板表中未找到匹配模板时，保留原有硬编码模板逻辑兜底
+    const templates = CASE_SOP_TEMPLATES[caseType] || CASE_SOP_TEMPLATES['other'];
 
     for (let i = 0; i < templates.length; i++) {
       const deadline = new Date(today);
@@ -317,6 +362,40 @@ export class ComplianceService {
     }
 
     return sops;
+  }
+
+  /**
+   * Phase4 M3: 创建投诉工单（客户投诉走合规通道）
+   * 将客户投诉同步生成一条 ComplaintTicket，由合规通道跟进处理
+   */
+  async createComplaintTicket(ticketData: {
+    source_channel?: TicketSourceChannel;
+    complaint_type?: string;
+    severity_level?: TicketSeverity;
+    title: string;
+    content: string;
+    case_id?: string;
+    client_id?: string;
+    client_name?: string;
+    client_phone?: string;
+    organization_id: string;
+  }): Promise<ComplaintTicket> {
+    const ticketNumber = `TK${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    const ticket = this.complaintTicketRepository.create({
+      ticket_number: ticketNumber,
+      source_channel: ticketData.source_channel ?? TicketSourceChannel.CLIENT_PORTAL,
+      complaint_type: (ticketData.complaint_type || 'other') as any,
+      severity_level: ticketData.severity_level ?? TicketSeverity.MEDIUM,
+      title: ticketData.title,
+      content: ticketData.content,
+      case_id: ticketData.case_id || null,
+      client_id: ticketData.client_id || null,
+      client_name: ticketData.client_name || null,
+      client_phone: ticketData.client_phone || null,
+      status: TicketStatus.PENDING,
+      organization_id: ticketData.organization_id,
+    });
+    return this.complaintTicketRepository.save(ticket);
   }
 
   async completeCaseSOP(id: string, operatorId: string, notes?: string): Promise<CaseSOP> {
@@ -428,7 +507,17 @@ export class ComplianceService {
       handle_status: TalkHandleStatus.PROCESSED,
       handled_at: new Date(),
     });
-    return this.talkQualityCheckRepository.findOne({ where: { id } });
+    const result = await this.talkQualityCheckRepository.findOne({ where: { id } });
+    await this.notificationService.notify({
+      receiver_id: '',
+      title: '质检结果通知',
+      content: `质检结果：${result.check_result || 'unknown'}`,
+      type: 'compliance',
+      level: (result.check_result as string) === 'reject' ? 'high' : 'normal',
+      related_type: 'ComplianceRecord',
+      related_id: result.id || '',
+    });
+    return result;
   }
 
   async getQualityCheckStats(orgId: string): Promise<{ total: number; pass: number; violation: number; warning: number; pending: number; processed: number }> {

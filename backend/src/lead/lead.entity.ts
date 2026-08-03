@@ -59,4 +59,28 @@ export class Lead {
 
   @Column({ nullable: true })
   follow_up_time: Date;
+
+  // 是否公共线索池
+  @Column({ type: 'boolean', default: false, comment: '是否公共线索池' })
+  is_public: boolean;
+
+  // 转介绍人（来源：谁介绍的这个客户）
+  @Column({ type: 'varchar', nullable: true, comment: '转介绍人' })
+  referrer: string;
+
+  // 线索来源明细（比如：朋友推荐-张三、百度搜索-关键词、抖音广告-xx视频）
+  @Column({ type: 'varchar', nullable: true, comment: '线索来源明细' })
+  lead_source_detail: string;
+
+  // 转化后的案件ID（线索→案件/线索→商机→案件 两种路径都回写）
+  @Column({ type: 'varchar', nullable: true, comment: '转化案件ID' })
+  case_id: string;
+
+  // 转化时间
+  @Column({ type: 'datetime', nullable: true, comment: '转化时间' })
+  conversion_time: Date;
+
+  // 转化状态：not_converted未转化/converting转化中/converted已转化
+  @Column({ type: 'varchar', default: 'not_converted', comment: '转化状态' })
+  conversion_status: string;
 }

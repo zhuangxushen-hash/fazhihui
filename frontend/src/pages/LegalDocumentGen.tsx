@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Table, Button, Modal, Form, Input, Select, Space, message, Tabs, Card, Tag, Descriptions } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, FileTextOutlined, EyeOutlined, ThunderboltOutlined, SearchOutlined } from '@ant-design/icons'
+import { Table, Button, Modal, Form, Input, Select, Space, message, Tabs, Card, Tag, Descriptions, Checkbox } from 'antd'
+import { PlusOutlined, EditOutlined, DeleteOutlined, FileTextOutlined, EyeOutlined, ThunderboltOutlined, SearchOutlined, CopyOutlined, FileDoneOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 
 const pageH2Style: React.CSSProperties = {
@@ -82,11 +82,93 @@ export default function LegalDocumentGen() {
   const [searchKeyword, setSearchKeyword] = useState('')
   const [searchCaseType, setSearchCaseType] = useState<string>('')
 
+  // 自动生成委托合同相关状态
+  const [cases, setCases] = useState<any[]>([])
+  const [contractCaseId, setContractCaseId] = useState<string>('')
+  const [contractTemplateId, setContractTemplateId] = useState<string>('standard')
+  const [contractResult, setContractResult] = useState<string>('')
+  const [contractLoading, setContractLoading] = useState(false)
+
+  // 批量生成相关状态
+  const [batchCaseIds, setBatchCaseIds] = useState<string[]>([])
+  const [batchTemplateId, setBatchTemplateId] = useState<string>('standard')
+  const [batchResults, setBatchResults] = useState<any[]>([])
+  const [batchLoading, setBatchLoading] = useState(false)
+
   const user = JSON.parse(localStorage.getItem('user') || '{}')
 
   useEffect(() => {
     fetchTemplates()
+    fetchCases()
   }, [])
+
+  // 获取案件列表，用于委托合同生成时选择案件
+  const fetchCases = async () => {
+    try {
+      const res = await axios.get('/cases', { params: { org_id: user.organization_id, limit: 100 } })
+      const list = (res as any)?.data || res || []
+      setCases(Array.isArray(list) ? list : [])
+    } catch (error) {
+      console.error('获取案件列表失败:', error)
+      setCases([])
+    }
+  }
+
+  // 生成委托合同
+  const handleGenerateContract = async () => {
+    if (!contractCaseId) {
+      message.warning('请选择案件')
+      return
+    }
+    setContractLoading(true)
+    try {
+      const res = await axios.post('/cases/documents/generate-contract', {
+        case_id: contractCaseId,
+        template_id: contractTemplateId,
+      })
+      const result = (res as any)?.content !== undefined ? (res as any) : res
+      setContractResult(result.content || '')
+      message.success('委托合同生成成功')
+    } catch (error) {
+      message.error('委托合同生成失败')
+      console.error('Generate contract error:', error)
+    } finally {
+      setContractLoading(false)
+    }
+  }
+
+  // 批量生成文书
+  const handleBatchGenerate = async () => {
+    if (batchCaseIds.length === 0) {
+      message.warning('请至少选择一个案件')
+      return
+    }
+    setBatchLoading(true)
+    try {
+      const res = await axios.post('/cases/documents/batch-generate', {
+        case_ids: batchCaseIds,
+        template_id: batchTemplateId,
+      })
+      const list = (res as any) || []
+      setBatchResults(Array.isArray(list) ? list : [])
+      message.success('批量生成完成')
+    } catch (error) {
+      message.error('批量生成失败')
+      console.error('Batch generate error:', error)
+    } finally {
+      setBatchLoading(false)
+    }
+  }
+
+  // 复制合同内容到剪贴板
+  const handleCopyContract = () => {
+    if (!contractResult) return
+    navigator.clipboard.writeText(contractResult).then(() => {
+      message.success('合同内容已复制到剪贴板')
+    }).catch(() => {
+      message.error('复制失败')
+    })
+  }
 
   const fetchTemplates = async () => {
     setLoading(true)
@@ -450,6 +532,152 @@ export default function LegalDocumentGen() {
     </Card>
   )
 
+  // 渲染自动生成委托合同功能区
+  const renderContractTab = () => (
+    <div style={{ display: 'flex', gap: 16 }}>
+      <Card style={{ flex: 1, borderRadius: 16 }}>
+        <div style={sectionTitleStyle}>自动生成委托合同</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div>
+            <div style={{ fontSize: 13, color: '#414753', marginBottom: 8, fontWeight: 500 }}>选择案件</div>
+            <Select
+              placeholder="请选择案件"
+              style={{ width: '100%' }}
+              value={contractCaseId || undefined}
+              onChange={(value) => setContractCaseId(value)}
+              showSearch
+              optionFilterProp="label"
+              options={cases.map((c: any) => ({
+                value: c.id,
+                label: c.case_name || c.case_no || c.client_name || c.id,
+              }))}
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: 13, color: '#414753', marginBottom: 8, fontWeight: 500 }}>选择模板</div>
+            <Select
+              style={{ width: '100%' }}
+              value={contractTemplateId}
+              onChange={(value) => setContractTemplateId(value)}
+              options={[
+                { value: 'standard', label: '标准模板' },
+                { value: 'simple', label: '简版模板' },
+              ]}
+            />
+          </div>
+          <Button type="primary" icon={<ThunderboltOutlined />} loading={contractLoading} onClick={handleGenerateContract}>
+            生成委托合同
+          </Button>
+        </div>
+      </Card>
+      <Card style={{ flex: 1, borderRadius: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div style={sectionTitleStyle}>合同内容</div>
+          {contractResult && (
+            <Button size="small" icon={<CopyOutlined />} onClick={handleCopyContract}>复制</Button>
+          )}
+        </div>
+        {contractResult ? (
+          <div
+            style={{
+              background: '#f3f3f5',
+              padding: 16,
+              borderRadius: 8,
+              minHeight: 400,
+              maxHeight: 600,
+              overflow: 'auto',
+              whiteSpace: 'pre-wrap',
+              fontFamily: "'Noto Serif SC', serif",
+              fontSize: 14,
+              lineHeight: 1.8,
+              color: '#1a1c1d',
+            }}
+          >
+            {contractResult}
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: 80, color: '#717785' }}>
+            <FileDoneOutlined style={{ fontSize: 48, marginBottom: 16, color: '#c1c6d6' }} />
+            <div>请选择案件并点击"生成委托合同"</div>
+          </div>
+        )}
+      </Card>
+    </div>
+  )
+
+  // 渲染批量生成功能区
+  const renderBatchTab = () => (
+    <div style={{ display: 'flex', gap: 16 }}>
+      <Card style={{ flex: 1, borderRadius: 16 }}>
+        <div style={sectionTitleStyle}>批量生成文书</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div>
+            <div style={{ fontSize: 13, color: '#414753', marginBottom: 8, fontWeight: 500 }}>选择模板</div>
+            <Select
+              style={{ width: '100%' }}
+              value={batchTemplateId}
+              onChange={(value) => setBatchTemplateId(value)}
+              options={[
+                { value: 'standard', label: '标准模板' },
+                { value: 'simple', label: '简版模板' },
+              ]}
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: 13, color: '#414753', marginBottom: 8, fontWeight: 500 }}>选择案件（可多选）</div>
+            <div style={{ maxHeight: 300, overflow: 'auto', border: '1px solid #e2e2e4', borderRadius: 8, padding: 12 }}>
+              {cases.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#999', padding: 24 }}>暂无案件</div>
+              ) : (
+                cases.map((c: any) => (
+                  <div key={c.id} style={{ padding: '6px 0' }}>
+                    <Checkbox
+                      checked={batchCaseIds.includes(c.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setBatchCaseIds([...batchCaseIds, c.id])
+                        } else {
+                          setBatchCaseIds(batchCaseIds.filter(id => id !== c.id))
+                        }
+                      }}
+                    >
+                      {c.case_name || c.case_no || c.client_name || c.id}
+                    </Checkbox>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          <Button type="primary" icon={<ThunderboltOutlined />} loading={batchLoading} onClick={handleBatchGenerate}>
+            批量生成
+          </Button>
+        </div>
+      </Card>
+      <Card style={{ flex: 1, borderRadius: 16 }}>
+        <div style={sectionTitleStyle}>生成结果</div>
+        {batchResults.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 80, color: '#717785' }}>
+            <FileDoneOutlined style={{ fontSize: 48, marginBottom: 16, color: '#c1c6d6' }} />
+            <div>请选择案件并点击"批量生成"</div>
+          </div>
+        ) : (
+          <div style={{ maxHeight: 500, overflow: 'auto' }}>
+            {batchResults.map((item: any, index: number) => {
+              const caseEntity = cases.find((c: any) => c.id === item.case_id)
+              const caseName = caseEntity?.case_name || caseEntity?.case_no || caseEntity?.client_name || item.case_id
+              return (
+                <div key={index} style={{ borderBottom: '1px solid #f0f0f0', padding: '12px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>{caseName}</span>
+                  <Tag color={item.success ? 'success' : 'error'}>{item.success ? '生成成功' : '生成失败'}</Tag>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </Card>
+    </div>
+  )
+
   const tabItems = [
     {
       key: 'templates',
@@ -465,6 +693,16 @@ export default function LegalDocumentGen() {
       key: 'preview',
       label: '文书预览',
       children: renderPreviewTab(),
+    },
+    {
+      key: 'contract',
+      label: '委托合同生成',
+      children: renderContractTab(),
+    },
+    {
+      key: 'batch',
+      label: '批量生成',
+      children: renderBatchTab(),
     },
   ]
 

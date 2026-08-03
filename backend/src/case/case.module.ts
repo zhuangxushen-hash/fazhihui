@@ -1,10 +1,20 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CaseService } from './case.service';
 import { CaseController } from './case.controller';
 import { Case } from './case.entity';
 import { Document } from './document.entity';
 import { User } from '../user/user.entity';
+import { Contract } from '../contract/contract.entity';
+import { Receivable } from '../finance/receivable.entity';
+import { ContractModule } from '../contract/contract.module';
+import { FinanceModule } from '../finance/finance.module';
+import { UserModule } from '../user/user.module';
+// Phase4: H7 SOP联动需注入 ComplianceService；M2 结案触发评价需注入 ClientService
+import { ComplianceModule } from '../compliance/compliance.module';
+import { ClientModule } from '../client/client.module';
+// Phase5 M8: 案件核心操作审计日志需注入 AuditModule
+import { AuditModule } from '../audit/audit.module';
 
 // 控制器
 import { CaseTaskController } from './case-task.controller';
@@ -13,6 +23,8 @@ import { EvidenceController } from './evidence.controller';
 import { CaseSopTemplateController } from './case-sop-template.controller';
 import { LegalDocumentController } from './legal-document.controller';
 import { SimilarCaseController } from './similar-case.controller';
+// 利冲检索控制器
+import { ConflictCheckController } from './conflict-check.controller';
 
 // 服务
 import { CaseTaskService } from './case-task.service';
@@ -22,6 +34,8 @@ import { CaseSopTemplateService } from './case-sop-template.service';
 import { CaseTaskCommentService } from './case-task-comment.service';
 import { LegalDocumentService } from './legal-document.service';
 import { SimilarCaseService } from './similar-case.service';
+// 利冲检索服务
+import { ConflictCheckService } from './conflict-check.service';
 
 // 实体
 import { CaseTask } from './case-task.entity';
@@ -30,6 +44,8 @@ import { CaseWarning } from './case-warning.entity';
 import { Evidence } from './evidence.entity';
 import { CaseSOPTemplate } from './case-sop-template.entity';
 import { LegalDocument } from './legal-document.entity';
+// 利冲检索实体
+import { ConflictCheck } from './conflict-check.entity';
 
 @Module({
   imports: [
@@ -49,7 +65,21 @@ import { LegalDocument } from './legal-document.entity';
       CaseSOPTemplate,
       // 法律文书模板
       LegalDocument,
+      // 利冲检索记录
+      ConflictCheck,
+      // 合同与应收
+      Contract,
+      Receivable,
     ]),
+    forwardRef(() => ContractModule),
+    forwardRef(() => FinanceModule),
+    UserModule,
+    // Phase4 H7: 注入合规服务用于案件创建后生成SOP
+    ComplianceModule,
+    // Phase4 M2: 注入客户服务用于结案触发评价（forwardRef 防止潜在循环依赖）
+    forwardRef(() => ClientModule),
+    // Phase5 M8: 注入审计模块用于案件核心操作记录审计日志
+    AuditModule,
   ],
   providers: [
     // 保留原有服务
@@ -67,6 +97,8 @@ import { LegalDocument } from './legal-document.entity';
     LegalDocumentService,
     // 类案匹配服务
     SimilarCaseService,
+    // 利冲检索服务
+    ConflictCheckService,
   ],
   controllers: [
     // 保留原有控制器
@@ -83,6 +115,8 @@ import { LegalDocument } from './legal-document.entity';
     LegalDocumentController,
     // 类案匹配控制器
     SimilarCaseController,
+    // 利冲检索控制器
+    ConflictCheckController,
   ],
 })
 export class CaseModule {}

@@ -17,13 +17,16 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
+import { imageFileFilter, fileLimits } from '../utils/file-filter';
 import { EvidenceService } from './evidence.service';
-import { EvidenceType, EvidenceCategory } from '../types';
+import { EvidenceType, EvidenceCategory, UserRole} from '../types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
 import * as fs from 'fs';
 
 @Controller('evidences')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.LAWYER, UserRole.ASSISTANT)
 export class EvidenceController {
   constructor(private evidenceService: EvidenceService) {}
 
@@ -52,7 +55,10 @@ export class EvidenceController {
 
   // 单文件上传
   @Post('upload/:caseId')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', {
+    limits: fileLimits,
+    fileFilter: imageFileFilter,
+  }))
   async uploadEvidence(
     @Param('caseId') caseId: string,
     @UploadedFile() file: Express.Multer.File,
@@ -78,7 +84,10 @@ export class EvidenceController {
 
   // 批量上传
   @Post('batch-upload/:caseId')
-  @UseInterceptors(FilesInterceptor('files', 20))
+  @UseInterceptors(FilesInterceptor('files', 20, {
+    limits: fileLimits,
+    fileFilter: imageFileFilter,
+  }))
   async batchUploadEvidence(
     @Param('caseId') caseId: string,
     @UploadedFiles() files: Express.Multer.File[],
@@ -140,7 +149,10 @@ export class EvidenceController {
 
   // 上传新版本
   @Post(':id/version')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', {
+    limits: fileLimits,
+    fileFilter: imageFileFilter,
+  }))
   async uploadNewVersion(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,

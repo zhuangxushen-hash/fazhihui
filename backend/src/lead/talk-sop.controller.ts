@@ -1,10 +1,13 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { TalkSOPService } from './talk-sop.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '../types';
 import { TalkSOPNodeType } from './talk-sop.entity';
 
 @Controller('talk-sop')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.SALES)
 export class TalkSOPController {
   constructor(private readonly talkSOPService: TalkSOPService) {}
 

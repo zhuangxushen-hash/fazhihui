@@ -1,13 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Fee } from './fee.entity';
 import { ProfitShare } from './profit-share.entity';
 import { Refund, RefundStatus } from './refund.entity';
 import { Invoice, InvoiceStatus } from './invoice.entity';
 import { CaseCost } from './case-cost.entity';
-import { Receivable } from './receivable.entity';
+import { Receivable, ReceivableStatus } from './receivable.entity';
+import { BusinessFund } from './business-fund.entity';
+import { PaymentRecord, PaymentStatus, PaymentMethod } from './payment-record.entity';
+import { Case } from '../case/case.entity';
+import { CommissionService } from './commission.service';
 import { FeeRole } from '../types';
+// Phase5+6 M8: 注入审计服务，财务核心操作记录审计日志
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class FinanceService {
@@ -24,6 +30,16 @@ export class FinanceService {
     private caseCostRepository: Repository<CaseCost>,
     @InjectRepository(Receivable)
     private receivableRepository: Repository<Receivable>,
+    @InjectRepository(BusinessFund)
+    private businessFundRepository: Repository<BusinessFund>,
+    @InjectRepository(PaymentRecord)
+    private paymentRecordRepository: Repository<PaymentRecord>,
+    @InjectRepository(Case)
+    private caseRepository: Repository<Case>,
+    private dataSource: DataSource,
+    private commissionService: CommissionService,
+    // Phase5+6 M8: 注入审计服务
+    private auditService: AuditService,
   ) {}
 
   async createFee(feeData: Partial<Fee>): Promise<Fee> {
@@ -45,6 +61,100 @@ export class FinanceService {
   async markAsPaid(id: string): Promise<Fee> {
     await this.feeRepository.update(id, { paid: true, paid_at: new Date() });
     return this.feeRepository.findOne({ where: { id } });
+  }
+
+  /**
+   * 登记收款（关联应收台账 → 创建支付记录 → 汇总回款到案件 → 触发分润）
+   * @param receivableId 应收台账ID
+   * @param amount       本次收款金额（>0）
+   * @param method       支付方式 alipay/wechat/bank
+   * @param transactionId 第三方流水号（可空）
+   * @param remarks      备注（可空）
+   * @param clientId     客户ID（可空，不填用 'pending'）
+   */
+  async recordPayment(
+    receivableId: string,
+    amount: number,
+    method: PaymentMethod = PaymentMethod.BANK,
+    transactionId?: string,
+    remarks?: string,
+    clientId?: string,
+  ): Promise<PaymentRecord> {
+    if (!amount || Number(amount) <= 0) {
+      throw new BadRequestException('收款金额必须大于0');
+    }
+    const savedPaymentResult = await this.dataSource.transaction(async (manager) => {
+      const receivable = await manager.findOne(Receivable, { where: { id: receivableId } });
+      if (!receivable) {
+        throw new NotFoundException('应收台账不存在');
+      }
+
+      // 1. 创建支付记录（默认 PAID，因为是登记收款）
+      const payment = manager.create(PaymentRecord, {
+        case_id: receivable.case_id,
+        client_id: clientId || 'pending',
+        amount: Number(amount),
+        status: PaymentStatus.PAID,
+        method: method,
+        transaction_id: transactionId,
+        remarks: remarks,
+      });
+      const savedPayment = await manager.save(PaymentRecord, payment);
+
+      // 2. 更新应收台账 received + pending
+      const newReceived = Number(receivable.received_amount || 0) + Number(amount);
+      const newPending = Math.max(Number(receivable.contract_amount || 0) - newReceived, 0);
+      let newStatus: string = ReceivableStatus.PENDING;
+      if (newReceived >= Number(receivable.contract_amount) && Number(receivable.contract_amount) > 0) {
+        newStatus = ReceivableStatus.COMPLETED;
+      } else if (newReceived > 0) {
+        newStatus = ReceivableStatus.PARTIAL;
+      }
+      await manager.update(Receivable, receivableId, {
+        received_amount: newReceived,
+        pending_amount: newPending,
+        status: newStatus as any,
+      });
+
+      // 3. 汇总该案件已支付的 payment_records 金额 → 回写 case.fee_collected & settled_amount
+      if (receivable.case_id) {
+        const casePaidRecords = await manager.find(PaymentRecord, {
+          where: { case_id: receivable.case_id, status: PaymentStatus.PAID },
+        });
+        let totalPaid = 0;
+        for (const r of casePaidRecords) totalPaid += Number(r.amount) || 0;
+        await manager.update(Case, receivable.case_id, {
+          fee_collected: totalPaid,
+          settled_amount: totalPaid,
+        });
+
+        // 4. 若应收变为 completed → 触发分润检查
+        if (newStatus === ReceivableStatus.COMPLETED) {
+          try {
+            await this.commissionService.checkAndTriggerCommission({ case_id: receivable.case_id });
+          } catch (err) {
+            // 分润失败不影响主流程，直接吞掉异常
+          }
+        }
+      }
+
+      return savedPayment;
+    });
+
+    // Phase5+6 M8: 登记收款审计日志（事务成功后记录，异常静默不影响主流程）
+    try {
+      await this.auditService.logAction({
+        user_id: clientId || undefined,
+        action: '登记收款',
+        resource_type: 'Receivable',
+        resource_id: receivableId,
+        detail: `金额:${amount}, 方式:${method}, 流水号:${transactionId || '-'}`,
+      });
+    } catch (e) {
+      // 审计失败不影响主业务
+    }
+
+    return savedPaymentResult;
   }
 
   async calculateProfitShare(caseId: string, orgId: string, feeAmount: number, rules: {
@@ -100,7 +210,22 @@ export class FinanceService {
         amount: feeAmount * rules.assistant / 100,
       }));
     }
-    return this.profitShareRepository.save(shares);
+    const savedShares = await this.profitShareRepository.save(shares);
+
+    // Phase5+6 M8: 利润分配审计日志（异常静默不影响主流程）
+    try {
+      await this.auditService.logAction({
+        user_id: undefined,
+        action: '利润分配',
+        resource_type: 'ProfitShare',
+        resource_id: caseId,
+        detail: `案件:${caseId}, 分配基数:${feeAmount}, 机构:${rules.org || 0}%, 律师:${rules.lawyer || 0}%, 销售:${rules.sales || 0}%, 市场:${rules.marketing || 0}%, 助理:${rules.assistant || 0}%`,
+      });
+    } catch (e) {
+      // 审计失败不影响主业务
+    }
+
+    return savedShares;
   }
 
   async getProfitShares(orgId: string, caseId?: string): Promise<ProfitShare[]> {
@@ -367,5 +492,22 @@ export class FinanceService {
       profitable_cases: profitableCases,
       loss_cases: lossCases,
     };
+  }
+
+  // 退还质保金
+  async refundQualityDeposit(businessFundId: string, refundAmount: number): Promise<BusinessFund> {
+    const fund = await this.businessFundRepository.findOne({ where: { id: businessFundId } });
+    if (!fund) throw new NotFoundException('业务款记录不存在');
+    if (!fund.quality_deposit || fund.quality_deposit <= 0) throw new BadRequestException('该记录无质保金可退还');
+    if (refundAmount > fund.quality_deposit) throw new BadRequestException('退还金额不能超过质保金金额');
+
+    // 更新质保金余额（减去退还金额）
+    fund.quality_deposit = fund.quality_deposit - refundAmount;
+    // 记录退还信息到分账记录
+    const allocationRecords = fund.allocation_records ? JSON.parse(fund.allocation_records) : [];
+    allocationRecords.push({ role: 'quality_deposit_refund', amount: refundAmount, time: new Date().toISOString() });
+    fund.allocation_records = JSON.stringify(allocationRecords);
+
+    return this.businessFundRepository.save(fund);
   }
 }

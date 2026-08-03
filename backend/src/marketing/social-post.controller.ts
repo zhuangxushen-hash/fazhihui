@@ -13,7 +13,8 @@ import {
 } from '@nestjs/common';
 import { SocialPostService } from './social-post.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { SocialPostStatus } from '../types';
+import { Roles } from '../auth/roles.decorator';
+import { SocialPostStatus, UserRole} from '../types';
 
 /**
  * 公域内容排期控制器
@@ -21,6 +22,7 @@ import { SocialPostStatus } from '../types';
  */
 @Controller('social-posts')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.MARKETING)
 export class SocialPostController {
   constructor(private readonly socialPostService: SocialPostService) {}
 

@@ -392,78 +392,91 @@ export class OpportunityService {
       service_fee?: number;
     },
   ) {
-    const opportunity = await this.opportunityRepository.findOne({
-      where: { id: opportunityId },
+    return this.dataSource.transaction(async (manager) => {
+      const opportunity = await manager.findOne(Opportunity, {
+        where: { id: opportunityId },
+      });
+      if (!opportunity) {
+        throw new NotFoundException('商机不存在');
+      }
+
+      const lead = await manager.findOne(Lead, { where: { id: opportunity.lead_id } });
+
+      if (!lead) {
+        throw new NotFoundException('线索不存在');
+      }
+
+      // 权限检查
+      const user = await manager.findOne(User, { where: { id: userId } });
+      if (user && user.role === UserRole.SALES && opportunity.negotiator_id !== userId) {
+        throw new ForbiddenException('无权操作此商机');
+      }
+
+      // 检查是否已签约
+      if (opportunity.stage === OpportunityStage.SIGNED) {
+        throw new BadRequestException('该商机已签约');
+      }
+
+      // 检查强制节点是否全部完成
+      const sopCheck = await this.talkSOPService.checkRequiredNodesCompleted(opportunityId);
+      if (!sopCheck.is_valid) {
+        const incompleteNodeNames = sopCheck.incomplete_nodes.map(n => n.node_name).join('、');
+        throw new BadRequestException(`以下强制节点未完成：${incompleteNodeNames}，请先完成后再签约`);
+      }
+
+      // 修改商机 stage 之前先保存旧阶段，用于阶段日志
+      const oldStage = opportunity.stage;
+
+      // 创建案件
+      const caseEntity = manager.create(Case, {
+        lead_id: opportunity.lead_id,
+        opportunity_id: opportunity.id,
+        client_id: 'pending',
+        assignee_lawyer_id: userId,
+        case_type: (caseData.case_type || lead.case_type) as any,
+        description: caseData.case_description || lead.case_description,
+        service_fee: caseData.service_fee || opportunity.actual_amount || opportunity.quote_amount,
+        status: CaseStatus.PENDING_ASSIGN,
+        organization_id: lead.organization_id,
+        client_name: lead.contact_name,
+        client_phone: lead.phone,
+        referrer: lead.referrer || opportunity.referrer,
+        source_detail: lead.lead_source_detail,
+        case_name: (lead.contact_name ? lead.contact_name + '案' : undefined),
+      });
+
+      const savedCase = await manager.save(Case, caseEntity);
+
+      // 更新商机状态为已签约
+      opportunity.stage = OpportunityStage.SIGNED;
+      opportunity.actual_amount = caseData.service_fee || opportunity.quote_amount;
+      opportunity.status = OpportunityStatus.COMPLETED;
+      opportunity.case_id = savedCase.id;
+      opportunity.conversion_time = new Date();
+      await manager.save(Opportunity, opportunity);
+
+      // 记录阶段变更日志
+      const stageLog = manager.create(OpportunityStageLog, {
+        opportunity_id: opportunityId,
+        from_stage: oldStage,
+        to_stage: OpportunityStage.SIGNED,
+        operator_id: userId,
+        remark: '签约转化',
+      });
+      await manager.save(OpportunityStageLog, stageLog);
+
+      // 更新线索状态
+      lead.status = LeadStatus.PENDING_SIGN;
+      lead.case_id = savedCase.id;
+      lead.conversion_time = new Date();
+      lead.conversion_status = 'converted';
+      await manager.save(Lead, lead);
+
+      return {
+        opportunity: await this.getOpportunityDetail(opportunityId, userId),
+        case: savedCase,
+      };
     });
-    if (!opportunity) {
-      throw new NotFoundException('商机不存在');
-    }
-
-    const lead = await this.leadRepository.findOne({ where: { id: opportunity.lead_id } });
-
-    if (!lead) {
-      throw new NotFoundException('线索不存在');
-    }
-
-    // 权限检查
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (user && user.role === UserRole.SALES && opportunity.negotiator_id !== userId) {
-      throw new ForbiddenException('无权操作此商机');
-    }
-
-    // 检查是否已签约
-    if (opportunity.stage === OpportunityStage.SIGNED) {
-      throw new BadRequestException('该商机已签约');
-    }
-
-    // 检查强制节点是否全部完成
-    const sopCheck = await this.talkSOPService.checkRequiredNodesCompleted(opportunityId);
-    if (!sopCheck.is_valid) {
-      const incompleteNodeNames = sopCheck.incomplete_nodes.map(n => n.node_name).join('、');
-      throw new BadRequestException(`以下强制节点未完成：${incompleteNodeNames}，请先完成后再签约`);
-    }
-
-    // 创建案件
-    const caseEntity = this.caseRepository.create({
-      lead_id: opportunity.lead_id,
-      client_id: 'pending',
-      assignee_lawyer_id: userId,
-      case_type: (caseData.case_type || lead.case_type) as any,
-      description: caseData.case_description || lead.case_description,
-      service_fee: caseData.service_fee || opportunity.actual_amount || opportunity.quote_amount,
-      status: CaseStatus.PENDING_ASSIGN,
-      organization_id: lead.organization_id,
-      client_name: lead.contact_name,
-      client_phone: lead.phone,
-    });
-
-    await this.caseRepository.save(caseEntity);
-
-    // 更新商机状态为已签约
-    opportunity.stage = OpportunityStage.SIGNED;
-    opportunity.actual_amount = caseData.service_fee || opportunity.quote_amount;
-    opportunity.status = OpportunityStatus.COMPLETED;
-    await this.opportunityRepository.save(opportunity);
-
-    // 记录阶段变更日志
-    const stageLog = this.stageLogRepository.create({
-      opportunity_id: opportunityId,
-      from_stage: opportunity.stage,
-      to_stage: OpportunityStage.SIGNED,
-      operator_id: userId,
-      remark: '签约转化',
-    });
-    await this.stageLogRepository.save(stageLog);
-
-    // 更新线索状态
-    await this.leadRepository.update(opportunity.lead_id, {
-      status: LeadStatus.PENDING_SIGN,
-    });
-
-    return {
-      opportunity: await this.getOpportunityDetail(opportunityId, userId),
-      case: caseEntity,
-    };
   }
 
   // 标记为流失

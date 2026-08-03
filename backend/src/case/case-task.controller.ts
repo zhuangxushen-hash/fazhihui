@@ -10,6 +10,8 @@ import {
   Request,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '../types';
 import { CaseTaskService } from './case-task.service';
 import { CaseTaskCommentService } from './case-task-comment.service';
 import { CreateTaskDto, UpdateTaskDto, UpdateTaskStatusDto, AssignTaskDto, UpdateTaskProgressDto, AddCommentDto, UploadResultDto } from './dto/task.dto';
@@ -17,6 +19,7 @@ import { CaseTaskStatus, TaskPriority } from './case-task.entity';
 
 @Controller('case-tasks')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.LAWYER, UserRole.ASSISTANT)
 export class CaseTaskController {
   constructor(
     private readonly caseTaskService: CaseTaskService,

@@ -1,9 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MarketingService } from './marketing.service';
 import { MarketingController } from './marketing.controller';
 import { MarketingMaterial } from './marketing-material.entity';
 import { ComplianceModule } from '../compliance/compliance.module';
+// Phase4 M12: 营销转化事件回流线索状态，注入 LeadModule（forwardRef 防止潜在循环依赖）
+import { LeadModule } from '../lead/lead.module';
 
 // 控制器
 import { AdAccountController } from './ad-account.controller';
@@ -33,7 +35,7 @@ import { AdPlan } from './ad-plan.entity';
 import { AdPlanLog } from './ad-plan-log.entity';
 import { AdMaterial } from './ad-material.entity';
 import { SocialAccount } from './social-account.entity';
-import { SocialPost } from './social-post.entity';
+import { MarketingSocialPost } from './social-post.entity';
 import { ConversionEvent } from './conversion-event.entity';
 import { ContentTemplate } from './content-template.entity';
 import { DigitalHumanLive } from './digital-human-live.entity';
@@ -54,7 +56,7 @@ import { User } from '../user/user.entity';
       AdMaterial,
       // 社交账号与发布
       SocialAccount,
-      SocialPost,
+      MarketingSocialPost,
       // 转化事件
       ConversionEvent,
       // 内容模板
@@ -67,6 +69,8 @@ import { User } from '../user/user.entity';
       User,
     ]),
     ComplianceModule,
+    // Phase4 M12: 注入线索服务用于转化事件回流线索状态
+    forwardRef(() => LeadModule),
   ],
   providers: [
     // 保留原有服务

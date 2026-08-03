@@ -3,9 +3,11 @@ import { CaseSopTemplateService } from './case-sop-template.service';
 import { CaseSOPTemplate } from './case-sop-template.entity';
 import { CaseType, UserRole } from '../types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('case-sop-templates')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.LAWYER)
 export class CaseSopTemplateController {
   constructor(private readonly sopTemplateService: CaseSopTemplateService) {}
 

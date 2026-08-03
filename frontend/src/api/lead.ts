@@ -79,6 +79,16 @@ export const getLeadById = (id: string) => {
   return axios.get(`/leads/${id}`)
 }
 
+// 公共线索池查询
+export const getPublicLeads = (params?: { org_id?: string }) => {
+  return axios.get('/leads/public', { params })
+}
+
+// 线索转化为案件
+export const convertLeadToCase = (id: string, data?: { case_no?: string; assignee_lawyer_id?: string; fee_amount?: number }) => {
+  return axios.post(`/leads/${id}/convert`, data || {})
+}
+
 export const updateLeadStatus = (id: string, status: string) => {
   return axios.put(`/leads/${id}/status`, { status })
 }

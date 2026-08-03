@@ -7,6 +7,9 @@ import { Opportunity } from './opportunity.entity';
 import { Case } from '../case/case.entity';
 import { User } from '../user/user.entity';
 import { HandoverType, HandoverStatus } from '../types';
+import { NotificationService } from '../user/notification.service';
+// Phase5+6 L3: 注入审计服务，交接操作记录审计日志
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class HandoverService {
@@ -22,6 +25,9 @@ export class HandoverService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private dataSource: DataSource,
+    private notificationService: NotificationService,
+    // Phase5+6 L3: 注入审计服务
+    private auditService: AuditService,
   ) {}
 
   // 发起交接
@@ -111,6 +117,29 @@ export class HandoverService {
       handover.completed_at = new Date();
       await manager.save(handover);
     });
+
+    await this.notificationService.notify({
+      receiver_id: handover.to_user_id || '',
+      title: '交接确认',
+      content: `交接记录 ${handover.id} 已确认`,
+      type: 'handover',
+      level: 'normal',
+      related_type: 'Handover',
+      related_id: handover.id,
+    });
+
+    // Phase5+6 L3: 确认交接审计日志（异常静默不影响主流程）
+    try {
+      await this.auditService.logAction({
+        user_id: currentUserId,
+        action: '确认交接',
+        resource_type: 'Handover',
+        resource_id: handover.id,
+        detail: `交接人:${handover.from_user_id}, 接收人:${handover.to_user_id}, 类型:${handover.handover_type}`,
+      });
+    } catch (e) {
+      // 审计失败不影响主业务
+    }
 
     return handover;
   }
@@ -255,6 +284,19 @@ export class HandoverService {
 
       return await manager.save(log);
     });
+
+    // Phase5+6 L3: 批量移交审计日志（异常静默不影响主流程）
+    try {
+      await this.auditService.logAction({
+        user_id: fromUserId,
+        action: '批量移交',
+        resource_type: 'Handover',
+        resource_id: handoverLog.id,
+        detail: `交接人:${fromUserId}, 接收人:${toUserId}, 类型:${handoverType}, 线索数:${leadIds.length}, 商机数:${opportunityIds.length}, 案件数:${caseIds.length}`,
+      });
+    } catch (e) {
+      // 审计失败不影响主业务
+    }
 
     return handoverLog;
   }

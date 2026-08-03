@@ -1,12 +1,14 @@
 import { Controller, Get, Post, Put, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { ComplianceService } from './compliance.service';
-import { ComplianceType, ComplianceResult, ComplaintType, ComplaintStatus } from '../types';
+import { ComplianceType, ComplianceResult, ComplaintType, ComplaintStatus, UserRole} from '../types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
 import { PlatformType } from './marketing-content.entity';
 import { SalesChannel } from './sales-compliance.entity';
 
 @Controller('compliance')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.LAWYER, UserRole.FINANCE, UserRole.SALES, UserRole.MARKETING)
 export class ComplianceController {
   constructor(private complianceService: ComplianceService) {}
 

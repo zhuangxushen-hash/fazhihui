@@ -12,10 +12,13 @@ import {
 } from '@nestjs/common';
 import { CaseWarningService } from './case-warning.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '../types';
 import { CreateWarningDto, UpdateWarningDto, WarningFilterDto } from './dto/warning.dto';
 
 @Controller('case-warnings')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.LAWYER, UserRole.ASSISTANT)
 export class CaseWarningController {
   constructor(private readonly warningService: CaseWarningService) {}
 

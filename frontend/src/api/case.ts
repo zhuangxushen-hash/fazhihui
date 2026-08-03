@@ -39,3 +39,28 @@ export const updateCaseStatus = (id: string, status: string) => {
 export const assignLawyer = (id: string, lawyerId: string) => {
   return axios.put(`/cases/${id}/assign`, { lawyer_id: lawyerId })
 }
+
+// 出函：type 为 court_letter 出庭函 / firm_letter 所函
+export const generateLetter = (id: string, type: string) => {
+  return axios.post(`/cases/${id}/generate-letter`, { type })
+}
+
+// 生成结案报告
+export const closeCaseReport = (id: string) => {
+  return axios.post(`/cases/${id}/close-report`)
+}
+
+// 结案归档
+export const archiveCase = (id: string) => {
+  return axios.post(`/cases/${id}/archive`)
+}
+
+// 自动生成委托合同
+export const generateContract = (data: { case_id: string; template_id: string }) => {
+  return axios.post('/cases/documents/generate-contract', data)
+}
+
+// 批量生成文书
+export const batchGenerateDocuments = (data: { case_ids: string[]; template_id: string }) => {
+  return axios.post('/cases/documents/batch-generate', data)
+}

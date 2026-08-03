@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Case } from '../case/case.entity';
 import { Document } from '../case/document.entity';
 import { Evidence } from '../case/evidence.entity';
@@ -17,6 +17,8 @@ import { CasePushNotification } from './case-push-notification.entity';
 import { ClientConsultation } from './client-consultation.entity';
 import { ServiceRating } from './service-rating.entity';
 import { ClientArchive } from './client-archive.entity';
+// Phase4 M3: 客户投诉走合规通道，注入合规服务
+import { ComplianceService } from '../compliance/compliance.service';
 
 // 触发转人工的复杂问题关键词
 const TRANSFER_KEYWORDS = ['投诉', '转人工', '人工', '律师', '无法解决'];
@@ -54,17 +56,22 @@ export class ClientService {
     private adMaterialRepository: Repository<AdMaterial>,
     @InjectRepository(ClientArchive)
     private clientArchiveRepository: Repository<ClientArchive>,
+    // Phase4 M3: 注入合规服务，客户投诉同步走合规通道（forwardRef 防止循环依赖）
+    @Inject(forwardRef(() => ComplianceService))
+    private complianceService: ComplianceService,
   ) {}
 
   async getClientCases(clientId: string): Promise<any[]> {
     const cases = await this.caseRepository.find({ where: { client_id: clientId }, order: { created_at: 'DESC' } });
-    return Promise.all(cases.map(async (item) => {
-      let lawyer_name: string | undefined;
-      if (item.assignee_lawyer_id) {
-        const lawyer = await this.userRepository.findOne({ where: { id: item.assignee_lawyer_id } });
-        lawyer_name = lawyer?.real_name;
-      }
-      return { ...item, lawyer_name };
+    // 批量查询所有相关律师，避免 N+1 查询
+    const lawyerIds = [...new Set(cases.map(c => c.assignee_lawyer_id).filter(Boolean))];
+    const lawyers = lawyerIds.length > 0
+      ? await this.userRepository.find({ where: { id: In(lawyerIds) } })
+      : [];
+    const lawyerMap = new Map(lawyers.map(l => [l.id, l.real_name]));
+    return cases.map(item => ({
+      ...item,
+      lawyer_name: item.assignee_lawyer_id ? lawyerMap.get(item.assignee_lawyer_id) || null : null,
     }));
   }
 
@@ -119,7 +126,25 @@ export class ClientService {
       ...complaintData,
       status: ComplaintStatus.NEW,
     });
-    return this.complaintRepository.save(complaint);
+    const savedComplaint = await this.complaintRepository.save(complaint);
+
+    // Phase4 M3: 客户投诉同步走合规通道，生成投诉工单（异常静默处理，不影响投诉记录创建）
+    try {
+      await this.complianceService.createComplaintTicket({
+        source_channel: TicketSourceChannel.CLIENT_PORTAL,
+        complaint_type: complaintData.type,
+        severity_level: TicketSeverity.MEDIUM,
+        title: `客户投诉-${complaintData.client_name || '匿名客户'}`,
+        content: complaintData.content,
+        case_id: complaintData.case_id,
+        client_id: complaintData.client_id,
+        client_name: complaintData.client_name,
+        client_phone: complaintData.client_phone,
+        organization_id: complaintData.organization_id,
+      });
+    } catch (err) {}
+
+    return savedComplaint;
   }
 
   async getClientComplaints(clientId: string): Promise<Complaint[]> {
@@ -500,6 +525,16 @@ export class ClientService {
       organization_id: caseEntity.organization_id,
       sent_at: new Date(),
     });
+    // Phase4 M2: 结案后创建一条待评价记录（ServiceRating status=pending），等待客户提交评分
+    const pendingRating = this.serviceRatingRepository.create({
+      case_id: caseId,
+      client_id: caseEntity.client_id,
+      rating: 0, // 待评价占位，客户提交后更新
+      content: null,
+      status: 'pending',
+      organization_id: caseEntity.organization_id,
+    });
+    await this.serviceRatingRepository.save(pendingRating);
     return { triggered: true, message: '评价推送已触发' };
   }
 

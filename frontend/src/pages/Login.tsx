@@ -14,10 +14,19 @@ export default function Login() {
       localStorage.setItem('token', data.access_token)
       localStorage.setItem('user', JSON.stringify(data.user))
       message.success('登录成功')
+      const roleHomeMap: Record<string, string> = {
+        super_admin: '/',
+        org_admin: '/',
+        marketing: '/marketing/ad-plans',
+        sales: '/talk-workbench',
+        lawyer: '/cases',
+        assistant: '/schedules',
+        finance: '/finance',
+      }
       if (data.user.role === 'client') {
         window.location.href = '/client'
       } else {
-        window.location.href = '/'
+        window.location.href = roleHomeMap[data.user.role] || '/'
       }
     } catch (error) {
       message.error('登录失败，请检查账号密码')

@@ -64,6 +64,10 @@ export class CaseTask {
   @Column({ nullable: true })
   assignee_id: string; // 实际指派人ID
 
+  // 父任务ID（用于父子任务：子任务完成后联动更新父任务进度；可空）
+  @Column({ type: 'varchar', nullable: true, comment: '父任务ID' })
+  parent_task_id: string;
+
   @Column({ type: 'datetime', nullable: true })
   deadline: Date; // 截止时间
 
