@@ -4,9 +4,13 @@ build/
 .env
 .env.local
 .env.*.local
+.env.production
+.env.development
 *.sqlite
+*.sqlite-journal
 .DS_Store
 *.log
+logs/
 *.tmp
 .vscode/
 .idea/
