@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Form, Input, Button, message } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { login } from '../api/auth'
+import { showError } from '../utils/error'
 import logo from '../assets/fazhihui-logo.svg'
 
 export default function Login() {
@@ -29,7 +30,8 @@ export default function Login() {
         window.location.href = roleHomeMap[data.user.role] || '/'
       }
     } catch (error) {
-      message.error('登录失败，请检查账号密码')
+      // 拦截器已展示具体错误信息（如"用户不存在"/"密码错误"），此处仅兜底
+      showError(error, '登录失败，请检查账号密码')
     } finally {
       setLoading(false)
     }
@@ -111,9 +113,6 @@ export default function Login() {
             </Form.Item>
           </Form>
 
-          <div style={{ textAlign: 'center', marginTop: 24, color: '#718096', fontSize: 12 }}>
-            测试账号：13800138000 / 123456
-          </div>
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Form, Input, Button, message, Checkbox } from 'antd'
 import { MobileOutlined, LockOutlined, KeyOutlined, WechatOutlined } from '@ant-design/icons'
 import { login } from '../../api/auth'
+import { showError } from '../../utils/error'
 import logo from '../../assets/fazhihui-logo.svg'
 
 /**
@@ -33,7 +34,8 @@ export default function ClientLogin() {
       message.success('登录成功')
       window.location.href = '/client'
     } catch (error) {
-      message.error('登录失败，请检查账号密码')
+      // 拦截器已展示具体错误信息（如"用户不存在"/"密码错误"），此处仅兜底
+      showError(error, '登录失败，请检查账号密码')
     } finally {
       setLoading(false)
     }
@@ -340,20 +342,6 @@ export default function ClientLogin() {
           </div>
         </Form>
 
-        {/* 测试账号提示 */}
-        <div
-          style={{
-            marginTop: 16,
-            padding: '10px 12px',
-            background: '#f9f9fb',
-            borderRadius: 8,
-            fontSize: 12,
-            color: '#717785',
-            textAlign: 'center',
-          }}
-        >
-          测试账号：13800138007 / 123456
-        </div>
       </div>
 
       {/* === 其他登录方式 === */}
