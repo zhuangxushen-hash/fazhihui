@@ -73,19 +73,6 @@ const mindMapTemplates = [
   { key: 'case-structure', name: '诉讼案件结构梳理', desc: '诉讼案件整体结构化梳理' },
 ]
 
-// 本地mock数据（接口不存在时展示）
-const mockMyDocs = [
-  { key: '1', name: '起诉状草稿.docx', size: '24KB', created_at: '2026-07-20 10:30:00' },
-  { key: '2', name: '案件分析报告.pdf', size: '1.2MB', created_at: '2026-07-18 15:20:00' },
-  { key: '3', name: '证据清单.xlsx', size: '56KB', created_at: '2026-07-15 09:10:00' },
-]
-
-const mockFirmDocs = [
-  { key: '1', name: '优秀律师事务所证书.docx', contributor: '行政部', contributed_at: '2024-12-01 14:00:00', size: '320KB' },
-  { key: '2', name: '事务所管理制度.pdf', contributor: '行政部', contributed_at: '2024-11-15 10:30:00', size: '880KB' },
-  { key: '3', name: '常年法律顾问合同.docx', contributor: '业务部', contributed_at: '2024-10-20 16:20:00', size: '120KB' },
-]
-
 export default function DocumentManagement() {
   const [activeMenu, setActiveMenu] = useState('my-doc')
   const [data, setData] = useState<any[]>([])
@@ -103,15 +90,9 @@ export default function DocumentManagement() {
     try {
       const res: any = await axios.get('/documents', { params: { menu: activeMenu, keyword: searchKeyword, folder: selectedFolder } })
       const list = res?.data?.list || res?.list || []
-      if (list.length > 0) {
-        setData(list)
-      } else {
-        // 接口返回空时使用本地mock数据
-        setData(activeMenu === 'my-doc' ? mockMyDocs : mockFirmDocs)
-      }
+      setData(list)
     } catch (error) {
-      // 接口不存在时使用本地mock数据
-      setData(activeMenu === 'my-doc' ? mockMyDocs : mockFirmDocs)
+      setData([])
     } finally {
       setLoading(false)
     }

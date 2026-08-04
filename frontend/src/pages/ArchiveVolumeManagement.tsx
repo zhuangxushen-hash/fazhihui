@@ -98,95 +98,6 @@ const menuItems = [
   { key: 'archived', label: '已归档项目卷宗' },
 ]
 
-// 本地mock数据（接口不存在时使用）
-const mockData: any[] = [
-  {
-    id: '1',
-    name: '张某诉李某合同纠纷案',
-    filing_date: '2024-03-15',
-    leader: '王律师',
-    project_status: 'in_progress',
-    closed: false,
-    archive_status: 'unarchived',
-    electronic_archive: true,
-    paper_archive: false,
-    contract_returned: 'not_returned',
-    original_uploaded: true,
-  },
-  {
-    id: '2',
-    name: '某公司股权转让非诉项目',
-    filing_date: '2024-05-20',
-    leader: '刘律师',
-    project_status: 'completed',
-    closed: true,
-    archive_status: 'archived',
-    electronic_archive: true,
-    paper_archive: true,
-    contract_returned: 'returned',
-    original_uploaded: true,
-  },
-  {
-    id: '3',
-    name: '赵某劳动仲裁案',
-    filing_date: '2024-06-08',
-    leader: '陈律师',
-    project_status: 'in_progress',
-    closed: false,
-    archive_status: 'unarchived',
-    electronic_archive: false,
-    paper_archive: false,
-    contract_returned: 'not_returned',
-    original_uploaded: false,
-  },
-  {
-    id: '4',
-    name: '某科技企业常年法律顾问',
-    filing_date: '2024-01-10',
-    leader: '王律师',
-    project_status: 'completed',
-    closed: true,
-    archive_status: 'archived',
-    electronic_archive: true,
-    paper_archive: false,
-    contract_returned: 'returned',
-    original_uploaded: true,
-  },
-  {
-    id: '5',
-    name: '孙某交通事故法援案',
-    filing_date: '2024-07-22',
-    leader: '周律师',
-    project_status: 'suspended',
-    closed: false,
-    archive_status: 'unarchived',
-    electronic_archive: false,
-    paper_archive: false,
-    contract_returned: 'not_returned',
-    original_uploaded: false,
-  },
-]
-
-// 借阅记录mock数据
-const mockBorrowData: any[] = [
-  {
-    id: 'b1',
-    project_name: '张某诉李某合同纠纷案',
-    borrower: '刘律师',
-    borrow_date: '2024-08-01',
-    return_date: '',
-    status: 'borrowing',
-  },
-  {
-    id: 'b2',
-    project_name: '某公司股权转让非诉项目',
-    borrower: '陈律师',
-    borrow_date: '2024-07-15',
-    return_date: '2024-07-20',
-    status: 'returned',
-  },
-]
-
 // 导出Excel：将数据转为CSV并下载
 const handleExportExcel = (data: any[], filename: string) => {
   if (!data.length) {
@@ -235,14 +146,9 @@ export default function ArchiveVolumeManagement() {
         },
       })
       const list = Array.isArray(res) ? res : res?.data || []
-      setData(list.length ? list : mockData)
+      setData(list)
     } catch (error) {
-      // 接口不存在时使用本地mock数据
-      if (activeTab === 'borrow') {
-        setData(mockBorrowData)
-      } else {
-        setData(mockData)
-      }
+      setData([])
     } finally {
       setLoading(false)
     }

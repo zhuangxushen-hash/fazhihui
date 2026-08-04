@@ -55,65 +55,6 @@ const categoryLabels: Record<string, string> = {
   other: '其他',
 }
 
-// 本地mock数据（接口不存在时使用）
-const mockData: any[] = [
-  {
-    id: '1',
-    name: '法智汇系统V2.0研发',
-    category: 'internal_rd',
-    start_date: '2024-03-01',
-    team: '技术部',
-    supervisor: '王总监',
-    leader: '刘经理',
-    stage: '开发阶段',
-    status: 'in_progress',
-  },
-  {
-    id: '2',
-    name: '新员工入职培训计划',
-    category: 'training',
-    start_date: '2024-06-15',
-    team: '人力资源部',
-    supervisor: '陈主管',
-    leader: '赵专员',
-    stage: '执行阶段',
-    status: 'in_progress',
-  },
-  {
-    id: '3',
-    name: '2024年度合伙人会议',
-    category: 'meeting',
-    start_date: '2024-01-20',
-    team: '行政部',
-    supervisor: '李主任',
-    leader: '周秘书',
-    stage: '已完成',
-    status: 'completed',
-  },
-  {
-    id: '4',
-    name: '办公场地搬迁项目',
-    category: 'admin',
-    start_date: '2024-08-10',
-    team: '行政部',
-    supervisor: '李主任',
-    leader: '孙助理',
-    stage: '筹备阶段',
-    status: 'preparing',
-  },
-  {
-    id: '5',
-    name: '法律知识库建设',
-    category: 'internal_rd',
-    start_date: '2024-05-01',
-    team: '技术部',
-    supervisor: '王总监',
-    leader: '吴工程师',
-    stage: '测试阶段',
-    status: 'in_progress',
-  },
-]
-
 export default function InternalProject() {
   const [activeTab, setActiveTab] = useState('in_progress')
   const [data, setData] = useState<any[]>([])
@@ -133,10 +74,9 @@ export default function InternalProject() {
         },
       })
       const list = Array.isArray(res) ? res : res?.data || []
-      setData(list.length ? list : mockData)
+      setData(list)
     } catch (error) {
-      // 接口不存在时使用本地mock数据
-      setData(mockData)
+      setData([])
     } finally {
       setLoading(false)
     }

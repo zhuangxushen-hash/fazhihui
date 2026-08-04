@@ -65,34 +65,6 @@ const industryOptions = [
   { value: 'other', label: '其他' },
 ]
 
-// 本地mock数据（接口不存在时展示）
-const mockData: any[] = [
-  {
-    key: '1',
-    apply_time: '2026-07-28 09:30:00',
-    performance_title: '某科技公司股权纠纷案',
-    purpose: '用于XX项目投标',
-    material: '判决书.pdf',
-    audit_status: 'pending',
-  },
-  {
-    key: '2',
-    apply_time: '2026-07-25 14:20:00',
-    performance_title: '某地产公司合同纠纷案',
-    purpose: '用于YY项目投标',
-    material: '判决书.pdf、代理词.docx',
-    audit_status: 'approved',
-  },
-  {
-    key: '3',
-    apply_time: '2026-07-22 11:10:00',
-    performance_title: '某制造企业劳动争议案',
-    purpose: '用于ZZ项目投标',
-    material: '调解书.pdf',
-    audit_status: 'rejected',
-  },
-]
-
 export default function BidPerformance() {
   const [activeMenu, setActiveMenu] = useState('borrow-manage')
   const [activeTab, setActiveTab] = useState('my-performance')
@@ -118,15 +90,9 @@ export default function BidPerformance() {
         },
       })
       const list = res?.data?.list || res?.list || []
-      if (list.length > 0) {
-        setData(list)
-      } else {
-        // 接口返回空时使用本地mock数据
-        setData(mockData)
-      }
+      setData(list)
     } catch (error) {
-      // 接口不存在时使用本地mock数据
-      setData(mockData)
+      setData([])
     } finally {
       setLoading(false)
     }

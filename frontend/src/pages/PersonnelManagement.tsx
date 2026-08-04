@@ -96,28 +96,6 @@ const employeeStatusColor: Record<string, string> = {
   resigned: 'default',
 }
 
-// 本地 mock 数据
-const mockData: any[] = [
-  {
-    id: '1', name: '张三', gender: 'male', dept: 'litigation', position: 'lawyer',
-    lawyerType: 'fulltime', practiceYears: 8, onboardDate: '2016-03-15',
-    phone: '13800138000', status: 'active', office: '北京总部',
-    idCard: '110101199001011234', hometown: '北京', school: '中国政法大学', major: '法学', education: '硕士',
-  },
-  {
-    id: '2', name: '李四', gender: 'female', dept: 'corporate', position: 'partner',
-    lawyerType: 'fulltime', practiceYears: 12, onboardDate: '2012-07-01',
-    phone: '13900139000', status: 'active', office: '上海分所',
-    idCard: '310101198801015678', hometown: '上海', school: '华东政法大学', major: '法学', education: '博士',
-  },
-  {
-    id: '3', name: '王五', gender: 'male', dept: 'ip', position: 'assistant',
-    lawyerType: 'intern', practiceYears: 1, onboardDate: '2023-09-01',
-    phone: '13700137000', status: 'probation', office: '北京总部',
-    idCard: '120101199901019012', hometown: '天津', school: '北京大学', major: '知识产权', education: '本科',
-  },
-]
-
 // 统计卡片配置
 const statConfigs = [
   { key: 'active', title: '在职员工', icon: <UserOutlined />, color: '#1677ff' },
@@ -133,7 +111,7 @@ const statConfigs = [
 export default function PersonnelManagement() {
   const [activeMenu, setActiveMenu] = useState('employee')
   const [activeTab, setActiveTab] = useState('active')
-  const [data, setData] = useState<any[]>(mockData)
+  const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [searchForm] = Form.useForm()
   const [addForm] = Form.useForm()
@@ -141,26 +119,19 @@ export default function PersonnelManagement() {
   // 统计数据
   const [stats, setStats] = useState<Record<string, number>>({})
 
-  // 从接口获取人事数据，如接口不存在使用本地 mock 数据
+  // 从接口获取人事数据
   const fetchData = async (tab: string = activeTab) => {
     setLoading(true)
     try {
       const res: any = await axios.get('/hr/personnel', { params: { status: tab } })
       const list = res?.data
-      if (Array.isArray(list) && list.length > 0) {
+      if (Array.isArray(list)) {
         setData(list)
       } else {
-        // 接口无数据时使用本地 mock 数据按 Tab 过滤
-        const filtered = tab === 'resigned'
-          ? mockData.filter((d) => d.status === 'resigned')
-          : mockData.filter((d) => d.status !== 'resigned')
-        setData(filtered)
+        setData([])
       }
     } catch (error) {
-      const filtered = tab === 'resigned'
-        ? mockData.filter((d) => d.status === 'resigned')
-        : mockData.filter((d) => d.status !== 'resigned')
-      setData(filtered)
+      setData([])
     } finally {
       setLoading(false)
     }
@@ -169,7 +140,7 @@ export default function PersonnelManagement() {
   // 计算统计数据
   const calcStats = () => {
     const result: Record<string, number> = {}
-    mockData.forEach((item) => {
+    data.forEach((item) => {
       if (item.status === 'active') result.active = (result.active || 0) + 1
       if (item.status === 'probation') result.probation = (result.probation || 0) + 1
       if (item.status === 'active' || item.status === 'probation') result.regular = (result.regular || 0) + 1
@@ -184,31 +155,17 @@ export default function PersonnelManagement() {
 
   useEffect(() => {
     fetchData()
-    calcStats()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab])
 
+  useEffect(() => {
+    calcStats()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data])
+
   // 搜索
   const handleSearch = () => {
-    const values = searchForm.getFieldsValue()
-    setLoading(true)
-    try {
-      const filtered = mockData.filter((item) => {
-        let match = true
-        if (values.name && !item.name.includes(values.name)) match = false
-        if (values.dept && item.dept !== values.dept) match = false
-        if (values.phone && !item.phone.includes(values.phone)) match = false
-        if (values.gender && item.gender !== values.gender) match = false
-        if (values.position && item.position !== values.position) match = false
-        if (values.lawyerType && item.lawyerType !== values.lawyerType) match = false
-        if (values.practiceYears && String(item.practiceYears) !== String(values.practiceYears)) match = false
-        if (values.status && item.status !== values.status) match = false
-        return match
-      })
-      setData(filtered)
-    } finally {
-      setLoading(false)
-    }
+    fetchData()
   }
 
   // 重置查询

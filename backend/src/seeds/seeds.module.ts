@@ -702,10 +702,10 @@ export class SeedsModule implements OnModuleInit {
     await this.seedRoles(orgId);
     await this.seedMenus();
 
-    // 系统配置：部署、品牌、第三方对接
+    // 系统配置：部署、品牌
     await this.seedDeploymentConfigs(orgId);
     await this.seedBrandConfigs(orgId);
-    await this.seedIntegrations(orgId);
+    // 生产环境不预填第三方对接demo数据，由用户自行配置
   }
 
   private async seedLeads(orgId: string, userMap: Record<string, User>) {
