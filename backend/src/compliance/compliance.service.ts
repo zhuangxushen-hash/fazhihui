@@ -499,10 +499,11 @@ export class ComplianceService {
   }
 
   async getCaseSOPStats(orgId: string): Promise<{ pending: number; completed: number; overdue: number }> {
-    // CaseTask 无 organization_id 字段，通过 case_id join Case 表按组织过滤
+    // CaseTask 无 organization_id 字段，通过 case_id join cases 表按组织过滤
+    // 注意：Case 实体表名为 cases（复数），不是 case
     const qb = this.caseTaskRepository
       .createQueryBuilder('t')
-      .innerJoin('case', 'c', 'c.id = t.case_id')
+      .innerJoin('cases', 'c', 'c.id = t.case_id')
       .where('c.organization_id = :orgId', { orgId });
 
     const pending = await qb.clone().andWhere('t.status = :status', { status: CaseTaskStatus.PENDING }).getCount();
