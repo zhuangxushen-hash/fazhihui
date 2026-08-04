@@ -9,7 +9,6 @@ import {
   SecurityScanOutlined,
   DollarOutlined,
   NotificationOutlined,
-  MessageOutlined,
   SettingOutlined,
   LogoutOutlined,
   MenuUnfoldOutlined,
@@ -18,10 +17,6 @@ import {
   AppstoreOutlined,
   SolutionOutlined,
   SearchOutlined,
-  FileSearchOutlined,
-  RobotOutlined,
-  FolderOutlined,
-  ProfileOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 
@@ -62,6 +57,7 @@ const menuGroups: MenuGroup[] = [
     icon: <TeamOutlined />,
     label: '线索CRM',
     children: [
+      // 原线索CRM 7项
       { key: '/leads', label: '线索管理' },
       { key: '/clients', label: '客户管理' },
       { key: '/lead-pool', label: '公海池' },
@@ -69,6 +65,13 @@ const menuGroups: MenuGroup[] = [
       { key: '/talk-workbench', label: '谈案工作台' },
       { key: '/talk-sop', label: '谈案SOP' },
       { key: '/compliance/sales-review', label: '销售合规审查' },
+      // 合并原SCRM私域 6项
+      { key: '/scrm/live-codes', label: '活码管理' },
+      { key: '/scrm/channels', label: '渠道追踪' },
+      { key: '/scrm/tags', label: '客户标签' },
+      { key: '/scrm/sidebar', label: '企微侧边栏' },
+      { key: '/scrm/reach', label: '私域触达' },
+      { key: '/scrm/chat-archives', label: '聊天存档' },
     ],
   },
   {
@@ -76,6 +79,7 @@ const menuGroups: MenuGroup[] = [
     icon: <FileTextOutlined />,
     label: '案件办案',
     children: [
+      // 原案件办案 12项
       { key: '/cases', label: '案件管理' },
       { key: '/case-sop', label: '办案SOP' },
       { key: '/case-warning', label: '案件预警' },
@@ -88,6 +92,9 @@ const menuGroups: MenuGroup[] = [
       { key: '/due-diligence', label: '尽调宝' },
       { key: '/compliance/export', label: '案件归档' },
       { key: '/cloud-archive', label: '云归档管理' },
+      // 合并原文档管理 2项
+      { key: '/documents', label: '我的文档' },
+      { key: '/archive-volumes', label: '归档卷宗' },
     ],
   },
   {
@@ -95,7 +102,7 @@ const menuGroups: MenuGroup[] = [
     icon: <SecurityScanOutlined />,
     label: '合规风控',
     children: [
-      { key: '/compliance', label: '合规管理' },
+      { key: '/compliance', label: '投诉管理' },
       { key: '/compliance-center', label: '合规风控中心' },
       { key: '/talk-quality-check', label: '谈案AI质检' },
     ],
@@ -131,122 +138,80 @@ const menuGroups: MenuGroup[] = [
     ],
   },
   {
-    key: 'scrm',
-    icon: <MessageOutlined />,
-    label: 'SCRM私域',
-    children: [
-      { key: '/scrm/live-codes', label: '活码管理' },
-      { key: '/scrm/channels', label: '渠道追踪' },
-      { key: '/scrm/tags', label: '客户标签' },
-      { key: '/scrm/sidebar', label: '企微侧边栏' },
-      { key: '/scrm/reach', label: '私域触达' },
-      { key: '/scrm/chat-archives', label: '聊天存档' },
-    ],
-  },
-  {
     key: 'system',
     icon: <SettingOutlined />,
     label: '系统管理',
     children: [
+      // 原系统管理（移出审批中心/用印管理到综合管理，角色管理已合并入权限管理）
       { key: '/users', label: '用户管理' },
-      { key: '/roles', label: '角色管理' },
-      { key: '/permissions', label: '权限管理' },
+      { key: '/permissions', label: '角色权限' },
       { key: '/menus', label: '菜单管理' },
       { key: '/notifications', label: '消息通知' },
       { key: '/service-ratings', label: '评价管理' },
-      { key: '/ai-tools', label: 'AI工具' },
+      { key: '/ai-nav', label: 'AI工具' },
       { key: '/system/deployment-config', label: '部署配置' },
       { key: '/system/brand-customization', label: '品牌定制' },
       { key: '/system/integrations', label: '第三方对接' },
-      { key: '/approval-center', label: '审批中心' },
-      { key: '/seals', label: '用印管理' },
+      // 合并原个人中心 1项
+      { key: '/personal-center', label: '个人中心' },
     ],
   },
   {
     key: 'hr',
     icon: <SolutionOutlined />,
-    label: '人力资源',
+    label: '人事行政',
     children: [
+      // 原人力资源 5项
       { key: '/hr/personnel', label: '人事管理' },
       { key: '/hr/leaves', label: '请假管理' },
       { key: '/hr/attendances', label: '考勤管理' },
       { key: '/hr/materials', label: '物品管理' },
       { key: '/hr/activities', label: '活动管理' },
-    ],
-  },
-  {
-    key: 'office',
-    icon: <UserOutlined />,
-    label: '个人办公',
-    children: [
+      // 合并原个人办公 5项（同事圆/邮件/计算器/计时器已移除）
       { key: '/worklogs', label: '工作日志' },
       { key: '/schedules', label: '日程管理' },
       { key: '/tasks', label: '任务中心' },
       { key: '/knowledge', label: '知识库' },
       { key: '/diagram-tool', label: '可视化绘图' },
-      { key: '/social', label: '同事圆' },
-      { key: '/mail', label: '邮件' },
-      { key: '/calculator', label: '计算器' },
-      { key: '/timer', label: '计时器' },
+      // 从综合管理移入 2项
+      { key: '/approval-center', label: '审批中心' },
+      { key: '/seals', label: '用印管理' },
     ],
   },
-  // 金助理对齐：新增菜单分组（综合管理/文档管理/法律工具/AI助手/个人中心）
   {
     key: 'comprehensive',
     icon: <SearchOutlined />,
     label: '综合管理',
     children: [
+      // 原综合管理 5项
       { key: '/comprehensive/query', label: '综合查询' },
       { key: '/statistical-analysis', label: '统计分析' },
       { key: '/internal-projects', label: '内部项目' },
       { key: '/bid-performances', label: '投标业绩库' },
-      { key: '/notifications', label: '通知公告' },
-    ],
-  },
-  {
-    key: 'document',
-    icon: <FolderOutlined />,
-    label: '文档管理',
-    children: [
-      { key: '/documents', label: '我的文档' },
-      { key: '/archive-volumes', label: '归档卷宗' },
-    ],
-  },
-  {
-    key: 'lawtool',
-    icon: <FileSearchOutlined />,
-    label: '法律工具',
-    children: [
-      { key: '/law-tools', label: '工具导航' },
-    ],
-  },
-  {
-    key: 'ainav',
-    icon: <RobotOutlined />,
-    label: 'AI助手',
-    children: [
-      { key: '/ai-nav', label: 'AI导航' },
-    ],
-  },
-  {
-    key: 'personal',
-    icon: <ProfileOutlined />,
-    label: '个人中心',
-    children: [
-      { key: '/personal-center', label: '个人简历' },
+      // 通知公告已合并到系统管理-消息通知（同一页面/notifications，左侧菜单含通知公告子分类）
+      // 审批中心、用印管理已移至人事行政
+      // 合并原法律工具 1项
+      { key: '/law-tools', label: '法律工具' },
+      // AI导航已合并到系统管理-AI工具（同一页面/ai-nav，不再重复展示）
     ],
   },
 ]
 
 // 角色-一级菜单分组访问矩阵：每个角色能看到哪些分组
+// 合并后9个分组：dashboard/crm/case/compliance/finance/marketing/system/hr/comprehensive
 const roleGroupAccess: Record<string, string[]> = {
-  super_admin: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'marketing', 'scrm', 'system', 'hr', 'office', 'comprehensive', 'document', 'lawtool', 'ainav', 'personal'],
-  org_admin: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'marketing', 'scrm', 'system', 'hr', 'office', 'comprehensive', 'document', 'lawtool', 'ainav', 'personal'],
-  marketing: ['dashboard', 'crm', 'marketing', 'scrm', 'office', 'comprehensive', 'document', 'lawtool', 'ainav', 'personal'],
-  sales: ['dashboard', 'crm', 'case', 'compliance', 'scrm', 'office', 'comprehensive', 'document', 'lawtool', 'ainav', 'personal'],
-  lawyer: ['dashboard', 'crm', 'case', 'compliance', 'office', 'comprehensive', 'document', 'lawtool', 'ainav', 'personal'],
-  assistant: ['dashboard', 'crm', 'case', 'compliance', 'hr', 'office', 'comprehensive', 'document', 'lawtool', 'ainav', 'personal'],
-  finance: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'system', 'office', 'comprehensive', 'document', 'lawtool', 'ainav', 'personal'],
+  super_admin: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'marketing', 'system', 'hr', 'comprehensive'],
+  org_admin: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'marketing', 'system', 'hr', 'comprehensive'],
+  // marketing 原有 scrm→crm, office→hr, document→case, lawtool/ainav→comprehensive, personal→system
+  marketing: ['dashboard', 'crm', 'case', 'marketing', 'hr', 'comprehensive', 'system'],
+  // sales 原有 scrm→crm, office→hr, document→case, lawtool/ainav→comprehensive, personal→system
+  sales: ['dashboard', 'crm', 'case', 'compliance', 'hr', 'comprehensive', 'system'],
+  // lawyer 原有 office→hr, document→case, lawtool/ainav→comprehensive, personal→system
+  lawyer: ['dashboard', 'crm', 'case', 'compliance', 'hr', 'comprehensive', 'system'],
+  // assistant 原有 office→hr, document→case, lawtool/ainav→comprehensive, personal→system
+  assistant: ['dashboard', 'crm', 'case', 'compliance', 'hr', 'comprehensive', 'system'],
+  // finance 原有 office→hr, document→case, lawtool/ainav→comprehensive, personal→system（system 已有）
+  finance: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'system', 'hr', 'comprehensive'],
   client: [],
 }
 
@@ -266,7 +231,7 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
     '/dashboard/profit-model': ['super_admin', 'org_admin'],
     '/data-screen': ['super_admin', 'org_admin'],
   },
-  // 线索CRM：销售类角色看全，其他只看客户
+  // 线索CRM：销售类角色看全，其他只看客户（含原SCRM私域6项）
   crm: {
     '/leads': ['super_admin', 'org_admin', 'marketing', 'sales'],
     '/clients': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
@@ -275,8 +240,15 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
     '/talk-workbench': ['super_admin', 'org_admin', 'sales'],
     '/talk-sop': ['super_admin', 'org_admin', 'sales'],
     '/compliance/sales-review': ['super_admin', 'org_admin', 'sales'],
+    // 合并原SCRM私域 6项
+    '/scrm/live-codes': ['super_admin', 'org_admin', 'marketing', 'sales'],
+    '/scrm/channels': ['super_admin', 'org_admin', 'marketing', 'sales'],
+    '/scrm/tags': ['super_admin', 'org_admin', 'marketing', 'sales'],
+    '/scrm/sidebar': ['super_admin', 'org_admin', 'sales', 'lawyer', 'assistant'],
+    '/scrm/reach': ['super_admin', 'org_admin', 'sales'],
+    '/scrm/chat-archives': ['super_admin', 'org_admin', 'sales'],
   },
-  // 案件办案
+  // 案件办案（含原文档管理2项）
   case: {
     '/cases': ['super_admin', 'org_admin', 'sales', 'lawyer', 'assistant', 'finance'],
     '/case-sop': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
@@ -290,6 +262,9 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
     '/due-diligence': ['super_admin', 'org_admin', 'lawyer'],
     '/compliance/export': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
     '/cloud-archive': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
+    // 合并原文档管理 2项
+    '/documents': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/archive-volumes': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
   },
   // 合规风控
   compliance: {
@@ -319,70 +294,50 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
     '/marketing/social-accounts': ['super_admin', 'org_admin', 'marketing'],
     '/marketing/digital-human-live': ['super_admin', 'org_admin', 'marketing'],
   },
-  // SCRM私域
-  scrm: {
-    '/scrm/live-codes': ['super_admin', 'org_admin', 'marketing', 'sales'],
-    '/scrm/channels': ['super_admin', 'org_admin', 'marketing', 'sales'],
-    '/scrm/tags': ['super_admin', 'org_admin', 'marketing', 'sales'],
-    '/scrm/sidebar': ['super_admin', 'org_admin', 'sales', 'lawyer', 'assistant'],
-    '/scrm/reach': ['super_admin', 'org_admin', 'sales'],
-    '/scrm/chat-archives': ['super_admin', 'org_admin', 'sales'],
-  },
-  // 系统管理：只有管理员能进（但审批中心、消息通知、用印、AI工具部分其他角色也可见）
+  // 系统管理：只有管理员能进（合并原个人中心，移出审批中心/用印管理到综合管理）
   system: {
     '/users': ['super_admin', 'org_admin'],
-    '/roles': ['super_admin', 'org_admin'],
     '/permissions': ['super_admin', 'org_admin'],
     '/menus': ['super_admin', 'org_admin'],
     '/notifications': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/service-ratings': ['super_admin', 'org_admin'],
-    '/ai-tools': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'sales', 'marketing', 'finance'],
+    '/ai-nav': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'sales', 'marketing', 'finance'],
     '/system/deployment-config': ['super_admin', 'org_admin'],
     '/system/brand-customization': ['super_admin', 'org_admin'],
     '/system/integrations': ['super_admin', 'org_admin'],
-    '/approval-center': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'finance', 'sales', 'marketing'],
-    '/seals': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
+    // 合并原个人中心 1项
+    '/personal-center': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
   },
-  // HR
+  // 人事行政：原HR + 原个人办公（所有内部角色都能看自己的）
   hr: {
+    // 原人力资源 5项
     '/hr/personnel': ['super_admin', 'org_admin', 'assistant'],
     '/hr/leaves': ['super_admin', 'org_admin', 'assistant'],
     '/hr/attendances': ['super_admin', 'org_admin', 'assistant'],
     '/hr/materials': ['super_admin', 'org_admin', 'assistant'],
     '/hr/activities': ['super_admin', 'org_admin', 'assistant'],
-  },
-  // 个人办公：所有内部角色都能看自己的
-  office: {
+    // 合并原个人办公 5项（同事圆/邮件/计算器/计时器已移除）
     '/worklogs': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/schedules': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/tasks': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/knowledge': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'sales'],
     '/diagram-tool': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
-    '/social': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
-    '/mail': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
-    '/calculator': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
-    '/timer': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    // 从综合管理移入 2项
+    '/approval-center': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'finance', 'sales', 'marketing'],
+    '/seals': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
   },
-  // 金助理对齐：新增分组的子菜单访问规则（默认所有内部角色可见）
+  // 综合管理：原综合管理 + 审批中心 + 用印管理 + 法律工具 + AI导航
   comprehensive: {
+    // 原综合管理 5项
     '/comprehensive/query': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/statistical-analysis': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/internal-projects': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/bid-performances': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
-    '/notifications': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
-  },
-  document: {
-    '/documents': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
-    '/archive-volumes': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
-  },
-  lawtool: {
+    // 通知公告已合并到系统管理-消息通知（同一页面/notifications，权限规则在system分组中）
+    // 审批中心、用印管理已移至人事行政（权限规则在hr分组中）
+    // 合并原法律工具 1项
     '/law-tools': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
-  },
-  ainav: {
-    '/ai-nav': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
-  },
-  personal: {
-    '/personal-center': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    // AI导航权限已合并到系统管理-AI工具（同一页面/ai-nav，权限规则在system分组中）
   },
 }
 
@@ -460,7 +415,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   ]
 
   const handleUserMenuClick = ({ key }: { key: string }) => {
-    if (key === 'logout') {
+    if (key === 'profile') {
+      navigate('/personal-center')
+    } else if (key === 'logout') {
       handleLogout()
     }
   }

@@ -14,7 +14,9 @@ import { ComplianceType, ComplianceResult, ComplaintType, ComplaintStatus } from
 import { NotificationService } from '../user/notification.service';
 // Phase4: 引入案件SOP模板与投诉工单实体（H7 SOP模板联动、M3 投诉走合规通道）
 import { CaseSOPTemplate } from '../case/case-sop-template.entity';
-import { ComplaintTicket, TicketSourceChannel, TicketSeverity, TicketStatus } from './complaint-ticket.entity';
+import { ComplaintTicket, TicketSourceChannel, TicketComplaintType, TicketSeverity, TicketStatus } from './complaint-ticket.entity';
+// 合并后：案件SOP操作统一使用 CaseTask 表
+import { CaseTask, CaseTaskStatus } from '../case/case-task.entity';
 
 const VIOLATION_KEYWORDS = {
   absolute: ['最', '第一', '唯一', '顶级', '首选', '独家'],
@@ -84,6 +86,9 @@ export class ComplianceService {
     // Phase4 M3: 注入投诉工单仓库，客户投诉走合规通道时创建工单
     @InjectRepository(ComplaintTicket)
     private complaintTicketRepository: Repository<ComplaintTicket>,
+    // 合并后：案件SOP操作统一使用 CaseTask 仓库
+    @InjectRepository(CaseTask)
+    private caseTaskRepository: Repository<CaseTask>,
     private notificationService: NotificationService,
   ) {}
 
@@ -133,45 +138,104 @@ export class ComplianceService {
     return this.complianceRecordRepository.find({ where: query, order: { created_at: 'DESC' } });
   }
 
-  async createComplaint(complaintData: Partial<Complaint>): Promise<Complaint> {
-    const complaint = this.complaintRepository.create(complaintData);
-    return this.complaintRepository.save(complaint);
-  }
+  // 合并后：投诉统一写入 ComplaintTicket 表（旧 Complaint 表逻辑保留声明，不再写入）
+  // ComplaintType → TicketComplaintType 映射
+  private complaintTypeToTicketTypeMap: Record<string, string> = {
+    [ComplaintType.SERVICE_QUALITY]: TicketComplaintType.SERVICE_ATTITUDE,
+    [ComplaintType.FEE_ISSUE]: TicketComplaintType.FEE_ISSUE,
+    [ComplaintType.PROGRESS]: TicketComplaintType.CASE_PROGRESS,
+    [ComplaintType.RESULT]: TicketComplaintType.OTHER,
+    [ComplaintType.OTHER]: TicketComplaintType.OTHER,
+  };
 
-  async updateComplaintStatus(id: string, status: ComplaintStatus, assigneeId?: string, processNote?: string): Promise<Complaint> {
-    const updateData: Partial<Complaint> = { status };
-    if (assigneeId) {
-      updateData.assignee_id = assigneeId;
-    }
-    if (processNote) {
-      updateData.process_note = processNote;
-    }
-    await this.complaintRepository.update(id, updateData);
-    return this.complaintRepository.findOne({ where: { id } });
-  }
+  // ComplaintStatus → TicketStatus 映射
+  private complaintStatusToTicketStatusMap: Record<string, TicketStatus> = {
+    [ComplaintStatus.NEW]: TicketStatus.PENDING,
+    [ComplaintStatus.ACCEPTED]: TicketStatus.PROCESSING,
+    [ComplaintStatus.PROCESSING]: TicketStatus.PROCESSING,
+    [ComplaintStatus.REVIEWING]: TicketStatus.PROCESSING,
+    [ComplaintStatus.CLOSED]: TicketStatus.CLOSED,
+  };
 
-  async closeComplaint(id: string, resolution: string, satisfactionScore?: number): Promise<Complaint> {
-    await this.complaintRepository.update(id, {
-      status: ComplaintStatus.CLOSED,
-      resolution,
-      satisfaction_score: satisfactionScore,
+  async createComplaint(complaintData: Partial<Complaint>): Promise<ComplaintTicket> {
+    const ticketNumber = `TK${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    const ticket = this.complaintTicketRepository.create({
+      ticket_number: ticketNumber,
+      source_channel: TicketSourceChannel.CLIENT_PORTAL,
+      complaint_type: (this.complaintTypeToTicketTypeMap[complaintData.type as string] || TicketComplaintType.OTHER) as any,
+      severity_level: TicketSeverity.MEDIUM,
+      title: (complaintData.content || '').slice(0, 30) || '客户投诉',
+      content: complaintData.content || '',
+      case_id: complaintData.case_id || null,
+      client_id: complaintData.client_id || null,
+      client_name: complaintData.client_name || null,
+      client_phone: complaintData.client_phone || null,
+      status: TicketStatus.PENDING,
+      organization_id: complaintData.organization_id || '',
     });
-    return this.complaintRepository.findOne({ where: { id } });
+    return this.complaintTicketRepository.save(ticket);
   }
 
-  async getComplaints(orgId: string, status?: ComplaintStatus): Promise<Complaint[]> {
+  async updateComplaintStatus(id: string, status: ComplaintStatus, assigneeId?: string, processNote?: string): Promise<ComplaintTicket> {
+    const ticket = await this.complaintTicketRepository.findOne({ where: { id } });
+    if (!ticket) return null;
+    const updateData: Partial<ComplaintTicket> = {
+      status: this.complaintStatusToTicketStatusMap[status] || TicketStatus.PROCESSING,
+    };
+    if (assigneeId) {
+      updateData.handler_id = assigneeId;
+    }
+    // 处理记录追加到 process_records（JSON 数组）
+    if (processNote) {
+      const records = ticket.process_records ? JSON.parse(ticket.process_records) : [];
+      records.push({
+        action: 'status_change',
+        operator_id: assigneeId || '',
+        content: processNote,
+        from_status: ticket.status,
+        to_status: updateData.status,
+        created_at: new Date().toISOString(),
+      });
+      updateData.process_records = JSON.stringify(records);
+    }
+    Object.assign(ticket, updateData);
+    return this.complaintTicketRepository.save(ticket);
+  }
+
+  async closeComplaint(id: string, resolution: string, satisfactionScore?: number): Promise<ComplaintTicket> {
+    const ticket = await this.complaintTicketRepository.findOne({ where: { id } });
+    if (!ticket) return null;
+    ticket.status = TicketStatus.CLOSED;
+    ticket.resolution = resolution;
+    ticket.satisfaction_score = satisfactionScore;
+    ticket.closed_at = new Date();
+    // 追加结案处理记录
+    const records = ticket.process_records ? JSON.parse(ticket.process_records) : [];
+    records.push({
+      action: 'close',
+      operator_id: '',
+      content: resolution,
+      from_status: ticket.status,
+      to_status: TicketStatus.CLOSED,
+      created_at: new Date().toISOString(),
+    });
+    ticket.process_records = JSON.stringify(records);
+    return this.complaintTicketRepository.save(ticket);
+  }
+
+  async getComplaints(orgId: string, status?: ComplaintStatus): Promise<ComplaintTicket[]> {
     const query: any = {};
     if (orgId) {
       query.organization_id = orgId;
     }
     if (status) {
-      query.status = status;
+      query.status = this.complaintStatusToTicketStatusMap[status] || TicketStatus.PROCESSING;
     }
-    return this.complaintRepository.find({ where: query, order: { created_at: 'DESC' } });
+    return this.complaintTicketRepository.find({ where: query, order: { created_at: 'DESC' } });
   }
 
-  async getComplaintById(id: string): Promise<Complaint> {
-    return this.complaintRepository.findOne({ where: { id } });
+  async getComplaintById(id: string): Promise<ComplaintTicket> {
+    return this.complaintTicketRepository.findOne({ where: { id } });
   }
 
   async createMarketingContent(contentData: Partial<MarketingContent>): Promise<MarketingContent> {
@@ -307,39 +371,43 @@ export class ComplianceService {
     return this.signingComplianceRepository.find({ where: query, order: { created_at: 'DESC' } });
   }
 
-  async createCaseSOP(caseId: string, caseType: string, orgId: string): Promise<CaseSOP[]> {
+  async createCaseSOP(caseId: string, caseType: string, orgId: string): Promise<CaseTask[]> {
     const today = new Date();
-    const sops: CaseSOP[] = [];
+    const tasks: CaseTask[] = [];
 
-    // Phase4 H7: 优先从案件SOP模板表读取默认模板，按阶段/任务展开为CaseSOP节点
+    // Phase4 H7: 优先从案件SOP模板表读取默认模板，按阶段/任务展开为CaseTask节点
     const template = await this.caseSOPTemplateRepository.findOne({
       where: { case_type: caseType as any, is_default: true, enabled: true },
       order: { created_at: 'DESC' },
     });
 
     if (template && Array.isArray(template.stages) && template.stages.length > 0) {
-      // 将模板的阶段/任务扁平化为有序的SOP步骤
-      let stepOrder = 0;
+      // 将模板的阶段/任务扁平化为有序的CaseTask记录
       for (const stage of template.stages) {
-        const tasks = Array.isArray(stage.tasks) ? stage.tasks : [];
-        for (const task of tasks) {
-          stepOrder += 1;
+        const tasksInStage = Array.isArray(stage.tasks) ? stage.tasks : [];
+        for (const task of tasksInStage) {
           const deadline = new Date(today);
           deadline.setDate(today.getDate() + (task.deadline_days || 0));
 
-          const sop = this.caseSOPRepository.create({
+          const caseTask = this.caseTaskRepository.create({
             case_id: caseId,
-            case_type: caseType,
-            step_name: task.task_name,
-            step_order: stepOrder,
+            sop_template_id: template.id,
+            stage_id: stage.stage_id || `stage_${stage.order}`,
+            stage_name: stage.stage_name || '',
+            stage_order: stage.order || 0,
+            task_id: task.task_id || `task_${Date.now()}`,
+            task_name: task.task_name,
+            status: CaseTaskStatus.PENDING,
             deadline,
-            organization_id: orgId,
+            is_required: true,
+            deadline_days: task.deadline_days || 0,
+            description: `案件类型: ${caseType}`,
           });
-          sops.push(await this.caseSOPRepository.save(sop));
+          tasks.push(await this.caseTaskRepository.save(caseTask));
         }
       }
-      if (sops.length > 0) {
-        return sops;
+      if (tasks.length > 0) {
+        return tasks;
       }
     }
 
@@ -350,18 +418,24 @@ export class ComplianceService {
       const deadline = new Date(today);
       deadline.setDate(today.getDate() + templates[i].days_to_deadline);
 
-      const sop = this.caseSOPRepository.create({
+      const caseTask = this.caseTaskRepository.create({
         case_id: caseId,
-        case_type: caseType,
-        step_name: templates[i].step_name,
-        step_order: i + 1,
+        sop_template_id: null,
+        stage_id: `stage_${i + 1}`,
+        stage_name: templates[i].step_name,
+        stage_order: i + 1,
+        task_id: `task_${i + 1}`,
+        task_name: templates[i].step_name,
+        status: CaseTaskStatus.PENDING,
         deadline,
-        organization_id: orgId,
+        is_required: true,
+        deadline_days: templates[i].days_to_deadline,
+        description: `案件类型: ${caseType}`,
       });
-      sops.push(await this.caseSOPRepository.save(sop));
+      tasks.push(await this.caseTaskRepository.save(caseTask));
     }
 
-    return sops;
+    return tasks;
   }
 
   /**
@@ -398,42 +472,42 @@ export class ComplianceService {
     return this.complaintTicketRepository.save(ticket);
   }
 
-  async completeCaseSOP(id: string, operatorId: string, notes?: string): Promise<CaseSOP> {
-    await this.caseSOPRepository.update(id, {
-      status: 'completed',
-      completed_time: new Date(),
-      operator_id: operatorId,
-      notes,
-    });
-    return this.caseSOPRepository.findOne({ where: { id } });
+  async completeCaseSOP(id: string, operatorId: string, notes?: string): Promise<CaseTask> {
+    const task = await this.caseTaskRepository.findOne({ where: { id } });
+    if (!task) return null;
+    task.status = CaseTaskStatus.COMPLETED;
+    task.completed_at = new Date();
+    task.assignee_id = operatorId;
+    task.result = notes || task.result;
+    return this.caseTaskRepository.save(task);
   }
 
-  async verifyEvidence(id: string, checkResult: string): Promise<CaseSOP> {
-    await this.caseSOPRepository.update(id, {
-      evidence_verified: true,
-      evidence_check_result: checkResult,
-    });
-    return this.caseSOPRepository.findOne({ where: { id } });
+  async verifyEvidence(id: string, checkResult: string): Promise<CaseTask> {
+    const task = await this.caseTaskRepository.findOne({ where: { id } });
+    if (!task) return null;
+    task.status = CaseTaskStatus.VERIFIED;
+    task.result = checkResult;
+    return this.caseTaskRepository.save(task);
   }
 
-  async getCaseSOP(caseId?: string): Promise<CaseSOP[]> {
+  async getCaseSOP(caseId?: string): Promise<CaseTask[]> {
     const query: any = {};
     if (caseId) {
       query.case_id = caseId;
     }
-    return this.caseSOPRepository.find({ where: query, order: { step_order: 'ASC' } });
+    return this.caseTaskRepository.find({ where: query, order: { stage_order: 'ASC' } });
   }
 
   async getCaseSOPStats(orgId: string): Promise<{ pending: number; completed: number; overdue: number }> {
-    const query: any = {};
-    if (orgId) {
-      query.organization_id = orgId;
-    }
-    const pending = await this.caseSOPRepository.count({ where: { ...query, status: 'pending' } });
-    const completed = await this.caseSOPRepository.count({ where: { ...query, status: 'completed' } });
-    const overdue = await this.caseSOPRepository.count({
-      where: { ...query, status: 'pending' },
-    });
+    // CaseTask 无 organization_id 字段，通过 case_id join Case 表按组织过滤
+    const qb = this.caseTaskRepository
+      .createQueryBuilder('t')
+      .innerJoin('case', 'c', 'c.id = t.case_id')
+      .where('c.organization_id = :orgId', { orgId });
+
+    const pending = await qb.clone().andWhere('t.status = :status', { status: CaseTaskStatus.PENDING }).getCount();
+    const completed = await qb.clone().andWhere('t.status = :status', { status: CaseTaskStatus.COMPLETED }).getCount();
+    const overdue = await qb.clone().andWhere('t.status = :status', { status: CaseTaskStatus.OVERDUE }).getCount();
     return { pending, completed, overdue };
   }
 
@@ -564,7 +638,7 @@ export class ComplianceService {
       order: { created_at: 'DESC' },
     });
 
-    result.complaints = await this.complaintRepository.find({
+    result.complaints = await this.complaintTicketRepository.find({
       where: { organization_id: orgId },
       order: { created_at: 'DESC' },
     });

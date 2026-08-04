@@ -174,8 +174,8 @@ export default function PersonalCenter() {
     }
     try {
       await axios.put('/users/password', {
-        oldPassword: values.oldPassword,
-        newPassword: values.newPassword,
+        old_password: values.oldPassword,
+        new_password: values.newPassword,
       })
       message.success('密码修改成功')
       passwordForm.resetFields()

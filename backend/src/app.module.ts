@@ -31,6 +31,13 @@ import { SocialModule } from './social/social.module';
 import { MailModule } from './mail/mail.module';
 import { PropertyPreservationModule } from './property-preservation/property-preservation.module';
 import { AuditModule } from './audit/audit.module';
+// 阶段C新增模块：解决前端页面 API 404 问题
+import { InternalProjectModule } from './internal-project/internal-project.module';
+import { DocumentModule } from './document/document.module';
+import { LawToolModule } from './law-tool/law-tool.module';
+import { ArchiveVolumeModule } from './archive-volume/archive-volume.module';
+import { ComprehensiveModule } from './comprehensive/comprehensive.module';
+import { StatisticalAnalysisModule } from './statistical-analysis/statistical-analysis.module';
 
 @Module({
   imports: [
@@ -76,6 +83,13 @@ import { AuditModule } from './audit/audit.module';
     MailModule,
     PropertyPreservationModule,
     AuditModule,
+    // 阶段C新增模块：解决前端页面 API 404 问题
+    InternalProjectModule,
+    DocumentModule,
+    LawToolModule,
+    ArchiveVolumeModule,
+    ComprehensiveModule,
+    StatisticalAnalysisModule,
   ],
   providers: [
     // 注册全局限流守卫

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, InputNumber, Radio } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, InputNumber } from 'antd'
 import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, HistoryOutlined, SaveOutlined, SwapOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
@@ -32,9 +32,7 @@ export default function LeadManagement() {
     source_channel: '',
     days_no_follow: '' as string | number,
   })
-  // 线索类型：private私有线索 / public公共线索池
-  const [leadType, setLeadType] = useState<'private' | 'public'>('private')
-  // 转化为案件的弹窗
+  // 转化为案件的弹窗（公共线索池功能已合并入 LeadPool 专项页，此处仅维护私有线索）
   const [convertVisible, setConvertVisible] = useState(false)
   const [convertForm] = Form.useForm()
   const [converting, setConverting] = useState(false)
@@ -43,26 +41,22 @@ export default function LeadManagement() {
 
   useEffect(() => {
     fetchData()
-  }, [leadType])
+    // 公共线索池已合并入 LeadPool 专项页，此处移除依赖 leadType
+  }, [])
 
   const fetchData = async () => {
     setLoading(true)
     try {
-      // 公共线索池调用独立接口，私有线索调用原有列表接口
-      if (leadType === 'public') {
-        const res = await axios.get('/leads/public', { params: { org_id: user.organization_id } })
-        setData(res || [])
-      } else {
-        const params: any = { org_id: user.organization_id }
-        if (searchParams.phone) params.phone = searchParams.phone
-        if (searchParams.status) params.status = searchParams.status
-        if (searchParams.case_type) params.case_type = searchParams.case_type
-        if (searchParams.source_channel) params.source_channel = searchParams.source_channel
-        if (searchParams.days_no_follow) params.days_no_follow = searchParams.days_no_follow
+      // 仅查询私有线索（公共线索池功能已合并入 LeadPool 专项页）
+      const params: any = { org_id: user.organization_id }
+      if (searchParams.phone) params.phone = searchParams.phone
+      if (searchParams.status) params.status = searchParams.status
+      if (searchParams.case_type) params.case_type = searchParams.case_type
+      if (searchParams.source_channel) params.source_channel = searchParams.source_channel
+      if (searchParams.days_no_follow) params.days_no_follow = searchParams.days_no_follow
 
-        const res = await axios.get('/leads', { params })
-        setData(res.data || [])
-      }
+      const res = await axios.get('/leads', { params })
+      setData(res.data || [])
     } catch (error) {
       console.error('Fetch leads error:', error)
     } finally {
@@ -291,13 +285,6 @@ export default function LeadManagement() {
       <div className="page-header">
         <h2>线索管理</h2>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAddLead}>添加线索</Button>
-      </div>
-
-      <div style={{ marginBottom: 16 }}>
-        <Radio.Group value={leadType} onChange={(e) => setLeadType(e.target.value)}>
-          <Radio.Button value="private">私有线索</Radio.Button>
-          <Radio.Button value="public">公共线索池</Radio.Button>
-        </Radio.Group>
       </div>
 
       <div className="search-bar">

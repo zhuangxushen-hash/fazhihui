@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Card, Row, Col, Progress, Table, Button, Space, message, Tabs } from 'antd'
+import { Card, Row, Col, Progress, Table, Button, Space, message, Tabs, Statistic, Divider } from 'antd'
 import {
   AlertOutlined,
   CheckCircleOutlined,
@@ -8,7 +8,9 @@ import {
   MessageOutlined,
   ContactsOutlined,
   CiOutlined,
+  ArrowRightOutlined,
 } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
 import axios from '../api/axios'
 import { formatDateTime, formatDate } from '../utils/format'
 
@@ -130,6 +132,7 @@ const sopStatusLabelMap: Record<string, string> = {
 }
 
 export default function ComplianceCenter() {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('overview')
   const [stats, setStats] = useState({ pending: 0, completed: 0, overdue: 0, violation: 0 })
   const [marketingContents, setMarketingContents] = useState<any[]>([])
@@ -503,14 +506,56 @@ export default function ComplianceCenter() {
                 </span>
               ),
               children: (
-                <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+                <Card style={tableCardStyle}>
+                  <Row gutter={[24, 24]} style={{ marginBottom: 16 }}>
+                    <Col xs={12} md={6}>
+                      <Statistic
+                        title="待审查"
+                        value={salesCompliance.filter(s => s.check_result === 'warning' || s.review_status === 'pending').length}
+                        valueStyle={{ color: '#fa8c16' }}
+                        prefix={<WarningOutlined />}
+                      />
+                    </Col>
+                    <Col xs={12} md={6}>
+                      <Statistic
+                        title="违规数"
+                        value={salesCompliance.filter(s => s.check_result === 'violation').length}
+                        valueStyle={{ color: '#f5222d' }}
+                        prefix={<AlertOutlined />}
+                      />
+                    </Col>
+                    <Col xs={12} md={6}>
+                      <Statistic
+                        title="通过数"
+                        value={salesCompliance.filter(s => s.check_result === 'pass').length}
+                        valueStyle={{ color: '#52c41a' }}
+                        prefix={<CheckCircleOutlined />}
+                      />
+                    </Col>
+                    <Col xs={12} md={6}>
+                      <Statistic
+                        title="审查完成率"
+                        value={salesCompliance.length ? Math.round(salesCompliance.filter(s => s.review_status === 'approved' || s.review_status === 'rejected').length / salesCompliance.length * 100) : 0}
+                        suffix="%"
+                        valueStyle={{ color: '#1677ff' }}
+                      />
+                    </Col>
+                  </Row>
+                  <Divider style={{ margin: '0 0 16px' }} plain>最近 5 条记录</Divider>
                   <Table
-                    dataSource={salesCompliance}
+                    dataSource={salesCompliance.slice(0, 5)}
                     columns={salesColumns}
                     loading={loading}
                     rowKey="id"
                     size="small"
+                    pagination={false}
+                    showHeader
                   />
+                  <div style={{ textAlign: 'center', marginTop: 16 }}>
+                    <Button type="primary" onClick={() => navigate('/compliance/sales-review')}>
+                      前往销售合规审查 <ArrowRightOutlined />
+                    </Button>
+                  </div>
                 </Card>
               ),
             },

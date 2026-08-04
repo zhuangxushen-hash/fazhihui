@@ -1,4 +1,4 @@
-// AI导航页面：金助理第9个一级菜单，含AI问答、合同审查、法律研究、类案智推、类案检索、法规检索6个子项
+// AI导航页面：金助理第9个一级菜单，含AI问答、合同审查、法律研究、类案智推、类案检索、法规检索6个子项 + 法律文书生成、营销内容生成2个专项入口
 import { useState, useEffect, useRef } from 'react'
 import { Menu, Row, Col, Card, Button, Input, Upload, Space, message, Spin, Empty, Tag } from 'antd'
 import {
@@ -11,11 +11,14 @@ import {
   SendOutlined,
   InboxOutlined,
   ArrowLeftOutlined,
+  FileTextOutlined,
+  NotificationOutlined,
 } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
+import { useNavigate } from 'react-router-dom'
 import axios from '../api/axios'
 
-// 左侧菜单6个子项
+// 左侧菜单8个子项（原6个AI能力 + 2个专项入口）
 const menuItems = [
   { key: 'ai-chat', label: 'AI问答', icon: <MessageOutlined /> },
   { key: 'contract-review', label: '合同审查', icon: <AuditOutlined /> },
@@ -23,9 +26,11 @@ const menuItems = [
   { key: 'similar-recommend', label: '类案智推', icon: <BulbOutlined /> },
   { key: 'similar-search', label: '类案检索', icon: <FileSearchOutlined /> },
   { key: 'law-search', label: '法规检索', icon: <BookOutlined /> },
+  { key: 'legal-doc-gen', label: '法律文书生成', icon: <FileTextOutlined /> },
+  { key: 'marketing-content', label: '营销内容生成', icon: <NotificationOutlined /> },
 ]
 
-// 卡片网格数据
+// 卡片网格数据（8个卡片：原6个 + 法律文书生成 + 营销内容生成）
 const cardList = [
   {
     key: 'ai-chat',
@@ -63,14 +68,22 @@ const cardList = [
     desc: '检索法律法规、司法解释、部门规章等规范性文件',
     icon: <BookOutlined style={{ fontSize: 32, color: '#eb2f96' }} />,
   },
+  {
+    key: 'legal-doc-gen',
+    title: '法律文书生成',
+    desc: '基于模板自动生成起诉状、答辩状、代理词等法律文书，支持变量填充与批量生成',
+    icon: <FileTextOutlined style={{ fontSize: 32, color: '#1677ff' }} />,
+  },
+  {
+    key: 'marketing-content',
+    title: '营销内容生成',
+    desc: '生成抖音、百度、微信等平台营销文案，内置合规预审，违规内容自动高亮',
+    icon: <NotificationOutlined style={{ fontSize: 32, color: '#52c41a' }} />,
+  },
 ]
 
 // 本地mock数据（接口不存在时展示）
-const mockSimilarCases = [
-  { key: '1', case_no: '（2025）京01民终123号', title: '买卖合同纠纷案', court: '北京市第一中级人民法院', amount: 560000, similar: 0.92 },
-  { key: '2', case_no: '（2024）沪02民终456号', title: '承揽合同纠纷案', court: '上海市第二中级人民法院', amount: 320000, similar: 0.88 },
-  { key: '3', case_no: '（2024）粤03民终789号', title: '服务合同纠纷案', court: '深圳市中级人民法院', amount: 410000, similar: 0.85 },
-]
+// mockSimilarCases 已删除：类案智推/检索功能已合并至 SimilarCases 专项页
 
 const mockLaws = [
   { key: '1', name: '中华人民共和国民法典', category: '法律', effective: '2021-01-01', authority: '全国人民代表大会' },
@@ -85,6 +98,7 @@ interface ChatMessage {
 }
 
 export default function AINavigation() {
+  const navigate = useNavigate()
   const [activeMenu, setActiveMenu] = useState<string>('home')
   const [loading, setLoading] = useState(false)
   // AI问答
@@ -97,12 +111,9 @@ export default function AINavigation() {
   const [contractReviewing, setContractReviewing] = useState(false)
   // 法律研究
   const [researchInput, setResearchInput] = useState('')
-  const [researchResult, setResearchResult] = useState<string>('')
+  const [researchResult, setResearchResult] = useState('')
   const [researching, setResearching] = useState(false)
-  // 类案智推/检索
-  const [similarInput, setSimilarInput] = useState('')
-  const [similarCases, setSimilarCases] = useState<any[]>([])
-  const [similarLoading, setSimilarLoading] = useState(false)
+  // 类案智推/检索状态已删除：功能已合并至 SimilarCases 专项页
   // 法规检索
   const [lawInput, setLawInput] = useState('')
   const [lawList, setLawList] = useState<any[]>([])
@@ -131,8 +142,21 @@ export default function AINavigation() {
     }
   }, [chatMessages])
 
-  // 进入卡片
+  // 进入卡片（legal-doc-gen、marketing-content、类案智推、类案检索跳转到外部专项页面）
   const handleEnterCard = (key: string) => {
+    if (key === 'legal-doc-gen') {
+      navigate('/legal-documents')
+      return
+    }
+    if (key === 'marketing-content') {
+      navigate('/marketing/ai-content')
+      return
+    }
+    // 类案智推、类案检索均跳转至专用的 SimilarCases 页
+    if (key === 'similar-recommend' || key === 'similar-search') {
+      navigate('/similar-cases')
+      return
+    }
     setActiveMenu(key)
   }
 
@@ -141,8 +165,16 @@ export default function AINavigation() {
     setActiveMenu('home')
   }
 
-  // 菜单切换
+  // 菜单切换（legal-doc-gen和marketing-content跳转到外部专项页面）
   const handleMenuClick = (key: string) => {
+    if (key === 'legal-doc-gen') {
+      navigate('/legal-documents')
+      return
+    }
+    if (key === 'marketing-content') {
+      navigate('/marketing/ai-content')
+      return
+    }
     setActiveMenu(key)
   }
 
@@ -223,24 +255,7 @@ export default function AINavigation() {
     }
   }
 
-  // 类案搜索（智推/检索通用）
-  const handleSimilarSearch = async () => {
-    if (!similarInput.trim()) {
-      message.warning('请输入搜索内容')
-      return
-    }
-    setSimilarLoading(true)
-    try {
-      const res: any = await axios.get('/ai/similar-cases', { params: { keyword: similarInput } })
-      const list = res?.data?.list || res?.list || []
-      setSimilarCases(list.length > 0 ? list : mockSimilarCases)
-    } catch (error) {
-      // 接口不存在时使用本地mock数据
-      setSimilarCases(mockSimilarCases)
-    } finally {
-      setSimilarLoading(false)
-    }
-  }
+  // handleSimilarSearch 已删除：类案搜索功能已合并至 SimilarCases 专项页
 
   // 法规检索
   const handleLawSearch = async () => {
@@ -401,46 +416,7 @@ export default function AINavigation() {
     </div>
   )
 
-  // 类案视图
-  const renderSimilarCases = (title: string) => (
-    <div style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
-      <div style={{ marginBottom: 16 }}>
-        <Button type="link" icon={<ArrowLeftOutlined />} onClick={handleBackHome}>返回导航</Button>
-      </div>
-      <h3 style={{ marginBottom: 16 }}>{title}</h3>
-      <Space.Compact style={{ width: '100%', marginBottom: 16 }}>
-        <Input
-          value={similarInput}
-          onChange={(e) => setSimilarInput(e.target.value)}
-          placeholder="请输入案情描述或关键词"
-          onPressEnter={handleSimilarSearch}
-        />
-        <Button type="primary" icon={<SearchOutlined />} onClick={handleSimilarSearch} loading={similarLoading}>搜索</Button>
-      </Space.Compact>
-      <Spin spinning={similarLoading}>
-        {similarCases.length > 0 ? (
-          similarCases.map((item) => (
-            <Card key={item.key} size="small" style={{ marginBottom: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                    <Tag color="blue">{item.case_no}</Tag>
-                    {item.title}
-                  </div>
-                  <div style={{ color: '#888', fontSize: 12 }}>
-                    {item.court} | 标的额：¥{item.amount.toLocaleString()}
-                  </div>
-                </div>
-                <Tag color="orange">相似度 {(item.similar * 100).toFixed(0)}%</Tag>
-              </div>
-            </Card>
-          ))
-        ) : (
-          <Empty description="请输入关键词搜索类案" />
-        )}
-      </Spin>
-    </div>
-  )
+  // renderSimilarCases 已删除：类案智推/检索功能已合并至 SimilarCases 专项页
 
   // 法规检索视图
   const renderLawSearch = () => (
@@ -490,9 +466,10 @@ export default function AINavigation() {
       case 'legal-research':
         return renderLegalResearch()
       case 'similar-recommend':
-        return renderSimilarCases('类案智推')
+        // 类案智推/检索功能已合并至 SimilarCases 专项页，立即跳转
+        return <>{(window.location.href, navigate('/similar-cases'))}{renderHome()}</>
       case 'similar-search':
-        return renderSimilarCases('类案检索')
+        return <>{navigate('/similar-cases')}{renderHome()}</>
       case 'law-search':
         return renderLawSearch()
       default:

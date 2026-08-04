@@ -55,6 +55,26 @@ export class User {
   @Column({ type: 'int', default: 1, comment: '等级' })
   level: number;
 
+  // 员工档案扩展字段：部门
+  @Column({ type: 'varchar', nullable: true, comment: '部门' })
+  department: string;
+
+  // 员工档案扩展字段：职位
+  @Column({ type: 'varchar', nullable: true, comment: '职位' })
+  position: string;
+
+  // 员工档案扩展字段：入职日期
+  @Column({ type: 'date', nullable: true, comment: '入职日期' })
+  hire_date: Date;
+
+  // 员工档案扩展字段：银行账号
+  @Column({ type: 'varchar', nullable: true, comment: '银行账号' })
+  bank_account: string;
+
+  // 员工档案扩展字段：开户行
+  @Column({ type: 'varchar', nullable: true, comment: '开户行' })
+  bank_name: string;
+
   @CreateDateColumn()
   created_at: Date;
 

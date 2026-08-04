@@ -15,9 +15,12 @@ import { UserModule } from '../user/user.module';
 // 引入投诉工单与案件SOP模板实体（Phase4: M3 投诉走合规通道、H7 SOP模板联动）
 import { ComplaintTicket } from './complaint-ticket.entity';
 import { CaseSOPTemplate } from '../case/case-sop-template.entity';
+// 合并后：案件SOP操作统一使用 CaseTask 表
+import { CaseTask } from '../case/case-task.entity';
+import { Case } from '../case/case.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ComplianceRecord, Complaint, MarketingContent, SalesCompliance, SigningCompliance, CaseSOP, TalkQualityCheck, ReportTemplate, ReportExportLog, ComplaintTicket, CaseSOPTemplate]), UserModule],
+  imports: [TypeOrmModule.forFeature([ComplianceRecord, Complaint, MarketingContent, SalesCompliance, SigningCompliance, CaseSOP, TalkQualityCheck, ReportTemplate, ReportExportLog, ComplaintTicket, CaseSOPTemplate, CaseTask, Case]), UserModule],
   providers: [ComplianceService],
   controllers: [ComplianceController],
   exports: [ComplianceService],

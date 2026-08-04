@@ -7,17 +7,14 @@ import {
   Space,
   Button,
   Tag,
-  Tooltip,
   message,
   Empty,
-  Spin,
   Input,
 } from 'antd'
 import { ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import type { Dayjs } from 'dayjs'
 import {
   getRoiStats,
-  getFunnelStats,
   getConversionEvents,
   refreshMaterialRoi,
   channelOptions,
@@ -27,7 +24,6 @@ import {
   type RoiDimension,
   type AdChannel,
   type RoiStatsRow,
-  type FunnelStats,
   type ConversionEvent,
 } from '../api/marketing'
 import { formatDateTime } from '../utils/format'
@@ -37,10 +33,9 @@ const { RangePicker } = DatePicker
 export default function ConversionReport() {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const [loading, setLoading] = useState(false)
-  const [funnelLoading, setFunnelLoading] = useState(false)
   const [eventsLoading, setEventsLoading] = useState(false)
   const [roiData, setRoiData] = useState<RoiStatsRow[]>([])
-  const [funnel, setFunnel] = useState<FunnelStats>({ lead: 0, wechat_add: 0, invite: 0, sign: 0 })
+  // 漏斗功能已合并至 MarketingDashboard，此处不再维护
   const [events, setEvents] = useState<ConversionEvent[]>([])
   const [dimension, setDimension] = useState<RoiDimension>('channel')
   const [channel, setChannel] = useState<AdChannel | undefined>(undefined)
@@ -50,7 +45,6 @@ export default function ConversionReport() {
 
   useEffect(() => {
     fetchRoiStats()
-    fetchFunnel()
     fetchEvents()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -80,25 +74,7 @@ export default function ConversionReport() {
     }
   }
 
-  const fetchFunnel = async () => {
-    setFunnelLoading(true)
-    try {
-      const params: any = { org_id: user.organization_id }
-      if (channel) params.channel = channel
-      if (accountId) params.account_id = accountId
-      if (planId) params.plan_id = planId
-      if (dateRange && dateRange.length === 2) {
-        params.start_date = dateRange[0].format('YYYY-MM-DD')
-        params.end_date = dateRange[1].format('YYYY-MM-DD 23:59:59')
-      }
-      const res = await getFunnelStats(params)
-      setFunnel(res || { lead: 0, wechat_add: 0, invite: 0, sign: 0 })
-    } catch (err) {
-      console.error('Fetch funnel error:', err)
-    } finally {
-      setFunnelLoading(false)
-    }
-  }
+  // fetchFunnel 已删除：转化漏斗功能已合并至 MarketingDashboard
 
   const fetchEvents = async () => {
     setEventsLoading(true)
@@ -122,7 +98,6 @@ export default function ConversionReport() {
 
   const handleSearch = () => {
     fetchRoiStats()
-    fetchFunnel()
     fetchEvents()
   }
 
@@ -133,7 +108,6 @@ export default function ConversionReport() {
     setDateRange(null)
     setTimeout(() => {
       fetchRoiStats()
-      fetchFunnel()
       fetchEvents()
     }, 0)
   }
@@ -148,14 +122,7 @@ export default function ConversionReport() {
     }
   }
 
-  // 漏斗数据
-  const funnelStages = [
-    { key: 'lead', label: '线索', value: funnel.lead, color: '#0071e3' },
-    { key: 'wechat_add', label: '加微', value: funnel.wechat_add, color: '#5ac8fa' },
-    { key: 'invite', label: '邀约到所', value: funnel.invite, color: '#ff9500' },
-    { key: 'sign', label: '签约回款', value: funnel.sign, color: '#34c759' },
-  ]
-  const maxValue = Math.max(...funnelStages.map((s) => s.value), 1)
+  // 漏斗数据与计算已删除：转化漏斗功能已合并至 MarketingDashboard
 
   // 维度列展示
   const getDimensionLabel = (row: RoiStatsRow): string => {
@@ -411,83 +378,6 @@ export default function ConversionReport() {
             重置
           </Button>
         </Space>
-      </Card>
-
-      {/* 转化漏斗 */}
-      <Card
-        title={<span style={{ fontWeight: 700, color: '#1d1d1f' }}>转化漏斗</span>}
-        style={{
-          borderRadius: 16,
-          marginBottom: 24,
-          boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)',
-          border: 'none',
-        }}
-        styles={{ body: { padding: 24 } }}
-      >
-        <Spin spinning={funnelLoading}>
-          {funnel.lead === 0 && funnel.sign === 0 ? (
-            <Empty description="暂无转化数据" />
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {funnelStages.map((stage, idx) => {
-                const prevValue = idx > 0 ? funnelStages[idx - 1].value : 0
-                const convRate = prevValue > 0 ? (stage.value / prevValue) * 100 : 0
-                const widthPct = (stage.value / maxValue) * 100
-                return (
-                  <div key={stage.key} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <div style={{ width: 80, fontSize: 14, fontWeight: 600, color: '#1d1d1f' }}>
-                      {stage.label}
-                    </div>
-                    <div style={{ flex: 1, position: 'relative' }}>
-                      <div
-                        style={{
-                          width: `${Math.max(widthPct, 2)}%`,
-                          height: 44,
-                          background: `linear-gradient(90deg, ${stage.color} 0%, ${stage.color}cc 100%)`,
-                          borderRadius: 10,
-                          display: 'flex',
-                          alignItems: 'center',
-                          paddingLeft: 16,
-                          color: '#fff',
-                          fontWeight: 700,
-                          fontSize: 16,
-                          transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-                          boxShadow: `0 2px 8px ${stage.color}40`,
-                        }}
-                      >
-                        {stage.value}
-                      </div>
-                    </div>
-                    <div style={{ width: 120, textAlign: 'right', fontSize: 13, color: '#86868b' }}>
-                      {idx > 0 && prevValue > 0 ? (
-                        <Tooltip title={`较上一阶段转化率 ${convRate.toFixed(1)}%`}>
-                          <span style={{ color: convRate >= 50 ? '#34c759' : '#ff9500', fontWeight: 600 }}>
-                            ↗ {convRate.toFixed(1)}%
-                          </span>
-                        </Tooltip>
-                      ) : (
-                        <span style={{ color: '#86868b' }}>起点</span>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-              <div
-                style={{
-                  marginTop: 8,
-                  padding: '12px 16px',
-                  background: '#f5f5f7',
-                  borderRadius: 10,
-                  fontSize: 13,
-                  color: '#6e6e73',
-                }}
-              >
-                总体签约率：{funnel.lead > 0 ? ((funnel.sign / funnel.lead) * 100).toFixed(1) : '0.0'}%
-                （签约 {funnel.sign} / 线索 {funnel.lead}）
-              </div>
-            </div>
-          )}
-        </Spin>
       </Card>
 
       {/* ROI 数据表 */}

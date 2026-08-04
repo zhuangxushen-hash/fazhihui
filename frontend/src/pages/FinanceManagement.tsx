@@ -82,26 +82,14 @@ const refundStatusLabelMap: Record<string, string> = {
   processed: '已处理',
 }
 
-const invoiceStatusKindMap: Record<string, PillKind> = {
-  pending: 'neutral',
-  issued: 'blue',
-  paid: 'green',
-  cancelled: 'red',
-}
-
-const invoiceStatusLabelMap: Record<string, string> = {
-  pending: '待开票',
-  issued: '已开票',
-  paid: '已支付',
-  cancelled: '已作废',
-}
+// 发票管理功能已合并至 InvoiceManagement.tsx，相关状态、常量、列定义与接口调用已移除
 
 export default function FinanceManagement() {
   const [activeTab, setActiveTab] = useState('fees')
   const [fees, setFees] = useState<any[]>([])
   const [profitShares, setProfitShares] = useState<any[]>([])
   const [refunds, setRefunds] = useState<any[]>([])
-  const [invoices, setInvoices] = useState<any[]>([])
+  // 发票管理已合并到专用发票管理页（InvoiceManagement.tsx），此处不再维护
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [detailVisible, setDetailVisible] = useState(false)
@@ -121,9 +109,8 @@ export default function FinanceManagement() {
       fetchProfitShares()
     } else if (activeTab === 'refunds') {
       fetchRefunds()
-    } else if (activeTab === 'invoices') {
-      fetchInvoices()
     }
+    // 发票管理已合并到专用发票管理页（InvoiceManagement.tsx）
   }, [activeTab])
 
   const fetchFees = async () => {
@@ -168,29 +155,15 @@ export default function FinanceManagement() {
     }
   }
 
-  const fetchInvoices = async () => {
-    setLoading(true)
-    try {
-      const params: any = { org_id: user.organization_id }
-      if (searchParams.status) params.status = searchParams.status
-
-      const res = await axios.get('/finance/invoices', { params })
-      setInvoices(res || [])
-    } catch (error) {
-      console.error('Fetch invoices error:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  // 发票管理已合并到专用发票管理页（InvoiceManagement.tsx），删除 fetchInvoices
 
   const handleSearch = () => {
     if (activeTab === 'fees') {
       fetchFees()
     } else if (activeTab === 'refunds') {
       fetchRefunds()
-    } else if (activeTab === 'invoices') {
-      fetchInvoices()
     }
+    // 发票管理已合并到专用发票管理页（InvoiceManagement.tsx）
   }
 
   const handleReset = () => {
@@ -260,62 +233,7 @@ export default function FinanceManagement() {
     { value: 'processed', label: '已处理' },
   ]
 
-  const invoiceStatusOptions = [
-    { value: 'pending', label: '待开票' },
-    { value: 'issued', label: '已开票' },
-    { value: 'paid', label: '已支付' },
-    { value: 'cancelled', label: '已作废' },
-  ]
-
-  const handleCreateInvoice = () => {
-    form.resetFields()
-    setModalVisible(true)
-  }
-
-  const handleSubmitInvoice = async (values: any) => {
-    try {
-      await axios.post('/finance/invoice', { ...values, organization_id: user.organization_id })
-      setModalVisible(false)
-      message.success('发票创建成功')
-      fetchInvoices()
-    } catch (error) {
-      message.error('发票创建失败')
-      console.error('Create invoice error:', error)
-    }
-  }
-
-  const handleIssueInvoice = async (record: any) => {
-    try {
-      await axios.put(`/finance/invoice/${record.id}/issue`, { invoice_no: `FP${Date.now()}` })
-      message.success('发票已开具')
-      fetchInvoices()
-    } catch (error) {
-      message.error('操作失败')
-      console.error('Issue invoice error:', error)
-    }
-  }
-
-  const handleInvoicePaid = async (record: any) => {
-    try {
-      await axios.put(`/finance/invoice/${record.id}/paid`)
-      message.success('发票已标记为已支付')
-      fetchInvoices()
-    } catch (error) {
-      message.error('操作失败')
-      console.error('Invoice paid error:', error)
-    }
-  }
-
-  const handleCancelInvoice = async (record: any) => {
-    try {
-      await axios.put(`/finance/invoice/${record.id}/cancel`, { note: '用户取消' })
-      message.success('发票已作废')
-      fetchInvoices()
-    } catch (error) {
-      message.error('操作失败')
-      console.error('Cancel invoice error:', error)
-    }
-  }
+  // 发票管理已合并至专用发票管理页（InvoiceManagement.tsx），相关常量已移除
 
   const feeColumns = [
     { title: '费用ID', dataIndex: 'id', key: 'id', width: 120 },
@@ -394,33 +312,6 @@ export default function FinanceManagement() {
     )},
   ]
 
-  const invoiceColumns = [
-    { title: '发票ID', dataIndex: 'id', key: 'id', width: 120 },
-    { title: '案件ID', dataIndex: 'case_id', key: 'case_id' },
-    { title: '发票金额', dataIndex: 'amount', key: 'amount', render: (amount: number) => (
-      <span style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 600, color: '#0059b5' }}>¥{amount?.toFixed(2) || '0.00'}</span>
-    ) },
-    { title: '发票号码', dataIndex: 'invoice_no', key: 'invoice_no' },
-    { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => (
-      <StatusPill text={invoiceStatusLabelMap[status] || status} kind={invoiceStatusKindMap[status] || 'neutral'} />
-    )},
-    { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
-    { title: '操作', key: 'action', render: (_: any, record: any) => (
-      <Space>
-        <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
-        {record.status === 'pending' && (
-          <Button size="small" type="primary" onClick={() => handleIssueInvoice(record)}>开票</Button>
-        )}
-        {record.status === 'issued' && (
-          <Button size="small" type="primary" onClick={() => handleInvoicePaid(record)}>标记支付</Button>
-        )}
-        {record.status === 'issued' && (
-          <Button type="link" size="small" danger onClick={() => handleCancelInvoice(record)}>作废</Button>
-        )}
-      </Space>
-    )},
-  ]
-
   const tabItems = useMemo(() => [
     {
       key: 'fees',
@@ -477,31 +368,8 @@ export default function FinanceManagement() {
         </>
       ),
     },
-    {
-      key: 'invoices',
-      label: '发票管理',
-      children: (
-        <>
-          <div className="search-bar" style={searchBarStyle}>
-            <Select
-              placeholder="状态筛选"
-              style={{ width: 150 }}
-              allowClear
-              value={searchParams.status || undefined}
-              onChange={(value) => setSearchParams({ ...searchParams, status: value || '' })}
-            >
-              {invoiceStatusOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
-            </Select>
-            <Button type="primary" onClick={handleSearch}>搜索</Button>
-            <Button onClick={handleReset}>重置</Button>
-          </div>
-          <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
-            <Table dataSource={invoices} columns={invoiceColumns} loading={loading} rowKey="id" size="small" />
-          </Card>
-        </>
-      ),
-    },
-  ], [searchParams, fees, profitShares, refunds, invoices, loading])
+    // 发票管理已合并到专用发票管理页（InvoiceManagement.tsx），此处不再维护
+  ], [searchParams, fees, profitShares, refunds, loading])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -510,40 +378,29 @@ export default function FinanceManagement() {
         {activeTab === 'fees' && (
           <Button type="primary" icon={<PlusOutlined />} onClick={handleAddFee}>创建费用</Button>
         )}
-        {activeTab === 'invoices' && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateInvoice}>创建发票</Button>
-        )}
+        {/* 发票管理已合并到专用发票管理页（InvoiceManagement.tsx） */}
       </div>
 
       <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
 
       <Modal
-        title={activeTab === 'fees' ? '创建费用' : '创建发票'}
+        title="创建费用"
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         footer={null}
         width={500}
       >
-        <Form onFinish={activeTab === 'fees' ? handleSubmitFee : handleSubmitInvoice}>
+        <Form onFinish={handleSubmitFee}>
           <Form.Item name="case_id" label="案件ID" rules={[{ required: true }]}>
             <Input placeholder="请输入案件ID" />
           </Form.Item>
           <Form.Item name="amount" label="金额" rules={[{ required: true }]}>
             <Input placeholder="请输入金额" />
           </Form.Item>
-          {activeTab === 'fees' && (
-            <Form.Item name="description" label="描述">
-              <Input.TextArea placeholder="请输入费用描述" />
-            </Form.Item>
-          )}
-          {activeTab === 'invoices' && (
-            <Form.Item name="invoice_type" label="发票类型">
-              <Select placeholder="请选择发票类型">
-                <Select.Option value="personal">个人</Select.Option>
-                <Select.Option value="company">企业</Select.Option>
-              </Select>
-            </Form.Item>
-          )}
+          <Form.Item name="description" label="描述">
+            <Input.TextArea placeholder="请输入费用描述" />
+          </Form.Item>
+          {/* 发票管理已合并到专用发票管理页（InvoiceManagement.tsx），此处仅保留创建费用表单 */}
           <Form.Item>
             <Button type="primary" htmlType="submit">提交</Button>
           </Form.Item>

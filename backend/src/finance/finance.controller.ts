@@ -1,6 +1,10 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { FinanceService } from './finance.service';
 import { Invoice } from './invoice.entity';
+import { Fee } from './fee.entity';
+import { BusinessFund } from './business-fund.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../types';
@@ -18,6 +22,11 @@ export class FinanceController {
     private paymentReminderService: PaymentReminderService,
     private invoiceService: InvoiceService,
     private businessFundService: BusinessFundService,
+    // 追加注入 Fee 和 BusinessFund Repository 用于收支综合查询
+    @InjectRepository(Fee)
+    private readonly feeRepository: Repository<Fee>,
+    @InjectRepository(BusinessFund)
+    private readonly businessFundRepository: Repository<BusinessFund>,
   ) {}
 
   @Post('fee')
@@ -382,5 +391,151 @@ export class FinanceController {
     @Body() body: { refund_amount: number },
   ) {
     return this.financeService.refundQualityDeposit(id, body.refund_amount);
+  }
+
+  // ========== 收支综合查询接口 ==========
+
+  /**
+   * 收支综合查询
+   * 合并后：收入和支出统一从 business_funds 表查询，以 type 区分
+   * type='income' 查询收入（business_funds 表 type='income'）
+   * type='expense' 查询支出（business_funds 表 type='expense'）
+   * type='borrowing' 查询借款（business_funds 表 type='borrowing'）
+   * type='repayment' 查询还款（business_funds 表 type='repayment'）
+   * 无 type 时查询全部并合并返回
+   */
+  @Get('income-expenditure')
+  async findIncomeExpenditure(
+    @Query('page') page: string,
+    @Query('pageSize') pageSize: string,
+    @Query('type') type: string,
+    @Query('date_from') dateFrom: string,
+    @Query('date_to') dateTo: string,
+    @Request() req: any,
+  ) {
+    const orgId = req?.user?.organization_id;
+    const pageNum = parseInt(page) || 1;
+    const pageSizeNum = parseInt(pageSize) || 10;
+
+    const list: any[] = [];
+    let totalIncome = 0;
+    let totalExpense = 0;
+
+    // 收入：合并后从 business_funds 表查询（type='income'）
+    const queryIncome = !type || type === 'income';
+    if (queryIncome) {
+      const qb = this.businessFundRepository.createQueryBuilder('f');
+      qb.andWhere('f.type = :fundType', { fundType: 'income' });
+      if (orgId) {
+        qb.andWhere('f.organization_id = :orgId', { orgId });
+      }
+      if (dateFrom) {
+        qb.andWhere('f.payment_date >= :dateFrom', { dateFrom });
+      }
+      if (dateTo) {
+        qb.andWhere('f.payment_date <= :dateTo', { dateTo });
+      }
+      qb.orderBy('f.payment_date', 'DESC');
+      const funds = await qb.getMany();
+      funds.forEach(f => {
+        list.push({
+          id: f.id,
+          type: 'income',
+          amount: Number(f.amount),
+          description: f.remarks,
+          case_id: f.case_id,
+          date: f.payment_date,
+          source: 'business_fund',
+          paid: f.account_status === 'accounted',
+        });
+        totalIncome += Number(f.amount);
+      });
+    }
+
+    // 支出/借款/还款：从 business_funds 表查询
+    const fundTypes: string[] = [];
+    if (!type) {
+      // 无 type 时查询支出/借款/还款（收入已在上面查过，不重复）
+      fundTypes.push('expense', 'borrowing', 'repayment');
+    } else if (type === 'expense' || type === 'borrowing' || type === 'repayment') {
+      fundTypes.push(type);
+    }
+
+    if (fundTypes.length > 0) {
+      const qb = this.businessFundRepository.createQueryBuilder('b');
+      if (orgId) {
+        qb.andWhere('b.organization_id = :orgId', { orgId });
+      }
+      if (dateFrom) {
+        qb.andWhere('b.payment_date >= :dateFrom', { dateFrom });
+      }
+      if (dateTo) {
+        qb.andWhere('b.payment_date <= :dateTo', { dateTo });
+      }
+      qb.andWhere('b.type IN (:...fundTypes)', { fundTypes });
+      qb.orderBy('b.payment_date', 'DESC');
+      const funds = await qb.getMany();
+      funds.forEach(b => {
+        list.push({
+          id: b.id,
+          type: b.type,
+          amount: Number(b.amount),
+          description: b.remarks,
+          case_id: b.case_id,
+          date: b.payment_date,
+          source: 'business_fund',
+          payer: b.payer,
+          payee: b.payee,
+          category: b.category,
+        });
+        if (b.type === 'expense') {
+          totalExpense += Number(b.amount);
+        }
+      });
+    }
+
+    // 按日期倒序合并
+    list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const total = list.length;
+    const pagedList = list.slice((pageNum - 1) * pageSizeNum, pageNum * pageSizeNum);
+
+    return {
+      list: pagedList,
+      total,
+      page: pageNum,
+      pageSize: pageSizeNum,
+      summary: {
+        total_income: Math.round(totalIncome * 100) / 100,
+        total_expense: Math.round(totalExpense * 100) / 100,
+        balance: Math.round((totalIncome - totalExpense) * 100) / 100,
+      },
+    };
+  }
+
+  /**
+   * 初始化余额记录
+   * 创建一条 business_fund 记录作为期初余额
+   */
+  @Post('income-expenditure/initial-balance')
+  async createInitialBalance(@Body() body: {
+    amount: number;
+    description?: string;
+    payment_date?: string;
+  }, @Request() req: any) {
+    const orgId = req?.user?.organization_id;
+    const fund = this.businessFundRepository.create({
+      type: 'income',
+      category: 'other',
+      amount: body.amount,
+      payer: '期初余额',
+      payee: '公司',
+      payment_date: body.payment_date ? new Date(body.payment_date) : new Date(),
+      remarks: body.description || '期初余额初始化',
+      organization_id: orgId,
+      account_status: 'accounted',
+      account_time: new Date(),
+    });
+    return this.businessFundRepository.save(fund);
   }
 }

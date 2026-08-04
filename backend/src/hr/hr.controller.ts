@@ -10,6 +10,8 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { HrService } from './hr.service';
 import { HrLeave } from './leave.entity';
 import { Attendance } from './attendance.entity';
@@ -18,12 +20,18 @@ import { HrActivity } from './activity.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../types';
+import { User } from '../user/user.entity';
 
 @Controller('hr')
 @UseGuards(JwtAuthGuard)
 @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.ASSISTANT)
 export class HrController {
-  constructor(private readonly hrService: HrService) {}
+  constructor(
+    private readonly hrService: HrService,
+    // 追加注入 User Repository 用于员工档案管理
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
 
   // ==================== 请假管理 ====================
 
@@ -265,5 +273,80 @@ export class HrController {
   @Get('activities/:id/registrations')
   getActivityRegistrations(@Param('id') id: string) {
     return this.hrService.getActivityRegistrations(id);
+  }
+
+  // ==================== 员工档案管理 ====================
+
+  // 查询员工档案列表（从 User 表查询，排除 client 角色；支持 name/department/status 筛选）
+  @Get('personnel')
+  async findPersonnel(
+    @Query('page') page: string,
+    @Query('pageSize') pageSize: string,
+    @Query('name') name: string,
+    @Query('department') department: string,
+    @Query('status') status: string,
+    @Request() req: any,
+  ) {
+    const orgId = req?.user?.organization_id;
+    const pageNum = parseInt(page) || 1;
+    const pageSizeNum = parseInt(pageSize) || 10;
+
+    const qb = this.userRepository
+      .createQueryBuilder('u')
+      .where('u.role != :clientRole', { clientRole: UserRole.CLIENT });
+
+    if (orgId) {
+      qb.andWhere('u.organization_id = :orgId', { orgId });
+    }
+    if (name) {
+      qb.andWhere('u.real_name LIKE :name', { name: `%${name}%` });
+    }
+    if (department) {
+      qb.andWhere('u.department LIKE :department', { department: `%${department}%` });
+    }
+    if (status !== undefined && status !== '') {
+      // status 为 '1' 或 'true' 表示在职，'0' 或 'false' 表示离职
+      const statusBool = status === '1' || status === 'true';
+      qb.andWhere('u.status = :status', { status: statusBool });
+    }
+
+    qb.orderBy('u.created_at', 'DESC')
+      .skip((pageNum - 1) * pageSizeNum)
+      .take(pageSizeNum);
+
+    const [list, total] = await qb.getManyAndCount();
+    // 移除密码字段
+    list.forEach(u => delete u.password);
+
+    return {
+      list,
+      total,
+      page: pageNum,
+      pageSize: pageSizeNum,
+    };
+  }
+
+  // 查询单个员工档案详情
+  @Get('personnel/:id')
+  async findOnePersonnel(@Param('id') id: string) {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) {
+      return { message: '员工不存在' };
+    }
+    delete user.password;
+    return user;
+  }
+
+  // 更新员工档案（部门、职位、入职日期等）
+  @Put('personnel/:id')
+  async updatePersonnel(@Param('id') id: string, @Body() body: Partial<User>) {
+    // 不允许通过此接口修改密码
+    const { password, ...rest } = body;
+    await this.userRepository.update(id, rest);
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (user) {
+      delete user.password;
+    }
+    return user;
   }
 }

@@ -14,11 +14,10 @@ const LeadManagement = lazy(() => import('./pages/LeadManagement'))
 const ClientManagement = lazy(() => import('./pages/ClientManagement'))
 const CaseManagement = lazy(() => import('./pages/CaseManagement'))
 const ContractManagement = lazy(() => import('./pages/ContractManagement'))
-const ComplianceManagement = lazy(() => import('./pages/ComplianceManagement'))
+const ComplaintManagement = lazy(() => import('./pages/ComplaintManagement'))
 const ComplianceCenter = lazy(() => import('./pages/ComplianceCenter'))
 const FinanceManagement = lazy(() => import('./pages/FinanceManagement'))
 const UserManagement = lazy(() => import('./pages/UserManagement'))
-const AITools = lazy(() => import('./pages/AITools'))
 const ClientHome = lazy(() => import('./pages/client/ClientHome'))
 const ClientCaseList = lazy(() => import('./pages/client/ClientCaseList'))
 const ClientCaseDetail = lazy(() => import('./pages/client/ClientCaseDetail'))
@@ -73,8 +72,7 @@ const ServiceRatingManagement = lazy(() => import('./pages/ServiceRatingManageme
 // Phase 2 AI辅助文书与类案匹配
 const LegalDocumentGen = lazy(() => import('./pages/LegalDocumentGen'))
 const SimilarCaseMatch = lazy(() => import('./pages/SimilarCaseMatch'))
-// 系统管理 - 角色、菜单、通知、权限
-const RoleManagement = lazy(() => import('./pages/RoleManagement'))
+// 系统管理 - 角色、菜单、通知、权限（角色管理已合并入权限管理）
 const MenuManagement = lazy(() => import('./pages/MenuManagement'))
 const NotificationList = lazy(() => import('./pages/NotificationList'))
 const PermissionManagement = lazy(() => import('./pages/PermissionManagement'))
@@ -104,10 +102,6 @@ const LeaveManagement = lazy(() => import('./pages/LeaveManagement'))
 const AttendanceManagement = lazy(() => import('./pages/AttendanceManagement'))
 const HRMaterialManagement = lazy(() => import('./pages/HRMaterialManagement'))
 const ActivityManagement = lazy(() => import('./pages/ActivityManagement'))
-const SocialCircle = lazy(() => import('./pages/SocialCircle'))
-const MailManagement = lazy(() => import('./pages/MailManagement'))
-const CalculatorTool = lazy(() => import('./pages/CalculatorTool'))
-const TimerTool = lazy(() => import('./pages/TimerTool'))
 // 金助理对齐：新增页面（综合查询/统计分析/收支综合/归档卷宗/内部项目/AI导航/文档管理/投标业绩库/法律工具/个人中心/人事管理）
 const ComprehensiveQuery = lazy(() => import('./pages/ComprehensiveQuery'))
 const StatisticalAnalysis = lazy(() => import('./pages/StatisticalAnalysis'))
@@ -358,7 +352,7 @@ function App() {
           <Route path="/contracts" element={<ProtectedRoute><ContractManagement /></ProtectedRoute>} />
           <Route path="/property-preservation" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'lawyer', 'assistant']}><PropertyPreservationManagement /></ProtectedRoute>} />
           {/* 合规风控 */}
-          <Route path="/compliance" element={<ProtectedRoute><ComplianceManagement /></ProtectedRoute>} />
+          <Route path="/compliance" element={<ProtectedRoute><ComplaintManagement /></ProtectedRoute>} />
           <Route path="/compliance-center" element={<ProtectedRoute><ComplianceCenter /></ProtectedRoute>} />
           <Route path="/compliance/export" element={<ProtectedRoute><ComplianceExport /></ProtectedRoute>} />
           <Route path="/compliance/sales-review" element={<ProtectedRoute><SalesComplianceReview /></ProtectedRoute>} />
@@ -389,11 +383,11 @@ function App() {
           <Route path="/scrm/chat-archives" element={<ProtectedRoute><ChatArchiveManagement /></ProtectedRoute>} />
           {/* 系统管理 */}
           <Route path="/users" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><UserManagement /></ProtectedRoute>} />
-          <Route path="/roles" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><RoleManagement /></ProtectedRoute>} />
+          <Route path="/roles" element={<Navigate to="/permissions" replace />} />
           <Route path="/menus" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><MenuManagement /></ProtectedRoute>} />
           <Route path="/permissions" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><PermissionManagement /></ProtectedRoute>} />
           <Route path="/notifications" element={<ProtectedRoute><NotificationList /></ProtectedRoute>} />
-          <Route path="/ai-tools" element={<ProtectedRoute><AITools /></ProtectedRoute>} />
+          <Route path="/ai-tools" element={<Navigate to="/ai-nav" replace />} />
           {/* 系统部署对接 */}
           <Route path="/system/deployment-config" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><DeploymentConfig /></ProtectedRoute>} />
           <Route path="/system/brand-customization" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><BrandCustomization /></ProtectedRoute>} />
@@ -410,10 +404,6 @@ function App() {
           <Route path="/schedules" element={<ProtectedRoute><ScheduleManagement /></ProtectedRoute>} />
           <Route path="/tasks" element={<ProtectedRoute><TaskCenter /></ProtectedRoute>} />
           <Route path="/knowledge" element={<ProtectedRoute><KnowledgeBase /></ProtectedRoute>} />
-          <Route path="/social" element={<ProtectedRoute><SocialCircle /></ProtectedRoute>} />
-          <Route path="/mail" element={<ProtectedRoute><MailManagement /></ProtectedRoute>} />
-          <Route path="/calculator" element={<ProtectedRoute><CalculatorTool /></ProtectedRoute>} />
-          <Route path="/timer" element={<ProtectedRoute><TimerTool /></ProtectedRoute>} />
           <Route path="/finance/payment-reminder" element={<ProtectedRoute><PaymentReminderManagement /></ProtectedRoute>} />
           <Route path="/finance/invoices" element={<ProtectedRoute><InvoiceManagement /></ProtectedRoute>} />
           <Route path="/finance/business-funds" element={<ProtectedRoute><BusinessFundManagement /></ProtectedRoute>} />

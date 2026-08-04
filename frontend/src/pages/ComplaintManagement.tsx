@@ -4,7 +4,7 @@ import { EyeOutlined, SearchOutlined, CheckCircleOutlined, CloseCircleOutlined }
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
 
-export default function ComplianceManagement() {
+export default function ComplaintManagement() {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [detailVisible, setDetailVisible] = useState(false)

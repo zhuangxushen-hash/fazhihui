@@ -42,25 +42,44 @@ export class FinanceService {
     private auditService: AuditService,
   ) {}
 
-  async createFee(feeData: Partial<Fee>): Promise<Fee> {
-    const fee = this.feeRepository.create(feeData);
-    return this.feeRepository.save(fee);
+  // 合并后：费用统一写入 BusinessFund 表（type='income', category='lawyer_fee'）
+  async createFee(feeData: Partial<Fee>): Promise<BusinessFund> {
+    const fund = this.businessFundRepository.create({
+      case_id: feeData.case_id || null,
+      type: 'income',
+      category: 'lawyer_fee',
+      amount: Number(feeData.amount) || 0,
+      payer: '客户',
+      payee: '律所',
+      payment_date: new Date(),
+      payment_method: feeData.payment_method || null,
+      remarks: feeData.description || '',
+      account_status: feeData.paid ? 'accounted' : 'pending',
+      account_time: feeData.paid ? (feeData.paid_at || new Date()) : null,
+      organization_id: feeData.organization_id || '',
+    });
+    return this.businessFundRepository.save(fund);
   }
 
-  async findFees(orgId: string, caseId?: string): Promise<Fee[]> {
-    const query: any = {};
+  // 查询费用：合并后从 BusinessFund 表查询（type='income'）
+  async findFees(orgId: string, caseId?: string): Promise<BusinessFund[]> {
+    const query: any = { type: 'income' };
     if (orgId) {
       query.organization_id = orgId;
     }
     if (caseId) {
       query.case_id = caseId;
     }
-    return this.feeRepository.find({ where: query });
+    return this.businessFundRepository.find({ where: query, order: { created_at: 'DESC' } });
   }
 
-  async markAsPaid(id: string): Promise<Fee> {
-    await this.feeRepository.update(id, { paid: true, paid_at: new Date() });
-    return this.feeRepository.findOne({ where: { id } });
+  // 标记已付：合并后更新 BusinessFund 的 account_status
+  async markAsPaid(id: string): Promise<BusinessFund> {
+    const fund = await this.businessFundRepository.findOne({ where: { id } });
+    if (!fund) return null;
+    fund.account_status = 'accounted';
+    fund.account_time = new Date();
+    return this.businessFundRepository.save(fund);
   }
 
   /**
@@ -340,8 +359,8 @@ export class FinanceService {
     }>;
     total_refund: number;
   }> {
-    const fees = await this.feeRepository.find({
-      where: { case_id: caseId, organization_id: orgId },
+    const fees = await this.businessFundRepository.find({
+      where: { case_id: caseId, organization_id: orgId, type: 'income' },
     });
 
     const totalFee = fees.reduce((sum, f) => sum + Number(f.amount), 0);
@@ -405,8 +424,8 @@ export class FinanceService {
     cost_details: Array<{ id: string; cost_type: string; amount: number; description: string }>;
     profit_share_details: Array<{ id: string; role: string; percentage: number; amount: number }>;
   }> {
-    const fees = await this.feeRepository.find({
-      where: { case_id: caseId },
+    const fees = await this.businessFundRepository.find({
+      where: { case_id: caseId, type: 'income' },
     });
 
     const totalRevenue = fees.reduce((sum, f) => sum + Number(f.amount), 0);
@@ -436,7 +455,7 @@ export class FinanceService {
       fee_details: fees.map(f => ({
         id: f.id,
         amount: Number(f.amount),
-        description: f.description,
+        description: f.remarks || '',
         created_at: f.created_at,
       })),
       cost_details: costs.map(c => ({
@@ -463,8 +482,8 @@ export class FinanceService {
     profitable_cases: number;
     loss_cases: number;
   }> {
-    const fees = await this.feeRepository.find({
-      where: { organization_id: orgId },
+    const fees = await this.businessFundRepository.find({
+      where: { organization_id: orgId, type: 'income' },
     });
     const totalRevenue = fees.reduce((sum, f) => sum + Number(f.amount), 0);
 

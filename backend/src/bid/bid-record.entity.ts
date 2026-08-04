@@ -13,6 +13,13 @@ export const BID_RECORD_CATEGORY = {
   CONSULTANT: 'consultant',
 } as const;
 
+// 业绩审核状态：pending 待审核 / approved 已通过 / rejected 已驳回
+export const BID_RECORD_STATUS = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+} as const;
+
 @Entity('bid_records')
 export class BidRecord {
   @PrimaryGeneratedColumn('uuid')
@@ -41,6 +48,22 @@ export class BidRecord {
 
   @Column()
   organization_id: string;
+
+  // 审核状态：pending 待审核 / approved 已通过 / rejected 已驳回
+  @Column({ type: 'varchar', default: 'pending', comment: '审核状态' })
+  status: string;
+
+  // 审核人ID
+  @Column({ type: 'varchar', nullable: true, comment: '审核人ID' })
+  audited_by: string;
+
+  // 审核时间
+  @Column({ type: 'datetime', nullable: true, comment: '审核时间' })
+  audited_at: Date;
+
+  // 审核意见
+  @Column({ type: 'text', nullable: true, comment: '审核意见' })
+  audit_comment: string;
 
   @CreateDateColumn()
   created_at: Date;

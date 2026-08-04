@@ -10,7 +10,10 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { BidService } from './bid.service';
+import { BidRecord } from './bid-record.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../types';
@@ -19,7 +22,12 @@ import { UserRole } from '../types';
 @UseGuards(JwtAuthGuard)
 @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.LAWYER, UserRole.ASSISTANT)
 export class BidController {
-  constructor(private readonly bidService: BidService) {}
+  constructor(
+    private readonly bidService: BidService,
+    // 追加注入 BidRecord Repository 用于业绩库查询
+    @InjectRepository(BidRecord)
+    private readonly bidRecordRepository: Repository<BidRecord>,
+  ) {}
 
   // ========== 投标管理 ==========
 
@@ -97,5 +105,99 @@ export class BidController {
   async removeRecord(@Param('id') id: string) {
     await this.bidService.removeRecord(id);
     return { message: '删除成功' };
+  }
+
+  // ========== 业绩库管理（bid-performances）==========
+
+  /**
+   * 查询投标业绩库列表
+   * 支持 project_name/status/date_from/date_to 筛选
+   */
+  @Get('bid-performances')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.LAWYER, UserRole.SALES)
+  async findPerformances(
+    @Query('page') page: string,
+    @Query('pageSize') pageSize: string,
+    @Query('project_name') projectName: string,
+    @Query('status') status: string,
+    @Query('date_from') dateFrom: string,
+    @Query('date_to') dateTo: string,
+    @Request() req: any,
+  ) {
+    const orgId = req?.user?.organization_id;
+    const pageNum = parseInt(page) || 1;
+    const pageSizeNum = parseInt(pageSize) || 10;
+
+    const qb = this.bidRecordRepository.createQueryBuilder('r');
+    if (orgId) {
+      qb.andWhere('r.organization_id = :orgId', { orgId });
+    }
+    if (projectName) {
+      qb.andWhere('r.project_name LIKE :projectName', { projectName: `%${projectName}%` });
+    }
+    if (status) {
+      qb.andWhere('r.status = :status', { status });
+    }
+    if (dateFrom) {
+      qb.andWhere('r.start_date >= :dateFrom', { dateFrom });
+    }
+    if (dateTo) {
+      qb.andWhere('r.start_date <= :dateTo', { dateTo });
+    }
+
+    qb.orderBy('r.created_at', 'DESC')
+      .skip((pageNum - 1) * pageSizeNum)
+      .take(pageSizeNum);
+
+    const [list, total] = await qb.getManyAndCount();
+    return {
+      list,
+      total,
+      page: pageNum,
+      pageSize: pageSizeNum,
+    };
+  }
+
+  /**
+   * 查询业绩详情
+   */
+  @Get('bid-performances/:id')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.LAWYER, UserRole.SALES)
+  async findOnePerformance(@Param('id') id: string) {
+    return this.bidRecordRepository.findOne({ where: { id } });
+  }
+
+  /**
+   * 创建业绩记录
+   */
+  @Post('bid-performances')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.LAWYER, UserRole.SALES)
+  async createPerformance(@Body() body: Partial<BidRecord>, @Request() req: any) {
+    const orgId = body.organization_id || req?.user?.organization_id;
+    const record = this.bidRecordRepository.create({
+      ...body,
+      organization_id: orgId,
+      status: body.status || 'pending',
+    });
+    return this.bidRecordRepository.save(record);
+  }
+
+  /**
+   * 审核业绩记录
+   */
+  @Put('bid-performances/:id/audit')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.LAWYER, UserRole.SALES)
+  async auditPerformance(
+    @Param('id') id: string,
+    @Body() body: { status: string; audit_comment?: string },
+    @Request() req: any,
+  ) {
+    await this.bidRecordRepository.update(id, {
+      status: body.status,
+      audit_comment: body.audit_comment,
+      audited_by: req?.user?.id,
+      audited_at: new Date(),
+    });
+    return this.bidRecordRepository.findOne({ where: { id } });
   }
 }

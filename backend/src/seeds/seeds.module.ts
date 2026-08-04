@@ -477,6 +477,16 @@ export class SeedsModule implements OnModuleInit {
       return;
     }
 
+    // 安全保护：如果数据库已有生产组织，则不执行测试seed（防止测试数据污染生产库）
+    const prodOrg = await this.orgRepository.findOne({ where: { name: '法智汇律所' } });
+    if (prodOrg) {
+      // 已有生产数据，仅补充基础配置（权限/角色/菜单），不创建测试业务数据
+      await this.seedPermissions();
+      await this.seedRoles(prodOrg.id);
+      await this.seedMenus();
+      return;
+    }
+
     const existingOrg = await this.orgRepository.findOne({ where: { name: '测试律所' } });
     let orgId: string;
 
