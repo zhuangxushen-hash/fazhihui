@@ -78,34 +78,40 @@ export class ContractService {
     if (!contractData.status) {
       contractData.status = ContractStatus.ACTIVE;
     }
-    const contract = this.contractRepository.create(contractData);
-    const saved = await this.contractRepository.save(contract);
 
-    // 记录初始阶段
-    await this.recordStage({
-      contract_id: saved.id,
-      stage_name: saved.stage,
-      stage_status: 'entered',
-      start_date: saved.sign_date as any,
-      remarks: '合同创建',
-      organization_id: saved.organization_id,
-    });
+    // Task13: 事务包裹合同创建与案件回写，保证数据一致性
+    return this.dataSource.transaction(async (manager) => {
+      const contract = manager.create(Contract, contractData);
+      const saved = await manager.save(Contract, contract);
 
-    // T8.1: 创建合同后回写关联案件
-    if (saved.case_id) {
-      const caseData: any = {};
-      if (saved.amount) caseData.fee_amount = Number(saved.amount);
-      if (saved.amount) caseData.service_fee = Number(saved.amount);
-      if (saved.title) caseData.case_name = saved.title;
-      if (saved.client_name) caseData.client_name = saved.client_name;
-      if (saved.client_phone) caseData.client_phone = saved.client_phone;
-      if (saved.lead_lawyer_id) caseData.assignee_lawyer_id = saved.lead_lawyer_id;
-      if (Object.keys(caseData).length > 0) {
-        await this.caseRepository.update(saved.case_id, caseData);
+      // 记录初始阶段
+      await this.recordStage({
+        contract_id: saved.id,
+        stage_name: saved.stage,
+        stage_status: 'entered',
+        start_date: saved.sign_date as any,
+        remarks: '合同创建',
+        organization_id: saved.organization_id,
+      }, manager);
+
+      // T8.1: 创建合同后回写关联案件
+      if (saved.case_id) {
+        const caseData: any = {};
+        if (saved.amount) caseData.fee_amount = Number(saved.amount);
+        if (saved.amount) caseData.service_fee = Number(saved.amount);
+        if (saved.title) caseData.case_name = saved.title;
+        if (saved.client_name) caseData.client_name = saved.client_name;
+        if (saved.client_phone) caseData.client_phone = saved.client_phone;
+        if (saved.lead_lawyer_id) caseData.assignee_lawyer_id = saved.lead_lawyer_id;
+        // Task13: 回写 Case.contract_id，建立合同-案件双向关联
+        caseData.contract_id = saved.id;
+        if (Object.keys(caseData).length > 0) {
+          await manager.update(Case, saved.case_id, caseData);
+        }
       }
-    }
 
-    return saved;
+      return saved;
+    });
   }
 
   // 记录合同阶段历史
@@ -270,22 +276,25 @@ export class ContractService {
 
   // 更新合同
   async update(id: string, contractData: Partial<Contract>): Promise<Contract> {
-    await this.contractRepository.update(id, contractData);
-    const saved = await this.contractRepository.findOne({ where: { id } });
-    // T8.1: 更新合同后回写关联案件
-    if (saved && saved.case_id) {
-      const caseData: any = {};
-      if (saved.amount) caseData.fee_amount = Number(saved.amount);
-      if (saved.amount) caseData.service_fee = Number(saved.amount);
-      if (saved.title) caseData.case_name = saved.title;
-      if (saved.client_name) caseData.client_name = saved.client_name;
-      if (saved.client_phone) caseData.client_phone = saved.client_phone;
-      if (saved.lead_lawyer_id) caseData.assignee_lawyer_id = saved.lead_lawyer_id;
-      if (Object.keys(caseData).length > 0) {
-        await this.caseRepository.update(saved.case_id, caseData);
+    // Task13: 事务包裹合同更新与案件回写，保证数据一致性
+    return this.dataSource.transaction(async (manager) => {
+      await manager.update(Contract, id, contractData);
+      const saved = await manager.findOne(Contract, { where: { id } });
+      // T8.1: 更新合同后回写关联案件（amount 变更时同步 Case.fee_amount/service_fee）
+      if (saved && saved.case_id) {
+        const caseData: any = {};
+        if (saved.amount) caseData.fee_amount = Number(saved.amount);
+        if (saved.amount) caseData.service_fee = Number(saved.amount);
+        if (saved.title) caseData.case_name = saved.title;
+        if (saved.client_name) caseData.client_name = saved.client_name;
+        if (saved.client_phone) caseData.client_phone = saved.client_phone;
+        if (saved.lead_lawyer_id) caseData.assignee_lawyer_id = saved.lead_lawyer_id;
+        if (Object.keys(caseData).length > 0) {
+          await manager.update(Case, saved.case_id, caseData);
+        }
       }
-    }
-    return saved;
+      return saved;
+    });
   }
 
   // 删除合同（同时删除关联的阶段记录，使用事务保证一致性）

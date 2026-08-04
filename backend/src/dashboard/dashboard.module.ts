@@ -24,6 +24,9 @@ import { PaymentRecord } from '../finance/payment-record.entity';
 import { Receivable } from '../finance/receivable.entity';
 import { Invoice } from '../finance/invoice.entity';
 import { CommissionRecord } from '../finance/commission-record.entity';
+// T11: 补全核心指标聚合所需的工时日志与合同实体
+import { Worklog } from '../worklog/worklog.entity';
+import { Contract } from '../contract/contract.entity';
 // Phase5+6 L5: 注入用户模块，获取 NotificationService 用于风险推送
 import { UserModule } from '../user/user.module';
 
@@ -52,6 +55,9 @@ import { UserModule } from '../user/user.module';
       Receivable,
       Invoice,
       CommissionRecord,
+      // T11: 补全核心指标聚合所需的工时日志与合同实体
+      Worklog,
+      Contract,
     ]),
     // Phase5+6 L5: 注入用户模块，获取 NotificationService 用于风险推送
     UserModule,

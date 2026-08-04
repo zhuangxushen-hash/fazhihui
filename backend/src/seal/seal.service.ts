@@ -103,13 +103,19 @@ export class SealService {
   async createApplication(applicationData: Partial<SealApplication>): Promise<SealApplication> {
     const application = this.applicationRepository.create(applicationData);
     const saved = await this.applicationRepository.save(application);
-    // T10: 创建用印申请审计日志
+    // T10: 创建用印申请审计日志（action=seal:create，记录前后状态及关键信息）
     await this.logSealAudit({
       userId: applicationData.applicant_id || applicationData.creator_id,
-      action: '创建用印申请',
-      resourceType: 'SealApplication',
+      action: 'seal:create',
+      resourceType: 'seal_application',
       resourceId: saved.id,
-      detail: JSON.stringify({ document_name: applicationData.document_name, seal_medium: applicationData.seal_medium }),
+      detail: JSON.stringify({
+        beforeStatus: null,
+        afterStatus: saved.status,
+        approverId: null,
+        document_name: applicationData.document_name,
+        seal_medium: applicationData.seal_medium,
+      }),
     });
     return saved;
   }
@@ -189,7 +195,11 @@ export class SealService {
 
   // 审批通过
   async approveApplication(id: string, approverId: string, comment?: string): Promise<SealApplication> {
+    let beforeStatus: string | undefined;
     const result = await this.dataSource.transaction(async (manager) => {
+      // 在更新前查询原始状态，用于审计日志记录
+      const before = await manager.findOne(SealApplication, { where: { id } });
+      beforeStatus = before?.status;
       await manager.update(SealApplication, id, {
         status: 'approved',
         approver_id: approverId,
@@ -212,19 +222,27 @@ export class SealService {
       }
       return manager.findOne(SealApplication, { where: { id } });
     });
-    // T10: 审批通过用印申请审计日志
+    // T10: 审批通过用印申请审计日志（action=seal:approve，记录前后状态及审批人）
     await this.logSealAudit({
       userId: approverId,
-      action: '审批通过用印申请',
-      resourceType: 'SealApplication',
+      action: 'seal:approve',
+      resourceType: 'seal_application',
       resourceId: id,
-      detail: comment || '',
+      detail: JSON.stringify({
+        beforeStatus,
+        afterStatus: result?.status,
+        approverId,
+        comment: comment || '',
+      }),
     });
     return result;
   }
 
   // 审批驳回
   async rejectApplication(id: string, approverId: string, comment?: string): Promise<SealApplication> {
+    // 在更新前查询原始状态，用于审计日志记录
+    const before = await this.applicationRepository.findOne({ where: { id } });
+    const beforeStatus = before?.status;
     await this.applicationRepository.update(id, {
       status: 'rejected',
       approver_id: approverId,
@@ -232,24 +250,32 @@ export class SealService {
       approve_time: new Date(),
     });
     const result = await this.applicationRepository.findOne({ where: { id } });
-    // T10: 审批驳回用印申请审计日志
+    // T10: 审批驳回用印申请审计日志（action=seal:reject，记录前后状态及审批人）
     await this.logSealAudit({
       userId: approverId,
-      action: '审批驳回用印申请',
-      resourceType: 'SealApplication',
+      action: 'seal:reject',
+      resourceType: 'seal_application',
       resourceId: id,
-      detail: comment || '',
+      detail: JSON.stringify({
+        beforeStatus,
+        afterStatus: result?.status,
+        approverId,
+        comment: comment || '',
+      }),
     });
     return result;
   }
 
   // 盖章：更新申请状态为 used，并写入盖章记录
   async useApplication(id: string, operatorId: string): Promise<SealApplication> {
+    let beforeStatus: string | undefined;
     const result = await this.dataSource.transaction(async (manager) => {
       const application = await manager.findOne(SealApplication, { where: { id } });
       if (!application) {
         return null;
       }
+      // 记录盖章前状态，用于审计日志
+      beforeStatus = application.status;
       await manager.update(SealApplication, id, { status: 'used' });
       const record = manager.create(SealRecord, {
         application_id: application.id,
@@ -279,14 +305,18 @@ export class SealService {
       }
       return manager.findOne(SealApplication, { where: { id } });
     });
-    // T10: 用印盖章审计日志
+    // T10: 用印盖章审计日志（action=seal:use，记录前后状态及操作人）
     if (result) {
       await this.logSealAudit({
         userId: operatorId,
-        action: '用印盖章',
-        resourceType: 'SealApplication',
+        action: 'seal:use',
+        resourceType: 'seal_application',
         resourceId: id,
-        detail: '',
+        detail: JSON.stringify({
+          beforeStatus,
+          afterStatus: result.status,
+          operatorId,
+        }),
       });
     }
     return result;
@@ -341,9 +371,12 @@ export class SealService {
 
   // 单个作废用印申请
   async voidApplication(id: string, reason?: string, operatorId?: string): Promise<SealApplication> {
+    let beforeStatus: string | undefined;
     const result = await this.dataSource.transaction(async (manager) => {
       const application = await manager.findOne(SealApplication, { where: { id } });
       if (!application) return null;
+      // 记录作废前状态，用于审计日志
+      beforeStatus = application.status;
       if (!['pending', 'approved'].includes(application.status)) {
         return application;
       }
@@ -372,14 +405,19 @@ export class SealService {
       }
       return manager.findOne(SealApplication, { where: { id } });
     });
-    // T10: 作施用印申请审计日志
+    // T10: 作废用印申请审计日志（action=seal:void，记录前后状态及操作人）
     if (result) {
       await this.logSealAudit({
         userId: operatorId,
-        action: '作施用印申请',
-        resourceType: 'SealApplication',
+        action: 'seal:void',
+        resourceType: 'seal_application',
         resourceId: id,
-        detail: reason || '',
+        detail: JSON.stringify({
+          beforeStatus,
+          afterStatus: result.status,
+          operatorId: operatorId || null,
+          reason: reason || '',
+        }),
       });
     }
     return result;
@@ -389,6 +427,8 @@ export class SealService {
   async recoverApplication(id: string, operatorId?: string): Promise<SealApplication> {
     const application = await this.applicationRepository.findOne({ where: { id } });
     if (!application) return null;
+    // 记录收回前的 void_status，用于审计日志
+    const beforeStatus = application.void_status;
     if (application.void_status !== 'voided') {
       return application;
     }
@@ -401,13 +441,17 @@ export class SealService {
     }
     await this.applicationRepository.update(id, updateData);
     const result = await this.applicationRepository.findOne({ where: { id } });
-    // T10: 收回用印申请审计日志
+    // T10: 收回用印申请审计日志（action=seal:recover，记录前后状态及操作人）
     await this.logSealAudit({
       userId: operatorId,
-      action: '收回用印申请',
-      resourceType: 'SealApplication',
+      action: 'seal:recover',
+      resourceType: 'seal_application',
       resourceId: id,
-      detail: '',
+      detail: JSON.stringify({
+        beforeStatus,
+        afterStatus: result?.void_status,
+        operatorId: operatorId || null,
+      }),
     });
     return result;
   }

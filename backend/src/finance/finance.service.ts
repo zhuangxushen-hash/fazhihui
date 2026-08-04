@@ -157,6 +157,21 @@ export class FinanceService {
     return savedPaymentResult;
   }
 
+  /**
+   * Task18: 查询收款记录列表
+   * PaymentRecord 无 organization_id 字段，通过关联 Case 表按组织筛选，支持按案件筛选
+   */
+  async findPayments(orgId: string, caseId?: string): Promise<PaymentRecord[]> {
+    const qb = this.paymentRecordRepository.createQueryBuilder('pr')
+      .leftJoin(Case, 'c', 'c.id = pr.case_id')
+      .where('c.organization_id = :orgId', { orgId });
+    if (caseId) {
+      qb.andWhere('pr.case_id = :caseId', { caseId });
+    }
+    qb.orderBy('pr.created_at', 'DESC');
+    return qb.getMany();
+  }
+
   async calculateProfitShare(caseId: string, orgId: string, feeAmount: number, rules: {
     org?: number;
     lawyer?: number;

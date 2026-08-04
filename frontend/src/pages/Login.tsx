@@ -39,11 +39,12 @@ export default function Login() {
 
   const inputStyle: React.CSSProperties = {
     height: 48,
-    background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(255,255,255,0.1)',
+    background: '#ffffff',
+    border: '1px solid #d9d9d9',
     borderRadius: 8,
-    color: '#e2e8f0',
-    fontSize: 14,
+    color: '#333333',
+    fontSize: 15,
+    fontWeight: 500,
   }
 
   return (
@@ -76,7 +77,7 @@ export default function Login() {
       </div>
 
       <div style={{ width: 480, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40, position: 'relative', zIndex: 1 }}>
-        <div style={{
+        <div className="login-input-wrap" style={{
           width: '100%',
           maxWidth: 420,
           background: 'rgba(45, 52, 68, 0.85)',
@@ -97,14 +98,14 @@ export default function Login() {
               label={<span style={{ color: '#cbd5e0', fontSize: 13, fontWeight: 500 }}>手机号</span>}
               rules={[{ required: true, message: '请输入手机号' }, { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号' }]}
             >
-              <Input prefix={<UserOutlined style={{ color: '#718096', fontSize: 14 }} />} placeholder="请输入手机号" size="large" style={inputStyle} />
+              <Input prefix={<UserOutlined style={{ color: '#717785', fontSize: 16 }} />} placeholder="请输入手机号" size="large" style={inputStyle} />
             </Form.Item>
             <Form.Item
               name="password"
               label={<span style={{ color: '#cbd5e0', fontSize: 13, fontWeight: 500 }}>密码</span>}
               rules={[{ required: true, message: '请输入密码' }]}
             >
-              <Input.Password prefix={<LockOutlined style={{ color: '#718096', fontSize: 14 }} />} placeholder="请输入密码" size="large" style={inputStyle} />
+              <Input.Password prefix={<LockOutlined style={{ color: '#717785', fontSize: 16 }} />} placeholder="请输入密码" size="large" style={inputStyle} />
             </Form.Item>
             <Form.Item style={{ marginTop: 8 }}>
               <Button type="primary" htmlType="submit" loading={loading} block style={{ height: 48, fontSize: 15, fontWeight: 600, borderRadius: 8, background: 'linear-gradient(135deg, #1a365d 0%, #2c5282 100%)', border: 'none', boxShadow: '0 4px 12px rgba(26,54,93,0.4)' }}>
@@ -115,6 +116,26 @@ export default function Login() {
 
         </div>
       </div>
+      <style>{`
+        .login-input-wrap input {
+          color: #333333 !important;
+          font-size: 15px !important;
+          font-weight: 500 !important;
+          -webkit-text-fill-color: #333333 !important;
+        }
+        .login-input-wrap input::placeholder {
+          color: #8a90a0 !important;
+          -webkit-text-fill-color: #8a90a0 !important;
+        }
+        .login-input-wrap input:-webkit-autofill {
+          -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+          -webkit-text-fill-color: #333333 !important;
+          caret-color: #333333 !important;
+        }
+        .login-input-wrap .anticon {
+          color: #717785 !important;
+        }
+      `}</style>
     </div>
   )
 }

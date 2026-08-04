@@ -215,6 +215,7 @@ export default function ClientLogin() {
 
         <Form
           name="client-login"
+          className="client-login-input-wrap"
           initialValues={{ phone: '', password: '', code: '' }}
           onFinish={onFinish}
           layout="vertical"
@@ -237,8 +238,9 @@ export default function ClientLogin() {
                 background: '#f9f9fb',
                 border: '1px solid #c1c6d6',
                 borderRadius: 10,
-                color: '#1a1c1d',
-                fontSize: 14,
+                color: '#333333',
+                fontSize: 15,
+                fontWeight: 500,
               }}
             />
           </Form.Item>
@@ -260,8 +262,9 @@ export default function ClientLogin() {
                     background: '#f9f9fb',
                     border: '1px solid #c1c6d6',
                     borderRadius: 10,
-                    color: '#1a1c1d',
-                    fontSize: 14,
+                    color: '#333333',
+                    fontSize: 15,
+                    fontWeight: 500,
                   }}
                 />
                 <Button
@@ -298,8 +301,9 @@ export default function ClientLogin() {
                   background: '#f9f9fb',
                   border: '1px solid #c1c6d6',
                   borderRadius: 10,
-                  color: '#1a1c1d',
-                  fontSize: 14,
+                  color: '#333333',
+                  fontSize: 15,
+                  fontWeight: 500,
                 }}
               />
             </Form.Item>
@@ -444,6 +448,21 @@ export default function ClientLogin() {
             opacity: 1;
             transform: translateY(0);
           }
+        }
+        .client-login-input-wrap input {
+          color: #333333 !important;
+          font-size: 15px !important;
+          font-weight: 500 !important;
+          -webkit-text-fill-color: #333333 !important;
+        }
+        .client-login-input-wrap input::placeholder {
+          color: #8a90a0 !important;
+          -webkit-text-fill-color: #8a90a0 !important;
+        }
+        .client-login-input-wrap input:-webkit-autofill {
+          -webkit-box-shadow: 0 0 0 1000px #f9f9fb inset !important;
+          -webkit-text-fill-color: #333333 !important;
+          caret-color: #333333 !important;
         }
       `}</style>
     </div>

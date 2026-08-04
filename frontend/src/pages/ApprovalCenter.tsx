@@ -13,16 +13,74 @@ import {
 } from '../api/approval'
 import axios from '../api/axios'
 
-// 审批类型中文映射
+// 审批类型中文映射（对齐金助理实勘，涵盖业务/财务/行政三大类）
 const typeLabels: Record<string, string> = {
+  // 原有5种（保留不变）
   seal: '用印',
   case: '立案',
   contract: '合同',
   finance: '财务',
   other: '其他',
+  // 业务类新增15种
+  case_filing: '项目立案',
+  batch_subcase_filing: '批量子项目立案',
+  case_change: '案件变更',
+  case_void: '案件作废',
+  case_archive: '结案归档',
+  source_report: '案源报备',
+  source_change: '案源变更',
+  source_terminate: '案源终止跟进',
+  client_rename: '客户更名',
+  archive_borrow: '卷宗借阅',
+  doc_seal: '文书用印',
+  doc_change: '文档变更',
+  doc_void: '文档作废',
+  batch_subcase_seal: '批量子项目用印',
+  batch_case_void: '批量项目作废',
+  // 财务类新增6种
+  invoice: '开票',
+  invoice_red_flush: '退票冲红',
+  refund: '解约退款',
+  cancel_refund: '取消解约',
+  reimbursement: '报销',
+  payment: '支付',
+  // 行政类新增（其他复用原有 other）
+  daily_request: '日常申请',
+  fieldwork: '外勤',
+  business_trip: '出差',
+  leave: '请假',
+  procurement: '采购',
 }
 
+// 审批类型按类别分组（对齐金助理实勘3大类）
+const typeCategoryMap: Record<string, { label: string; types: string[] }> = {
+  business: {
+    label: '业务类',
+    types: [
+      'seal', 'case', 'contract',
+      'case_filing', 'batch_subcase_filing', 'case_change', 'case_void', 'case_archive',
+      'source_report', 'source_change', 'source_terminate', 'client_rename', 'archive_borrow',
+      'doc_seal', 'doc_change', 'doc_void', 'batch_subcase_seal', 'batch_case_void',
+    ],
+  },
+  finance: {
+    label: '财务类',
+    types: ['finance', 'invoice', 'invoice_red_flush', 'refund', 'cancel_refund', 'reimbursement', 'payment'],
+  },
+  admin: {
+    label: '行政类',
+    types: ['other', 'daily_request', 'fieldwork', 'business_trip', 'leave', 'procurement'],
+  },
+}
+
+// 查询用扁平选项
 const typeOptions = Object.entries(typeLabels).map(([value, label]) => ({ value, label }))
+
+// 发起审批用分组选项（按3大类分组显示）
+const groupedTypeOptions = Object.entries(typeCategoryMap).map(([, { label, types }]) => ({
+  label,
+  options: types.map((value) => ({ value, label: typeLabels[value] })),
+}))
 
 // 审批状态配置
 const statusConfig: Record<string, { label: string; color: string }> = {
@@ -386,7 +444,7 @@ export default function ApprovalCenter() {
       >
         <Form form={createForm} onFinish={handleCreate} layout="vertical">
           <Form.Item name="type" label="审批类型" rules={[{ required: true, message: '请选择审批类型' }]}>
-            <Select placeholder="请选择审批类型" options={typeOptions} />
+            <Select placeholder="请选择审批类型" options={groupedTypeOptions} />
           </Form.Item>
           <Form.Item name="title" label="申请标题" rules={[{ required: true, message: '请输入申请标题' }]}>
             <Input placeholder="请输入申请标题" />

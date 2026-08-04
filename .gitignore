@@ -14,3 +14,19 @@ logs/
 *.tmp
 .vscode/
 .idea/
+
+# Trae 工作区文件
+.trae/
+
+# Stitch 设计稿相关
+stitch_design/
+stitch_multi_platform_frontend_generator.zip
+stitch_spec/
+stitch_spec_extracted/
+
+# 临时图片
+*.jpg.jpg
+*.png.jpg
+
+# TypeScript 构建缓存
+*.tsbuildinfo

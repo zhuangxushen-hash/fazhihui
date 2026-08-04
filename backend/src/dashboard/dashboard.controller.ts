@@ -311,4 +311,11 @@ export class DashboardController {
     const orgId = req?.user?.organization_id;
     return this.dashboardService.getTaskDashboard(orgId);
   }
+
+  /** T11: 核心指标聚合看板（7项核心指标从业务表实时聚合） */
+  @Get('core-metrics')
+  async coreMetrics(@Request() req: any) {
+    const orgId = req?.user?.organization_id;
+    return this.dashboardService.getCoreMetrics(orgId);
+  }
 }

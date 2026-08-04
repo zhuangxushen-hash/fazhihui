@@ -108,6 +108,18 @@ const SocialCircle = lazy(() => import('./pages/SocialCircle'))
 const MailManagement = lazy(() => import('./pages/MailManagement'))
 const CalculatorTool = lazy(() => import('./pages/CalculatorTool'))
 const TimerTool = lazy(() => import('./pages/TimerTool'))
+// 金助理对齐：新增页面（综合查询/统计分析/收支综合/归档卷宗/内部项目/AI导航/文档管理/投标业绩库/法律工具/个人中心/人事管理）
+const ComprehensiveQuery = lazy(() => import('./pages/ComprehensiveQuery'))
+const StatisticalAnalysis = lazy(() => import('./pages/StatisticalAnalysis'))
+const IncomeExpenditure = lazy(() => import('./pages/IncomeExpenditure'))
+const ArchiveVolumeManagement = lazy(() => import('./pages/ArchiveVolumeManagement'))
+const InternalProject = lazy(() => import('./pages/InternalProject'))
+const AINavigation = lazy(() => import('./pages/AINavigation'))
+const DocumentManagement = lazy(() => import('./pages/DocumentManagement'))
+const BidPerformance = lazy(() => import('./pages/BidPerformance'))
+const LawToolNav = lazy(() => import('./pages/LawToolNav'))
+const PersonalCenter = lazy(() => import('./pages/PersonalCenter'))
+const PersonnelManagement = lazy(() => import('./pages/PersonnelManagement'))
 
 // 设置 dayjs 中文语言
 dayjs.locale('zh-cn')
@@ -423,6 +435,18 @@ function App() {
           <Route path="/client/service-rating" element={<ClientProtectedRoute><ServiceRating /></ClientProtectedRoute>} />
           <Route path="/client/archive" element={<ClientProtectedRoute><ClientArchive /></ClientProtectedRoute>} />
           <Route path="/client/profile" element={<ClientProtectedRoute><ClientProfile /></ClientProtectedRoute>} />
+          {/* 金助理对齐：新增路由 */}
+          <Route path="/comprehensive/query" element={<ProtectedRoute><ComprehensiveQuery /></ProtectedRoute>} />
+          <Route path="/statistical-analysis" element={<ProtectedRoute><StatisticalAnalysis /></ProtectedRoute>} />
+          <Route path="/finance/income-expenditure" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><IncomeExpenditure /></ProtectedRoute>} />
+          <Route path="/archive-volumes" element={<ProtectedRoute><ArchiveVolumeManagement /></ProtectedRoute>} />
+          <Route path="/internal-projects" element={<ProtectedRoute><InternalProject /></ProtectedRoute>} />
+          <Route path="/ai-nav" element={<ProtectedRoute><AINavigation /></ProtectedRoute>} />
+          <Route path="/documents" element={<ProtectedRoute><DocumentManagement /></ProtectedRoute>} />
+          <Route path="/bid-performances" element={<ProtectedRoute><BidPerformance /></ProtectedRoute>} />
+          <Route path="/law-tools" element={<ProtectedRoute><LawToolNav /></ProtectedRoute>} />
+          <Route path="/personal-center" element={<ProtectedRoute><PersonalCenter /></ProtectedRoute>} />
+          <Route path="/hr/personnel" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'assistant']}><PersonnelManagement /></ProtectedRoute>} />
         </Routes>
       </Suspense>
     </Router>

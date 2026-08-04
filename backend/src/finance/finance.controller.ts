@@ -141,6 +141,48 @@ export class FinanceController {
     );
   }
 
+  // ========== Task18: 收款记录独立接口 ==========
+
+  /**
+   * Task18: 创建收款记录
+   * 复用 FinanceService.recordPayment：累加 receivable.paid_amount，
+   * 全款到账时 receivable.status=PAID + case.fee_collected 回写 + 触发分润
+   */
+  @Post('payment-records')
+  async createPaymentRecord(
+    @Body() body: {
+      receivable_id: string;
+      amount: number;
+      method?: PaymentMethod;
+      transaction_id?: string;
+      remarks?: string;
+      client_id?: string;
+    },
+  ) {
+    return this.financeService.recordPayment(
+      body.receivable_id,
+      body.amount,
+      body.method || PaymentMethod.BANK,
+      body.transaction_id,
+      body.remarks,
+      body.client_id,
+    );
+  }
+
+  /**
+   * Task18: 查询收款记录列表
+   * 支持按组织和案件筛选
+   */
+  @Get('payment-records')
+  async findPaymentRecords(
+    @Query('org_id') orgId: string,
+    @Query('case_id') caseId?: string,
+    @Request() req?: any,
+  ) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.financeService.findPayments(finalOrgId, caseId);
+  }
+
   @Post('refund/tiered-calculate')
   async calculateTieredRefund(
     @Body() body: { case_id: string; organization_id?: string },

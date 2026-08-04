@@ -140,6 +140,7 @@ export class ScheduleController {
 // 会议室管理控制器
 @Controller('meeting-rooms')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.LAWYER, UserRole.ASSISTANT, UserRole.SALES, UserRole.MARKETING, UserRole.FINANCE)
 export class MeetingRoomController {
   constructor(private readonly scheduleService: ScheduleService) {}
 
@@ -181,6 +182,7 @@ export class MeetingRoomController {
 // 会议室预约控制器
 @Controller('meeting-room-bookings')
 @UseGuards(JwtAuthGuard)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.ASSISTANT)
 export class MeetingRoomBookingController {
   constructor(private readonly scheduleService: ScheduleService) {}
 

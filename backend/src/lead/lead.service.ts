@@ -8,6 +8,9 @@ import { ConflictCheckService } from '../case/conflict-check.service';
 import { LeadStatus, CaseType, LeadSource } from '../types';
 // Phase4 M7: 线索创建后自动分配，注入同模块的 LeadAssignmentService
 import { LeadAssignmentService } from './lead-assignment.service';
+// Task12: 线索转案件时自动创建客户档案与应收台账，引入相关实体
+import { ClientProfile } from '../client/client-profile.entity';
+import { Receivable, ReceivableStatus } from '../finance/receivable.entity';
 
 @Injectable()
 export class LeadService {
@@ -165,6 +168,34 @@ export class LeadService {
       if (conflictResult.check_result === 'conflict') {
         await manager.update(Case, savedCase.id, { approval_status: 'conflict_hold' });
         savedCase.approval_status = 'conflict_hold';
+      }
+
+      // Task12: 线索有 contact_name 或 phone 时，在同一事务内自动创建客户档案，并将 profile.id 回写至案件 client_id
+      if (lead.contact_name || lead.phone) {
+        const clientProfile = manager.create(ClientProfile, {
+          name: lead.contact_name || lead.phone,
+          contact_name: lead.contact_name,
+          phone: lead.phone,
+          source: lead.source_channel,
+          organization_id: lead.organization_id,
+        });
+        const savedProfile = await manager.save(ClientProfile, clientProfile);
+        savedCase.client_id = savedProfile.id;
+        await manager.update(Case, savedCase.id, { client_id: savedProfile.id });
+      }
+
+      // Task12: 线索或新案件有 fee_amount/service_fee 时，在同一事务内自动创建应收台账
+      const feeAmountForReceivable = Number(lead.service_fee || savedCase.fee_amount || 0);
+      if (feeAmountForReceivable > 0) {
+        const receivable = manager.create(Receivable, {
+          case_id: savedCase.id,
+          contract_amount: feeAmountForReceivable,
+          received_amount: 0,
+          pending_amount: feeAmountForReceivable,
+          status: ReceivableStatus.PENDING,
+          organization_id: lead.organization_id,
+        });
+        await manager.save(Receivable, receivable);
       }
 
       // 转化成功后更新线索

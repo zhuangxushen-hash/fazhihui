@@ -27,6 +27,9 @@ import { PaymentRecord, PaymentStatus } from '../finance/payment-record.entity';
 import { Receivable } from '../finance/receivable.entity';
 import { Invoice } from '../finance/invoice.entity';
 import { CommissionRecord } from '../finance/commission-record.entity';
+// T11: 核心指标聚合所需的工时日志与合同实体
+import { Worklog } from '../worklog/worklog.entity';
+import { Contract } from '../contract/contract.entity';
 // Phase5+6 L5: 注入通知服务，高风险预警推送通知给管理员
 import { NotificationService } from '../user/notification.service';
 
@@ -77,6 +80,11 @@ export class DashboardService {
     private invoiceRepository: Repository<Invoice>,
     @InjectRepository(CommissionRecord)
     private commissionRecordRepository: Repository<CommissionRecord>,
+    // T11: 工时日志与合同仓储，用于核心指标聚合
+    @InjectRepository(Worklog)
+    private worklogRepository: Repository<Worklog>,
+    @InjectRepository(Contract)
+    private contractRepository: Repository<Contract>,
     // Phase5+6 L5: 注入通知服务
     private notificationService: NotificationService,
   ) {}
@@ -2100,6 +2108,7 @@ export class DashboardService {
     overdue: number;
     cancelled: number;
     avg_progress: number;
+    completion_rate: number;
   }> {
     const tasks = await this.caseTaskRepository.createQueryBuilder('t')
       .innerJoin(Case, 'c', 'c.id = t.case_id')
@@ -2116,10 +2125,99 @@ export class DashboardService {
       else if (t.status === CaseTaskStatus.CANCELLED) cancelled++;
       progressSum += Number(t.progress) || 0;
     }
+    // T11: 任务完成率 = 已完成数(含已核验) / 总任务数 * 100
+    const completionRate = tasks.length > 0
+      ? Math.round(((completed + verified) / tasks.length) * 10000) / 100
+      : 0;
     return {
       total: tasks.length,
       pending, in_progress, completed, verified, overdue, cancelled,
       avg_progress: tasks.length > 0 ? Math.round(progressSum / tasks.length) : 0,
+      completion_rate: completionRate,
+    };
+  }
+
+  /**
+   * T11: 核心指标聚合看板
+   * 聚合7项核心指标：案件总数、合同总金额、已开票总额、已收款总额、律师总工时、任务完成率、线索转化率
+   * 所有指标均按 organization_id 隔离，从业务表实时聚合
+   */
+  async getCoreMetrics(orgId: string): Promise<{
+    case_total: number;
+    contract_total_amount: number;
+    invoiced_total: number;
+    paid_total: number;
+    lawyer_work_hours: number;
+    task_completion_rate: number;
+    lead_conversion_rate: number;
+  }> {
+    // 1. 案件总数（case 表 count）
+    const caseTotal = await this.caseRepository.count({ where: { organization_id: orgId } });
+
+    // 2. 合同总金额（contract 表 sum amount，排除作废合同）
+    const contractResult = await this.contractRepository.createQueryBuilder('contract')
+      .select('COALESCE(SUM(contract.amount), 0)', 'total')
+      .where('contract.organization_id = :orgId', { orgId })
+      .andWhere('contract.status != :status', { status: 'voided' })
+      .getRawOne();
+    const contractTotalAmount = parseFloat(contractResult?.total || '0');
+
+    // 3. 已开票总额（invoice 表 sum total_amount where status != voided）
+    const invoiceResult = await this.invoiceRepository.createQueryBuilder('invoice')
+      .select('COALESCE(SUM(invoice.total_amount), 0)', 'total')
+      .where('invoice.organization_id = :orgId', { orgId })
+      .andWhere('invoice.status != :status', { status: 'voided' })
+      .getRawOne();
+    const invoicedTotal = parseFloat(invoiceResult?.total || '0');
+
+    // 4. 已收款总额（payment_record 表 sum amount where status=PAID）
+    const paidResult = await this.paymentRecordRepository.createQueryBuilder('p')
+      .innerJoin(Case, 'c', 'c.id = p.case_id')
+      .select('COALESCE(SUM(p.amount), 0)', 'total')
+      .where('c.organization_id = :orgId', { orgId })
+      .andWhere('p.status = :status', { status: PaymentStatus.PAID })
+      .getRawOne();
+    const paidTotal = parseFloat(paidResult?.total || '0');
+
+    // 5. 律师总工时（worklog 表 sum work_hours where status=approved）
+    const worklogResult = await this.worklogRepository.createQueryBuilder('worklog')
+      .select('COALESCE(SUM(worklog.work_hours), 0)', 'total')
+      .where('worklog.organization_id = :orgId', { orgId })
+      .andWhere('worklog.status = :status', { status: 'approved' })
+      .getRawOne();
+    const lawyerWorkHours = parseFloat(worklogResult?.total || '0');
+
+    // 6. 任务完成率（task 表 count completed / count all * 100）
+    const taskTotal = await this.caseTaskRepository.createQueryBuilder('t')
+      .innerJoin(Case, 'c', 'c.id = t.case_id')
+      .where('c.organization_id = :orgId', { orgId })
+      .getCount();
+    const taskCompleted = await this.caseTaskRepository.createQueryBuilder('t')
+      .innerJoin(Case, 'c', 'c.id = t.case_id')
+      .where('c.organization_id = :orgId', { orgId })
+      .andWhere('t.status IN (:...statuses)', { statuses: [CaseTaskStatus.COMPLETED, CaseTaskStatus.VERIFIED] })
+      .getCount();
+    const taskCompletionRate = taskTotal > 0
+      ? Math.round((taskCompleted / taskTotal) * 10000) / 100
+      : 0;
+
+    // 7. 线索转化率（lead 表 count converted / count all * 100）
+    const leadTotal = await this.leadRepository.count({ where: { organization_id: orgId } });
+    const leadConverted = await this.leadRepository.count({
+      where: { organization_id: orgId, conversion_status: 'converted' as any },
+    });
+    const leadConversionRate = leadTotal > 0
+      ? Math.round((leadConverted / leadTotal) * 10000) / 100
+      : 0;
+
+    return {
+      case_total: caseTotal,
+      contract_total_amount: Math.round(contractTotalAmount * 100) / 100,
+      invoiced_total: Math.round(invoicedTotal * 100) / 100,
+      paid_total: Math.round(paidTotal * 100) / 100,
+      lawyer_work_hours: Math.round(lawyerWorkHours * 100) / 100,
+      task_completion_rate: taskCompletionRate,
+      lead_conversion_rate: leadConversionRate,
     };
   }
 }

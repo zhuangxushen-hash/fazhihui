@@ -17,6 +17,11 @@ import {
   BellOutlined,
   AppstoreOutlined,
   SolutionOutlined,
+  SearchOutlined,
+  FileSearchOutlined,
+  RobotOutlined,
+  FolderOutlined,
+  ProfileOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 
@@ -101,6 +106,7 @@ const menuGroups: MenuGroup[] = [
     label: '财务分润',
     children: [
       { key: '/finance', label: '财务管理' },
+      { key: '/finance/income-expenditure', label: '收支综合' },
       { key: '/commission-config', label: '分润配置' },
       { key: '/finance/reconciliation', label: '智能对账' },
       { key: '/finance/refund-tier', label: '阶梯退费' },
@@ -161,6 +167,7 @@ const menuGroups: MenuGroup[] = [
     icon: <SolutionOutlined />,
     label: '人力资源',
     children: [
+      { key: '/hr/personnel', label: '人事管理' },
       { key: '/hr/leaves', label: '请假管理' },
       { key: '/hr/attendances', label: '考勤管理' },
       { key: '/hr/materials', label: '物品管理' },
@@ -183,17 +190,63 @@ const menuGroups: MenuGroup[] = [
       { key: '/timer', label: '计时器' },
     ],
   },
+  // 金助理对齐：新增菜单分组（综合管理/文档管理/法律工具/AI助手/个人中心）
+  {
+    key: 'comprehensive',
+    icon: <SearchOutlined />,
+    label: '综合管理',
+    children: [
+      { key: '/comprehensive/query', label: '综合查询' },
+      { key: '/statistical-analysis', label: '统计分析' },
+      { key: '/internal-projects', label: '内部项目' },
+      { key: '/bid-performances', label: '投标业绩库' },
+      { key: '/notifications', label: '通知公告' },
+    ],
+  },
+  {
+    key: 'document',
+    icon: <FolderOutlined />,
+    label: '文档管理',
+    children: [
+      { key: '/documents', label: '我的文档' },
+      { key: '/archive-volumes', label: '归档卷宗' },
+    ],
+  },
+  {
+    key: 'lawtool',
+    icon: <FileSearchOutlined />,
+    label: '法律工具',
+    children: [
+      { key: '/law-tools', label: '工具导航' },
+    ],
+  },
+  {
+    key: 'ainav',
+    icon: <RobotOutlined />,
+    label: 'AI助手',
+    children: [
+      { key: '/ai-nav', label: 'AI导航' },
+    ],
+  },
+  {
+    key: 'personal',
+    icon: <ProfileOutlined />,
+    label: '个人中心',
+    children: [
+      { key: '/personal-center', label: '个人简历' },
+    ],
+  },
 ]
 
 // 角色-一级菜单分组访问矩阵：每个角色能看到哪些分组
 const roleGroupAccess: Record<string, string[]> = {
-  super_admin: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'marketing', 'scrm', 'system', 'hr', 'office'],
-  org_admin: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'marketing', 'scrm', 'system', 'hr', 'office'],
-  marketing: ['dashboard', 'crm', 'marketing', 'scrm', 'office'],
-  sales: ['dashboard', 'crm', 'case', 'compliance', 'scrm', 'office'],
-  lawyer: ['dashboard', 'crm', 'case', 'compliance', 'office'],
-  assistant: ['dashboard', 'crm', 'case', 'compliance', 'hr', 'office'],
-  finance: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'system', 'office'],
+  super_admin: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'marketing', 'scrm', 'system', 'hr', 'office', 'comprehensive', 'document', 'lawtool', 'ainav', 'personal'],
+  org_admin: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'marketing', 'scrm', 'system', 'hr', 'office', 'comprehensive', 'document', 'lawtool', 'ainav', 'personal'],
+  marketing: ['dashboard', 'crm', 'marketing', 'scrm', 'office', 'comprehensive', 'document', 'lawtool', 'ainav', 'personal'],
+  sales: ['dashboard', 'crm', 'case', 'compliance', 'scrm', 'office', 'comprehensive', 'document', 'lawtool', 'ainav', 'personal'],
+  lawyer: ['dashboard', 'crm', 'case', 'compliance', 'office', 'comprehensive', 'document', 'lawtool', 'ainav', 'personal'],
+  assistant: ['dashboard', 'crm', 'case', 'compliance', 'hr', 'office', 'comprehensive', 'document', 'lawtool', 'ainav', 'personal'],
+  finance: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'system', 'office', 'comprehensive', 'document', 'lawtool', 'ainav', 'personal'],
   client: [],
 }
 
@@ -247,6 +300,7 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
   // 财务分润
   finance: {
     '/finance': ['super_admin', 'org_admin', 'finance'],
+    '/finance/income-expenditure': ['super_admin', 'org_admin', 'finance'],
     '/commission-config': ['super_admin', 'org_admin', 'finance'],
     '/finance/reconciliation': ['super_admin', 'org_admin', 'finance'],
     '/finance/refund-tier': ['super_admin', 'org_admin', 'finance'],
@@ -291,6 +345,7 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
   },
   // HR
   hr: {
+    '/hr/personnel': ['super_admin', 'org_admin', 'assistant'],
     '/hr/leaves': ['super_admin', 'org_admin', 'assistant'],
     '/hr/attendances': ['super_admin', 'org_admin', 'assistant'],
     '/hr/materials': ['super_admin', 'org_admin', 'assistant'],
@@ -307,6 +362,27 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
     '/mail': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/calculator': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/timer': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+  },
+  // 金助理对齐：新增分组的子菜单访问规则（默认所有内部角色可见）
+  comprehensive: {
+    '/comprehensive/query': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/statistical-analysis': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/internal-projects': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/bid-performances': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
+    '/notifications': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+  },
+  document: {
+    '/documents': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/archive-volumes': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
+  },
+  lawtool: {
+    '/law-tools': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+  },
+  ainav: {
+    '/ai-nav': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+  },
+  personal: {
+    '/personal-center': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
   },
 }
 
@@ -415,6 +491,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     finance: '财务人员',
     client: '客户',
   }
+
+  // 用户等级计算：对齐金助理 Lv 等级体系，基于角色推导初始等级
+  // 管理员 Lv5，律师/财务 Lv3，销售/投放 Lv2，助理 Lv1
+  const roleLevelMap: Record<string, number> = {
+    super_admin: 5,
+    org_admin: 5,
+    lawyer: 3,
+    finance: 3,
+    sales: 2,
+    marketing: 2,
+    assistant: 1,
+    client: 1,
+  }
+  const userLevel = roleLevelMap[user.role] || 1
 
   return (
     <AntLayout style={{ minHeight: '100vh', background: '#f9f9fb' }}>
@@ -637,9 +727,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   }}
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.3 }}>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1c1d' }}>
-                    {user.real_name || '用户'}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1c1d' }}>
+                      {user.real_name || '用户'}
+                    </span>
+                    {/* 用户等级徽标：对齐金助理 Lv 等级显示 */}
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 600,
+                        color: '#c9a961',
+                        background: 'rgba(201, 169, 97, 0.12)',
+                        padding: '1px 6px',
+                        borderRadius: 4,
+                        lineHeight: 1.4,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      Lv{userLevel}
+                    </span>
+                  </div>
                   <span style={{ fontSize: 11, color: '#717785' }}>
                     {roleLabels[user.role] || '用户'}
                   </span>

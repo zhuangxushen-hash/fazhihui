@@ -1,4 +1,4 @@
-import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Inject, forwardRef, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Case } from '../case/case.entity';
@@ -77,8 +77,9 @@ export class ClientService {
 
   async getCaseDetail(caseId: string, clientId: string): Promise<any> {
     const caseEntity = await this.caseRepository.findOne({ where: { id: caseId } });
+    // 保留原有归属校验逻辑：案件不存在或 case.client_id !== 当前 client 时，统一抛出 404（避免泄露案件存在性）
     if (!caseEntity || caseEntity.client_id !== clientId) {
-      throw new Error('案件不存在或无权访问');
+      throw new NotFoundException('案件不存在');
     }
     let lawyer_name: string | undefined;
     if (caseEntity.assignee_lawyer_id) {

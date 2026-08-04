@@ -33,6 +33,9 @@ import { HandoverLog } from './handover-log.entity';
 import { User } from '../user/user.entity';
 import { Case } from '../case/case.entity';
 import { UserModule } from '../user/user.module';
+// Task12: 线索转案件自动创建客户档案与应收台账，注册相关实体
+import { ClientProfile } from '../client/client-profile.entity';
+import { Receivable } from '../finance/receivable.entity';
 // Phase4 M9/M11: 邀约录音质检与谈案SOP节点完成质检均需注入 ComplianceService（forwardRef 防止潜在循环依赖）
 import { ComplianceModule } from '../compliance/compliance.module';
 // Phase5+6 L3: 注入审计模块，交接操作记录审计日志
@@ -61,6 +64,9 @@ import { AuditModule } from '../audit/audit.module';
       // 关联实体
       User,
       Case,
+      // Task12: 线索转案件自动创建客户档案与应收台账
+      ClientProfile,
+      Receivable,
     ]),
     UserModule,
     // 导入 CaseModule 以使用 ConflictCheckService（利冲检查），用 forwardRef 防止循环依赖
