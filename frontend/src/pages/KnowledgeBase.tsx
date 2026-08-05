@@ -37,6 +37,7 @@ import {
   deleteCasePrecedent,
 } from '../api/knowledge'
 import { formatDate, formatDateTime } from '../utils/format'
+import { theme } from '../constants/theme'
 
 // ============ 中文标签映射 + Tag 颜色 ============
 
@@ -103,7 +104,10 @@ const ArticleCategoryTag = ({ category }: { category: string }) => {
 // 文章状态标签
 const ArticleStatusTag = ({ status }: { status: string }) => {
   const cfg = articleStatusMap[status] || { label: status, color: 'default' }
-  return <Tag color={cfg.color}>{cfg.label}</Tag>
+  // 根据状态选择 Stitch 变体：已发布视为完成态
+  const stitchClass =
+    status === 'published' ? 'stitch-tag stitch-tag-success' : 'stitch-tag stitch-tag-primary'
+  return <Tag className={stitchClass}>{cfg.label}</Tag>
 }
 
 // 法规分类标签
@@ -161,7 +165,7 @@ export default function KnowledgeBase() {
       const params: any = {}
       if (values.keyword) params.keyword = values.keyword
       if (values.category) params.category = values.category
-      const res = await getArticles(params)
+      const res = await getArticles(params) as Record<string, unknown>[]
       setArticles(res || [])
     } catch (error) {
       message.error('获取文章列表失败')
@@ -207,8 +211,8 @@ export default function KnowledgeBase() {
       }
       setArticleModalVisible(false)
       fetchArticles()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
     }
   }
 
@@ -262,7 +266,7 @@ export default function KnowledgeBase() {
       const params: any = {}
       if (values.keyword) params.keyword = values.keyword
       if (values.category) params.category = values.category
-      const res = await getLawRegulations(params)
+      const res = await getLawRegulations(params) as Record<string, unknown>[]
       setLawRegulations(res || [])
     } catch (error) {
       message.error('获取法规列表失败')
@@ -309,8 +313,8 @@ export default function KnowledgeBase() {
       }
       setLawModalVisible(false)
       fetchLawRegulations()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
     }
   }
 
@@ -357,7 +361,7 @@ export default function KnowledgeBase() {
       if (values.keyword) params.keyword = values.keyword
       if (values.court) params.court = values.court
       if (values.case_type) params.case_type = values.case_type
-      const res = await getCasePrecedents(params)
+      const res = await getCasePrecedents(params) as Record<string, unknown>[]
       setCasePrecedents(res || [])
     } catch (error) {
       message.error('获取判例列表失败')
@@ -408,8 +412,8 @@ export default function KnowledgeBase() {
       }
       setCaseModalVisible(false)
       fetchCasePrecedents()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
     }
   }
 
@@ -705,7 +709,7 @@ export default function KnowledgeBase() {
       children: (
         <>
           {/* 搜索栏 */}
-          <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+          <div className="stitch-filter-bar" style={{ background: theme.white, padding: 16, borderRadius: 8, marginBottom: 16 }}>
             <Form form={articleSearch} layout="inline" style={{ gap: 8 }}>
               <Form.Item name="keyword" label="关键词">
                 <Input placeholder="标题/内容" allowClear style={{ width: 200 }} />
@@ -719,7 +723,7 @@ export default function KnowledgeBase() {
                 />
               </Form.Item>
               <Form.Item>
-                <Space>
+                <Space className="stitch-btn-group">
                   <Button type="primary" icon={<SearchOutlined />} onClick={handleArticleSearch}>
                     搜索
                   </Button>
@@ -739,14 +743,16 @@ export default function KnowledgeBase() {
           </div>
 
           {/* 文章列表 */}
-          <Table
-            dataSource={articles}
-            columns={articleColumns}
-            loading={articleLoading}
-            rowKey="id"
-            size="small"
-            pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
-          />
+          <div className="stitch-table">
+            <Table
+              dataSource={articles}
+              columns={articleColumns}
+              loading={articleLoading}
+              rowKey="id"
+              size="small"
+              pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+            />
+          </div>
         </>
       ),
     },
@@ -756,7 +762,7 @@ export default function KnowledgeBase() {
       children: (
         <>
           {/* 搜索栏 */}
-          <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+          <div className="stitch-filter-bar" style={{ background: theme.white, padding: 16, borderRadius: 8, marginBottom: 16 }}>
             <Form form={lawSearch} layout="inline" style={{ gap: 8 }}>
               <Form.Item name="keyword" label="关键词">
                 <Input placeholder="标题/内容" allowClear style={{ width: 200 }} />
@@ -770,7 +776,7 @@ export default function KnowledgeBase() {
                 />
               </Form.Item>
               <Form.Item>
-                <Space>
+                <Space className="stitch-btn-group">
                   <Button type="primary" icon={<SearchOutlined />} onClick={handleLawSearch}>
                     搜索
                   </Button>
@@ -790,14 +796,16 @@ export default function KnowledgeBase() {
           </div>
 
           {/* 法规列表 */}
-          <Table
-            dataSource={lawRegulations}
-            columns={lawColumns}
-            loading={lawLoading}
-            rowKey="id"
-            size="small"
-            pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
-          />
+          <div className="stitch-table">
+            <Table
+              dataSource={lawRegulations}
+              columns={lawColumns}
+              loading={lawLoading}
+              rowKey="id"
+              size="small"
+              pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+            />
+          </div>
         </>
       ),
     },
@@ -807,7 +815,7 @@ export default function KnowledgeBase() {
       children: (
         <>
           {/* 搜索栏 */}
-          <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+          <div className="stitch-filter-bar" style={{ background: theme.white, padding: 16, borderRadius: 8, marginBottom: 16 }}>
             <Form form={caseSearch} layout="inline" style={{ gap: 8 }}>
               <Form.Item name="keyword" label="关键词">
                 <Input placeholder="案件名称/案号/摘要" allowClear style={{ width: 220 }} />
@@ -819,7 +827,7 @@ export default function KnowledgeBase() {
                 <Input placeholder="案件类型" allowClear style={{ width: 160 }} />
               </Form.Item>
               <Form.Item>
-                <Space>
+                <Space className="stitch-btn-group">
                   <Button type="primary" icon={<SearchOutlined />} onClick={handleCaseSearch}>
                     搜索
                   </Button>
@@ -839,14 +847,16 @@ export default function KnowledgeBase() {
           </div>
 
           {/* 判例列表 */}
-          <Table
-            dataSource={casePrecedents}
-            columns={caseColumns}
-            loading={caseLoading}
-            rowKey="id"
-            size="small"
-            pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
-          />
+          <div className="stitch-table">
+            <Table
+              dataSource={casePrecedents}
+              columns={caseColumns}
+              loading={caseLoading}
+              rowKey="id"
+              size="small"
+              pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+            />
+          </div>
         </>
       ),
     },

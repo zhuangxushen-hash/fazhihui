@@ -4,11 +4,11 @@ import { EyeOutlined, CheckCircleOutlined, CloseCircleOutlined, StarFilled, Warn
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
 import dayjs from 'dayjs'
-
+import { theme } from '../constants/theme'
 const { RangePicker } = DatePicker
 
 // 星级强调色
-const STAR_COLOR = '#0071e3'
+const STAR_COLOR = theme.primary
 
 export default function ServiceRatingManagement() {
   const [data, setData] = useState<any[]>([])
@@ -33,7 +33,8 @@ export default function ServiceRatingManagement() {
     try {
       const params: any = { org_id: user.organization_id }
       if (filters.status) params.status = filters.status
-      const res = await axios.get('/client/service-ratings/admin', { params })
+      // 接口返回评分列表，断言为数组类型以便后续筛选
+      const res = (await axios.get('/client/service-ratings/admin', { params })) as Record<string, unknown>[]
       let list = res || []
       // 评分范围筛选
       if (filters.minRating !== undefined) {
@@ -53,7 +54,7 @@ export default function ServiceRatingManagement() {
       }
       setData(list)
     } catch (error) {
-      console.error('Fetch ratings error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -83,7 +84,6 @@ export default function ServiceRatingManagement() {
       setDetailVisible(false)
       fetchData()
     } catch (error) {
-      console.error('Review rating error:', error)
       message.error('审核操作失败')
     }
   }
@@ -94,9 +94,8 @@ export default function ServiceRatingManagement() {
       message.success('已沉淀至素材库')
       setDetailVisible(false)
       fetchData()
-    } catch (error: any) {
-      console.error('Convert rating error:', error)
-      const errMsg = error?.response?.data?.message || '沉淀失败，请确认评分≥4且未重复沉淀'
+    } catch (error: unknown) {
+      const errMsg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || '沉淀失败，请确认评分≥4且未重复沉淀'
       message.error(errMsg)
     }
   }

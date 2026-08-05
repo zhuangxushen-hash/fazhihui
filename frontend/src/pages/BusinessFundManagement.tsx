@@ -10,25 +10,25 @@ import {
   accountFund,
   allocateFund,
   taxShareFund,
-} from '../api/businessFund'
+} from '../api/business-fund'
 import { formatDate } from '../utils/format'
-import dayjs from 'dayjs'
-
+import dayjs, { Dayjs } from 'dayjs'
+import { theme } from '../constants/theme'
 // === Material Design 3 Style Tokens ===
 const pageH2Style: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
   fontSize: 22,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
   margin: 0,
   letterSpacing: '0.01em',
 }
 
 const searchBarStyle: React.CSSProperties = {
-  background: '#ffffff',
+  background: theme.white,
   padding: 16,
   borderRadius: 12,
-  border: '1px solid #c1c6d6',
+  border: `1px solid ${theme.border}`,
   marginBottom: 16,
   display: 'flex',
   gap: 12,
@@ -46,9 +46,9 @@ type PillKind = 'neutral' | 'blue' | 'green' | 'red'
 
 const pillColorMap: Record<PillKind, { bg: string; color: string }> = {
   neutral: { bg: 'rgba(113, 119, 133, 0.12)', color: '#5f6672' },
-  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: '#0071e3' },
-  green: { bg: 'rgba(46, 125, 50, 0.1)', color: '#2e7d32' },
-  red: { bg: 'rgba(186, 26, 26, 0.1)', color: '#ba1a1a' },
+  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: theme.primary },
+  green: { bg: 'rgba(46, 125, 50, 0.1)', color: theme.success },
+  red: { bg: 'rgba(186, 26, 26, 0.1)', color: theme.error },
 }
 
 const StatusPill = ({ text, kind }: { text: string; kind: PillKind }) => {
@@ -101,14 +101,14 @@ const accountStatusLabelMap: Record<string, string> = {
 const { RangePicker } = DatePicker
 
 export default function BusinessFundManagement() {
-  const [list, setList] = useState<any[]>([])
+  const [list, setList] = useState<Record<string, unknown>[]>([])
   const [stats, setStats] = useState({ total_income: 0, total_expense: 0, net_amount: 0 })
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [form] = Form.useForm()
   // 当前操作的记录（用于分账、税费分摊等弹窗）
-  const [currentRecord, setCurrentRecord] = useState<any>(null)
+  const [currentRecord, setCurrentRecord] = useState<Record<string, unknown> | null>(null)
   // 分账弹窗状态
   const [allocateModalVisible, setAllocateModalVisible] = useState(false)
   const [allocateRecords, setAllocateRecords] = useState<Array<{ role: string; amount: number }>>([])
@@ -129,7 +129,7 @@ export default function BusinessFundManagement() {
   const fetchList = async () => {
     setLoading(true)
     try {
-      const params: any = { org_id: user.organization_id }
+      const params: Record<string, unknown> = { org_id: user.organization_id }
       if (searchParams.type) params.type = searchParams.type
       if (searchParams.category) params.category = searchParams.category
       if (searchParams.keyword) params.keyword = searchParams.keyword
@@ -137,10 +137,10 @@ export default function BusinessFundManagement() {
         params.start_date = searchParams.dateRange[0].format('YYYY-MM-DD')
         params.end_date = searchParams.dateRange[1].format('YYYY-MM-DD')
       }
-      const res = await getBusinessFunds(params)
-      setList(res || [])
+      const res = await getBusinessFunds(params as Parameters<typeof getBusinessFunds>[0])
+      setList((res as Record<string, unknown>[]) || [])
     } catch (error) {
-      console.error('Fetch business funds error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -148,15 +148,15 @@ export default function BusinessFundManagement() {
 
   const fetchStats = async () => {
     try {
-      const params: any = { org_id: user.organization_id }
+      const params: Record<string, unknown> = { org_id: user.organization_id }
       if (searchParams.dateRange) {
         params.start_date = searchParams.dateRange[0].format('YYYY-MM-DD')
         params.end_date = searchParams.dateRange[1].format('YYYY-MM-DD')
       }
-      const res = await getBusinessFundStats(params)
-      setStats(res || { total_income: 0, total_expense: 0, net_amount: 0 })
+      const res = await getBusinessFundStats(params as Parameters<typeof getBusinessFundStats>[0])
+      setStats((res as { total_income: number; total_expense: number; net_amount: number }) || { total_income: 0, total_expense: 0, net_amount: 0 })
     } catch (error) {
-      console.error('Fetch stats error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -189,20 +189,20 @@ export default function BusinessFundManagement() {
     setModalVisible(true)
   }
 
-  const handleEdit = (record: any) => {
-    setEditId(record.id)
+  const handleEdit = (record: Record<string, unknown>) => {
+    setEditId(record.id as string)
     form.setFieldsValue({
       ...record,
-      payment_date: record.payment_date ? dayjs(record.payment_date) : undefined,
+      payment_date: record.payment_date ? dayjs(record.payment_date as string) : undefined,
     })
     setModalVisible(true)
   }
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: Record<string, unknown>) => {
     try {
       const data = {
         ...values,
-        payment_date: values.payment_date ? values.payment_date.format('YYYY-MM-DD') : undefined,
+        payment_date: values.payment_date ? (values.payment_date as dayjs.Dayjs).format('YYYY-MM-DD') : undefined,
         organization_id: user.organization_id,
       }
       if (editId) {
@@ -217,43 +217,40 @@ export default function BusinessFundManagement() {
       fetchStats()
     } catch (error) {
       message.error(editId ? '更新失败' : '创建失败')
-      console.error('Submit error:', error)
     }
   }
 
-  const handleDelete = async (record: any) => {
+  const handleDelete = async (record: Record<string, unknown>) => {
     try {
-      await deleteBusinessFund(record.id)
+      await deleteBusinessFund(record.id as string)
       message.success('删除成功')
       fetchList()
       fetchStats()
     } catch (error) {
       message.error('删除失败')
-      console.error('Delete error:', error)
     }
   }
 
   // 入账
-  const handleAccount = async (record: any) => {
+  const handleAccount = async (record: Record<string, unknown>) => {
     try {
-      await accountFund(record.id)
+      await accountFund(record.id as string)
       message.success('入账成功')
       fetchList()
       fetchStats()
     } catch (error) {
       message.error('入账失败')
-      console.error('Account error:', error)
     }
   }
 
   // 打开分账弹窗
-  const handleAllocateOpen = (record: any) => {
+  const handleAllocateOpen = (record: Record<string, unknown>) => {
     setCurrentRecord(record)
     // 读取已有分账记录
     let existing: Array<{ role: string; amount: number }> = []
     if (record.allocation_records) {
       try {
-        existing = JSON.parse(record.allocation_records)
+        existing = JSON.parse(record.allocation_records as string)
         if (!Array.isArray(existing)) existing = []
       } catch (e) {
         existing = []
@@ -291,18 +288,17 @@ export default function BusinessFundManagement() {
   // 提交分账
   const handleAllocateSubmit = async () => {
     try {
-      await allocateFund(currentRecord.id, allocateRecords)
+      await allocateFund(currentRecord!.id as string, allocateRecords)
       message.success('分账成功')
       setAllocateModalVisible(false)
       fetchList()
     } catch (error) {
       message.error('分账失败')
-      console.error('Allocate error:', error)
     }
   }
 
   // 打开税费分摊弹窗
-  const handleTaxShareOpen = (record: any) => {
+  const handleTaxShareOpen = (record: Record<string, unknown>) => {
     setCurrentRecord(record)
     setTaxShareAmount(Number(record.tax_share) || 0)
     setTaxShareModalVisible(true)
@@ -315,13 +311,12 @@ export default function BusinessFundManagement() {
       return
     }
     try {
-      await taxShareFund(currentRecord.id, Number(taxShareAmount))
+      await taxShareFund(currentRecord!.id as string, Number(taxShareAmount))
       message.success('税费分摊成功')
       setTaxShareModalVisible(false)
       fetchList()
     } catch (error) {
       message.error('税费分摊失败')
-      console.error('Tax share error:', error)
     }
   }
 
@@ -344,12 +339,12 @@ export default function BusinessFundManagement() {
       title: '金额',
       dataIndex: 'amount',
       key: 'amount',
-      render: (v: number, record: any) => (
+      render: (v: number, record: Record<string, unknown>) => (
         <span
           style={{
             fontFamily: "'Noto Serif SC', serif",
             fontWeight: 600,
-            color: record.type === 'income' ? '#2e7d32' : '#ba1a1a',
+            color: record.type === 'income' ? theme.success : theme.error,
           }}
         >
           ¥{Number(v || 0).toFixed(2)}
@@ -366,16 +361,17 @@ export default function BusinessFundManagement() {
       key: 'account_status',
       render: (v: string) => {
         const label = accountStatusLabelMap[v] || v || '待入账'
-        const color = v === 'accounted' ? 'green' : 'orange'
-        return <Tag color={color}>{label}</Tag>
+        // 保留原颜色判断逻辑，按 stitch 设计规范映射变体：已入账-success、待入账-warning
+        const variant = v === 'accounted' ? 'success' : 'warning'
+        return <Tag className={`stitch-tag stitch-tag-${variant}`}>{label}</Tag>
       },
     },
     {
       title: '操作',
       key: 'action',
       width: 280,
-      render: (_: any, record: any) => (
-        <Space>
+      render: (_: unknown, record: Record<string, unknown>) => (
+        <Space className="stitch-btn-group">
           <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
           {record.account_status === 'pending' && (
             <Popconfirm title="确认入账该记录？" onConfirm={() => handleAccount(record)}>
@@ -412,7 +408,7 @@ export default function BusinessFundManagement() {
               value={stats.total_income}
               precision={2}
               prefix="¥"
-              valueStyle={{ color: '#2e7d32', fontFamily: "'Noto Serif SC', serif", fontWeight: 600 }}
+              valueStyle={{ color: theme.success, fontFamily: "'Noto Serif SC', serif", fontWeight: 600 }}
             />
           </Card>
         </Col>
@@ -423,7 +419,7 @@ export default function BusinessFundManagement() {
               value={stats.total_expense}
               precision={2}
               prefix="¥"
-              valueStyle={{ color: '#ba1a1a', fontFamily: "'Noto Serif SC', serif", fontWeight: 600 }}
+              valueStyle={{ color: theme.error, fontFamily: "'Noto Serif SC', serif", fontWeight: 600 }}
             />
           </Card>
         </Col>
@@ -434,13 +430,13 @@ export default function BusinessFundManagement() {
               value={stats.net_amount}
               precision={2}
               prefix="¥"
-              valueStyle={{ color: stats.net_amount >= 0 ? '#0059b5' : '#ba1a1a', fontFamily: "'Noto Serif SC', serif", fontWeight: 600 }}
+              valueStyle={{ color: stats.net_amount >= 0 ? theme.primaryDark : theme.error, fontFamily: "'Noto Serif SC', serif", fontWeight: 600 }}
             />
           </Card>
         </Col>
       </Row>
 
-      <div className="search-bar" style={searchBarStyle}>
+      <div className="search-bar stitch-filter-bar" style={searchBarStyle}>
         <Select
           placeholder="类型"
           style={{ width: 120 }}
@@ -476,13 +472,13 @@ export default function BusinessFundManagement() {
         />
         <RangePicker
           value={searchParams.dateRange}
-          onChange={(dates) => setSearchParams({ ...searchParams, dateRange: dates as any })}
+          onChange={(dates) => setSearchParams({ ...searchParams, dateRange: dates as [Dayjs, Dayjs] | null })}
         />
         <Button type="primary" onClick={handleSearch}>搜索</Button>
         <Button onClick={handleReset}>重置</Button>
       </div>
 
-      <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+      <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
         <Table dataSource={list} columns={columns} loading={loading} rowKey="id" size="small" pagination={{ pageSize: 10 }} />
       </Card>
 
@@ -582,7 +578,7 @@ export default function BusinessFundManagement() {
               title: '操作',
               key: 'action',
               width: 80,
-              render: (_: any, _record: any, idx: number) => (
+              render: (_: unknown, _record: unknown, idx: number) => (
                 <Button type="link" size="small" danger onClick={() => handleRemoveAllocateItem(idx)}>删除</Button>
               ),
             },

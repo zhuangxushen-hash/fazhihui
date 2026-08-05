@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, Tabs, Table, Button, Input, Form, Tag, message, Empty, Descriptions, Divider } from 'antd';
 import { CalculatorOutlined } from '@ant-design/icons';
 import { calculateTieredRefund } from '../api/finance';
+import { theme } from '../constants/theme';
 
 const tierRules = [
   { key: '1', tier: '10万以下', range_min: 0, range_max: 100000, refund_rate: 0 },
@@ -31,7 +32,6 @@ export default function RefundTierConfig() {
       setResult(data);
       message.success('阶梯退费核算完成');
     } catch (error) {
-      console.error('Calculate tiered refund error:', error);
       setResult(getMockResult(caseId.trim()));
       message.success('阶梯退费核算完成（模拟数据）');
     } finally {
@@ -61,7 +61,8 @@ export default function RefundTierConfig() {
       dataIndex: 'refund_rate',
       key: 'refund_rate',
       render: (val: number) => (
-        <Tag color={val === 0 ? 'default' : val <= 10 ? 'blue' : val <= 20 ? 'orange' : 'red'}>
+        // 保留原判断逻辑，按 stitch 设计规范映射变体：0-primary、≤10-info、≤20-warning、>20-error
+        <Tag className={`stitch-tag stitch-tag-${val === 0 ? 'primary' : val <= 10 ? 'info' : val <= 20 ? 'warning' : 'error'}`}>
           {val}%
         </Tag>
       ),
@@ -70,8 +71,8 @@ export default function RefundTierConfig() {
       title: '说明',
       key: 'desc',
       render: (_: any, record: any) => {
-        if (record.refund_rate === 0) return <span style={{ color: '#717785' }}>该阶段不产生退费</span>;
-        return <span style={{ color: '#414753' }}>超出 {record.range_min.toLocaleString()} 部分按 {record.refund_rate}% 核算</span>;
+        if (record.refund_rate === 0) return <span style={{ color: theme.textTertiary }}>该阶段不产生退费</span>;
+        return <span style={{ color: theme.textSecondary }}>超出 {record.range_min.toLocaleString()} 部分按 {record.refund_rate}% 核算</span>;
       },
     },
   ];
@@ -97,18 +98,18 @@ export default function RefundTierConfig() {
       title: '退费比例',
       dataIndex: 'refund_rate',
       key: 'refund_rate',
-      render: (val: number) => <Tag color="blue">{val}%</Tag>,
+      render: (val: number) => <Tag className="stitch-tag stitch-tag-info">{val}%</Tag>,
     },
     {
       title: '退费金额',
       dataIndex: 'refund_amount',
       key: 'refund_amount',
-      render: (val: number) => <span style={{ color: '#ba1a1a', fontWeight: 600 }}>¥{val?.toLocaleString() || '0.00'}</span>,
+      render: (val: number) => <span style={{ color: theme.error, fontWeight: 600 }}>¥{val?.toLocaleString() || '0.00'}</span>,
     },
   ];
 
   const renderRulesTab = () => (
-    <Card title="退费规则配置">
+    <Card title="退费规则配置" className="stitch-table">
       <Table
         rowKey="key"
         columns={ruleColumns}
@@ -117,7 +118,7 @@ export default function RefundTierConfig() {
         bordered
       />
       <Divider />
-      <div style={{ color: '#414753', lineHeight: 1.8 }}>
+      <div style={{ color: theme.textSecondary, lineHeight: 1.8 }}>
         <p style={{ fontWeight: 600, marginBottom: 8 }}>阶梯退费说明：</p>
         <ul style={{ paddingLeft: 20, margin: 0 }}>
           <li>按律师费金额分段计算，每个区间独立核算退费</li>
@@ -134,6 +135,7 @@ export default function RefundTierConfig() {
       <Form
         form={form}
         layout="inline"
+        className="stitch-filter-bar"
         style={{ marginBottom: 24 }}
         onFinish={handleCalculate}
       >
@@ -173,24 +175,26 @@ export default function RefundTierConfig() {
               {result.case_id}
             </Descriptions.Item>
             <Descriptions.Item label="律师费总额">
-              <span style={{ color: '#0059b5', fontWeight: 600, fontSize: 16 }}>
+              <span style={{ color: theme.primaryDark, fontWeight: 600, fontSize: 16 }}>
                 ¥{result.total_fee?.toLocaleString() || '0.00'}
               </span>
             </Descriptions.Item>
             <Descriptions.Item label="阶梯退费总额" span={2}>
-              <span style={{ color: '#ba1a1a', fontWeight: 700, fontSize: 18 }}>
+              <span style={{ color: theme.error, fontWeight: 700, fontSize: 18 }}>
                 ¥{result.total_refund?.toLocaleString() || '0.00'}
               </span>
             </Descriptions.Item>
           </Descriptions>
 
-          <Table
-            rowKey="tier"
-            columns={refundColumns}
-            dataSource={result.tiered_refunds || []}
-            pagination={false}
-            bordered
-          />
+          <div className="stitch-table">
+            <Table
+              rowKey="tier"
+              columns={refundColumns}
+              dataSource={result.tiered_refunds || []}
+              pagination={false}
+              bordered
+            />
+          </div>
         </div>
       ) : (
         <Empty

@@ -2,21 +2,22 @@ import { useState, useEffect } from 'react'
 import { Table, Button, Modal, Form, Input, Select, Space, message, Tabs, Card, Tag, Descriptions, Checkbox } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, FileTextOutlined, EyeOutlined, ThunderboltOutlined, SearchOutlined, CopyOutlined, FileDoneOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
+import { theme } from '../constants/theme'
 
 const pageH2Style: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
   fontSize: 22,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
   margin: 0,
   letterSpacing: '0.01em',
 }
 
 const searchBarStyle: React.CSSProperties = {
-  background: '#ffffff',
+  background: theme.white,
   padding: 16,
   borderRadius: 12,
-  border: '1px solid #c1c6d6',
+  border: `1px solid ${theme.border}`,
   marginBottom: 16,
   display: 'flex',
   gap: 12,
@@ -33,7 +34,7 @@ const sectionTitleStyle: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
   fontSize: 15,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
   marginBottom: 16,
 }
 
@@ -106,10 +107,9 @@ export default function LegalDocumentGen() {
   const fetchCases = async () => {
     try {
       const res = await axios.get('/cases', { params: { org_id: user.organization_id, limit: 100 } })
-      const list = (res as any)?.data || res || []
+      const list = (res as { data?: unknown })?.data || res || []
       setCases(Array.isArray(list) ? list : [])
     } catch (error) {
-      console.error('获取案件列表失败:', error)
       setCases([])
     }
   }
@@ -126,12 +126,11 @@ export default function LegalDocumentGen() {
         case_id: contractCaseId,
         template_id: contractTemplateId,
       })
-      const result = (res as any)?.content !== undefined ? (res as any) : res
+      const result = (res as { content?: string })?.content !== undefined ? (res as { content?: string }) : (res as { content?: string })
       setContractResult(result.content || '')
       message.success('委托合同生成成功')
     } catch (error) {
       message.error('委托合同生成失败')
-      console.error('Generate contract error:', error)
     } finally {
       setContractLoading(false)
     }
@@ -149,12 +148,11 @@ export default function LegalDocumentGen() {
         case_ids: batchCaseIds,
         template_id: batchTemplateId,
       })
-      const list = (res as any) || []
+      const list = (res as unknown[]) || []
       setBatchResults(Array.isArray(list) ? list : [])
       message.success('批量生成完成')
     } catch (error) {
       message.error('批量生成失败')
-      console.error('Batch generate error:', error)
     } finally {
       setBatchLoading(false)
     }
@@ -175,7 +173,7 @@ export default function LegalDocumentGen() {
     try {
       const params: any = { org_id: user.organization_id }
       if (searchCaseType) params.case_type = searchCaseType
-      const res = await axios.get('/legal-documents', { params })
+      const res = await axios.get('/legal-documents', { params }) as Record<string, unknown>
       let list = res.data || res || []
       if (Array.isArray(list)) {
         if (searchKeyword) {
@@ -184,12 +182,11 @@ export default function LegalDocumentGen() {
             t.document_type?.includes(searchKeyword)
           )
         }
-        setTemplates(list)
+        setTemplates(list as Record<string, unknown>[])
       } else {
         setTemplates([])
       }
     } catch (error) {
-      console.error('获取文书模板失败:', error)
       setTemplates([])
     } finally {
       setLoading(false)
@@ -259,17 +256,16 @@ export default function LegalDocumentGen() {
     try {
       const res = await axios.post(`/legal-documents/${genTemplate.id}/generate`, {
         variables: genVariables,
-      })
-      const result = res.data || res
+      }) as Record<string, unknown>
+      const result = (res.data || res) as Record<string, unknown>
       if (result && result.content) {
-        setGenResult(result.content)
+        setGenResult(result.content as string)
         message.success('文书生成成功')
       } else {
         message.error('生成结果为空')
       }
     } catch (error) {
       message.error('文书生成失败')
-      console.error('Generate document error:', error)
     }
   }
 
@@ -278,10 +274,10 @@ export default function LegalDocumentGen() {
     try {
       const res = await axios.post(`/legal-documents/${genTemplate.id}/preview`, {
         variables: genVariables,
-      })
-      const result = res.data || res
+      }) as Record<string, unknown>
+      const result = (res.data || res) as Record<string, unknown>
       if (result && result.content) {
-        setPreviewContent(result.content)
+        setPreviewContent(result.content as string)
         setPreviewTitle(result.template_name || genTemplate.template_name)
         setPreviewVisible(true)
       }
@@ -311,7 +307,7 @@ export default function LegalDocumentGen() {
       key: 'document_type',
       width: 120,
       render: (type: string) => (
-        <Tag color="blue">{getDocumentTypeLabel(type)}</Tag>
+        <Tag className="stitch-tag stitch-tag-info">{getDocumentTypeLabel(type)}</Tag>
       ),
     },
     {
@@ -320,7 +316,7 @@ export default function LegalDocumentGen() {
       key: 'case_type',
       width: 120,
       render: (type: string) => (
-        <Tag color="purple">{getCaseTypeLabel(type)}</Tag>
+        <Tag className="stitch-tag stitch-tag-primary">{getCaseTypeLabel(type)}</Tag>
       ),
     },
     {
@@ -328,10 +324,10 @@ export default function LegalDocumentGen() {
       key: 'variables',
       render: (_: any, record: any) => {
         const vars = parseVariables(record.content_template)
-        if (vars.length === 0) return <span style={{ color: '#717785' }}>无变量</span>
+        if (vars.length === 0) return <span style={{ color: theme.textTertiary }}>无变量</span>
         return (
           <Space size={[4, 4]} wrap>
-            {vars.map(v => <Tag key={v}>{`{{${v}}}`}</Tag>)}
+            {vars.map(v => <Tag key={v} className="stitch-tag stitch-tag-primary">{`{{${v}}}`}</Tag>)}
           </Space>
         )
       },
@@ -342,7 +338,7 @@ export default function LegalDocumentGen() {
       key: 'is_system',
       width: 80,
       render: (isSystem: boolean) => (
-        <Tag color={isSystem ? 'gold' : 'green'}>{isSystem ? '系统' : '自定义'}</Tag>
+        <Tag className={isSystem ? 'stitch-tag stitch-tag-gold' : 'stitch-tag stitch-tag-success'}>{isSystem ? '系统' : '自定义'}</Tag>
       ),
     },
     { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 160, render: (v: string) => new Date(v).toLocaleString('zh-CN') },
@@ -351,7 +347,7 @@ export default function LegalDocumentGen() {
       key: 'action',
       width: 200,
       render: (_: any, record: any) => (
-        <Space>
+        <Space className="stitch-btn-group">
           <Button
             type="primary"
             size="small"
@@ -375,7 +371,7 @@ export default function LegalDocumentGen() {
 
   const renderTemplateTab = () => (
     <div>
-      <div style={searchBarStyle}>
+      <div className="stitch-filter-bar" style={searchBarStyle}>
         <Input
           placeholder="搜索模板名称"
           prefix={<SearchOutlined />}
@@ -397,7 +393,7 @@ export default function LegalDocumentGen() {
         <div style={{ flex: 1 }} />
         <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateTemplate}>新建模板</Button>
       </div>
-      <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+      <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
         <Table
           dataSource={templates}
           columns={columns}
@@ -414,9 +410,9 @@ export default function LegalDocumentGen() {
     if (!genTemplate) {
       return (
         <Card style={{ borderRadius: 16, padding: 40, textAlign: 'center' }}>
-          <FileTextOutlined style={{ fontSize: 48, color: '#c1c6d6', marginBottom: 16 }} />
-          <div style={{ fontSize: 16, color: '#414753', marginBottom: 8 }}>请先在"文书模板管理"中选择一个模板</div>
-          <div style={{ fontSize: 13, color: '#717785' }}>点击模板列表中的"生成"按钮开始智能文书生成</div>
+          <FileTextOutlined style={{ fontSize: 48, color: theme.textQuaternary, marginBottom: 16 }} />
+          <div style={{ fontSize: 16, color: theme.textSecondary, marginBottom: 8 }}>请先在"文书模板管理"中选择一个模板</div>
+          <div style={{ fontSize: 13, color: theme.textTertiary }}>点击模板列表中的"生成"按钮开始智能文书生成</div>
         </Card>
       )
     }
@@ -433,12 +429,12 @@ export default function LegalDocumentGen() {
           </Descriptions>
           <div style={sectionTitleStyle}>填写变量</div>
           {vars.length === 0 ? (
-            <div style={{ color: '#717785', padding: '16px 0' }}>此模板无需填写变量，可直接生成</div>
+            <div style={{ color: theme.textTertiary, padding: '16px 0' }}>此模板无需填写变量，可直接生成</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {vars.map(v => (
                 <div key={v} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 160, fontSize: 13, color: '#414753', fontWeight: 500 }}>
+                  <div style={{ width: 160, fontSize: 13, color: theme.textSecondary, fontWeight: 500 }}>
                     {`{{${v}}}`}
                   </div>
                   <Input
@@ -465,7 +461,7 @@ export default function LegalDocumentGen() {
             <div style={sectionTitleStyle}>生成结果</div>
             <div
               style={{
-                background: '#f3f3f5',
+                background: theme.bgSurfaceLow,
                 padding: 16,
                 borderRadius: 8,
                 minHeight: 400,
@@ -475,7 +471,7 @@ export default function LegalDocumentGen() {
                 fontFamily: "'Noto Serif SC', serif",
                 fontSize: 14,
                 lineHeight: 1.8,
-                color: '#1a1c1d',
+                color: theme.textBase,
               }}
             >
               {genResult}
@@ -490,7 +486,7 @@ export default function LegalDocumentGen() {
     <Card style={{ borderRadius: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div style={sectionTitleStyle}>文书预览</div>
-        <Space>
+        <Space className="stitch-btn-group">
           <Button onClick={() => { setPreviewContent(''); setPreviewTitle('') }}>清空</Button>
           {previewContent && (
             <Button type="primary" onClick={() => {
@@ -508,8 +504,8 @@ export default function LegalDocumentGen() {
       {previewContent ? (
         <div
           style={{
-            background: '#ffffff',
-            border: '1px solid #e2e2e4',
+            background: theme.white,
+            border: `1px solid ${theme.borderSecondary}`,
             padding: 32,
             borderRadius: 12,
             minHeight: 500,
@@ -517,15 +513,15 @@ export default function LegalDocumentGen() {
             fontFamily: "'Noto Serif SC', serif",
             fontSize: 14,
             lineHeight: 2,
-            color: '#1a1c1d',
+            color: theme.textBase,
             boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
           }}
         >
           {previewContent}
         </div>
       ) : (
-        <div style={{ textAlign: 'center', padding: 80, color: '#717785' }}>
-          <EyeOutlined style={{ fontSize: 48, marginBottom: 16, color: '#c1c6d6' }} />
+        <div style={{ textAlign: 'center', padding: 80, color: theme.textTertiary }}>
+          <EyeOutlined style={{ fontSize: 48, marginBottom: 16, color: theme.textQuaternary }} />
           <div>暂无预览内容，请在"AI智能生成"中点击"预览文书"</div>
         </div>
       )}
@@ -539,7 +535,7 @@ export default function LegalDocumentGen() {
         <div style={sectionTitleStyle}>自动生成委托合同</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <div style={{ fontSize: 13, color: '#414753', marginBottom: 8, fontWeight: 500 }}>选择案件</div>
+            <div style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 8, fontWeight: 500 }}>选择案件</div>
             <Select
               placeholder="请选择案件"
               style={{ width: '100%' }}
@@ -554,7 +550,7 @@ export default function LegalDocumentGen() {
             />
           </div>
           <div>
-            <div style={{ fontSize: 13, color: '#414753', marginBottom: 8, fontWeight: 500 }}>选择模板</div>
+            <div style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 8, fontWeight: 500 }}>选择模板</div>
             <Select
               style={{ width: '100%' }}
               value={contractTemplateId}
@@ -580,7 +576,7 @@ export default function LegalDocumentGen() {
         {contractResult ? (
           <div
             style={{
-              background: '#f3f3f5',
+              background: theme.bgSurfaceLow,
               padding: 16,
               borderRadius: 8,
               minHeight: 400,
@@ -590,14 +586,14 @@ export default function LegalDocumentGen() {
               fontFamily: "'Noto Serif SC', serif",
               fontSize: 14,
               lineHeight: 1.8,
-              color: '#1a1c1d',
+              color: theme.textBase,
             }}
           >
             {contractResult}
           </div>
         ) : (
-          <div style={{ textAlign: 'center', padding: 80, color: '#717785' }}>
-            <FileDoneOutlined style={{ fontSize: 48, marginBottom: 16, color: '#c1c6d6' }} />
+          <div style={{ textAlign: 'center', padding: 80, color: theme.textTertiary }}>
+            <FileDoneOutlined style={{ fontSize: 48, marginBottom: 16, color: theme.textQuaternary }} />
             <div>请选择案件并点击"生成委托合同"</div>
           </div>
         )}
@@ -612,7 +608,7 @@ export default function LegalDocumentGen() {
         <div style={sectionTitleStyle}>批量生成文书</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <div style={{ fontSize: 13, color: '#414753', marginBottom: 8, fontWeight: 500 }}>选择模板</div>
+            <div style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 8, fontWeight: 500 }}>选择模板</div>
             <Select
               style={{ width: '100%' }}
               value={batchTemplateId}
@@ -624,10 +620,10 @@ export default function LegalDocumentGen() {
             />
           </div>
           <div>
-            <div style={{ fontSize: 13, color: '#414753', marginBottom: 8, fontWeight: 500 }}>选择案件（可多选）</div>
-            <div style={{ maxHeight: 300, overflow: 'auto', border: '1px solid #e2e2e4', borderRadius: 8, padding: 12 }}>
+            <div style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 8, fontWeight: 500 }}>选择案件（可多选）</div>
+            <div style={{ maxHeight: 300, overflow: 'auto', border: `1px solid ${theme.borderSecondary}`, borderRadius: 8, padding: 12 }}>
               {cases.length === 0 ? (
-                <div style={{ textAlign: 'center', color: '#999', padding: 24 }}>暂无案件</div>
+                <div style={{ textAlign: 'center', color: theme.textTertiary, padding: 24 }}>暂无案件</div>
               ) : (
                 cases.map((c: any) => (
                   <div key={c.id} style={{ padding: '6px 0' }}>
@@ -656,8 +652,8 @@ export default function LegalDocumentGen() {
       <Card style={{ flex: 1, borderRadius: 16 }}>
         <div style={sectionTitleStyle}>生成结果</div>
         {batchResults.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 80, color: '#717785' }}>
-            <FileDoneOutlined style={{ fontSize: 48, marginBottom: 16, color: '#c1c6d6' }} />
+          <div style={{ textAlign: 'center', padding: 80, color: theme.textTertiary }}>
+            <FileDoneOutlined style={{ fontSize: 48, marginBottom: 16, color: theme.textQuaternary }} />
             <div>请选择案件并点击"批量生成"</div>
           </div>
         ) : (
@@ -666,9 +662,9 @@ export default function LegalDocumentGen() {
               const caseEntity = cases.find((c: any) => c.id === item.case_id)
               const caseName = caseEntity?.case_name || caseEntity?.case_no || caseEntity?.client_name || item.case_id
               return (
-                <div key={index} style={{ borderBottom: '1px solid #f0f0f0', padding: '12px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div key={index} style={{ borderBottom: `1px solid ${theme.borderSecondary}`, padding: '12px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span>{caseName}</span>
-                  <Tag color={item.success ? 'success' : 'error'}>{item.success ? '生成成功' : '生成失败'}</Tag>
+                  <Tag className={item.success ? 'stitch-tag stitch-tag-success' : 'stitch-tag stitch-tag-error'}>{item.success ? '生成成功' : '生成失败'}</Tag>
                 </div>
               )
             })}
@@ -753,7 +749,7 @@ export default function LegalDocumentGen() {
             label="模板内容"
             rules={[{ required: true, message: '请输入模板内容' }]}
             extra={
-              <span style={{ fontSize: 12, color: '#717785' }}>
+              <span style={{ fontSize: 12, color: theme.textTertiary }}>
                 使用 {"{{变量名}}"} 作为占位符，例如：{"原告姓名：{{plaintiff_name}}"}
               </span>
             }
@@ -765,7 +761,7 @@ export default function LegalDocumentGen() {
             />
           </Form.Item>
           <Form.Item>
-            <Space>
+            <Space className="stitch-btn-group">
               <Button type="primary" htmlType="submit">{modalMode === 'create' ? '创建' : '保存'}</Button>
               <Button onClick={() => setModalVisible(false)}>取消</Button>
             </Space>
@@ -793,7 +789,7 @@ export default function LegalDocumentGen() {
       >
         <div
           style={{
-            background: '#f9f9fb',
+            background: theme.bgSurface,
             padding: 24,
             borderRadius: 8,
             maxHeight: 500,
@@ -802,7 +798,7 @@ export default function LegalDocumentGen() {
             fontFamily: "'Noto Serif SC', serif",
             fontSize: 14,
             lineHeight: 2,
-            color: '#1a1c1d',
+            color: theme.textBase,
           }}
         >
           {previewContent}

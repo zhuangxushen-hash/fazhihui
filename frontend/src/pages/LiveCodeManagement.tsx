@@ -3,7 +3,7 @@ import { Table, Button, Modal, Form, Input, Select, message, Tag, Space, Switch,
 import { PlusOutlined, EditOutlined, DeleteOutlined, QrcodeOutlined, SettingOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
-
+import { theme } from '../constants/theme'
 const { TextArea } = Input
 
 const codeTypeOptions = [
@@ -23,12 +23,6 @@ const codeTypeLabel: Record<string, string> = {
   wework: '企微活码',
   personal: '个微活码',
   group: '群活码',
-}
-
-const codeTypeColor: Record<string, string> = {
-  wework: 'blue',
-  personal: 'green',
-  group: 'orange',
 }
 
 const dispatchRuleLabel: Record<string, string> = {
@@ -56,7 +50,7 @@ export default function LiveCodeManagement() {
       const res: any = await axios.get('/scrm/live-codes', { params: { org_id: user.organization_id } })
       setData(res || [])
     } catch (error) {
-      console.error('Fetch live codes error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -106,7 +100,7 @@ export default function LiveCodeManagement() {
       setModalVisible(false)
       fetchData()
     } catch (error) {
-      console.error('Submit error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -153,7 +147,7 @@ export default function LiveCodeManagement() {
       setDispatchModalVisible(false)
       fetchData()
     } catch (error) {
-      console.error('Dispatch config error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -184,7 +178,14 @@ export default function LiveCodeManagement() {
       title: '类型',
       dataIndex: 'code_type',
       key: 'code_type',
-      render: (type: string) => <Tag color={codeTypeColor[type] || 'default'}>{codeTypeLabel[type] || type}</Tag>,
+      render: (type: string) => {
+        // 根据活码类型映射 stitch-tag 类名
+        const tagClass = type === 'wework' ? 'stitch-tag stitch-tag-primary' :
+          type === 'personal' ? 'stitch-tag stitch-tag-success' :
+          type === 'group' ? 'stitch-tag stitch-tag-warning' :
+          'stitch-tag'
+        return <Tag className={tagClass}>{codeTypeLabel[type] || type}</Tag>
+      },
     },
     {
       title: '分流规则',
@@ -224,7 +225,7 @@ export default function LiveCodeManagement() {
       key: 'action',
       width: 280,
       render: (_: any, record: any) => (
-        <Space>
+        <Space className="stitch-btn-group">
           <Button size="small" icon={<SettingOutlined />} onClick={() => handleConfigDispatch(record)}>分流配置</Button>
           <Button size="small" icon={<QrcodeOutlined />} onClick={() => handleDispatch(record)}>测试分流</Button>
           <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
@@ -245,13 +246,13 @@ export default function LiveCodeManagement() {
           type="primary"
           icon={<PlusOutlined />}
           onClick={handleAdd}
-          style={{ borderRadius: 10, padding: '8px 20px', background: '#0071e3', border: 'none' }}
+          style={{ borderRadius: 10, padding: '8px 20px', background: theme.primary, border: 'none' }}
         >
           新建活码
         </Button>
       </div>
 
-      <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)', overflow: 'hidden' }}>
+      <div className="stitch-table" style={{ background: '#fff', borderRadius: 16, boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)', overflow: 'hidden' }}>
         <Table
           dataSource={data}
           columns={columns}

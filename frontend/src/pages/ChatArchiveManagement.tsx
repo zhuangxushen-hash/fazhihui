@@ -3,8 +3,8 @@ import { Table, Button, Modal, Form, Input, Select, message, Tag, Space, Card, D
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, SafetyCertificateOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
-import dayjs from 'dayjs'
-
+import dayjs, { Dayjs } from 'dayjs'
+import { theme } from '../constants/theme'
 const { TextArea } = Input
 
 const messageTypeOptions = [
@@ -24,11 +24,11 @@ const messageTypeLabel: Record<string, string> = {
 }
 
 const messageTypeColor: Record<string, string> = {
-  text: 'blue',
-  image: 'orange',
-  voice: 'green',
-  video: 'purple',
-  file: 'default',
+  text: 'info',
+  image: 'warning',
+  voice: 'success',
+  video: 'gold',
+  file: '',
 }
 
 const complianceResultColor: Record<string, string> = {
@@ -57,7 +57,7 @@ export default function ChatArchiveManagement() {
     employee_id: '',
     message_type: '',
     keyword: '',
-    date_range: null as any,
+    date_range: null as [Dayjs, Dayjs] | null,
   })
 
   const user = JSON.parse(localStorage.getItem('user') || '{}')
@@ -82,7 +82,7 @@ export default function ChatArchiveManagement() {
       setData(res?.data || [])
       setTotal(res?.total || 0)
     } catch (error) {
-      console.error('Fetch chat archives error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -143,7 +143,7 @@ export default function ChatArchiveManagement() {
       setModalVisible(false)
       fetchData()
     } catch (error) {
-      console.error('Submit error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -192,7 +192,7 @@ export default function ChatArchiveManagement() {
       title: '类型',
       dataIndex: 'message_type',
       key: 'message_type',
-      render: (v: string) => <Tag color={messageTypeColor[v] || 'default'}>{messageTypeLabel[v] || v}</Tag>,
+      render: (v: string) => <Tag className={messageTypeColor[v] ? `stitch-tag stitch-tag-${messageTypeColor[v]}` : 'stitch-tag'}>{messageTypeLabel[v] || v}</Tag>,
     },
     {
       title: '内容预览',
@@ -207,9 +207,9 @@ export default function ChatArchiveManagement() {
       key: 'compliance',
       render: (_: any, record: any) => {
         if (!record.compliance_synced) {
-          return <Tag color="default">未检测</Tag>
+          return <Tag className="stitch-tag">未检测</Tag>
         }
-        return <Tag color={complianceResultColor[record.compliance_result] || 'default'}>
+        return <Tag className={complianceResultColor[record.compliance_result] ? `stitch-tag stitch-tag-${complianceResultColor[record.compliance_result]}` : 'stitch-tag'}>
           {complianceResultLabel[record.compliance_result] || record.compliance_result}
         </Tag>
       },
@@ -219,7 +219,7 @@ export default function ChatArchiveManagement() {
       key: 'action',
       width: 280,
       render: (_: any, record: any) => (
-        <Space>
+        <Space className="stitch-btn-group">
           <Button size="small" onClick={() => handleViewDetail(record)}>详情</Button>
           {!record.compliance_synced && (
             <Button size="small" type="primary" icon={<SafetyCertificateOutlined />} onClick={() => handleSyncCompliance(record)}>
@@ -240,7 +240,7 @@ export default function ChatArchiveManagement() {
           <h2 style={{ fontSize: 24, fontWeight: 700, color: '#1d1d1f', margin: 0 }}>聊天全量存档</h2>
           <p style={{ fontSize: 14, color: '#86868b', marginTop: 4 }}>全类型消息存档 / 多维检索 / 同步合规质检</p>
         </div>
-        <Space>
+        <Space className="stitch-btn-group">
           <Button
             icon={<SafetyCertificateOutlined />}
             onClick={handleBatchSync}
@@ -252,14 +252,14 @@ export default function ChatArchiveManagement() {
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleAdd}
-            style={{ borderRadius: 10, padding: '8px 20px', background: '#0071e3', border: 'none' }}
+            style={{ borderRadius: 10, padding: '8px 20px', background: theme.primary, border: 'none' }}
           >
             归档消息
           </Button>
         </Space>
       </div>
 
-      <div style={{
+      <div className="stitch-filter-bar" style={{
         background: '#fff',
         borderRadius: 16,
         padding: 20,
@@ -301,12 +301,12 @@ export default function ChatArchiveManagement() {
             showTime
             style={{ borderRadius: 10 }}
             value={searchParams.date_range}
-            onChange={(v) => setSearchParams({ ...searchParams, date_range: v })}
+            onChange={(v) => setSearchParams({ ...searchParams, date_range: v as [Dayjs, Dayjs] | null })}
           />
           <Button
             type="primary"
             onClick={handleSearch}
-            style={{ borderRadius: 10, padding: '8px 20px', background: '#0071e3', border: 'none' }}
+            style={{ borderRadius: 10, padding: '8px 20px', background: theme.primary, border: 'none' }}
           >
             搜索
           </Button>
@@ -319,7 +319,7 @@ export default function ChatArchiveManagement() {
         </Space>
       </div>
 
-      <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)', overflow: 'hidden' }}>
+      <div className="stitch-table" style={{ background: '#fff', borderRadius: 16, boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)', overflow: 'hidden' }}>
         <Table
           dataSource={data}
           columns={columns}
@@ -426,7 +426,7 @@ export default function ChatArchiveManagement() {
             {currentItem.file_path && (
               <div style={{ marginTop: 12 }}>
                 <div style={{ fontSize: 13, color: '#86868b', marginBottom: 6 }}>文件路径</div>
-                <div style={{ fontSize: 14, color: '#0071e3' }}>{currentItem.file_path}</div>
+                <div style={{ fontSize: 14, color: theme.primary }}>{currentItem.file_path}</div>
               </div>
             )}
             <div style={{ marginTop: 12 }}>

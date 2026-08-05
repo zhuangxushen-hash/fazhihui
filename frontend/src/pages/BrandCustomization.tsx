@@ -3,7 +3,7 @@ import { Card, Tabs, Form, Input, Select, Button, ColorPicker, Upload, message, 
 import { UploadOutlined, PictureOutlined, InfoCircleOutlined, FileTextOutlined, BulbOutlined } from '@ant-design/icons'
 import type { UploadFile } from 'antd/es/upload/interface'
 import axios from '../api/axios'
-
+import { theme } from '../constants/theme'
 const { TabPane } = Tabs
 const { Text, Title } = Typography
 
@@ -14,8 +14,8 @@ export default function BrandCustomization() {
   const [logoFileList, setLogoFileList] = useState<UploadFile[]>([])
   const [bannerFileList, setBannerFileList] = useState<UploadFile[]>([])
   const [faviconFileList, setFaviconFileList] = useState<UploadFile[]>([])
-  const [primaryColor, setPrimaryColor] = useState('#0071e3')
-  const [secondaryColor, setSecondaryColor] = useState('#c9a961')
+  const [primaryColor, setPrimaryColor] = useState<string>(theme.primary)
+  const [secondaryColor, setSecondaryColor] = useState<string>(theme.brandGold)
   const [themeType, setThemeType] = useState('light')
   const [form] = Form.useForm()
 
@@ -28,16 +28,16 @@ export default function BrandCustomization() {
   const fetchBrandConfig = async () => {
     setLoading(true)
     try {
-      const res = await axios.get('/system/brand-configs/active')
+      const res = await axios.get('/system/brand-configs/active') as Record<string, unknown>
       if (res) {
         setBrandConfig(res)
-        setPrimaryColor(res.primary_color || '#0071e3')
-        setSecondaryColor(res.secondary_color || '#c9a961')
-        setThemeType(res.theme_type || 'light')
+        setPrimaryColor((res.primary_color as string) || theme.primary)
+        setSecondaryColor((res.secondary_color as string) || theme.brandGold)
+        setThemeType((res.theme_type as string) || 'light')
         form.setFieldsValue(res)
       }
     } catch (error) {
-      console.error('Fetch brand config error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -56,7 +56,6 @@ export default function BrandCustomization() {
       fetchBrandConfig()
     } catch (error) {
       message.error('保存失败')
-      console.error('Save basic error:', error)
     }
   }
 
@@ -78,7 +77,6 @@ export default function BrandCustomization() {
       fetchBrandConfig()
     } catch (error) {
       message.error('保存失败')
-      console.error('Save theme error:', error)
     }
   }
 
@@ -100,7 +98,6 @@ export default function BrandCustomization() {
       fetchBrandConfig()
     } catch (error) {
       message.error('保存失败')
-      console.error('Save logo error:', error)
     }
   }
 
@@ -122,7 +119,6 @@ export default function BrandCustomization() {
       fetchBrandConfig()
     } catch (error) {
       message.error('保存失败')
-      console.error('Save ICP error:', error)
     }
   }
 
@@ -134,7 +130,7 @@ export default function BrandCustomization() {
     <div>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h2 style={{ margin: 0 }}>品牌定制</h2>
-        {brandConfig && <Tag color="green">当前品牌：{brandConfig.brand_name}</Tag>}
+        {brandConfig && <Tag className="stitch-tag stitch-tag-success">当前品牌：{brandConfig.brand_name}</Tag>}
       </div>
 
       <Card loading={loading} style={{ borderRadius: 12 }}>
@@ -179,7 +175,7 @@ export default function BrandCustomization() {
                 </Form>
               </div>
               <div style={{ flex: '1', minWidth: 300 }}>
-                <Card title="预览效果" size="small" style={{ background: themeType === 'dark' ? '#1a1c1d' : '#fff' }}>
+                <Card title="预览效果" size="small" style={{ background: themeType === 'dark' ? theme.textBase : theme.white }}>
                   <div style={{ padding: 20, textAlign: 'center' }}>
                     <div style={{
                       width: 80,
@@ -191,15 +187,15 @@ export default function BrandCustomization() {
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}>
-                      <span style={{ color: '#fff', fontSize: 32, fontWeight: 'bold' }}>法</span>
+                      <span style={{ color: theme.white, fontSize: 32, fontWeight: 'bold' }}>法</span>
                     </div>
-                    <Title level={4} style={{ color: themeType === 'dark' ? '#fff' : '#1a1c1d', marginBottom: 8 }}>
+                    <Title level={4} style={{ color: themeType === 'dark' ? theme.white : theme.textBase, marginBottom: 8 }}>
                       {brandConfig?.brand_name || '品牌名称'}
                     </Title>
-                    <Text style={{ color: themeType === 'dark' ? 'rgba(255,255,255,0.6)' : '#717785' }}>
+                    <Text style={{ color: themeType === 'dark' ? 'rgba(255,255,255,0.6)' : theme.textTertiary }}>
                       智慧法律管理平台
                     </Text>
-                    <Divider style={{ borderColor: themeType === 'dark' ? '#414753' : '#e2e2e4' }} />
+                    <Divider style={{ borderColor: themeType === 'dark' ? theme.textSecondary : theme.borderSecondary }} />
                     <Button type="primary" style={{ background: primaryColor }}>主色调按钮</Button>
                     <Button style={{ borderColor: secondaryColor, color: secondaryColor, marginLeft: 8 }}>辅助色按钮</Button>
                   </div>
@@ -220,12 +216,12 @@ export default function BrandCustomization() {
                     width: 120,
                     height: 120,
                     borderRadius: 12,
-                    background: '#f3f3f5',
+                    background: theme.bgSurfaceLow,
                     margin: '0 auto 16px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#c1c6d6',
+                    color: theme.textQuaternary,
                     fontSize: 40,
                   }}>
                     <PictureOutlined />
@@ -253,12 +249,12 @@ export default function BrandCustomization() {
                     width: '100%',
                     height: 120,
                     borderRadius: 12,
-                    background: '#f3f3f5',
+                    background: theme.bgSurfaceLow,
                     marginBottom: 16,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#c1c6d6',
+                    color: theme.textQuaternary,
                   }}>
                     <PictureOutlined style={{ fontSize: 40 }} />
                   </div>
@@ -285,12 +281,12 @@ export default function BrandCustomization() {
                     width: 64,
                     height: 64,
                     borderRadius: 12,
-                    background: '#f3f3f5',
+                    background: theme.bgSurfaceLow,
                     margin: '0 auto 16px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#c1c6d6',
+                    color: theme.textQuaternary,
                     fontSize: 24,
                   }}>
                     <PictureOutlined />

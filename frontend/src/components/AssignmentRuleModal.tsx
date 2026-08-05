@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react'
 import { Modal, Form, Input, Select, InputNumber, Switch, Space, Button, message, Divider, Tag } from 'antd'
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons'
 import {
-  LeadAssignment,
+LeadAssignment,
   User,
   createAssignmentRule,
   updateAssignmentRule,
   getAvailableUsers,
 } from '../api/lead'
 
+import { theme } from '../constants/theme'
 interface Props {
   visible: boolean
   editingRule?: LeadAssignment | null
@@ -61,8 +62,8 @@ export default function AssignmentRuleModal({ visible, editingRule, onCancel, on
 
   const fetchUsers = async () => {
     try {
-      const res = await getAvailableUsers()
-      setUsers(res.data || [])
+      const res = (await getAvailableUsers()) as Record<string, unknown>
+      setUsers((res.data || []) as User[])
     } catch (error) {
       console.error('Fetch users error:', error)
     }
@@ -341,7 +342,7 @@ export default function AssignmentRuleModal({ visible, editingRule, onCancel, on
               type="primary"
               htmlType="submit"
               loading={loading}
-              style={{ borderRadius: 10, padding: '10px 32px', background: '#0071e3', border: 'none', color: '#fff' }}
+              style={{ borderRadius: 10, padding: '10px 32px', background: theme.primary, border: 'none', color: '#fff' }}
             >
               {editingRule ? '更新规则' : '创建规则'}
             </Button>

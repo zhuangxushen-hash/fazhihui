@@ -5,7 +5,7 @@ import axios from '../../api/axios'
 import { formatDateTime } from '../../utils/format'
 import BottomNav from '../../components/BottomNav'
 import ClientButton from '../../components/ClientButton'
-
+import { theme as appTheme } from '../../constants/theme'
 interface Message {
   id: string
   content: string
@@ -43,10 +43,10 @@ export default function AIConsult() {
   const fetchHistory = async () => {
     setLoadingHistory(true)
     try {
-      const res = await axios.post('/client/consultations', { client_id: user.id })
+      const res = await axios.post('/client/consultations', { client_id: user.id }) as Record<string, unknown>[]
       setHistory(res || [])
     } catch (error) {
-      console.error('Fetch consultations error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoadingHistory(false)
     }
@@ -76,13 +76,13 @@ export default function AIConsult() {
         client_id: user.id,
         question: text,
         organization_id: user.organization_id,
-      })
+      }) as Record<string, unknown>
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
-        content: res.answer,
+        content: res.answer as string,
         isUser: false,
-        relatedLaws: res.related_laws,
-        transferred: res.transferred,
+        relatedLaws: res.related_laws as string[] | undefined,
+        transferred: res.transferred as boolean | undefined,
       }
       setMessages((prev) => [...prev, aiMsg])
       // 如果后端识别为复杂问题自动转人工，提示用户
@@ -124,7 +124,7 @@ export default function AIConsult() {
           zIndex: 50,
         }}
       >
-        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #0059b5 0%, #0071e3 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ width: 40, height: 40, borderRadius: '50%', background: `linear-gradient(135deg, #0059b5 0%, ${appTheme.primary} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <RobotOutlined style={{ fontSize: 22, color: '#ffffff' }} />
         </div>
         <div style={{ flex: 1 }}>
@@ -195,7 +195,7 @@ export default function AIConsult() {
                   <Avatar
                     icon={<RobotOutlined />}
                     style={{
-                      background: 'linear-gradient(135deg, #0059b5 0%, #0071e3 100%)',
+                      background: `linear-gradient(135deg, #0059b5 0%, ${appTheme.primary} 100%)`,
                       width: 36,
                       height: 36,
                       marginRight: 8,

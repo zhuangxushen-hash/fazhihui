@@ -1,0 +1,8 @@
+#!/usr/bin/expect -f
+set timeout 60
+set password "s\`3}2KG~n@D?N\$P"
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "echo '=== 数据库文件查找 ==='; find /home/ubuntu/fazhihui-prod -name '*.sqlite' -exec ls -la {} \; 2>/dev/null; echo '=== PM2 状态 ==='; pm2 list 2>/dev/null | grep -E 'prod|name'; echo '=== 后端启动目录 ==='; pm2 show prod-backend 2>/dev/null | grep -E 'cwd|script|exec'; echo '=== 数据库文件大小对比 ==='; ls -la /home/ubuntu/fazhihui-prod/backend/*.sqlite 2>/dev/null; ls -la /home/ubuntu/fazhihui-prod/*.sqlite 2>/dev/null; echo '=== 最近修改的文件 ==='; find /home/ubuntu/fazhihui-prod -name '*.sqlite' -mtime -7 2>/dev/null; echo '=== 检查是否有备份 ==='; ls -la /home/ubuntu/fazhihui-prod/backend/*.sqlite.bak* 2>/dev/null; ls -la /home/ubuntu/*.sqlite* 2>/dev/null; echo '=== cleanup 脚本日志 ==='; ls -la /home/ubuntu/fazhihui-prod/deploy/cleanup-test-data.sh 2>/dev/null"
+expect {
+    "password:" { send "$password\r"; expect eof }
+    eof
+}

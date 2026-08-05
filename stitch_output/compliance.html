@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Compliance Risk Management - LegalSuite Pro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&amp;family=Noto+Serif+SC:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-dim": "#d9dadc",
+                        "primary-fixed": "#d7e2ff",
+                        "on-tertiary-container": "#fffaf9",
+                        "inverse-surface": "#2f3132",
+                        "tertiary-fixed-dim": "#e4c278",
+                        "on-error-container": "#93000a",
+                        "on-background": "#1a1c1d",
+                        "on-secondary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#f9f9fb",
+                        "secondary": "#565f70",
+                        "surface-container-low": "#f3f3f5",
+                        "outline": "#717785",
+                        "on-surface": "#1a1c1d",
+                        "on-primary-fixed-variant": "#00458f",
+                        "on-secondary-container": "#5a6374",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#ffdf9b",
+                        "tertiary": "#715818",
+                        "on-primary-container": "#fcfbff",
+                        "secondary-fixed": "#dae3f7",
+                        "primary-fixed-dim": "#abc7ff",
+                        "on-secondary-fixed-variant": "#3e4758",
+                        "on-primary-fixed": "#001b3f",
+                        "inverse-on-surface": "#f0f0f2",
+                        "error-container": "#ffdad6",
+                        "on-error": "#ffffff",
+                        "primary-container": "#0071e3",
+                        "primary": "#0059b5",
+                        "inverse-primary": "#abc7ff",
+                        "secondary-fixed-dim": "#bec7db",
+                        "outline-variant": "#c1c6d6",
+                        "surface-container-highest": "#e2e2e4",
+                        "surface-container-high": "#e8e8ea",
+                        "tertiary-container": "#8c702e",
+                        "on-tertiary-fixed": "#251a00",
+                        "surface-container": "#eeeef0",
+                        "secondary-container": "#d7e0f4",
+                        "on-surface-variant": "#414753",
+                        "on-tertiary-fixed-variant": "#5a4302",
+                        "surface-bright": "#f9f9fb",
+                        "on-secondary-fixed": "#131c2a",
+                        "error": "#ba1a1a",
+                        "background": "#f9f9fb",
+                        "on-tertiary": "#ffffff",
+                        "surface-variant": "#e2e2e4",
+                        "surface-tint": "#005cbb"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "grid_gutter": "16px",
+                        "page_padding": "24px",
+                        "data_density_md": "12px",
+                        "container_gap": "20px",
+                        "header_height": "64px",
+                        "data_density_sm": "8px",
+                        "sidebar_width": "260px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Noto Sans SC"],
+                        "mono-label": ["notoSans"],
+                        "body-md": ["Noto Sans SC"],
+                        "body-lg": ["Noto Sans SC"],
+                        "display-md": ["Noto Serif SC"],
+                        "title-lg": ["Noto Serif SC"],
+                        "display-lg": ["Noto Serif SC"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "mono-label": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "title-lg": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "44px", "fontWeight": "700" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Noto Sans SC', sans-serif; background-color: #f3f3f5; }
+        .font-serif { font-family: 'Noto Serif SC', serif; }
+    </style>
+</head>
+<body class="bg-surface-container-low min-h-screen text-on-surface flex">
+<!-- SideNavBar -->
+<nav class="bg-inverse-surface dark:bg-inverse-surface fixed left-0 top-0 h-screen w-sidebar_width flex flex-col h-full py-page_padding z-40">
+<div class="px-6 mb-8 flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary-fixed text-3xl">account_balance</span>
+<div>
+<h1 class="font-title-lg text-title-lg font-bold text-tertiary-fixed">LegalSuite Pro</h1>
+<p class="text-xs text-tertiary-fixed/70">Managing Partner</p>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto">
+<ul class="space-y-1">
+<li>
+<a class="text-surface-variant/70 font-body-md text-body-md hover:bg-on-secondary-fixed-variant/10 hover:text-surface-variant transition-colors duration-200 ease-in-out flex items-center px-6 py-3 gap-3" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                        Dashboard
+                    </a>
+</li>
+<li>
+<a class="text-surface-variant/70 font-body-md text-body-md hover:bg-on-secondary-fixed-variant/10 hover:text-surface-variant transition-colors duration-200 ease-in-out flex items-center px-6 py-3 gap-3" href="#">
+<span class="material-symbols-outlined">person_search</span>
+                        Leads
+                    </a>
+</li>
+<li>
+<a class="text-surface-variant/70 font-body-md text-body-md hover:bg-on-secondary-fixed-variant/10 hover:text-surface-variant transition-colors duration-200 ease-in-out flex items-center px-6 py-3 gap-3" href="#">
+<span class="material-symbols-outlined">folder_shared</span>
+                        Cases
+                    </a>
+</li>
+<li>
+<a class="text-surface-variant/70 font-body-md text-body-md hover:bg-on-secondary-fixed-variant/10 hover:text-surface-variant transition-colors duration-200 ease-in-out flex items-center px-6 py-3 gap-3" href="#">
+<span class="material-symbols-outlined">payments</span>
+                        Financials
+                    </a>
+</li>
+<li>
+<a class="text-tertiary-fixed border-l-4 border-tertiary-fixed bg-on-secondary-fixed-variant/20 font-body-md text-body-md transition-colors duration-200 ease-in-out flex items-center px-6 py-3 gap-3" href="#" style="padding-left: 1.25rem;">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">gavel</span>
+                        Compliance
+                    </a>
+</li>
+<li>
+<a class="text-surface-variant/70 font-body-md text-body-md hover:bg-on-secondary-fixed-variant/10 hover:text-surface-variant transition-colors duration-200 ease-in-out flex items-center px-6 py-3 gap-3" href="#">
+<span class="material-symbols-outlined">settings</span>
+                        Settings
+                    </a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 ml-sidebar_width flex flex-col min-h-screen">
+<!-- TopNavBar -->
+<header class="bg-surface-container-lowest dark:bg-surface-container-lowest sticky top-0 right-0 z-30 border-b border-outline-variant flat no shadows flex justify-between items-center h-header_height px-page_padding w-full ml-auto">
+<div class="flex items-center gap-4">
+<nav aria-label="Breadcrumb" class="flex text-on-surface-variant font-label-md text-label-md">
+<ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
+<li class="inline-flex items-center">
+<a class="inline-flex items-center hover:text-primary transition-colors cursor-pointer active:opacity-70" href="#">
+                                Compliance
+                            </a>
+</li>
+<li>
+<div class="flex items-center">
+<span class="material-symbols-outlined text-sm mx-1">chevron_right</span>
+<a class="ms-1 hover:text-primary transition-colors cursor-pointer active:opacity-70" href="#">Risk Management</a>
+</div>
+</li>
+</ol>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:opacity-70 p-2 rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:opacity-70 p-2 rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined">help</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors cursor-pointer active:opacity-70 p-2 rounded-full hover:bg-surface-container">
+<span class="material-symbols-outlined">apps</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-sm ml-2 cursor-pointer active:opacity-70 border border-outline-variant">
+                    MP
+                </div>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 p-page_padding overflow-y-auto w-full">
+<div class="max-w-7xl mx-auto space-y-6">
+<!-- Page Header -->
+<div class="flex justify-between items-end mb-8">
+<div>
+<h2 class="font-display-md text-display-md text-on-surface">Risk Management Dashboard</h2>
+<p class="text-on-surface-variant font-body-md mt-1">Monitor and resolve compliance issues across all firm activities.</p>
+</div>
+<button class="bg-primary text-on-primary px-4 py-2 rounded-lg font-label-md text-label-md flex items-center gap-2 hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm">
+<span class="material-symbols-outlined text-sm">download</span>
+                        Generate Report
+                    </button>
+</div>
+<!-- 1. Compliance Overview Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-grid_gutter">
+<!-- Risk Alerts -->
+<div class="bg-surface-container-lowest border border-error/30 rounded-xl p-5 shadow-sm relative overflow-hidden group hover:bg-[#fff5f5] transition-colors cursor-pointer">
+<div class="absolute top-0 right-0 p-3 opacity-10 text-error group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-6xl">warning</span>
+</div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Risk Alerts</h3>
+<span class="material-symbols-outlined text-error">warning</span>
+</div>
+<div class="relative z-10">
+<span class="font-display-lg text-display-lg text-error">5</span>
+<span class="text-error/70 font-label-md ml-2 flex items-center mt-1"><span class="material-symbols-outlined text-xs mr-1">arrow_upward</span> +2 since last week</span>
+</div>
+</div>
+<!-- Compliance Score -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm hover:bg-[#f0f7ff] transition-colors cursor-pointer flex flex-col justify-between">
+<div class="flex justify-between items-start mb-2">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Compliance Score</h3>
+<span class="material-symbols-outlined text-primary">verified_user</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="relative w-16 h-16">
+<svg class="w-16 h-16 transform -rotate-90">
+<circle class="text-surface-variant" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-width="6"></circle>
+<circle class="text-primary" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-dasharray="175" stroke-dashoffset="10" stroke-width="6"></circle>
+</svg>
+<div class="absolute top-0 left-0 w-full h-full flex justify-center items-center">
+<span class="font-title-lg text-title-lg text-on-surface">94</span>
+</div>
+</div>
+<div class="text-right">
+<span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full border border-green-200">Excellent</span>
+</div>
+</div>
+</div>
+<!-- Pending Reviews -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm hover:bg-surface transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-4">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Pending Reviews</h3>
+<span class="material-symbols-outlined text-secondary">fact_check</span>
+</div>
+<div>
+<span class="font-display-lg text-display-lg text-on-surface">12</span>
+<span class="text-on-surface-variant font-label-md ml-2 block mt-1">Requires partner sign-off</span>
+</div>
+</div>
+<!-- Overdue Tasks -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-5 shadow-sm hover:bg-[#fffcf0] transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-4">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Overdue Tasks</h3>
+<span class="material-symbols-outlined text-tertiary-container">schedule</span>
+</div>
+<div>
+<span class="font-display-lg text-display-lg text-tertiary-container">3</span>
+<div class="mt-2 flex gap-1">
+<div class="w-2 h-2 rounded-full bg-error"></div>
+<div class="w-2 h-2 rounded-full bg-error"></div>
+<div class="w-2 h-2 rounded-full bg-error"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Section: Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-grid_gutter mt-8">
+<!-- Left/Center Column: Risk Alert List (Table) -->
+<div class="lg:col-span-2 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden flex flex-col">
+<div class="px-6 py-4 border-b border-outline-variant flex justify-between items-center bg-white">
+<h3 class="font-title-lg text-title-lg text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant">list_alt</span>
+                                Active Risk Alerts
+                            </h3>
+<div class="flex gap-2">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-outline text-sm">search</span>
+<input class="pl-9 pr-4 py-1.5 border border-outline-variant rounded-md text-sm focus:border-primary focus:ring-1 focus:ring-primary w-48 transition-all" placeholder="Search alerts..." type="text"/>
+</div>
+<button class="p-1.5 border border-outline-variant rounded-md text-on-surface-variant hover:bg-surface transition-colors">
+<span class="material-symbols-outlined text-sm">filter_list</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto flex-1">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low text-on-surface-variant font-mono-label text-mono-label uppercase border-b border-outline-variant">
+<tr>
+<th class="px-6 py-3 font-medium">Alert Title</th>
+<th class="px-6 py-3 font-medium">Case ID</th>
+<th class="px-6 py-3 font-medium">Risk Type</th>
+<th class="px-6 py-3 font-medium">Severity</th>
+<th class="px-6 py-3 font-medium text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-body-md divide-y divide-outline-variant/50">
+<!-- High Severity Row -->
+<tr class="hover:bg-[#fff5f5] transition-colors group">
+<td class="px-6 py-3">
+<div class="font-medium text-on-surface group-hover:text-error transition-colors">Potential Party Conflict Identified</div>
+<div class="text-xs text-on-surface-variant mt-0.5">Created: Oct 24, 2023</div>
+</td>
+<td class="px-6 py-3 text-secondary font-mono text-xs">CAS-2023-8901</td>
+<td class="px-6 py-3">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#4a0404] text-white border border-[#2a0202]">
+<span class="material-symbols-outlined text-[10px] mr-1">gavel</span>利冲 (Conflict Check)
+                                            </span>
+</td>
+<td class="px-6 py-3">
+<span class="inline-flex items-center gap-1 text-error font-medium">
+<span class="w-2 h-2 rounded-full bg-error"></span> High
+                                            </span>
+</td>
+<td class="px-6 py-3 text-right">
+<button class="text-primary hover:text-primary-container font-medium text-sm border border-primary/30 px-3 py-1 rounded bg-primary/5 hover:bg-primary/10 transition-colors">Manage</button>
+</td>
+</tr>
+<!-- Medium Severity Row -->
+<tr class="hover:bg-[#f0f7ff] transition-colors">
+<td class="px-6 py-3">
+<div class="font-medium text-on-surface">Missing Required Signature</div>
+<div class="text-xs text-on-surface-variant mt-0.5">Created: Oct 25, 2023</div>
+</td>
+<td class="px-6 py-3 text-secondary font-mono text-xs">CAS-2023-8842</td>
+<td class="px-6 py-3">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface-variant text-on-surface-variant border border-outline-variant">
+                                                Document
+                                            </span>
+</td>
+<td class="px-6 py-3">
+<span class="inline-flex items-center gap-1 text-[#d97706] font-medium">
+<span class="w-2 h-2 rounded-full bg-[#d97706]"></span> Medium
+                                            </span>
+</td>
+<td class="px-6 py-3 text-right">
+<button class="text-on-surface-variant hover:text-primary font-medium text-sm px-3 py-1 transition-colors">Review</button>
+</td>
+</tr>
+<!-- Medium Severity Row 2 -->
+<tr class="hover:bg-[#f0f7ff] transition-colors bg-[#fffcf0]/30 border-l-2 border-l-tertiary-container">
+<td class="px-6 py-3">
+<div class="font-medium text-on-surface">Approaching Filing Deadline</div>
+<div class="text-xs text-on-surface-variant mt-0.5">Due: Oct 28, 2023</div>
+</td>
+<td class="px-6 py-3 text-secondary font-mono text-xs">CAS-2023-8755</td>
+<td class="px-6 py-3">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border border-tertiary-container text-tertiary bg-tertiary-container/10">
+                                                Deadline (必做)
+                                            </span>
+</td>
+<td class="px-6 py-3">
+<span class="inline-flex items-center gap-1 text-[#d97706] font-medium">
+<span class="w-2 h-2 rounded-full bg-[#d97706]"></span> Medium
+                                            </span>
+</td>
+<td class="px-6 py-3 text-right">
+<button class="text-on-surface-variant hover:text-primary font-medium text-sm px-3 py-1 transition-colors">View</button>
+</td>
+</tr>
+<!-- Low Severity Row -->
+<tr class="hover:bg-[#f0f7ff] transition-colors">
+<td class="px-6 py-3">
+<div class="font-medium text-on-surface">Minor Ethics Discrepancy</div>
+<div class="text-xs text-on-surface-variant mt-0.5">Created: Oct 20, 2023</div>
+</td>
+<td class="px-6 py-3 text-secondary font-mono text-xs">CAS-2023-8510</td>
+<td class="px-6 py-3">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                                                Ethics
+                                            </span>
+</td>
+<td class="px-6 py-3">
+<span class="inline-flex items-center gap-1 text-primary font-medium">
+<span class="w-2 h-2 rounded-full bg-primary"></span> Low
+                                            </span>
+</td>
+<td class="px-6 py-3 text-right">
+<button class="text-on-surface-variant hover:text-primary font-medium text-sm px-3 py-1 transition-colors">Review</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="px-6 py-3 border-t border-outline-variant bg-surface-container-lowest text-sm text-on-surface-variant flex justify-between items-center">
+<span>Showing 1 to 4 of 5 entries</span>
+<div class="flex gap-1">
+<button class="px-2 py-1 border border-outline-variant rounded text-outline disabled:opacity-50" disabled="">Prev</button>
+<button class="px-2 py-1 border border-outline-variant rounded text-on-surface hover:bg-surface">Next</button>
+</div>
+</div>
+</div>
+<!-- Right Column: Quick Search & Calendar -->
+<div class="space-y-6">
+<!-- Conflict Check Quick Search -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden">
+<div class="bg-inverse-surface px-5 py-3 border-b border-outline-variant">
+<h3 class="font-title-lg text-title-lg text-tertiary-fixed flex items-center gap-2">
+<span class="material-symbols-outlined">plagiarism</span>
+                                    快速利冲检索
+                                </h3>
+<p class="text-xs text-tertiary-fixed/70 mt-1">Instant Conflict Check</p>
+</div>
+<div class="p-5 space-y-4">
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">当事人 A 姓名 (Party A)</label>
+<input class="w-full border border-outline-variant rounded-md px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="e.g. John Doe Corp" type="text"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">当事人 B 姓名 (Party B)</label>
+<input class="w-full border border-outline-variant rounded-md px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="e.g. Jane Smith LLC" type="text"/>
+</div>
+<button class="w-full bg-primary text-on-primary py-2.5 rounded-md font-label-md text-label-md hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm flex justify-center items-center gap-2 mt-2">
+<span class="material-symbols-outlined text-sm">search</span>
+                                    立即检索 (Search)
+                                </button>
+</div>
+</div>
+<!-- Compliance Calendar Snippet -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden p-5">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-title-lg text-title-lg text-on-surface">Upcoming Deadlines</h3>
+<button class="text-primary text-sm hover:underline font-medium">View All</button>
+</div>
+<div class="space-y-3 relative before:absolute before:inset-0 before:ml-2.5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-outline-variant before:to-transparent">
+<!-- Timeline Item 1 -->
+<div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+<div class="flex items-center justify-center w-6 h-6 rounded-full border-2 border-white bg-error shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow shadow-error/50 z-10"></div>
+<div class="w-[calc(100%-2rem)] md:w-[calc(50%-1.5rem)] p-3 rounded border border-outline-variant bg-white shadow-sm">
+<div class="flex justify-between items-start mb-1">
+<span class="font-mono text-xs text-error font-bold">Tomorrow</span>
+<span class="material-symbols-outlined text-[16px] text-error">gavel</span>
+</div>
+<div class="font-medium text-sm text-on-surface leading-tight mb-1">Court Filing Due: CAS-8755</div>
+<div class="text-xs text-on-surface-variant">Smith vs. Jones</div>
+</div>
+</div>
+<!-- Timeline Item 2 -->
+<div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
+<div class="flex items-center justify-center w-6 h-6 rounded-full border-2 border-white bg-tertiary-container shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow z-10"></div>
+<div class="w-[calc(100%-2rem)] md:w-[calc(50%-1.5rem)] p-3 rounded border border-outline-variant bg-white shadow-sm">
+<div class="flex justify-between items-start mb-1">
+<span class="font-mono text-xs text-tertiary-container font-bold">Oct 30</span>
+<span class="material-symbols-outlined text-[16px] text-tertiary-container">history_edu</span>
+</div>
+<div class="font-medium text-sm text-on-surface leading-tight mb-1">Compliance Audit</div>
+<div class="text-xs text-on-surface-variant">Internal Q3 Review</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

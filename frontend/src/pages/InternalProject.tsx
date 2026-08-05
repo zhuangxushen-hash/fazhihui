@@ -57,7 +57,7 @@ const categoryLabels: Record<string, string> = {
 
 export default function InternalProject() {
   const [activeTab, setActiveTab] = useState('in_progress')
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [form] = Form.useForm()
   // 创建内部项目弹窗
@@ -67,13 +67,13 @@ export default function InternalProject() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const res: any = await axios.get('/internal-projects', {
+      const res = (await axios.get('/internal-projects', {
         params: {
           tab: activeTab,
           ...form.getFieldsValue(),
         },
-      })
-      const list = Array.isArray(res) ? res : res?.data || []
+      })) as Record<string, unknown> | Record<string, unknown>[]
+      const list = (Array.isArray(res) ? res : ((res as Record<string, unknown>)?.data as Record<string, unknown>[])) || []
       setData(list)
     } catch (error) {
       setData([])
@@ -103,11 +103,11 @@ export default function InternalProject() {
   }
 
   // 提交创建内部项目
-  const handleCreate = async (values: any) => {
+  const handleCreate = async (values: Record<string, unknown>) => {
     try {
       await axios.post('/internal-projects', {
         ...values,
-        start_date: values.start_date ? dayjs(values.start_date).format('YYYY-MM-DD') : undefined,
+        start_date: values.start_date ? dayjs(values.start_date as dayjs.Dayjs).format('YYYY-MM-DD') : undefined,
       })
       message.success('内部项目创建成功')
       setCreateModalVisible(false)
@@ -116,12 +116,12 @@ export default function InternalProject() {
       // 接口不存在时本地新增
       const newItem = {
         id: `local_${Date.now()}`,
-        name: values.name,
-        category: values.category,
-        start_date: values.start_date ? dayjs(values.start_date).format('YYYY-MM-DD') : '',
-        team: values.team,
-        supervisor: values.supervisor,
-        leader: values.leader,
+        name: values.name as string,
+        category: values.category as string,
+        start_date: values.start_date ? dayjs(values.start_date as dayjs.Dayjs).format('YYYY-MM-DD') : '',
+        team: values.team as string,
+        supervisor: values.supervisor as string,
+        leader: values.leader as string,
         stage: '筹备阶段',
         status: 'preparing',
       }
@@ -160,7 +160,7 @@ export default function InternalProject() {
       title: '操作',
       key: 'action',
       width: 100,
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: Record<string, unknown>) => (
         <Button type="link" size="small" onClick={() => message.info(`查看项目：${record.name}`)}>详情</Button>
       ),
     },

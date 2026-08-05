@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Table, Button, Modal, Form, Input, Select, message, Tag, Space, Card, Statistic, Row, Col } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, BarChartOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
-
+import { theme } from '../constants/theme'
 const percentFmt = (val: number) => `${(val * 100).toFixed(2)}%`
 
 export default function ChannelTracking() {
@@ -37,7 +37,7 @@ export default function ChannelTracking() {
       const totalSign = list.reduce((s: number, x: any) => s + (x.sign_count || 0), 0)
       setSummary({ scan: totalScan, add: totalAdd, invite: totalInvite, sign: totalSign })
     } catch (error) {
-      console.error('Fetch channels error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -73,7 +73,7 @@ export default function ChannelTracking() {
       setModalVisible(false)
       fetchData()
     } catch (error) {
-      console.error('Submit error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -108,7 +108,7 @@ export default function ChannelTracking() {
     { title: '签约量', dataIndex: 'sign_count', key: 'sign_count' },
     { title: '签约率', dataIndex: 'sign_rate', key: 'sign_rate', render: (v: number) => percentFmt(v) },
     { title: '总转化率', dataIndex: 'overall_rate', key: 'overall_rate', render: (v: number, record: any) => (
-      <Tag color={record.is_high_conversion ? 'success' : 'default'}>
+      <Tag className={record.is_high_conversion ? 'stitch-tag stitch-tag-success' : 'stitch-tag stitch-tag-primary'}>
         {percentFmt(v)} {record.is_high_conversion && '🔥'}
       </Tag>
     )},
@@ -117,7 +117,7 @@ export default function ChannelTracking() {
       key: 'action',
       width: 280,
       render: (_: any, record: any) => (
-        <Space size="small" wrap>
+        <Space className="stitch-btn-group" size="small" wrap>
           <Button size="small" onClick={() => handleSimulate(record, 'scan')}>+扫码</Button>
           <Button size="small" onClick={() => handleSimulate(record, 'add')}>+加微</Button>
           <Button size="small" onClick={() => handleSimulate(record, 'invite')}>+邀约</Button>
@@ -149,7 +149,7 @@ export default function ChannelTracking() {
           type="primary"
           icon={<PlusOutlined />}
           onClick={handleAdd}
-          style={{ borderRadius: 10, padding: '8px 20px', background: '#0071e3', border: 'none' }}
+          style={{ borderRadius: 10, padding: '8px 20px', background: theme.primary, border: 'none' }}
         >
           新建渠道
         </Button>
@@ -158,7 +158,7 @@ export default function ChannelTracking() {
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col span={6}>
           <Card style={{ borderRadius: 16, background: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(20px)' }}>
-            <Statistic title="总扫码量" value={summary.scan} valueStyle={{ color: '#0071e3', fontWeight: 600 }} />
+            <Statistic title="总扫码量" value={summary.scan} valueStyle={{ color: theme.primary, fontWeight: 600 }} />
           </Card>
         </Col>
         <Col span={6}>
@@ -178,7 +178,7 @@ export default function ChannelTracking() {
         </Col>
       </Row>
 
-      <div style={{
+      <div className="stitch-filter-bar" style={{
         background: '#fff',
         borderRadius: 16,
         padding: 20,
@@ -205,7 +205,7 @@ export default function ChannelTracking() {
         </Select>
       </div>
 
-      <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)', overflow: 'hidden', marginBottom: 24 }}>
+      <div className="stitch-table" style={{ background: '#fff', borderRadius: 16, boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)', overflow: 'hidden', marginBottom: 24 }}>
         <div style={{ padding: '20px 20px 0', fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>渠道明细</div>
         <Table
           dataSource={data}
@@ -218,7 +218,7 @@ export default function ChannelTracking() {
         />
       </div>
 
-      <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)', overflow: 'hidden' }}>
+      <div className="stitch-table" style={{ background: '#fff', borderRadius: 16, boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)', overflow: 'hidden' }}>
         <div style={{ padding: '20px 20px 0', fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>分组对比</div>
         <Table
           dataSource={groupData}

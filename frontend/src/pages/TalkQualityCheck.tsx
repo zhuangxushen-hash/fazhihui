@@ -12,13 +12,13 @@ import {
 } from '@ant-design/icons'
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
-
+import { theme } from '../constants/theme'
 // === Material Design 3 Style Tokens ===
 const pageH2Style: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
   fontSize: 22,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
   margin: 0,
   letterSpacing: '0.01em',
 }
@@ -29,7 +29,7 @@ const tableCardStyle: React.CSSProperties = {
 }
 
 const cardHeadStyle: React.CSSProperties = {
-  borderBottom: '1px solid #c1c6d6',
+  borderBottom: `1px solid ${theme.border}`,
   padding: '0 20px',
   minHeight: 56,
 }
@@ -38,7 +38,7 @@ const cardTitleStyle: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
   fontSize: 16,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
 }
 
 // === MD3 Status Pill ===
@@ -46,11 +46,11 @@ type PillKind = 'neutral' | 'blue' | 'gold' | 'green' | 'red' | 'orange'
 
 const pillColorMap: Record<PillKind, { bg: string; color: string }> = {
   neutral: { bg: 'rgba(113, 119, 133, 0.12)', color: '#5f6672' },
-  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: '#0071e3' },
+  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: theme.primary },
   gold: { bg: 'rgba(201, 169, 97, 0.15)', color: '#8c702e' },
-  green: { bg: 'rgba(46, 125, 50, 0.1)', color: '#2e7d32' },
-  red: { bg: 'rgba(186, 26, 26, 0.1)', color: '#ba1a1a' },
-  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: '#ed6c02' },
+  green: { bg: 'rgba(46, 125, 50, 0.1)', color: theme.success },
+  red: { bg: 'rgba(186, 26, 26, 0.1)', color: theme.error },
+  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: theme.warning },
 }
 
 const StatusPill = ({ text, kind }: { text: string; kind: PillKind }) => {
@@ -133,23 +133,25 @@ export default function TalkQualityCheck() {
     setLoading(true)
     try {
       if (activeTab === 'pending') {
-        const res = await axios.get('/compliance/talk-quality-checks', {
+        // 待处理质检列表
+        const res = (await axios.get('/compliance/talk-quality-checks', {
           params: { org_id: user.organization_id, handle_status: 'pending' },
-        })
+        })) as Record<string, unknown>[]
         setPendingList(res || [])
       } else if (activeTab === 'processed') {
-        const res = await axios.get('/compliance/talk-quality-checks', {
+        // 已处理质检列表
+        const res = (await axios.get('/compliance/talk-quality-checks', {
           params: { org_id: user.organization_id, handle_status: 'processed' },
-        })
+        })) as Record<string, unknown>[]
         setProcessedList(res || [])
       } else if (activeTab === 'stats') {
-        const res = await axios.get('/compliance/talk-quality-checks/stats', {
+        // 质检统计数据
+        const res = (await axios.get('/compliance/talk-quality-checks/stats', {
           params: { org_id: user.organization_id },
-        })
+        })) as { total: number; pass: number; violation: number; warning: number; pending: number; processed: number }
         setStats(res || { total: 0, pass: 0, violation: 0, warning: 0, pending: 0, processed: 0 })
       }
     } catch (error) {
-      console.error('Fetch quality checks error:', error)
       message.error('获取质检数据失败')
     } finally {
       setLoading(false)
@@ -289,7 +291,7 @@ export default function TalkQualityCheck() {
             </Button>
           )}
           {record.handle_status === 'processed' && (
-            <span style={{ color: '#717785', fontSize: 12 }}>
+            <span style={{ color: theme.textTertiary, fontSize: 12 }}>
               已处理
             </span>
           )}
@@ -304,28 +306,28 @@ export default function TalkQualityCheck() {
       value: stats.total,
       icon: <SafetyCertificateOutlined />,
       iconBg: 'rgba(0, 113, 227, 0.1)',
-      iconColor: '#0071e3',
+      iconColor: theme.primary,
     },
     {
       title: '通过数',
       value: stats.pass,
       icon: <CheckCircleOutlined />,
       iconBg: 'rgba(46, 125, 50, 0.1)',
-      iconColor: '#2e7d32',
+      iconColor: theme.success,
     },
     {
       title: '违规数',
       value: stats.violation,
       icon: <CloseCircleOutlined />,
       iconBg: 'rgba(186, 26, 26, 0.1)',
-      iconColor: '#ba1a1a',
+      iconColor: theme.error,
     },
     {
       title: '预警数',
       value: stats.warning,
       icon: <WarningOutlined />,
       iconBg: 'rgba(237, 108, 2, 0.1)',
-      iconColor: '#ed6c02',
+      iconColor: theme.warning,
     },
   ]
 
@@ -362,7 +364,7 @@ export default function TalkQualityCheck() {
                 </span>
               ),
               children: (
-                <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+                <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
                   <Table
                     dataSource={pendingList}
                     columns={columns}
@@ -383,7 +385,7 @@ export default function TalkQualityCheck() {
                 </span>
               ),
               children: (
-                <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+                <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
                   <Table
                     dataSource={processedList}
                     columns={columns}
@@ -411,10 +413,10 @@ export default function TalkQualityCheck() {
                         <Card style={{ height: '100%', borderRadius: 12 }} styles={{ body: { padding: 20 } }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 12, color: '#414753', marginBottom: 12, letterSpacing: '0.02em', fontWeight: 500 }}>
+                              <div style={{ fontSize: 12, color: theme.textSecondary, marginBottom: 12, letterSpacing: '0.02em', fontWeight: 500 }}>
                                 {card.title}
                               </div>
-                              <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 30, fontWeight: 700, color: '#1a1c1d', lineHeight: 1.2, letterSpacing: '0.01em' }}>
+                              <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 30, fontWeight: 700, color: theme.textBase, lineHeight: 1.2, letterSpacing: '0.01em' }}>
                                 {card.value}
                               </div>
                             </div>
@@ -448,28 +450,28 @@ export default function TalkQualityCheck() {
                       >
                         <div style={{ marginBottom: 16 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <span style={{ fontSize: 13, color: '#414753' }}>整体通过率</span>
-                            <span style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 700, color: '#0059b5', fontSize: 15 }}>{passRate}%</span>
+                            <span style={{ fontSize: 13, color: theme.textSecondary }}>整体通过率</span>
+                            <span style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 700, color: theme.primaryDark, fontSize: 15 }}>{passRate}%</span>
                           </div>
                           <Progress
                             percent={passRate}
-                            strokeColor={{ from: '#0071e3', to: '#c9a961' }}
+                            strokeColor={{ from: theme.primary, to: theme.brandGold }}
                             size="small"
                             strokeWidth={6}
                           />
                         </div>
                         <div style={{ display: 'flex', gap: 24, marginTop: 16 }}>
                           <div style={{ textAlign: 'center', flex: 1 }}>
-                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 24, fontWeight: 700, color: '#2e7d32' }}>
+                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 24, fontWeight: 700, color: theme.success }}>
                               {stats.pending}
                             </div>
-                            <div style={{ fontSize: 12, color: '#717785' }}>待处理</div>
+                            <div style={{ fontSize: 12, color: theme.textTertiary }}>待处理</div>
                           </div>
                           <div style={{ textAlign: 'center', flex: 1 }}>
-                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 24, fontWeight: 700, color: '#0071e3' }}>
+                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 24, fontWeight: 700, color: theme.primary }}>
                               {stats.processed}
                             </div>
-                            <div style={{ fontSize: 12, color: '#717785' }}>已处理</div>
+                            <div style={{ fontSize: 12, color: theme.textTertiary }}>已处理</div>
                           </div>
                         </div>
                       </Card>
@@ -490,10 +492,10 @@ export default function TalkQualityCheck() {
                               textAlign: 'center',
                             }}
                           >
-                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 26, fontWeight: 700, color: '#2e7d32', lineHeight: 1.2 }}>
+                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 26, fontWeight: 700, color: theme.success, lineHeight: 1.2 }}>
                               {stats.pass}
                             </div>
-                            <div style={{ fontSize: 12, color: '#414753', marginTop: 4 }}>通过</div>
+                            <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 4 }}>通过</div>
                           </div>
                           <div
                             style={{
@@ -504,10 +506,10 @@ export default function TalkQualityCheck() {
                               textAlign: 'center',
                             }}
                           >
-                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 26, fontWeight: 700, color: '#ed6c02', lineHeight: 1.2 }}>
+                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 26, fontWeight: 700, color: theme.warning, lineHeight: 1.2 }}>
                               {stats.warning}
                             </div>
-                            <div style={{ fontSize: 12, color: '#414753', marginTop: 4 }}>预警</div>
+                            <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 4 }}>预警</div>
                           </div>
                           <div
                             style={{
@@ -518,10 +520,10 @@ export default function TalkQualityCheck() {
                               textAlign: 'center',
                             }}
                           >
-                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 26, fontWeight: 700, color: '#ba1a1a', lineHeight: 1.2 }}>
+                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 26, fontWeight: 700, color: theme.error, lineHeight: 1.2 }}>
                               {stats.violation}
                             </div>
-                            <div style={{ fontSize: 12, color: '#414753', marginTop: 4 }}>违规</div>
+                            <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 4 }}>违规</div>
                           </div>
                           <div
                             style={{
@@ -532,10 +534,10 @@ export default function TalkQualityCheck() {
                               textAlign: 'center',
                             }}
                           >
-                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 26, fontWeight: 700, color: '#0071e3', lineHeight: 1.2 }}>
+                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 26, fontWeight: 700, color: theme.primary, lineHeight: 1.2 }}>
                               {stats.total}
                             </div>
-                            <div style={{ fontSize: 12, color: '#414753', marginTop: 4 }}>总计</div>
+                            <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 4 }}>总计</div>
                           </div>
                         </div>
                       </Card>
@@ -605,24 +607,24 @@ export default function TalkQualityCheck() {
             <Card size="small" style={{ marginBottom: 12, borderRadius: 8 }}>
               <Space direction="vertical" size={8} style={{ width: '100%' }}>
                 <div>
-                  <span style={{ color: '#717785', fontSize: 13 }}>质检结果：</span>
+                  <span style={{ color: theme.textTertiary, fontSize: 13 }}>质检结果：</span>
                   <StatusPill
                     text={checkResultLabelMap[currentRecord.check_result] || currentRecord.check_result}
                     kind={checkResultKindMap[currentRecord.check_result] || 'neutral'}
                   />
                 </div>
                 <div>
-                  <span style={{ color: '#717785', fontSize: 13 }}>违规类型：</span>
+                  <span style={{ color: theme.textTertiary, fontSize: 13 }}>违规类型：</span>
                   {currentRecord.violation_type ? (
-                    <Tag color="red">{violationTypeLabelMap[currentRecord.violation_type] || currentRecord.violation_type}</Tag>
+                    <Tag className="stitch-tag stitch-tag-error">{violationTypeLabelMap[currentRecord.violation_type] || currentRecord.violation_type}</Tag>
                   ) : (
-                    <span style={{ color: '#717785' }}>无</span>
+                    <span style={{ color: theme.textTertiary }}>无</span>
                   )}
                 </div>
                 {currentRecord.violation_content && (
                   <div>
-                    <span style={{ color: '#717785', fontSize: 13 }}>违规内容：</span>
-                    <span style={{ color: '#ba1a1a' }}>{currentRecord.violation_content}</span>
+                    <span style={{ color: theme.textTertiary, fontSize: 13 }}>违规内容：</span>
+                    <span style={{ color: theme.error }}>{currentRecord.violation_content}</span>
                   </div>
                 )}
               </Space>

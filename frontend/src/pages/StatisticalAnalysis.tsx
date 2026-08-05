@@ -13,7 +13,7 @@ import {
 } from 'recharts'
 import dayjs from 'dayjs'
 import axios from '../api/axios'
-
+import { theme } from '../constants/theme'
 const { RangePicker } = DatePicker
 
 // 左侧菜单3大类7子项
@@ -73,7 +73,7 @@ const mockMonthlyTrend = [
 ]
 
 // 本地mock明细数据
-const mockDetail: any[] = [
+const mockDetail: Record<string, unknown>[] = [
   { key: '1', month: '2026-01', project_name: '某公司合同纠纷案', team: '商事团队', business_type: '民事', signed_amount: 120000 },
   { key: '2', month: '2026-01', project_name: '某劳动争议案', team: '劳动团队', business_type: '民事', signed_amount: 50000 },
   { key: '3', month: '2026-02', project_name: '常年法律顾问服务', team: '顾问团队', business_type: '顾问', signed_amount: 200000 },
@@ -95,9 +95,9 @@ const fmtPercent = (v: number) => {
 export default function StatisticalAnalysis() {
   const [activeMenu, setActiveMenu] = useState('project-signed')
   const [loading, setLoading] = useState(false)
-  const [stats, setStats] = useState<any>({})
-  const [monthlyTrend, setMonthlyTrend] = useState<any[]>([])
-  const [detail, setDetail] = useState<any[]>([])
+  const [stats, setStats] = useState<Record<string, unknown>>({})
+  const [monthlyTrend, setMonthlyTrend] = useState<Record<string, unknown>[]>([])
+  const [detail, setDetail] = useState<Record<string, unknown>[]>([])
   const [form] = Form.useForm()
 
   // 初始化默认查询条件：年度为当前年，统计时段为当年1月1日至今
@@ -115,7 +115,7 @@ export default function StatisticalAnalysis() {
     setLoading(true)
     try {
       const values = form.getFieldsValue()
-      const params: any = { menu: activeMenu }
+      const params: Record<string, unknown> = { menu: activeMenu }
       if (values.year) {
         params.year = values.year.format('YYYY')
       }
@@ -123,10 +123,10 @@ export default function StatisticalAnalysis() {
         params.start_date = values.period[0]?.format('YYYY-MM-DD')
         params.end_date = values.period[1]?.format('YYYY-MM-DD')
       }
-      const res: any = await axios.get('/statistical-analysis', { params })
-      setStats(res?.stats || {})
-      setMonthlyTrend(Array.isArray(res?.monthly_trend) ? res.monthly_trend : [])
-      setDetail(Array.isArray(res?.detail) ? res.detail : Array.isArray(res?.data) ? res.data : [])
+      const res = (await axios.get('/statistical-analysis', { params })) as Record<string, unknown>
+      setStats((res?.stats || {}) as Record<string, unknown>)
+      setMonthlyTrend((Array.isArray(res?.monthly_trend) ? res.monthly_trend : []) as Record<string, unknown>[])
+      setDetail((Array.isArray(res?.detail) ? res.detail : Array.isArray(res?.data) ? res.data : []) as Record<string, unknown>[])
     } catch (error) {
       // 接口不存在时使用本地mock数据展示
       setStats(mockStats)
@@ -195,7 +195,7 @@ export default function StatisticalAnalysis() {
       {/* 右侧主区域 */}
       <div style={{ flex: 1, minWidth: 0 }}>
         {/* 顶部查询条件 */}
-        <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+        <div className="stitch-filter-bar" style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
           <Form form={form} layout="inline" style={{ gap: 8 }}>
             <Form.Item name="year" label="年度选择">
               <DatePicker picker="year" style={{ width: 120 }} />
@@ -204,7 +204,7 @@ export default function StatisticalAnalysis() {
               <RangePicker style={{ width: 240 }} />
             </Form.Item>
             <Form.Item>
-              <Space>
+              <Space className="stitch-btn-group">
                 <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>查询</Button>
                 <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
               </Space>
@@ -234,7 +234,7 @@ export default function StatisticalAnalysis() {
                 suffix="个"
               />
               <div style={{ marginTop: 8, color: '#888', fontSize: 12 }}>
-                {`交回率 ${fmtPercent(stats.contract_returned_rate)}`}
+                {`交回率 ${fmtPercent(stats.contract_returned_rate as number)}`}
               </div>
             </Card>
           </Col>
@@ -246,7 +246,7 @@ export default function StatisticalAnalysis() {
                 suffix="个"
               />
               <div style={{ marginTop: 8, color: '#888', fontSize: 12 }}>
-                {`解约率 ${fmtPercent(stats.terminated_rate)}`}
+                {`解约率 ${fmtPercent(stats.terminated_rate as number)}`}
               </div>
             </Card>
           </Col>
@@ -264,22 +264,22 @@ export default function StatisticalAnalysis() {
         </Row>
 
         {/* 柱状图：按月份展示新立案项目数量趋势 */}
-        <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
-          <h3 style={{ marginTop: 0, marginBottom: 16 }}>新立案项目数量趋势</h3>
+        <div className="stitch-chart-card" style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+          <h3 className="stitch-chart-title" style={{ marginTop: 0, marginBottom: 16 }}>新立案项目数量趋势</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={monthlyTrend}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis allowDecimals={false} />
               <Tooltip />
-              <Bar dataKey="count" name="新立案项目数量" fill="#0071e3" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="count" name="新立案项目数量" fill={theme.primary} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* 明细数据表格 */}
-        <div style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
-          <h3 style={{ marginTop: 0, marginBottom: 16 }}>明细数据</h3>
+        <div className="stitch-table" style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
+          <h3 className="stitch-chart-title" style={{ marginTop: 0, marginBottom: 16 }}>明细数据</h3>
           <Table
             dataSource={detail}
             columns={detailColumns}

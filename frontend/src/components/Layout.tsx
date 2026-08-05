@@ -19,7 +19,7 @@ import {
   SearchOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
-
+import { theme } from '../constants/theme'
 const { Header, Sider, Content } = AntLayout
 
 interface MenuChild {
@@ -464,7 +464,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const userLevel = roleLevelMap[user.role] || 1
 
   return (
-    <AntLayout style={{ minHeight: '100vh', background: '#f9f9fb' }}>
+    <AntLayout style={{ minHeight: '100vh', background: theme.bgLayout }}>
       <Sider
         collapsible
         collapsed={collapsed}
@@ -479,8 +479,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           top: 0,
           bottom: 0,
           width: collapsed ? 80 : 260,
-          background: 'linear-gradient(180deg, #131c2a 0%, #1a2332 100%)',
-          boxShadow: '2px 0 16px rgba(13, 27, 42, 0.15)',
+          // Stitch 设计规范：侧边栏渐变背景
+          background: theme.gradientSidebar,
+          boxShadow: theme.sidebarShadow,
           transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           zIndex: 200,
         }}
@@ -493,7 +494,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'flex-start',
             gap: 12,
-            borderBottom: '1px solid rgba(228, 194, 120, 0.1)',
+            borderBottom: `1px solid ${theme.brandGold}1A`,
           }}
         >
           <div
@@ -501,8 +502,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               width: collapsed ? 36 : 44,
               height: collapsed ? 36 : 44,
               borderRadius: 10,
-              background: 'rgba(228, 194, 120, 0.08)',
-              border: '1px solid rgba(228, 194, 120, 0.2)',
+              background: `${theme.brandGold}14`,
+              border: `1px solid ${theme.brandGold}33`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -519,13 +520,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   fontFamily: "'Noto Serif SC', serif",
                   fontSize: 18,
                   fontWeight: 700,
-                  color: '#ffffff',
+                  color: theme.white,
                   letterSpacing: '0.02em',
                 }}
               >
                 法智汇
               </span>
-              <span style={{ fontSize: 11, color: 'rgba(228, 194, 120, 0.6)', marginTop: 2 }}>
+              <span style={{ fontSize: 11, color: `${theme.brandGold}99`, marginTop: 2 }}>
                 智慧法律管理平台
               </span>
             </div>
@@ -551,7 +552,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         style={{
           marginLeft: collapsed ? 80 : 260,
           transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          background: '#f9f9fb',
+          background: theme.bgLayout,
         }}
       >
         <Header
@@ -560,8 +561,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: '0 24px',
-            background: '#ffffff',
-            borderBottom: '1px solid #c1c6d6',
+            background: theme.bgContainer,
+            borderBottom: `1px solid ${theme.border}`,
+            // Stitch 设计规范：顶栏阴影
+            boxShadow: theme.shadowSm,
             position: 'fixed',
             top: 0,
             right: 0,
@@ -579,7 +582,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 border: 'none',
                 cursor: 'pointer',
                 fontSize: 18,
-                color: '#414753',
+                color: theme.textSecondary,
                 padding: 8,
                 borderRadius: '50%',
                 display: 'flex',
@@ -587,7 +590,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 justifyContent: 'center',
                 transition: 'background 0.2s',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#f3f3f5')}
+              onMouseEnter={e => (e.currentTarget.style.background = theme.bgSurfaceLow)}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
               {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
@@ -597,7 +600,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 fontFamily: "'Noto Serif SC', serif",
                 fontSize: 22,
                 fontWeight: 600,
-                color: '#1a1c1d',
+                color: theme.textBase,
                 margin: 0,
                 letterSpacing: '0.01em',
               }}
@@ -615,7 +618,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 width: 40,
                 height: 40,
                 borderRadius: '50%',
-                color: '#414753',
+                color: theme.textSecondary,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -623,7 +626,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 position: 'relative',
                 transition: 'background 0.2s',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#f3f3f5')}
+              onMouseEnter={e => (e.currentTarget.style.background = theme.bgSurfaceLow)}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               title="消息通知"
             >
@@ -635,7 +638,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   right: 8,
                   width: 6,
                   height: 6,
-                  background: '#ba1a1a',
+                  background: theme.error,
                   borderRadius: '50%',
                 }}
               />
@@ -648,19 +651,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 width: 40,
                 height: 40,
                 borderRadius: '50%',
-                color: '#414753',
+                color: theme.textSecondary,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: 18,
                 transition: 'background 0.2s',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#f3f3f5')}
+              onMouseEnter={e => (e.currentTarget.style.background = theme.bgSurfaceLow)}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
               <AppstoreOutlined />
             </button>
-            <div style={{ width: 1, height: 24, background: '#c1c6d6', margin: '0 8px' }} />
+            <div style={{ width: 1, height: 24, background: theme.border, margin: '0 8px' }} />
             <Dropdown menu={{ items: userMenu, onClick: handleUserMenuClick }} placement="bottomRight">
               <div
                 style={{
@@ -672,20 +675,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   borderRadius: 8,
                   transition: 'background 0.2s',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = '#f3f3f5')}
+                onMouseEnter={e => (e.currentTarget.style.background = theme.bgSurfaceLow)}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
                 <Avatar
                   icon={<UserOutlined />}
                   size={32}
                   style={{
-                    background: '#1a2332',
-                    border: '2px solid #c9a961',
+                    background: theme.brandDark,
+                    border: `2px solid ${theme.brandGold}`,
                   }}
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.3 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1c1d' }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: theme.textBase }}>
                       {user.real_name || '用户'}
                     </span>
                     {/* 用户等级徽标：对齐金助理 Lv 等级显示 */}
@@ -693,8 +696,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       style={{
                         fontSize: 10,
                         fontWeight: 600,
-                        color: '#c9a961',
-                        background: 'rgba(201, 169, 97, 0.12)',
+                        color: theme.brandGold,
+                        background: `${theme.brandGold}1F`,
                         padding: '1px 6px',
                         borderRadius: 4,
                         lineHeight: 1.4,
@@ -704,7 +707,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       Lv{userLevel}
                     </span>
                   </div>
-                  <span style={{ fontSize: 11, color: '#717785' }}>
+                  <span style={{ fontSize: 11, color: theme.textTertiary }}>
                     {roleLabels[user.role] || '用户'}
                   </span>
                 </div>
@@ -716,7 +719,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           style={{
             marginTop: 64,
             padding: 24,
-            background: '#f9f9fb',
+            background: theme.bgLayout,
             minHeight: 'calc(100vh - 64px)',
           }}
         >

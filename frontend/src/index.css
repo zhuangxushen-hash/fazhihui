@@ -803,6 +803,137 @@ a:hover {
   transform: scale(0.9);
 }
 
+/* === Stitch Design: KPI 渐变卡片 ===
+   使用 !important 提升优先级，避免被 Ant Design 6.x Card 组件的白底样式覆盖
+   kpi-card-gold（暗金渐变）使用 dark 模式：背景较亮，文字颜色使用深藏青系
+*/
+.kpi-card-blue {
+  background: linear-gradient(135deg, #0059b5 0%, #0071e3 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 8px 24px rgba(0, 89, 181, 0.2) !important;
+}
+.kpi-card-blue .ant-card-body { background: transparent !important; padding: 20px !important; }
+.kpi-card-gold {
+  background: linear-gradient(135deg, #c9a961 0%, #e4c278 100%) !important;
+  color: #1A2332 !important; /* 深藏青文字，浅色背景上可读 */
+  border: none !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 8px 24px rgba(201, 169, 97, 0.2) !important;
+}
+.kpi-card-gold .ant-card-body { background: transparent !important; padding: 20px !important; }
+.kpi-card-navy {
+  background: linear-gradient(135deg, #1a2332 0%, #2f3132 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 8px 24px rgba(26, 35, 50, 0.2) !important;
+}
+.kpi-card-navy .ant-card-body { background: transparent !important; padding: 20px !important; }
+.kpi-card-green {
+  background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 8px 24px rgba(46, 125, 50, 0.2) !important;
+}
+.kpi-card-green .ant-card-body { background: transparent !important; padding: 20px !important; }
+
+/* === Stitch Design: 渐变文字 === */
+.text-gradient-primary {
+  background: linear-gradient(135deg, #0059b5 0%, #0071e3 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.text-gradient-gold {
+  background: linear-gradient(135deg, #c9a961 0%, #e4c278 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* === Stitch Design: 悬浮操作按钮 === */
+.fab-button {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #0059b5 0%, #0071e3 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 4px 20px rgba(0, 113, 227, 0.3);
+  cursor: pointer;
+  z-index: 100;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+}
+.fab-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 113, 227, 0.4);
+}
+
+/* === Stitch Design: 卡片悬浮交互 === */
+.hover-lift {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* === Stitch Design: 筛选栏 === */
+.filter-bar {
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-xl);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* === Stitch Design: 摘要统计行 === */
+.summary-stat-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.summary-stat-item {
+  flex: 1;
+  min-width: 140px;
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  text-align: center;
+}
+.summary-stat-value {
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--on-surface);
+  line-height: 1.2;
+}
+.summary-stat-label {
+  font-size: 12px;
+  color: var(--on-surface-variant);
+  margin-top: 4px;
+}
+
 /* === Mobile Responsive === */
 @media screen and (max-width: 768px) {
   body {
@@ -892,3 +1023,465 @@ a:hover {
     padding: 8px 10px !important;
   }
 }
+
+/* ============================================
+   Stitch Design System: 组件规范工具类
+   对齐 Stitch crm_leads.html / dashboard.html 设计
+   ============================================ */
+
+/* === Stitch 输入框规范 === */
+.stitch-input {
+  height: 36px;
+  padding: 6px 12px;
+  background: #ffffff;
+  border: 1px solid #c1c6d6;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1a1c1d;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+.stitch-input::placeholder {
+  color: #717785;
+}
+.stitch-input:hover {
+  border-color: #717785;
+}
+.stitch-input:focus,
+.stitch-input:focus-within {
+  border-color: #0071e3;
+  box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.15);
+}
+
+/* 带 Material Symbols 图标的输入框 */
+.stitch-input-icon {
+  position: relative;
+}
+.stitch-input-icon .material-symbols-outlined {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #717785;
+  font-size: 18px;
+  pointer-events: none;
+}
+.stitch-input-icon input,
+.stitch-input-icon .ant-input-affix-wrapper {
+  padding-left: 36px !important;
+}
+
+/* === Stitch 查询条件筛选栏规范 === */
+.stitch-filter-bar {
+  background: #f9f9fb;
+  border: 1px solid #e2e2e4;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.stitch-filter-bar .ant-input,
+.stitch-filter-bar .ant-select-selector,
+.stitch-filter-bar .ant-picker {
+  height: 36px !important;
+  border-radius: 8px !important;
+  border-color: #c1c6d6 !important;
+  background: #ffffff !important;
+  font-size: 14px !important;
+}
+.stitch-filter-bar .ant-input:hover,
+.stitch-filter-bar .ant-select-selector:hover,
+.stitch-filter-bar .ant-picker:hover {
+  border-color: #717785 !important;
+}
+.stitch-filter-bar .ant-input:focus,
+.stitch-filter-bar .ant-input-focused,
+.stitch-filter-bar .ant-select-focused .ant-select-selector,
+.stitch-filter-bar .ant-picker-focused {
+  border-color: #0071e3 !important;
+  box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.15) !important;
+}
+
+/* 筛选栏按钮 */
+.stitch-filter-bar .ant-btn-primary {
+  background: #0071e3 !important;
+  border-color: #0071e3 !important;
+  border-radius: 8px !important;
+  height: 36px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 1px 2px rgba(0, 113, 227, 0.15) !important;
+}
+.stitch-filter-bar .ant-btn-primary:hover {
+  background: #0059b5 !important;
+  border-color: #0059b5 !important;
+}
+.stitch-filter-bar .ant-btn-default {
+  height: 36px !important;
+  border-radius: 8px !important;
+  border-color: #c1c6d6 !important;
+  color: #414753 !important;
+}
+.stitch-filter-bar .ant-btn-default:hover {
+  background: #f3f3f5 !important;
+  border-color: #717785 !important;
+  color: #1a1c1d !important;
+}
+
+/* === Stitch 图表卡片容器规范 === */
+.stitch-chart-card {
+  background: #ffffff;
+  border: 1px solid #c1c6d6;
+  border-radius: 12px;
+  padding: 24px;
+  height: 400px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.stitch-chart-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+.stitch-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.stitch-chart-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1c1d;
+  margin: 0;
+}
+.stitch-chart-subtitle {
+  font-size: 14px;
+  font-weight: 400;
+  color: #414753;
+  margin-left: 8px;
+}
+.stitch-chart-action {
+  color: #0071e3;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+.stitch-chart-action:hover {
+  text-decoration: underline;
+}
+.stitch-chart-body {
+  flex: 1;
+  width: 100%;
+  position: relative;
+}
+
+/* 图表切换标签组 */
+.stitch-chart-tabs {
+  display: inline-flex;
+  background: #f3f3f5;
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
+}
+.stitch-chart-tab {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #414753;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.stitch-chart-tab:hover {
+  color: #1a1c1d;
+}
+.stitch-chart-tab.active {
+  background: #ffffff;
+  color: #1a1c1d;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* === Stitch 表格规范 === */
+.stitch-table {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e2e4;
+}
+
+/* 表头 */
+.stitch-table .ant-table-thead > tr > th {
+  background: #f3f3f5 !important;
+  color: #414753 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid #e2e2e4 !important;
+  letter-spacing: 0.02em;
+}
+.stitch-table .ant-table-thead > tr > th::before {
+  display: none !important;
+}
+
+/* 表体 */
+.stitch-table .ant-table-tbody > tr > td {
+  padding: 12px 16px !important;
+  color: #1a1c1d !important;
+  font-size: 14px !important;
+  border-bottom: 1px solid #e2e2e4 !important;
+}
+.stitch-table .ant-table-tbody > tr {
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.stitch-table .ant-table-tbody > tr:hover > td {
+  background: #F0F7FF !important;
+}
+.stitch-table .ant-table-tbody > tr:last-child > td {
+  border-bottom: none !important;
+}
+
+/* 表格容器 */
+.stitch-table .ant-table {
+  background: transparent !important;
+}
+.stitch-table .ant-table-container {
+  border-radius: 12px !important;
+}
+.stitch-table .ant-table-header {
+  margin-bottom: 0 !important;
+}
+
+/* 分页器 */
+.stitch-table .ant-pagination {
+  padding: 16px 20px;
+  margin: 0 !important;
+  border-top: 1px solid #e2e2e4;
+}
+.stitch-table .ant-pagination-item {
+  background: #ffffff;
+  border: 1px solid #c1c6d6;
+  border-radius: 6px;
+  min-width: 32px;
+  height: 32px;
+  line-height: 32px;
+  color: #1a1c1d;
+}
+.stitch-table .ant-pagination-item a {
+  color: #1a1c1d;
+}
+.stitch-table .ant-pagination-item:hover {
+  border-color: #0071e3;
+}
+.stitch-table .ant-pagination-item:hover a {
+  color: #0071e3;
+}
+.stitch-table .ant-pagination-item-active {
+  background: #0071e3 !important;
+  border-color: #0071e3 !important;
+}
+.stitch-table .ant-pagination-item-active a {
+  color: #ffffff !important;
+}
+.stitch-table .ant-pagination-prev,
+.stitch-table .ant-pagination-next {
+  min-width: 32px;
+  height: 32px;
+  line-height: 32px;
+}
+.stitch-table .ant-pagination-prev .ant-pagination-item-link,
+.stitch-table .ant-pagination-next .ant-pagination-item-link {
+  border-radius: 6px;
+  border-color: #c1c6d6;
+  color: #1a1c1d;
+}
+
+/* === Stitch 状态标签规范 === */
+.stitch-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  background: #e8e8ea;
+  color: #1a1c1d;
+  border: 1px solid #c1c6d6;
+}
+.stitch-tag::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.stitch-tag-primary {
+  background: #d7e2ff;
+  color: #001b3f;
+  border-color: rgba(0, 113, 227, 0.2);
+}
+.stitch-tag-success {
+  background: rgba(46, 125, 50, 0.1);
+  color: #2e7d32;
+  border-color: rgba(46, 125, 50, 0.2);
+}
+.stitch-tag-warning {
+  background: rgba(237, 108, 2, 0.1);
+  color: #ed6c02;
+  border-color: rgba(237, 108, 2, 0.2);
+}
+.stitch-tag-error {
+  background: rgba(186, 26, 26, 0.1);
+  color: #ba1a1a;
+  border-color: rgba(186, 26, 26, 0.2);
+}
+.stitch-tag-gold {
+  background: rgba(201, 169, 97, 0.12);
+  color: #8c702e;
+  border-color: rgba(201, 169, 97, 0.25);
+}
+.stitch-tag-info {
+  background: rgba(0, 113, 227, 0.1);
+  color: #0071e3;
+  border-color: rgba(0, 113, 227, 0.2);
+}
+
+/* === Stitch 图表图例规范 === */
+.stitch-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.stitch-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #1a1c1d;
+}
+.stitch-legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.stitch-legend-dot.circle {
+  border-radius: 50%;
+}
+
+/* === Stitch 空状态规范 === */
+.stitch-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  color: #717785;
+  text-align: center;
+}
+.stitch-empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+.stitch-empty-text {
+  font-size: 14px;
+  color: #414753;
+}
+.stitch-empty-subtext {
+  font-size: 12px;
+  color: #717785;
+  margin-top: 4px;
+}
+
+/* === Stitch 卡片标题栏规范 === */
+.stitch-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e2e2e4;
+  background: #ffffff;
+}
+.stitch-card-header-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1c1d;
+  margin: 0;
+}
+.stitch-card-header-subtitle {
+  font-size: 14px;
+  font-weight: 400;
+  color: #414753;
+  margin-left: 8px;
+}
+.stitch-card-header-action {
+  color: #0071e3;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.stitch-card-header-action:hover {
+  text-decoration: underline;
+}
+
+/* === Stitch Tooltip 规范 === */
+.stitch-tooltip {
+  background: #2f3132 !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+.stitch-tooltip .ant-tooltip-arrow::before {
+  background: #2f3132 !important;
+}
+
+/* === Stitch 按钮组规范 === */
+.stitch-btn-group {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+.stitch-btn-group .ant-btn {
+  border-radius: 8px !important;
+  height: 36px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+.stitch-btn-group .ant-btn-primary {
+  background: #0071e3 !important;
+  border-color: #0071e3 !important;
+  box-shadow: 0 1px 2px rgba(0, 113, 227, 0.15) !important;
+}
+.stitch-btn-group .ant-btn-primary:hover {
+  background: #0059b5 !important;
+  border-color: #0059b5 !important;
+}
+.stitch-btn-group .ant-btn-default {
+  border-color: #c1c6d6 !important;
+  color: #414753 !important;
+}
+.stitch-btn-group .ant-btn-default:hover {
+  background: #f3f3f5 !important;
+  border-color: #717785 !important;
+  color: #1a1c1d !important;
+}
+

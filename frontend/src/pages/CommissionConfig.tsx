@@ -9,7 +9,7 @@ import {
   toggleCommissionRule,
 } from '../api/commission'
 import { formatDateTime } from '../utils/format'
-
+import { theme } from '../constants/theme'
 const { TextArea } = Input
 
 export default function CommissionConfig() {
@@ -29,10 +29,9 @@ export default function CommissionConfig() {
   const fetchRules = async () => {
     setLoading(true)
     try {
-      const data = await getCommissionRules(user.organization_id)
+      const data = await getCommissionRules(user.organization_id) as Record<string, unknown>[]
       setRules(data || [])
     } catch (error) {
-      console.error('Fetch commission rules error:', error)
       message.error('获取分润规则失败')
     } finally {
       setLoading(false)
@@ -83,7 +82,6 @@ export default function CommissionConfig() {
           fetchRules()
         } catch (error) {
           message.error('删除失败')
-          console.error('Delete rule error:', error)
         }
       },
     })
@@ -96,7 +94,6 @@ export default function CommissionConfig() {
       fetchRules()
     } catch (error) {
       message.error('操作失败')
-      console.error('Toggle rule error:', error)
     }
   }
 
@@ -119,7 +116,6 @@ export default function CommissionConfig() {
       fetchRules()
     } catch (error) {
       message.error('操作失败')
-      console.error('Submit error:', error)
     }
   }
 
@@ -174,7 +170,7 @@ export default function CommissionConfig() {
       key: 'role_type',
       render: (role: string) => {
         const label = roleTypeOptions.find(o => o.value === role)?.label || role
-        return <Tag style={{ borderRadius: 12 }}>{label}</Tag>
+        return <Tag className="stitch-tag">{label}</Tag>
       },
     },
     {
@@ -182,7 +178,8 @@ export default function CommissionConfig() {
       dataIndex: 'commission_type',
       key: 'commission_type',
       render: (type: string) => (
-        <Tag style={{ borderRadius: 12 }} color={type === 'fixed' ? 'blue' : 'green'}>
+        // 保留原判断逻辑：fixed-info，percentage-success（按 stitch 设计规范映射）
+        <Tag className={`stitch-tag stitch-tag-${type === 'fixed' ? 'info' : 'success'}`}>
           {type === 'fixed' ? '固定金额' : '比例提成'}
         </Tag>
       ),
@@ -212,10 +209,8 @@ export default function CommissionConfig() {
       dataIndex: 'enabled',
       key: 'enabled',
       render: (enabled: boolean) => (
-        <Tag
-          style={{ borderRadius: 12 }}
-          color={enabled ? 'success' : 'default'}
-        >
+        // 保留原判断逻辑：启用-success，禁用-primary（按 stitch 设计规范映射）
+        <Tag className={`stitch-tag stitch-tag-${enabled ? 'success' : 'primary'}`}>
           {enabled ? '启用' : '禁用'}
         </Tag>
       ),
@@ -230,7 +225,7 @@ export default function CommissionConfig() {
       title: '操作',
       key: 'action',
       render: (_: any, record: any) => (
-        <Space>
+        <Space className="stitch-btn-group">
           <Button
             size="small"
             onClick={() => handleEdit(record)}
@@ -281,9 +276,9 @@ export default function CommissionConfig() {
           style={{
             borderRadius: 10,
             padding: '8px 20px',
-            background: '#0071e3',
+            background: theme.primary,
             border: 'none',
-            color: '#fff',
+            color: theme.white,
             boxShadow: '0 2px 8px rgba(0, 113, 227, 0.25)',
           }}
           icon={<PlusOutlined />}
@@ -293,8 +288,9 @@ export default function CommissionConfig() {
       </div>
 
       <div
+        className="stitch-table"
         style={{
-          background: '#fff',
+          background: theme.white,
           borderRadius: 16,
           boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)',
           overflow: 'hidden',
@@ -463,9 +459,9 @@ export default function CommissionConfig() {
                 style={{
                   borderRadius: 10,
                   padding: '10px 32px',
-                  background: '#0071e3',
+                  background: theme.primary,
                   border: 'none',
-                  color: '#fff',
+                  color: theme.white,
                 }}
               >
                 {editingRule ? '更新' : '创建'}

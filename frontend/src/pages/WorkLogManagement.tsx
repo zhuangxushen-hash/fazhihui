@@ -45,12 +45,12 @@ import { formatDate, formatDateTime } from '../utils/format'
 
 const { RangePicker } = DatePicker
 
-// 工作日志状态映射（中文标签 + Tag 颜色）
+// 工作日志状态映射（中文标签 + Tag 样式，对齐 Stitch 设计规范，返回 className）
 const statusMap: Record<string, { label: string; color: string }> = {
-  draft: { label: '草稿', color: 'blue' },
-  submitted: { label: '已提交', color: 'orange' },
-  approved: { label: '已通过', color: 'green' },
-  rejected: { label: '已驳回', color: 'red' },
+  draft: { label: '草稿', color: 'stitch-tag stitch-tag-primary' },
+  submitted: { label: '已提交', color: 'stitch-tag stitch-tag-warning' },
+  approved: { label: '已通过', color: 'stitch-tag stitch-tag-success' },
+  rejected: { label: '已驳回', color: 'stitch-tag stitch-tag-error' },
 }
 
 // 状态筛选选项
@@ -75,8 +75,8 @@ const logTypeMap: Record<string, string> = {
 
 // 状态标签组件
 const StatusTag = ({ status }: { status: string }) => {
-  const cfg = statusMap[status] || { label: status, color: 'default' }
-  return <Tag color={cfg.color}>{cfg.label}</Tag>
+  const cfg = statusMap[status] || { label: status, color: 'stitch-tag stitch-tag-info' }
+  return <Tag className={cfg.color}>{cfg.label}</Tag>
 }
 
 export default function WorkLogManagement() {
@@ -123,12 +123,12 @@ export default function WorkLogManagement() {
       const params = buildParams()
       if (activeTab === 'mine') {
         params.user_id = user.id
-        const res = await getWorklogs(params)
+        const res = (await getWorklogs(params)) as Record<string, unknown>[]
         setData(res || [])
       } else if (activeTab === 'pending') {
         // 待审核固定为已提交状态
         params.status = 'submitted'
-        const res = await getWorklogs(params)
+        const res = (await getWorklogs(params)) as Record<string, unknown>[]
         setData(res || [])
       } else if (activeTab === 'stats') {
         const res = await getWorklogStats(params)
@@ -190,8 +190,8 @@ export default function WorkLogManagement() {
       }
       setModalVisible(false)
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
     }
   }
 
@@ -294,8 +294,8 @@ export default function WorkLogManagement() {
       message.success('日程已转入工作日志')
       setScheduleModalVisible(false)
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '转入失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '转入失败')
     }
   }
 
@@ -323,7 +323,7 @@ export default function WorkLogManagement() {
       width: 90,
       render: (v: string) => {
         const label = logTypeMap[v] || v || '-'
-        return <Tag color={v === 'case_work' ? 'blue' : 'default'}>{label}</Tag>
+        return <Tag className={v === 'case_work' ? 'stitch-tag stitch-tag-primary' : 'stitch-tag stitch-tag-info'}>{label}</Tag>
       },
     },
     { title: '工作内容', dataIndex: 'content', key: 'content', ellipsis: true },
@@ -339,7 +339,7 @@ export default function WorkLogManagement() {
       dataIndex: 'billable',
       key: 'billable',
       width: 70,
-      render: (v: boolean) => <Tag color={v ? 'green' : 'default'}>{v ? '是' : '否'}</Tag>,
+      render: (v: boolean) => <Tag className={v ? 'stitch-tag stitch-tag-success' : 'stitch-tag stitch-tag-info'}>{v ? '是' : '否'}</Tag>,
     },
     {
       title: '状态',
@@ -476,14 +476,16 @@ export default function WorkLogManagement() {
               </Button>
             </Space>
           </div>
-          <Table
-            dataSource={data}
-            columns={mineColumns}
-            loading={loading}
-            rowKey="id"
-            size="small"
-            pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
-          />
+          <div className="stitch-table">
+            <Table
+              dataSource={data}
+              columns={mineColumns}
+              loading={loading}
+              rowKey="id"
+              size="small"
+              pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+            />
+          </div>
         </>
       ),
     },
@@ -491,14 +493,16 @@ export default function WorkLogManagement() {
       key: 'pending',
       label: '待审核',
       children: (
-        <Table
-          dataSource={data}
-          columns={pendingColumns}
-          loading={loading}
-          rowKey="id"
-          size="small"
-          pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
-        />
+        <div className="stitch-table">
+          <Table
+            dataSource={data}
+            columns={pendingColumns}
+            loading={loading}
+            rowKey="id"
+            size="small"
+            pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+          />
+        </div>
       ),
     },
     {
@@ -539,14 +543,16 @@ export default function WorkLogManagement() {
             </Col>
           </Row>
           <Card title="按律师统计">
-            <Table
-              dataSource={stats?.by_user || []}
-              columns={statsColumns}
-              rowKey="user_id"
-              size="small"
-              pagination={false}
-              loading={loading}
-            />
+            <div className="stitch-table">
+              <Table
+                dataSource={stats?.by_user || []}
+                columns={statsColumns}
+                rowKey="user_id"
+                size="small"
+                pagination={false}
+                loading={loading}
+              />
+            </div>
           </Card>
         </>
       ),
@@ -560,7 +566,7 @@ export default function WorkLogManagement() {
       </div>
 
       {/* 查询表单：日期范围、状态、案件筛选 */}
-      <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+      <div className="stitch-filter-bar" style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
         <Form form={searchForm} layout="inline" style={{ gap: 8 }}>
           <Form.Item name="dateRange" label="工作日期">
             <RangePicker style={{ width: 240 }} />
@@ -577,14 +583,14 @@ export default function WorkLogManagement() {
             <Input placeholder="案件ID" allowClear style={{ width: 180 }} />
           </Form.Item>
           <Form.Item>
-            <Space>
+            <div className="stitch-btn-group">
               <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
                 查询
               </Button>
               <Button icon={<ReloadOutlined />} onClick={handleReset}>
                 重置
               </Button>
-            </Space>
+            </div>
           </Form.Item>
         </Form>
       </div>
@@ -677,50 +683,52 @@ export default function WorkLogManagement() {
         cancelText="取消"
         width={720}
       >
-        <Table
-          dataSource={scheduleList}
-          loading={scheduleLoading}
-          rowKey="id"
-          size="small"
-          pagination={{ pageSize: 10 }}
-          rowSelection={{
-            type: 'radio',
-            selectedRowKeys: selectedScheduleId ? [selectedScheduleId] : [],
-            onChange: (keys) => setSelectedScheduleId(keys[0] as string),
-          }}
-          columns={[
-            { title: '标题', dataIndex: 'title', key: 'title', ellipsis: true },
-            {
-              title: '开始时间',
-              dataIndex: 'start_time',
-              key: 'start_time',
-              width: 160,
-              render: (v: string) => formatDateTime(v),
-            },
-            {
-              title: '结束时间',
-              dataIndex: 'end_time',
-              key: 'end_time',
-              width: 160,
-              render: (v: string) => formatDateTime(v),
-            },
-            {
-              title: '状态',
-              dataIndex: 'status',
-              key: 'status',
-              width: 90,
-              render: (v: string) => {
-                const cfg =
-                  v === 'active'
-                    ? { label: '有效', color: 'green' }
-                    : v === 'done'
-                      ? { label: '已完成', color: 'blue' }
-                      : { label: v, color: 'default' }
-                return <Tag color={cfg.color}>{cfg.label}</Tag>
+        <div className="stitch-table">
+          <Table
+            dataSource={scheduleList}
+            loading={scheduleLoading}
+            rowKey="id"
+            size="small"
+            pagination={{ pageSize: 10 }}
+            rowSelection={{
+              type: 'radio',
+              selectedRowKeys: selectedScheduleId ? [selectedScheduleId] : [],
+              onChange: (keys) => setSelectedScheduleId(keys[0] as string),
+            }}
+            columns={[
+              { title: '标题', dataIndex: 'title', key: 'title', ellipsis: true },
+              {
+                title: '开始时间',
+                dataIndex: 'start_time',
+                key: 'start_time',
+                width: 160,
+                render: (v: string) => formatDateTime(v),
               },
-            },
-          ]}
-        />
+              {
+                title: '结束时间',
+                dataIndex: 'end_time',
+                key: 'end_time',
+                width: 160,
+                render: (v: string) => formatDateTime(v),
+              },
+              {
+                title: '状态',
+                dataIndex: 'status',
+                key: 'status',
+                width: 90,
+                render: (v: string) => {
+                  const cfg =
+                    v === 'active'
+                      ? { label: '有效', color: 'stitch-tag stitch-tag-success' }
+                      : v === 'done'
+                        ? { label: '已完成', color: 'stitch-tag stitch-tag-primary' }
+                        : { label: v, color: 'stitch-tag stitch-tag-info' }
+                  return <Tag className={cfg.color}>{cfg.label}</Tag>
+                },
+              },
+            ]}
+          />
+        </div>
       </Modal>
     </div>
   )

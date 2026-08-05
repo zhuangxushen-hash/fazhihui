@@ -4,7 +4,7 @@ import { SearchOutlined, SafetyCertificateOutlined, WarningOutlined, CloseCircle
 import axios from '../api/axios'
 import { deepCheckConflict, approveConflict, rejectConflict } from '../api/conflictCheck'
 import { formatDateTime } from '../utils/format'
-
+import { theme } from '../constants/theme'
 const { Paragraph, Text } = Typography
 
 // === Material Design 3 Style Tokens ===
@@ -12,16 +12,16 @@ const pageH2Style: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
   fontSize: 22,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
   margin: 0,
   letterSpacing: '0.01em',
 }
 
 const searchBarStyle: React.CSSProperties = {
-  background: '#ffffff',
+  background: theme.bgContainer,
   padding: 20,
   borderRadius: 12,
-  border: '1px solid #c1c6d6',
+  border: `1px solid ${theme.border}`,
   marginBottom: 16,
 }
 
@@ -39,7 +39,7 @@ const sectionTitleStyle: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
   fontSize: 15,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
   marginBottom: 8,
 }
 
@@ -47,19 +47,19 @@ const sectionTitleStyle: React.CSSProperties = {
 const checkResultConfig: Record<string, { label: string; color: string; icon: React.ReactNode; bg: string }> = {
   clear: {
     label: '无冲突',
-    color: '#2e7d32',
+    color: theme.success,
     icon: <CheckCircleOutlined />,
     bg: 'rgba(46, 125, 50, 0.08)',
   },
   warning: {
     label: '有风险',
-    color: '#ed6c02',
+    color: theme.warning,
     icon: <WarningOutlined />,
     bg: 'rgba(237, 108, 2, 0.08)',
   },
   conflict: {
     label: '有冲突',
-    color: '#ba1a1a',
+    color: theme.error,
     icon: <CloseCircleOutlined />,
     bg: 'rgba(186, 26, 26, 0.08)',
   },
@@ -76,6 +76,16 @@ const approvalStatusConfig: Record<string, { label: string; color: string }> = {
   pending: { label: '待审批', color: 'default' },
   approved: { label: '已通过', color: 'green' },
   rejected: { label: '已驳回', color: 'red' },
+}
+
+// Tag颜色到stitch-tag变体类名的映射（保留原有color逻辑，仅转className）
+const tagColorToClassName: Record<string, string> = {
+  default: 'stitch-tag stitch-tag-info',
+  green: 'stitch-tag stitch-tag-success',
+  red: 'stitch-tag stitch-tag-error',
+  orange: 'stitch-tag stitch-tag-warning',
+  blue: 'stitch-tag stitch-tag-primary',
+  gold: 'stitch-tag stitch-tag-gold',
 }
 
 export default function ConflictCheck() {
@@ -109,7 +119,6 @@ export default function ConflictCheck() {
       const data = res?.data || res || []
       setHistory(Array.isArray(data) ? data : [])
     } catch (error) {
-      console.error('获取检索记录失败:', error)
       setHistory([])
     } finally {
       setHistoryLoading(false)
@@ -135,7 +144,6 @@ export default function ConflictCheck() {
       fetchHistory(historyKeyword)
     } catch (error) {
       message.error('检索失败')
-      console.error('Conflict check error:', error)
     } finally {
       setChecking(false)
     }
@@ -169,7 +177,6 @@ export default function ConflictCheck() {
       fetchHistory(historyKeyword)
     } catch (error) {
       message.error('深度检索失败')
-      console.error('Deep conflict check error:', error)
     } finally {
       setDeepChecking(false)
     }
@@ -208,7 +215,6 @@ export default function ConflictCheck() {
       }
     } catch (error) {
       message.error('审批通过失败')
-      console.error('Approve error:', error)
     } finally {
       setApprovalLoading(false)
     }
@@ -233,7 +239,6 @@ export default function ConflictCheck() {
       }
     } catch (error) {
       message.error('审批驳回失败')
-      console.error('Reject error:', error)
     } finally {
       setApprovalLoading(false)
     }
@@ -251,15 +256,15 @@ export default function ConflictCheck() {
             <div style={{ fontSize: 16, fontWeight: 600, color: cfg.color }}>
               检索结果：{cfg.label}
             </div>
-            <div style={{ fontSize: 12, color: '#717785' }}>
+            <div style={{ fontSize: 12, color: theme.textTertiary }}>
               检索时间：{formatDateTime(result.created_at)}
             </div>
           </div>
         </div>
         <div style={{ marginBottom: 8 }}>
-          <Tag color="default">当事人：{result.party_name}</Tag>
-          <Tag color="default">对方当事人：{result.opposing_party}</Tag>
-          {result.party_phone && <Tag color="default">电话：{result.party_phone}</Tag>}
+          <Tag className="stitch-tag stitch-tag-info">当事人：{result.party_name}</Tag>
+          <Tag className="stitch-tag stitch-tag-info">对方当事人：{result.opposing_party}</Tag>
+          {result.party_phone && <Tag className="stitch-tag stitch-tag-info">电话：{result.party_phone}</Tag>}
         </div>
         {result.conflict_detail ? (
           <div>
@@ -267,13 +272,13 @@ export default function ConflictCheck() {
             <Paragraph
               style={{
                 whiteSpace: 'pre-wrap',
-                background: '#ffffff',
+                background: theme.bgContainer,
                 padding: 12,
                 borderRadius: 8,
-                border: '1px solid #e2e2e4',
+                border: `1px solid ${theme.borderSecondary}`,
                 margin: 0,
                 fontSize: 13,
-                color: '#414753',
+                color: theme.textSecondary,
                 lineHeight: 1.8,
               }}
             >
@@ -285,7 +290,7 @@ export default function ConflictCheck() {
             type="success"
             showIcon
             message="未在现有案件中检索到相关当事人，可放心受理"
-            style={{ background: '#ffffff' }}
+            style={{ background: theme.bgContainer }}
           />
         )}
       </Card>
@@ -323,7 +328,8 @@ export default function ConflictCheck() {
       width: 110,
       render: (val: string) => {
         const cfg = checkResultConfig[val] || checkResultConfig.clear
-        return <Tag color={val === 'conflict' ? 'red' : val === 'warning' ? 'orange' : 'green'}>{cfg.label}</Tag>
+        const tagColor = val === 'conflict' ? 'red' : val === 'warning' ? 'orange' : 'green'
+        return <Tag className={tagColorToClassName[tagColor] || 'stitch-tag'}>{cfg.label}</Tag>
       },
     },
     {
@@ -348,7 +354,7 @@ export default function ConflictCheck() {
       width: 110,
       render: (val: string) => {
         const cfg = approvalStatusConfig[val] || approvalStatusConfig.pending
-        return <Tag color={cfg.color}>{cfg.label}</Tag>
+        return <Tag className={tagColorToClassName[cfg.color] || 'stitch-tag'}>{cfg.label}</Tag>
       },
     },
     {
@@ -378,12 +384,12 @@ export default function ConflictCheck() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="page-header" style={{ marginBottom: 0 }}>
         <h2 style={pageH2Style}>
-          <SafetyCertificateOutlined style={{ marginRight: 8, color: '#0071e3' }} />
+          <SafetyCertificateOutlined style={{ marginRight: 8, color: theme.primary }} />
           利冲检索
         </h2>
       </div>
 
-      <Card style={searchBarStyle}>
+      <Card className="stitch-filter-bar" style={searchBarStyle}>
         <Form form={form} layout="inline" onFinish={handleCheck}>
           <Form.Item
             name="party_name"
@@ -412,7 +418,7 @@ export default function ConflictCheck() {
             </Select>
           </Form.Item>
           <Form.Item>
-            <Space>
+            <Space className="stitch-btn-group">
               <Button type="primary" htmlType="submit" icon={<SearchOutlined />} loading={checking}>
                 执行检索
               </Button>
@@ -438,10 +444,10 @@ export default function ConflictCheck() {
           <div style={sectionTitleStyle}>历史检索记录</div>
           <Space size={6} align="center">
             <Switch checked={onlyConflict} onChange={(checked) => setOnlyConflict(checked)} />
-            <span style={{ fontSize: 13, color: '#414753' }}>只显示有冲突的当事人</span>
+            <span style={{ fontSize: 13, color: theme.textSecondary }}>只显示有冲突的当事人</span>
           </Space>
         </Space>
-        <Space>
+        <Space className="stitch-btn-group">
           <Input
             placeholder="搜索当事人/电话"
             value={historyKeyword}
@@ -453,7 +459,7 @@ export default function ConflictCheck() {
         </Space>
       </div>
 
-      <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+      <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
         <Table
           dataSource={filteredHistory}
           columns={historyColumns}

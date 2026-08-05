@@ -32,7 +32,8 @@ import {
   Cell,
 } from 'recharts'
 import axios from '../api/axios'
-
+import type { Dayjs } from 'dayjs'
+import { theme } from '../constants/theme'
 const { RangePicker } = DatePicker
 
 // 苹果风格卡片样式
@@ -57,7 +58,7 @@ const metricCardStyle: React.CSSProperties = {
 }
 
 // 排行榜颜色
-const RANK_COLORS = ['#0071e3', '#34c759', '#ff9f0a', '#5856d6', '#ff375f']
+const RANK_COLORS = [theme.primary, '#34c759', '#ff9f0a', '#5856d6', '#ff375f']
 
 export default function SalesPerformanceDashboard() {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
@@ -87,14 +88,14 @@ export default function SalesPerformanceDashboard() {
         axios.get('/dashboard/sales-performance', {
           params: { org_id: user.organization_id, start_date: dateRange[0], end_date: dateRange[1] },
         }),
-        axios.get('/dashboard/sales-ranking', params),
-      ])
+        axios.get('/dashboard/sales-ranking', { params }),
+      ]) as [Record<string, unknown>, Record<string, unknown>[]]
       setPerformance(perfRes || {})
       const rankList = (rankRes || []).slice(0, 5)
       setRanking(rankList)
       setDetails(rankRes || [])
     } catch (error) {
-      console.error('Fetch sales performance error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -106,7 +107,7 @@ export default function SalesPerformanceDashboard() {
       title: '接通量',
       value: Number(performance.connect_count || 0).toLocaleString(),
       icon: <PhoneOutlined />,
-      gradient: 'linear-gradient(135deg, #0071e3 0%, #00a8ff 100%)',
+      gradient: `linear-gradient(135deg, ${theme.primary} 0%, #00a8ff 100%)`,
       suffix: '次',
     },
     {
@@ -145,7 +146,7 @@ export default function SalesPerformanceDashboard() {
       title: '接待量',
       value: Number(performance.receive_count || 0).toLocaleString(),
       icon: <UserOutlined />,
-      gradient: 'linear-gradient(135deg, #0071e3 0%, #00a8ff 100%)',
+      gradient: `linear-gradient(135deg, ${theme.primary} 0%, #00a8ff 100%)`,
       suffix: '人',
     },
     {
@@ -198,9 +199,10 @@ export default function SalesPerformanceDashboard() {
       width: 80,
       render: (_: any, _record: any, idx: number) => {
         const rank = idx + 1
-        const colors = ['#FFD700', '#C0C0C0', '#CD7F32', '#0071e3', '#6e6e73']
+        // 使用 stitch-tag 变体替代 color 属性
+        const tagClasses = ['stitch-tag-gold', 'stitch-tag-neutral', 'stitch-tag-gold', 'stitch-tag-primary', 'stitch-tag-neutral']
         return (
-          <Tag color={colors[idx] || 'default'} style={{ borderRadius: 8, fontWeight: 600 }}>
+          <Tag className={`stitch-tag ${tagClasses[idx] || 'stitch-tag-neutral'}`} style={{ borderRadius: 8, fontWeight: 600 }}>
             第 {rank} 名
           </Tag>
         )
@@ -217,13 +219,13 @@ export default function SalesPerformanceDashboard() {
           { title: '接通量', dataIndex: 'connect_count', key: 'connect_count', align: 'right' as const, render: (v: number) => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{(v || 0).toLocaleString()}</span> },
           { title: '邀约量', dataIndex: 'invite_count', key: 'invite_count', align: 'right' as const, render: (v: number) => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{(v || 0).toLocaleString()}</span> },
           { title: '到所量', dataIndex: 'arrival_count', key: 'arrival_count', align: 'right' as const, render: (v: number) => <span style={{ fontVariantNumeric: 'tabular-nums', color: '#34c759', fontWeight: 600 }}>{(v || 0).toLocaleString()}</span> },
-          { title: '到所率', dataIndex: 'arrival_rate', key: 'arrival_rate', align: 'right' as const, render: (v: number) => <Tag color="blue" style={{ borderRadius: 8 }}>{(Number(v || 0)).toFixed(1)}%</Tag> },
+          { title: '到所率', dataIndex: 'arrival_rate', key: 'arrival_rate', align: 'right' as const, render: (v: number) => <Tag className="stitch-tag stitch-tag-info" style={{ borderRadius: 8 }}>{(Number(v || 0)).toFixed(1)}%</Tag> },
         ]
       : [
           { title: '接待量', dataIndex: 'receive_count', key: 'receive_count', align: 'right' as const, render: (v: number) => <span style={{ fontVariantNumeric: 'tabular-nums' }}>{(v || 0).toLocaleString()}</span> },
           { title: '签约量', dataIndex: 'sign_count', key: 'sign_count', align: 'right' as const, render: (v: number) => <span style={{ fontVariantNumeric: 'tabular-nums', color: '#34c759', fontWeight: 600 }}>{(v || 0).toLocaleString()}</span> },
-          { title: '签约率', dataIndex: 'sign_rate', key: 'sign_rate', align: 'right' as const, render: (v: number) => <Tag color="blue" style={{ borderRadius: 8 }}>{(Number(v || 0)).toFixed(1)}%</Tag> },
-          { title: '签约金额', dataIndex: 'sign_amount', key: 'sign_amount', align: 'right' as const, render: (v: number) => <span style={{ color: '#0071e3', fontWeight: 600 }}>¥{(Number(v || 0)).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> },
+          { title: '签约率', dataIndex: 'sign_rate', key: 'sign_rate', align: 'right' as const, render: (v: number) => <Tag className="stitch-tag stitch-tag-info" style={{ borderRadius: 8 }}>{(Number(v || 0)).toFixed(1)}%</Tag> },
+          { title: '签约金额', dataIndex: 'sign_amount', key: 'sign_amount', align: 'right' as const, render: (v: number) => <span style={{ color: theme.primary, fontWeight: 600 }}>¥{(Number(v || 0)).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> },
         ]),
   ]
 
@@ -243,11 +245,11 @@ export default function SalesPerformanceDashboard() {
       </div>
 
       {/* 筛选区 */}
-      <Card style={{ ...cardStyle, marginBottom: 16 }} styles={{ body: { padding: 16 } }}>
+      <Card className="stitch-filter-bar" style={{ ...cardStyle, marginBottom: 16 }} styles={{ body: { padding: 16 } }}>
         <Space wrap size={[12, 12]}>
           <RangePicker
             style={{ width: 240 }}
-            value={dateRange as any}
+            value={dateRange as unknown as [Dayjs, Dayjs] | undefined}
             onChange={(_: any, dateStrings: [string, string]) => setDateRange(dateStrings)}
           />
           <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading}>
@@ -319,11 +321,12 @@ export default function SalesPerformanceDashboard() {
         {/* 排行榜样 - 横向条形图 */}
         <Col xs={24} lg={12}>
           <Card
+            className="stitch-chart-card"
             style={{ ...cardStyle, height: '100%' }}
             title={
               <Space>
-                <TrophyOutlined style={{ color: '#0071e3' }} />
-                <span style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>
+                <TrophyOutlined style={{ color: theme.primary }} />
+                <span className="stitch-chart-title" style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>
                   TOP 5 排行榜 - {activeTab === 'invite' ? '到所量' : '签约金额'}
                 </span>
               </Space>
@@ -376,11 +379,12 @@ export default function SalesPerformanceDashboard() {
         {/* 个人明细表 */}
         <Col xs={24} lg={12}>
           <Card
+            className="stitch-table"
             style={{ ...cardStyle, height: '100%' }}
             title={
               <Space>
-                <TeamOutlined style={{ color: '#0071e3' }} />
-                <span style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>个人明细</span>
+                <TeamOutlined style={{ color: theme.primary }} />
+                <span className="stitch-chart-title" style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>个人明细</span>
               </Space>
             }
             styles={{ body: { padding: 0 } }}

@@ -24,6 +24,7 @@ import {
   FileWordOutlined,
 } from '@ant-design/icons';
 import axios from 'axios';
+import { theme } from '../constants/theme';
 
 interface ArchiveItem {
   id: string;
@@ -112,7 +113,6 @@ export default function CloudArchiveManagement() {
       setData(result.data || []);
       setTotal(result.total || 0);
     } catch (error) {
-      console.error('Fetch archives error:', error);
       setData([]);
     } finally {
       setLoading(false);
@@ -158,7 +158,6 @@ export default function CloudArchiveManagement() {
       message.success('删除成功');
       fetchData();
     } catch (error) {
-      console.error('Delete archive error:', error);
       message.error('删除失败');
     }
   };
@@ -233,7 +232,7 @@ export default function CloudArchiveManagement() {
       width: 160,
       fixed: 'right' as const,
       render: (_: any, record: ArchiveItem) => (
-        <Space size="small">
+        <Space size="small" className="stitch-btn-group">
           <Button
             type="link"
             size="small"
@@ -279,8 +278,9 @@ export default function CloudArchiveManagement() {
       </div>
 
       <div
+        className="stitch-filter-bar"
         style={{
-          background: '#fff',
+          background: theme.white,
           padding: 16,
           borderRadius: 8,
           marginBottom: 16,
@@ -317,7 +317,7 @@ export default function CloudArchiveManagement() {
         </Space>
       </div>
 
-      <div style={{ background: '#fff', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+      <div className="stitch-table" style={{ background: theme.white, borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
         <Table
           rowKey="id"
           columns={columns}

@@ -4,22 +4,22 @@ import { PlusOutlined, EditOutlined, EyeOutlined, UploadOutlined, SearchOutlined
 import axios from '../api/axios'
 import { generateLetter, closeCaseReport, archiveCase } from '../api/case'
 import { formatDate, formatDateTime } from '../utils/format'
-
+import { theme } from '../constants/theme'
 // === Material Design 3 Style Tokens ===
 const pageH2Style: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
   fontSize: 22,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
   margin: 0,
   letterSpacing: '0.01em',
 }
 
 const searchBarStyle: React.CSSProperties = {
-  background: '#ffffff',
+  background: theme.white,
   padding: 16,
   borderRadius: 12,
-  border: '1px solid #c1c6d6',
+  border: `1px solid ${theme.border}`,
   marginBottom: 16,
   display: 'flex',
   gap: 12,
@@ -37,7 +37,7 @@ const infoBlockStyle: React.CSSProperties = {
   padding: 16,
   borderRadius: 8,
   fontSize: 13,
-  color: '#414753',
+  color: theme.textSecondary,
   lineHeight: 1.7,
 }
 
@@ -45,7 +45,7 @@ const sectionTitleStyle: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
   fontSize: 15,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
   marginBottom: 8,
 }
 
@@ -54,11 +54,11 @@ type PillKind = 'neutral' | 'blue' | 'gold' | 'green' | 'red' | 'orange' | 'purp
 
 const pillColorMap: Record<PillKind, { bg: string; color: string }> = {
   neutral: { bg: 'rgba(113, 119, 133, 0.12)', color: '#5f6672' },
-  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: '#0071e3' },
+  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: theme.primary },
   gold: { bg: 'rgba(201, 169, 97, 0.15)', color: '#8c702e' },
-  green: { bg: 'rgba(46, 125, 50, 0.1)', color: '#2e7d32' },
-  red: { bg: 'rgba(186, 26, 26, 0.1)', color: '#ba1a1a' },
-  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: '#ed6c02' },
+  green: { bg: 'rgba(46, 125, 50, 0.1)', color: theme.success },
+  red: { bg: 'rgba(186, 26, 26, 0.1)', color: theme.error },
+  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: theme.warning },
   purple: { bg: 'rgba(114, 46, 209, 0.1)', color: '#722ed1' },
   cyan: { bg: 'rgba(0, 166, 167, 0.1)', color: '#00a6a7' },
   geekblue: { bg: 'rgba(47, 84, 235, 0.1)', color: '#2f54eb' },
@@ -143,11 +143,12 @@ const caseCategoryLabelMap: Record<string, string> = {
   consultant: '顾问',
 }
 
-const caseCategoryTagColorMap: Record<string, string> = {
-  civil: 'blue',
-  criminal: 'red',
-  admin: 'orange',
-  consultant: 'purple',
+// 案件大类 Tag 的 stitch-tag 变体映射
+const caseCategoryTagClassMap: Record<string, string> = {
+  civil: 'stitch-tag stitch-tag-info',
+  criminal: 'stitch-tag stitch-tag-error',
+  admin: 'stitch-tag stitch-tag-warning',
+  consultant: 'stitch-tag stitch-tag-gold',
 }
 
 // 案件阶段映射
@@ -158,15 +159,16 @@ const stageLabelMap: Record<string, string> = {
   closed: '已结案',
 }
 
-const stageTagColorMap: Record<string, string> = {
-  intake: 'default',
-  processing: 'blue',
-  closing: 'orange',
-  closed: 'green',
+// 案件阶段 Tag 的 stitch-tag 变体映射
+const stageTagClassMap: Record<string, string> = {
+  intake: 'stitch-tag',
+  processing: 'stitch-tag stitch-tag-info',
+  closing: 'stitch-tag stitch-tag-warning',
+  closed: 'stitch-tag stitch-tag-success',
 }
 
 export default function CaseManagement() {
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [detailVisible, setDetailVisible] = useState(false)
@@ -178,9 +180,9 @@ export default function CaseManagement() {
   const [changeActionType, setChangeActionType] = useState<string>('')
   // 出函弹窗状态
   const [letterVisible, setLetterVisible] = useState(false)
-  const [currentCase, setCurrentCase] = useState<any>(null)
-  const [documents, setDocuments] = useState<any[]>([])
-  const [lawyers, setLawyers] = useState<any[]>([])
+  const [currentCase, setCurrentCase] = useState<Record<string, unknown> | null>(null)
+  const [documents, setDocuments] = useState<Record<string, unknown>[]>([])
+  const [lawyers, setLawyers] = useState<Record<string, unknown>[]>([])
   const [searchParams, setSearchParams] = useState({
     case_no: '',
     client_name: '',
@@ -201,17 +203,17 @@ export default function CaseManagement() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const params: any = { org_id: user.organization_id }
+      const params: Record<string, unknown> = { org_id: user.organization_id }
       if (searchParams.case_no) params.case_no = searchParams.case_no
       if (searchParams.client_name) params.client_name = searchParams.client_name
       if (searchParams.status) params.status = searchParams.status
       if (searchParams.case_type) params.case_type = searchParams.case_type
       if (searchParams.days_no_maintain) params.days_no_maintain = searchParams.days_no_maintain
 
-      const res = await axios.get('/cases', { params })
-      setData(res.data || [])
+      const res = (await axios.get('/cases', { params })) as Record<string, unknown>
+      setData((res?.data || []) as Record<string, unknown>[])
     } catch (error) {
-      console.error('Fetch cases error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -219,10 +221,10 @@ export default function CaseManagement() {
 
   const fetchLawyers = async () => {
     try {
-      const res = await axios.get('/users', { params: { org_id: user.organization_id, role: 'lawyer' } })
-      setLawyers(res.data || [])
+      const res = (await axios.get('/users', { params: { org_id: user.organization_id, role: 'lawyer' } })) as Record<string, unknown>
+      setLawyers((res?.data || []) as Record<string, unknown>[])
     } catch (error) {
-      console.error('Fetch lawyers error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -239,7 +241,7 @@ export default function CaseManagement() {
     setModalVisible(true)
   }
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: Record<string, unknown>) => {
     try {
       await axios.post('/cases', { ...values, organization_id: user.organization_id })
       setModalVisible(false)
@@ -247,27 +249,27 @@ export default function CaseManagement() {
       fetchData()
     } catch (error) {
       message.error('案件创建失败')
-      console.error('Create case error:', error)
     }
   }
 
-  const handleViewDetail = async (record: any) => {
+  const handleViewDetail = async (record: Record<string, unknown>) => {
     setCurrentCase(record)
     try {
       const res = await axios.get(`/cases/${record.id}/documents`)
-      setDocuments(res || [])
+      setDocuments((res as Record<string, unknown>[]) || [])
     } catch (error) {
       setDocuments([])
     }
     setDetailVisible(true)
   }
 
-  const handleAssignLawyer = (record: any) => {
+  const handleAssignLawyer = (record: Record<string, unknown>) => {
     setCurrentCase(record)
     setAssignVisible(true)
   }
 
-  const handleSubmitAssign = async (values: any) => {
+  const handleSubmitAssign = async (values: Record<string, unknown>) => {
+    if (!currentCase) return
     try {
       await axios.put(`/cases/${currentCase.id}/assign`, values)
       setAssignVisible(false)
@@ -275,16 +277,16 @@ export default function CaseManagement() {
       fetchData()
     } catch (error) {
       message.error('律师分配失败')
-      console.error('Assign lawyer error:', error)
     }
   }
 
-  const handleChangeStatus = (record: any) => {
+  const handleChangeStatus = (record: Record<string, unknown>) => {
     setCurrentCase(record)
     setStatusVisible(true)
   }
 
-  const handleSubmitStatus = async (values: any) => {
+  const handleSubmitStatus = async (values: Record<string, unknown>) => {
+    if (!currentCase) return
     try {
       await axios.put(`/cases/${currentCase.id}/status`, values)
       setStatusVisible(false)
@@ -292,19 +294,19 @@ export default function CaseManagement() {
       fetchData()
     } catch (error) {
       message.error('状态更新失败')
-      console.error('Update status error:', error)
     }
   }
 
   // 打开变更/解约/作废弹窗
-  const handleChangeAction = (record: any, actionType: 'change' | 'terminate' | 'void') => {
+  const handleChangeAction = (record: Record<string, unknown>, actionType: 'change' | 'terminate' | 'void') => {
     setCurrentCase(record)
     setChangeActionType(actionType)
     setChangeActionVisible(true)
   }
 
   // 提交变更/解约/作废
-  const handleSubmitChangeAction = async (values: any) => {
+  const handleSubmitChangeAction = async (values: Record<string, unknown>) => {
+    if (!currentCase) return
     const actionLabelMap: Record<string, string> = {
       change: '变更',
       terminate: '解约',
@@ -317,57 +319,55 @@ export default function CaseManagement() {
       fetchData()
     } catch (error) {
       message.error(`${actionLabelMap[changeActionType] || '操作'}失败`)
-      console.error('Change action error:', error)
     }
   }
 
   // 打开出函弹窗
-  const handleGenerateLetter = (record: any) => {
+  const handleGenerateLetter = (record: Record<string, unknown>) => {
     setCurrentCase(record)
     setLetterVisible(true)
   }
 
   // 提交出函：type 为 court_letter 出庭函 / firm_letter 所函
   const handleSubmitLetter = async (type: string) => {
+    if (!currentCase) return
     try {
-      await generateLetter(currentCase.id, type)
+      await generateLetter(currentCase.id as string, type)
       setLetterVisible(false)
       message.success('出函成功')
     } catch (error) {
       message.error('出函失败')
-      console.error('Generate letter error:', error)
     }
   }
 
   // 生成结案报告
-  const handleCloseCaseReport = async (record: any) => {
+  const handleCloseCaseReport = async (record: Record<string, unknown>) => {
     try {
-      await closeCaseReport(record.id)
+      await closeCaseReport(record.id as string)
       message.success('结案报告已生成')
       fetchData()
     } catch (error) {
       message.error('结案报告生成失败')
-      console.error('Close case report error:', error)
     }
   }
 
   // 结案归档
-  const handleArchiveCase = async (record: any) => {
+  const handleArchiveCase = async (record: Record<string, unknown>) => {
     try {
-      await archiveCase(record.id)
+      await archiveCase(record.id as string)
       message.success('归档成功')
       fetchData()
     } catch (error) {
       message.error('归档失败')
-      console.error('Archive case error:', error)
     }
   }
 
-  const handleUploadDocument = async (file: any) => {
+  const handleUploadDocument = async (file: File) => {
+    if (!currentCase) return false
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('case_id', currentCase.id)
-    formData.append('uploader_id', user.id)
+    formData.append('case_id', currentCase.id as string)
+    formData.append('uploader_id', user.id as string)
     formData.append('doc_type', 'other')
 
     try {
@@ -376,10 +376,9 @@ export default function CaseManagement() {
       })
       message.success('文件上传成功')
       const res = await axios.get(`/cases/${currentCase.id}/documents`)
-      setDocuments(res || [])
+      setDocuments((res as Record<string, unknown>[]) || [])
     } catch (error) {
       message.error('文件上传失败')
-      console.error('Upload document error:', error)
     }
     return false
   }
@@ -434,7 +433,7 @@ export default function CaseManagement() {
       other: '其他',
     }[type]) },
     { title: '案件大类', dataIndex: 'case_category', key: 'case_category', render: (cat: string) => (
-      <Tag color={caseCategoryTagColorMap[cat] || 'default'}>{caseCategoryLabelMap[cat] || '-'}</Tag>
+      <Tag className={caseCategoryTagClassMap[cat] || 'stitch-tag'}>{caseCategoryLabelMap[cat] || '-'}</Tag>
     )},
     { title: '主办律师', dataIndex: 'lawyer_name', key: 'lawyer_name' },
     { title: '对方当事人', dataIndex: 'opposing_party', key: 'opposing_party' },
@@ -443,7 +442,7 @@ export default function CaseManagement() {
       <StatusPill text={caseStatusLabelMap[status] || '-'} kind={caseStatusKindMap[status] || 'neutral'} />
     )},
     { title: '案件阶段', dataIndex: 'stage', key: 'stage', render: (stage: string) => (
-      <Tag color={stageTagColorMap[stage] || 'default'}>{stageLabelMap[stage] || '-'}</Tag>
+      <Tag className={stageTagClassMap[stage] || 'stitch-tag'}>{stageLabelMap[stage] || '-'}</Tag>
     )},
     { title: '风险等级', dataIndex: 'risk_level', key: 'risk_level', render: (level: string) => (
       <StatusPill text={riskLabelMap[level] || '-'} kind={riskKindMap[level] || 'neutral'} />
@@ -457,16 +456,16 @@ export default function CaseManagement() {
     }},
     { title: '立案日期', dataIndex: 'filing_date', key: 'filing_date', render: (val: string) => formatDate(val) },
     { title: '预计结案', dataIndex: 'expected_close_date', key: 'expected_close_date', render: (val: string) => formatDate(val) },
-    { title: '操作', key: 'action', width: 420, render: (_: any, record: any) => {
+    { title: '操作', key: 'action', width: 420, render: (_: unknown, record: Record<string, unknown>) => {
       // 当案件处于 normal（正常）状态时，显示变更/解约/作废按钮
       const changeStatus = record.change_status || 'normal'
       const canAction = changeStatus === 'normal'
       // 案件阶段：用于控制结案报告/归档按钮显示
       const stage = record.stage || 'intake'
-      const canCloseReport = !['closing', 'closed'].includes(stage)
+      const canCloseReport = !['closing', 'closed'].includes(stage as string)
       const canArchive = stage === 'closing'
       return (
-        <Space wrap>
+        <Space wrap className="stitch-btn-group">
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
           <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleChangeStatus(record)}>状态</Button>
           {!record.assignee_lawyer_id && (
@@ -502,7 +501,7 @@ export default function CaseManagement() {
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAddCase}>创建案件</Button>
       </div>
 
-      <div className="search-bar" style={searchBarStyle}>
+      <div className="search-bar stitch-filter-bar" style={searchBarStyle}>
         <Input
           placeholder="案件编号搜索"
           prefix={<SearchOutlined />}
@@ -548,7 +547,7 @@ export default function CaseManagement() {
         <Button onClick={handleReset}>重置</Button>
       </div>
 
-      <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+      <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
         <Table dataSource={data} columns={columns} loading={loading} rowKey="id" size="small" />
       </Card>
 
@@ -638,34 +637,36 @@ export default function CaseManagement() {
         footer={null}
         width={800}
       >
-        {currentCase && (
+        {currentCase && (() => {
+          const c = currentCase as Record<string, unknown>
+          return (
           <div>
             <div className="detail-grid">
-              <div className="detail-item"><span className="detail-label">案件编号</span><span className="detail-value">{currentCase.case_no}</span></div>
-              <div className="detail-item"><span className="detail-label">客户姓名</span><span className="detail-value">{currentCase.client_name}</span></div>
-              <div className="detail-item"><span className="detail-label">客户手机号</span><span className="detail-value">{currentCase.client_phone || '-'}</span></div>
+              <div className="detail-item"><span className="detail-label">案件编号</span><span className="detail-value">{String(c.case_no ?? '')}</span></div>
+              <div className="detail-item"><span className="detail-label">客户姓名</span><span className="detail-value">{String(c.client_name ?? '')}</span></div>
+              <div className="detail-item"><span className="detail-label">客户手机号</span><span className="detail-value">{String(c.client_phone || '-')}</span></div>
               <div className="detail-item"><span className="detail-label">案由</span><span className="detail-value">{({
                   marriage: '婚姻家事',
                   traffic: '交通事故',
                   labor: '劳动争议',
                   debt: '债务逾期',
                   other: '其他',
-                }[currentCase.case_type as string])}</span></div>
-              <div className="detail-item"><span className="detail-label">主办律师</span><span className="detail-value">{currentCase.lawyer_name || '-'}</span></div>
-              <div className="detail-item"><span className="detail-label">受理法院</span><span className="detail-value">{currentCase.court || '-'}</span></div>
-              <div className="detail-item"><span className="detail-label">涉案金额</span><span className="detail-value">{currentCase.amount || '-'}</span></div>
+                }[c.case_type as string])}</span></div>
+              <div className="detail-item"><span className="detail-label">主办律师</span><span className="detail-value">{String(c.lawyer_name || '-')}</span></div>
+              <div className="detail-item"><span className="detail-label">受理法院</span><span className="detail-value">{String(c.court || '-')}</span></div>
+              <div className="detail-item"><span className="detail-label">涉案金额</span><span className="detail-value">{String(c.amount || '-')}</span></div>
               <div className="detail-item"><span className="detail-label">状态</span><span className="detail-value">
-                <StatusPill text={caseStatusLabelMap[currentCase.status as string] || '-'} kind={caseStatusKindMap[currentCase.status as string] || 'neutral'} />
+                <StatusPill text={caseStatusLabelMap[c.status as string] || '-'} kind={caseStatusKindMap[c.status as string] || 'neutral'} />
               </span></div>
-              <div className="detail-item"><span className="detail-label">立案日期</span><span className="detail-value">{formatDate(currentCase.filing_date)}</span></div>
-              <div className="detail-item"><span className="detail-label">预计结案</span><span className="detail-value">{formatDate(currentCase.expected_close_date)}</span></div>
-              <div className="detail-item"><span className="detail-label">创建时间</span><span className="detail-value">{formatDateTime(currentCase.created_at)}</span></div>
-              <div className="detail-item"><span className="detail-label">更新时间</span><span className="detail-value">{formatDateTime(currentCase.updated_at)}</span></div>
+              <div className="detail-item"><span className="detail-label">立案日期</span><span className="detail-value">{formatDate(c.filing_date as string)}</span></div>
+              <div className="detail-item"><span className="detail-label">预计结案</span><span className="detail-value">{formatDate(c.expected_close_date as string)}</span></div>
+              <div className="detail-item"><span className="detail-label">创建时间</span><span className="detail-value">{formatDateTime(c.created_at as string)}</span></div>
+              <div className="detail-item"><span className="detail-label">更新时间</span><span className="detail-value">{formatDateTime(c.updated_at as string)}</span></div>
             </div>
             <div style={{ marginBottom: 24 }}>
               <div style={sectionTitleStyle}>案件描述</div>
               <div className="info-block" style={infoBlockStyle}>
-                {currentCase.description || '-'}
+                {String(c.description || '-')}
               </div>
             </div>
             <div>
@@ -681,30 +682,34 @@ export default function CaseManagement() {
               </div>
               <div style={{ maxHeight: 300, overflow: 'auto' }}>
                 {documents.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#717785', padding: 24, fontSize: 13 }}>暂无文档</div>
+                  <div style={{ textAlign: 'center', color: theme.textTertiary, padding: 24, fontSize: 13 }}>暂无文档</div>
                 ) : (
-                  documents.map((doc) => (
-                    <div key={doc.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderBottom: '1px solid #e2e2e4' }}>
+                  documents.map((doc) => {
+                    const d = doc as Record<string, unknown>
+                    return (
+                    <div key={d.id as React.Key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderBottom: '1px solid #e2e2e4' }}>
                       <div>
-                        <div style={{ fontWeight: 600, color: '#1a1c1d', fontSize: 13 }}>{doc.file_name}</div>
-                        <div style={{ fontSize: 12, color: '#717785', marginTop: 2 }}>
+                        <div style={{ fontWeight: 600, color: theme.textBase, fontSize: 13 }}>{String(d.file_name ?? '')}</div>
+                        <div style={{ fontSize: 12, color: theme.textTertiary, marginTop: 2 }}>
                           {({
                             complaint: '起诉状',
                             evidence: '证据材料',
                             judgment: '判决书',
                             contract: '合同',
                             other: '其他',
-                          }[doc.doc_type as string])} - {formatDateTime(doc.created_at)}
+                          }[d.doc_type as string])} - {formatDateTime(d.created_at as string)}
                         </div>
                       </div>
-                      <Button type="link" size="small" onClick={() => window.open(`/api/documents/${doc.id}/download`)}>下载</Button>
+                      <Button type="link" size="small" onClick={() => window.open(`/api/documents/${d.id}/download`)}>下载</Button>
                     </div>
-                  ))
+                    )
+                  })
                 )}
               </div>
             </div>
           </div>
-        )}
+          )
+        })()}
       </Modal>
 
       <Modal
@@ -717,7 +722,7 @@ export default function CaseManagement() {
           <Form.Item name="lawyer_id" label="选择律师" rules={[{ required: true }]}>
             <Select>
               {lawyers.map(lawyer => (
-                <Select.Option key={lawyer.id} value={lawyer.id}>{lawyer.real_name}</Select.Option>
+                <Select.Option key={lawyer.id as React.Key} value={lawyer.id as string}>{lawyer.real_name as React.ReactNode}</Select.Option>
               ))}
             </Select>
           </Form.Item>
@@ -770,8 +775,8 @@ export default function CaseManagement() {
         footer={null}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ color: '#414753', fontSize: 13 }}>请选择函件类型：</div>
-          <Space>
+          <div style={{ color: theme.textSecondary, fontSize: 13 }}>请选择函件类型：</div>
+          <Space className="stitch-btn-group">
             <Button type="primary" onClick={() => handleSubmitLetter('court_letter')}>出庭函</Button>
             <Button type="primary" onClick={() => handleSubmitLetter('firm_letter')}>所函</Button>
           </Space>

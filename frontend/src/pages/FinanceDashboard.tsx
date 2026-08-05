@@ -37,7 +37,8 @@ import {
   Cell,
 } from 'recharts'
 import axios from '../api/axios'
-
+import type { Dayjs } from 'dayjs'
+import { theme } from '../constants/theme'
 const { RangePicker } = DatePicker
 
 const cardStyle: React.CSSProperties = {
@@ -60,7 +61,7 @@ const metricCardStyle: React.CSSProperties = {
   boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
 }
 
-const BAR_COLORS = ['#0071e3', '#34c759', '#ff9f0a', '#5856d6', '#ff375f', '#5ac8fa']
+const BAR_COLORS = [theme.primary, '#34c759', '#ff9f0a', '#5856d6', '#ff375f', '#5ac8fa']
 
 // 千分位金额格式化
 const fmtMoney = (v: number, withSymbol = true) => {
@@ -92,13 +93,13 @@ export default function FinanceDashboard() {
         start_date: dateRange[0],
         end_date: dateRange[1],
       }
-      const res = await axios.get('/dashboard/finance-dashboard', { params })
+      const res = await axios.get('/dashboard/finance-dashboard', { params }) as Record<string, unknown>
       setStats(res?.stats || {})
-      setRevenueTrend(res?.revenue_trend || [])
-      setProfitStruct(res?.profit_structure || [])
-      setDimStats(res?.dim_stats || [])
+      setRevenueTrend((res?.revenue_trend || []) as Record<string, unknown>[])
+      setProfitStruct((res?.profit_structure || []) as Record<string, unknown>[])
+      setDimStats((res?.dim_stats || []) as Record<string, unknown>[])
     } catch (error) {
-      console.error('Fetch finance dashboard error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -110,7 +111,7 @@ export default function FinanceDashboard() {
       title: '总营收',
       value: fmtMoney(stats.total_revenue),
       icon: <DollarOutlined />,
-      gradient: 'linear-gradient(135deg, #0071e3 0%, #00a8ff 100%)',
+      gradient: `linear-gradient(135deg, ${theme.primary} 0%, #00a8ff 100%)`,
       trend: stats.revenue_trend,
     },
     {
@@ -156,7 +157,7 @@ export default function FinanceDashboard() {
       dataIndex: 'revenue',
       key: 'revenue',
       align: 'right' as const,
-      render: (v: number) => <span style={{ color: '#0071e3', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(v)}</span>,
+      render: (v: number) => <span style={{ color: theme.primary, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{fmtMoney(v)}</span>,
     },
     {
       title: '成本',
@@ -179,8 +180,9 @@ export default function FinanceDashboard() {
       align: 'right' as const,
       render: (v: number) => {
         const rate = Number(v || 0)
-        const color = rate >= 30 ? 'green' : rate >= 15 ? 'orange' : 'red'
-        return <Tag color={color} style={{ borderRadius: 8, fontWeight: 600 }}>{rate.toFixed(1)}%</Tag>
+        // 使用 stitch-tag 变体替代 color 属性
+        const tagClass = rate >= 30 ? 'stitch-tag-success' : rate >= 15 ? 'stitch-tag-warning' : 'stitch-tag-error'
+        return <Tag className={`stitch-tag ${tagClass}`} style={{ borderRadius: 8, fontWeight: 600 }}>{rate.toFixed(1)}%</Tag>
       },
     },
   ]
@@ -199,11 +201,11 @@ export default function FinanceDashboard() {
         <div style={{ fontSize: 14, color: '#6e6e73', marginTop: 4 }}>营收、回款、成本、利润的多维度财务分析</div>
       </div>
 
-      <Card style={{ ...cardStyle, marginBottom: 16 }} styles={{ body: { padding: 16 } }}>
+      <Card className="stitch-filter-bar" style={{ ...cardStyle, marginBottom: 16 }} styles={{ body: { padding: 16 } }}>
         <Space wrap size={[12, 12]}>
           <RangePicker
             style={{ width: 240 }}
-            value={dateRange as any}
+            value={dateRange as unknown as [Dayjs, Dayjs] | undefined}
             onChange={(_: any, dateStrings: [string, string]) => setDateRange(dateStrings)}
           />
           <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading}>
@@ -250,11 +252,12 @@ export default function FinanceDashboard() {
         {/* 营收趋势折线图 */}
         <Col xs={24} lg={12}>
           <Card
+            className="stitch-chart-card"
             style={{ ...cardStyle, height: '100%' }}
             title={
               <Space>
-                <LineChartOutlined style={{ color: '#0071e3' }} />
-                <span style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>营收趋势</span>
+                <LineChartOutlined style={{ color: theme.primary }} />
+                <span className="stitch-chart-title" style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>营收趋势</span>
               </Space>
             }
             styles={{ body: { padding: 24 } }}
@@ -280,9 +283,9 @@ export default function FinanceDashboard() {
                     <Line
                       type="monotone"
                       dataKey="revenue"
-                      stroke="#0071e3"
+                      stroke={theme.primary}
                       strokeWidth={3}
-                      dot={{ r: 5, fill: '#0071e3', strokeWidth: 2, stroke: '#fff' }}
+                      dot={{ r: 5, fill: theme.primary, strokeWidth: 2, stroke: '#fff' }}
                       activeDot={{ r: 7 }}
                       name="营收"
                     />
@@ -305,11 +308,12 @@ export default function FinanceDashboard() {
         {/* 盈利结构柱状图 */}
         <Col xs={24} lg={12}>
           <Card
+            className="stitch-chart-card"
             style={{ ...cardStyle, height: '100%' }}
             title={
               <Space>
-                <BarChartOutlined style={{ color: '#0071e3' }} />
-                <span style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>盈利结构分析（按案由）</span>
+                <BarChartOutlined style={{ color: theme.primary }} />
+                <span className="stitch-chart-title" style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>盈利结构分析（按案由）</span>
               </Space>
             }
             styles={{ body: { padding: 24 } }}
@@ -332,7 +336,7 @@ export default function FinanceDashboard() {
                       }}
                     />
                     <Legend wrapperStyle={{ fontSize: 12, color: '#6e6e73' }} />
-                    <Bar dataKey="revenue" name="营收" fill="#0071e3" radius={[8, 8, 0, 0]} barSize={20}>
+                    <Bar dataKey="revenue" name="营收" fill={theme.primary} radius={[8, 8, 0, 0]} barSize={20}>
                       {profitStruct.map((_, idx) => (
                         <Cell key={idx} fill={BAR_COLORS[idx % BAR_COLORS.length]} />
                       ))}
@@ -349,12 +353,13 @@ export default function FinanceDashboard() {
 
       {/* 分维度统计表 */}
       <Card
+        className="stitch-table"
         style={cardStyle}
         title={
           <Space direction="vertical" size={8}>
             <Space>
-              <TableOutlined style={{ color: '#0071e3' }} />
-              <span style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>分维度统计</span>
+              <TableOutlined style={{ color: theme.primary }} />
+              <span className="stitch-chart-title" style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>分维度统计</span>
             </Space>
             <Segmented
               size="small"

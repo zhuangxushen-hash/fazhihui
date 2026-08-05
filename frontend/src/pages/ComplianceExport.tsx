@@ -9,12 +9,12 @@ import {
 } from '@ant-design/icons'
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
-
+import { theme } from '../constants/theme'
 const pageH2Style: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
   fontSize: 22,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
   margin: 0,
   letterSpacing: '0.01em',
 }
@@ -25,7 +25,7 @@ const tableCardStyle: React.CSSProperties = {
 }
 
 const cardHeadStyle: React.CSSProperties = {
-  borderBottom: '1px solid #c1c6d6',
+  borderBottom: `1px solid ${theme.border}`,
   padding: '0 20px',
   minHeight: 56,
 }
@@ -34,18 +34,18 @@ const cardTitleStyle: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
   fontSize: 16,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
 }
 
 type PillKind = 'neutral' | 'blue' | 'gold' | 'green' | 'red' | 'orange'
 
 const pillColorMap: Record<PillKind, { bg: string; color: string }> = {
   neutral: { bg: 'rgba(113, 119, 133, 0.12)', color: '#5f6672' },
-  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: '#0071e3' },
+  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: theme.primary },
   gold: { bg: 'rgba(201, 169, 97, 0.15)', color: '#8c702e' },
-  green: { bg: 'rgba(46, 125, 50, 0.1)', color: '#2e7d32' },
-  red: { bg: 'rgba(186, 26, 26, 0.1)', color: '#ba1a1a' },
-  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: '#ed6c02' },
+  green: { bg: 'rgba(46, 125, 50, 0.1)', color: theme.success },
+  red: { bg: 'rgba(186, 26, 26, 0.1)', color: theme.error },
+  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: theme.warning },
 }
 
 const StatusPill = ({ text, kind }: { text: string; kind: PillKind }) => {
@@ -109,16 +109,15 @@ export default function ComplianceExport() {
       if (activeTab === 'templates') {
         const res = await axios.get('/compliance/export-templates', {
           params: { org_id: user.organization_id },
-        })
+        }) as Record<string, unknown>[]
         setTemplates(res || [])
       } else if (activeTab === 'history') {
         const res = await axios.get('/compliance/export-history', {
           params: { org_id: user.organization_id },
-        })
+        }) as Record<string, unknown>[]
         setExportHistory(res || [])
       }
     } catch (error) {
-      console.error('Fetch export data error:', error)
       message.error('获取导出数据失败')
     } finally {
       setLoading(false)
@@ -311,22 +310,22 @@ export default function ComplianceExport() {
     {
       title: '合规记录',
       value: exportResult.summary.total_compliance_records,
-      color: '#0071e3',
+      color: theme.primary,
     },
     {
       title: '投诉记录',
       value: exportResult.summary.total_complaints,
-      color: '#ed6c02',
+      color: theme.warning,
     },
     {
       title: '营销内容',
       value: exportResult.summary.total_marketing_contents,
-      color: '#2e7d32',
+      color: theme.success,
     },
     {
       title: '销售合规',
       value: exportResult.summary.total_sales_compliance,
-      color: '#ba1a1a',
+      color: theme.error,
     },
     {
       title: '签署合规',
@@ -336,7 +335,7 @@ export default function ComplianceExport() {
     {
       title: '谈案质检',
       value: exportResult.summary.total_quality_checks,
-      color: '#717785',
+      color: theme.textTertiary,
     },
   ] : []
 
@@ -369,7 +368,7 @@ export default function ComplianceExport() {
                 </span>
               ),
               children: (
-                <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+                <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
                   <Table
                     dataSource={templates}
                     columns={templateColumns}
@@ -444,7 +443,7 @@ export default function ComplianceExport() {
                             </Select>
                           </Form.Item>
                           <Form.Item>
-                            <Space>
+                            <Space className="stitch-btn-group">
                               <Button
                                 type="primary"
                                 icon={<ExportOutlined />}
@@ -467,7 +466,7 @@ export default function ComplianceExport() {
                         headStyle={cardHeadStyle}
                         style={{ borderRadius: 12 }}
                       >
-                        <div style={{ fontSize: 13, color: '#414753', lineHeight: 2 }}>
+                        <div style={{ fontSize: 13, color: theme.textSecondary, lineHeight: 2 }}>
                           <p style={{ margin: '8px 0' }}>1. 选择合适的导出模板可快速配置导出字段</p>
                           <p style={{ margin: '8px 0' }}>2. 筛选条件可按合规类型和时间范围过滤</p>
                           <p style={{ margin: '8px 0' }}>3. 导出内容包含合规记录、投诉、营销内容、销售合规、签署合规、谈案质检等全量数据</p>
@@ -488,7 +487,7 @@ export default function ComplianceExport() {
                 </span>
               ),
               children: (
-                <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+                <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
                   <Table
                     dataSource={exportHistory}
                     columns={historyColumns}
@@ -529,7 +528,7 @@ export default function ComplianceExport() {
       >
         {exportResult && (
           <>
-            <div style={{ marginBottom: 16, padding: 16, background: '#f9f9fb', borderRadius: 12 }}>
+            <div style={{ marginBottom: 16, padding: 16, background: theme.bgLayout, borderRadius: 12 }}>
               <Row gutter={[16, 16]}>
                 {summaryCards.map((card: any, index: number) => (
                   <Col xs={12} sm={8} key={index}>
@@ -537,13 +536,13 @@ export default function ComplianceExport() {
                       <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 28, fontWeight: 700, color: card.color, lineHeight: 1.2 }}>
                         {card.value}
                       </div>
-                      <div style={{ fontSize: 12, color: '#717785', marginTop: 4 }}>{card.title}</div>
+                      <div style={{ fontSize: 12, color: theme.textTertiary, marginTop: 4 }}>{card.title}</div>
                     </div>
                   </Col>
                 ))}
               </Row>
             </div>
-            <div style={{ fontSize: 13, color: '#414753', marginBottom: 12 }}>
+            <div style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 12 }}>
               <div style={{ marginBottom: 8 }}>
                 <strong>导出时间：</strong>{formatDateTime(exportResult.export_time)}
               </div>
@@ -555,7 +554,7 @@ export default function ComplianceExport() {
             </div>
             <Progress
               percent={100}
-              strokeColor={{ from: '#0071e3', to: '#c9a961' }}
+              strokeColor={{ from: theme.primary, to: theme.brandGold }}
               style={{ marginTop: 8 }}
             />
           </>

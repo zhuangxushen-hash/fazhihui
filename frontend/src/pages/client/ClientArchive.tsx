@@ -98,10 +98,10 @@ export default function ClientArchive() {
   const fetchCases = async () => {
     setLoadingCases(true)
     try {
-      const res = await axios.post('/client/cases', { client_id: user.id })
+      const res = await axios.post('/client/cases', { client_id: user.id }) as Record<string, unknown>[]
       setCases(res || [])
     } catch (error) {
-      console.error('Fetch cases error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoadingCases(false)
     }
@@ -115,10 +115,10 @@ export default function ClientArchive() {
         client_id: user.id,
         case_id: filterCaseId,
         file_type: filterFileType,
-      })
+      }) as Record<string, unknown>[]
       setArchives(res || [])
     } catch (error) {
-      console.error('Fetch archives error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -163,7 +163,6 @@ export default function ClientArchive() {
       setUploadModalOpen(false)
       fetchArchives()
     } catch (error) {
-      console.error('Upload archive error:', error)
       message.error('上传失败，请重试')
     } finally {
       setUploading(false)
@@ -187,7 +186,6 @@ export default function ClientArchive() {
       setDeletingId('')
       fetchArchives()
     } catch (error) {
-      console.error('Delete archive error:', error)
       message.error('删除失败，请重试')
     }
   }

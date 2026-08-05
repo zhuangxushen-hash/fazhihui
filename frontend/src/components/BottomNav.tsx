@@ -1,6 +1,6 @@
 import { FileTextOutlined, MessageOutlined, CreditCardOutlined, UserOutlined, CloudOutlined } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
-
+import { theme } from '../constants/theme'
 export default function BottomNav() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -82,7 +82,7 @@ export default function BottomNav() {
                   transform: 'translateX(-50%)',
                   width: 24,
                   height: 3,
-                  background: '#c9a961',
+                  background: theme.brandGold,
                   borderRadius: 2,
                 }}
               />

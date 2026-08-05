@@ -17,6 +17,7 @@ import {
 import type { UploadProps } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import axios from '../api/axios'
+import { theme } from '../constants/theme'
 
 // 左侧菜单8个子项（原6个AI能力 + 2个专项入口）
 const menuItems = [
@@ -36,13 +37,13 @@ const cardList = [
     key: 'ai-chat',
     title: 'AI问答',
     desc: '基于大语言模型的智能法律问答，支持自然语言交互',
-    icon: <MessageOutlined style={{ fontSize: 32, color: '#1677ff' }} />,
+    icon: <MessageOutlined style={{ fontSize: 32, color: theme.primary }} />,
   },
   {
     key: 'contract-review',
     title: '合同审查',
     desc: '上传合同文件，AI智能识别风险条款并提供修改建议',
-    icon: <AuditOutlined style={{ fontSize: 32, color: '#52c41a' }} />,
+    icon: <AuditOutlined style={{ fontSize: 32, color: theme.success }} />,
   },
   {
     key: 'legal-research',
@@ -54,7 +55,7 @@ const cardList = [
     key: 'similar-recommend',
     title: '类案智推',
     desc: '基于案情描述智能推荐相似案例，辅助案情研判',
-    icon: <BulbOutlined style={{ fontSize: 32, color: '#fa8c16' }} />,
+    icon: <BulbOutlined style={{ fontSize: 32, color: theme.warning }} />,
   },
   {
     key: 'similar-search',
@@ -72,13 +73,13 @@ const cardList = [
     key: 'legal-doc-gen',
     title: '法律文书生成',
     desc: '基于模板自动生成起诉状、答辩状、代理词等法律文书，支持变量填充与批量生成',
-    icon: <FileTextOutlined style={{ fontSize: 32, color: '#1677ff' }} />,
+    icon: <FileTextOutlined style={{ fontSize: 32, color: theme.primary }} />,
   },
   {
     key: 'marketing-content',
     title: '营销内容生成',
     desc: '生成抖音、百度、微信等平台营销文案，内置合规预审，违规内容自动高亮',
-    icon: <NotificationOutlined style={{ fontSize: 32, color: '#52c41a' }} />,
+    icon: <NotificationOutlined style={{ fontSize: 32, color: theme.success }} />,
   },
 ]
 
@@ -116,7 +117,7 @@ export default function AINavigation() {
   // 类案智推/检索状态已删除：功能已合并至 SimilarCases 专项页
   // 法规检索
   const [lawInput, setLawInput] = useState('')
-  const [lawList, setLawList] = useState<any[]>([])
+  const [lawList, setLawList] = useState<Record<string, unknown>[]>([])
   const [lawLoading, setLawLoading] = useState(false)
 
   // 获取AI导航数据
@@ -190,8 +191,9 @@ export default function AINavigation() {
     setChatInput('')
     setChatLoading(true)
     try {
-      const res: any = await axios.post('/ai/chat', { message: currentInput })
-      const reply = res?.data?.reply || res?.reply || res?.data?.message || ''
+      const res = (await axios.post('/ai/chat', { message: currentInput })) as Record<string, unknown>
+      const resData = res?.data as Record<string, unknown> | undefined
+      const reply = (resData?.reply || res?.reply || resData?.message || '') as string
       if (reply) {
         setChatMessages((prev) => [...prev, { role: 'assistant', content: reply }])
       } else {
@@ -241,8 +243,9 @@ export default function AINavigation() {
     setResearching(true)
     setResearchResult('')
     try {
-      const res: any = await axios.post('/ai/legal-research', { topic: researchInput })
-      const result = res?.data?.result || res?.result || ''
+      const res = (await axios.post('/ai/legal-research', { topic: researchInput })) as Record<string, unknown>
+      const resData = res?.data as Record<string, unknown> | undefined
+      const result = (resData?.result || res?.result || '') as string
       if (result) {
         setResearchResult(result)
       } else {
@@ -265,8 +268,9 @@ export default function AINavigation() {
     }
     setLawLoading(true)
     try {
-      const res: any = await axios.get('/ai/laws', { params: { keyword: lawInput } })
-      const list = res?.data?.list || res?.list || []
+      const res = (await axios.get('/ai/laws', { params: { keyword: lawInput } })) as Record<string, unknown>
+      const resData = res?.data as Record<string, unknown> | undefined
+      const list = (resData?.list as Record<string, unknown>[]) || (res?.list as Record<string, unknown>[]) || []
       setLawList(list.length > 0 ? list : mockLaws)
     } catch (error) {
       // 接口不存在时使用本地mock数据
@@ -291,7 +295,7 @@ export default function AINavigation() {
                 {card.icon}
               </div>
               <h3 style={{ textAlign: 'center', margin: '0 0 8px' }}>{card.title}</h3>
-              <p style={{ color: '#666', minHeight: 44, marginBottom: 16 }}>{card.desc}</p>
+              <p style={{ color: theme.textTertiary, minHeight: 44, marginBottom: 16 }}>{card.desc}</p>
               <div style={{ textAlign: 'center' }}>
                 <Button type="primary" onClick={() => handleEnterCard(card.key)}>进入</Button>
               </div>
@@ -304,11 +308,11 @@ export default function AINavigation() {
 
   // AI问答视图
   const renderChat = () => (
-    <div style={{ background: '#fff', padding: 16, borderRadius: 8, height: 'calc(100vh - 140px)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ background: theme.bgContainer, padding: 16, borderRadius: 8, height: 'calc(100vh - 140px)', display: 'flex', flexDirection: 'column' }}>
       <div style={{ marginBottom: 16 }}>
         <Button type="link" icon={<ArrowLeftOutlined />} onClick={handleBackHome}>返回导航</Button>
       </div>
-      <div ref={chatListRef} style={{ flex: 1, overflow: 'auto', padding: 16, background: '#fafafa', borderRadius: 8, marginBottom: 16 }}>
+      <div ref={chatListRef} style={{ flex: 1, overflow: 'auto', padding: 16, background: theme.bgSurface, borderRadius: 8, marginBottom: 16 }}>
         {chatMessages.length === 0 ? (
           <Empty description="开始与AI对话吧" />
         ) : (
@@ -326,8 +330,8 @@ export default function AINavigation() {
                   maxWidth: '70%',
                   padding: '8px 12px',
                   borderRadius: 8,
-                  background: msg.role === 'user' ? '#1677ff' : '#f0f0f0',
-                  color: msg.role === 'user' ? '#fff' : '#333',
+                  background: msg.role === 'user' ? theme.primary : theme.bgSurfaceMedium,
+                  color: msg.role === 'user' ? theme.onPrimary : theme.textBase,
                   whiteSpace: 'pre-wrap',
                 }}
               >
@@ -338,7 +342,7 @@ export default function AINavigation() {
         )}
         {chatLoading && (
           <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 12 }}>
-            <div style={{ padding: '8px 12px', borderRadius: 8, background: '#f0f0f0', color: '#333' }}>
+            <div style={{ padding: '8px 12px', borderRadius: 8, background: theme.bgSurfaceMedium, color: theme.textBase }}>
               <Spin size="small" /> AI正在思考...
             </div>
           </div>
@@ -366,7 +370,7 @@ export default function AINavigation() {
 
   // 合同审查视图
   const renderContractReview = () => (
-    <div style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
+    <div style={{ background: theme.bgContainer, padding: 16, borderRadius: 8 }}>
       <div style={{ marginBottom: 16 }}>
         <Button type="link" icon={<ArrowLeftOutlined />} onClick={handleBackHome}>返回导航</Button>
       </div>
@@ -380,7 +384,7 @@ export default function AINavigation() {
       </Upload.Dragger>
       <Spin spinning={contractReviewing} tip="合同审查中...">
         {contractResult && (
-          <div style={{ padding: 16, background: '#fafafa', borderRadius: 8 }}>
+          <div style={{ padding: 16, background: theme.bgSurface, borderRadius: 8 }}>
             <h4 style={{ marginBottom: 12 }}>审查结果</h4>
             <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.8 }}>{contractResult}</div>
           </div>
@@ -391,7 +395,7 @@ export default function AINavigation() {
 
   // 法律研究视图
   const renderLegalResearch = () => (
-    <div style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
+    <div style={{ background: theme.bgContainer, padding: 16, borderRadius: 8 }}>
       <div style={{ marginBottom: 16 }}>
         <Button type="link" icon={<ArrowLeftOutlined />} onClick={handleBackHome}>返回导航</Button>
       </div>
@@ -407,7 +411,7 @@ export default function AINavigation() {
       </Space.Compact>
       <Spin spinning={researching} tip="研究中...">
         {researchResult && (
-          <div style={{ padding: 16, background: '#fafafa', borderRadius: 8 }}>
+          <div style={{ padding: 16, background: theme.bgSurface, borderRadius: 8 }}>
             <h4 style={{ marginBottom: 12 }}>研究结果</h4>
             <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.8 }}>{researchResult}</div>
           </div>
@@ -420,7 +424,7 @@ export default function AINavigation() {
 
   // 法规检索视图
   const renderLawSearch = () => (
-    <div style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
+    <div style={{ background: theme.bgContainer, padding: 16, borderRadius: 8 }}>
       <div style={{ marginBottom: 16 }}>
         <Button type="link" icon={<ArrowLeftOutlined />} onClick={handleBackHome}>返回导航</Button>
       </div>
@@ -437,15 +441,15 @@ export default function AINavigation() {
       <Spin spinning={lawLoading}>
         {lawList.length > 0 ? (
           lawList.map((item) => (
-            <Card key={item.key} size="small" style={{ marginBottom: 12 }}>
+            <Card key={item.key as string} size="small" style={{ marginBottom: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontWeight: 600, marginBottom: 4 }}>{item.name}</div>
-                  <div style={{ color: '#888', fontSize: 12 }}>
-                    {item.authority} | 生效日期：{item.effective}
+                  <div style={{ fontWeight: 600, marginBottom: 4 }}>{item.name as string}</div>
+                  <div style={{ color: theme.textTertiary, fontSize: 12 }}>
+                    {item.authority as string} | 生效日期：{item.effective as string}
                   </div>
                 </div>
-                <Tag color="purple">{item.category}</Tag>
+                <Tag className="stitch-tag stitch-tag-info">{item.category as string}</Tag>
               </div>
             </Card>
           ))
@@ -484,7 +488,7 @@ export default function AINavigation() {
       </div>
       <div style={{ display: 'flex', gap: 16 }}>
         {/* 左侧菜单 */}
-        <div style={{ background: '#fff', padding: 8, borderRadius: 8, width: 220, flexShrink: 0 }}>
+        <div style={{ background: theme.bgContainer, padding: 8, borderRadius: 8, width: 220, flexShrink: 0 }}>
           <Menu
             mode="inline"
             selectedKeys={[activeMenu]}

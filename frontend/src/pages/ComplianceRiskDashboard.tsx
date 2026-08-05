@@ -32,7 +32,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
-
+import { theme } from '../constants/theme'
 const cardStyle: React.CSSProperties = {
   background: 'rgba(255, 255, 255, 0.72)',
   backdropFilter: 'saturate(180%) blur(20px)',
@@ -54,13 +54,13 @@ const metricCardStyle: React.CSSProperties = {
 }
 
 // 环节颜色配置
-const SEGMENT_COLORS = ['#0071e3', '#34c759', '#ff9f0a', '#ff375f']
+const SEGMENT_COLORS = [theme.primary, '#34c759', '#ff9f0a', '#ff375f']
 
 // 风险等级颜色映射
-const RISK_LEVEL_CONFIG: Record<string, { color: string; tagColor: string; bg: string; label: string }> = {
-  high: { color: '#ff375f', tagColor: 'red', bg: 'rgba(255, 55, 95, 0.08)', label: '高风险' },
-  medium: { color: '#ff9f0a', tagColor: 'orange', bg: 'rgba(255, 159, 10, 0.08)', label: '中风险' },
-  low: { color: '#ffcc00', tagColor: 'gold', bg: 'rgba(255, 204, 0, 0.08)', label: '低风险' },
+const RISK_LEVEL_CONFIG: Record<string, { color: string; tagClass: string; bg: string; label: string }> = {
+  high: { color: '#ff375f', tagClass: 'stitch-tag-error', bg: 'rgba(255, 55, 95, 0.08)', label: '高风险' },
+  medium: { color: '#ff9f0a', tagClass: 'stitch-tag-warning', bg: 'rgba(255, 159, 10, 0.08)', label: '中风险' },
+  low: { color: '#ffcc00', tagClass: 'stitch-tag-gold', bg: 'rgba(255, 204, 0, 0.08)', label: '低风险' },
 }
 
 // 环节名称映射
@@ -98,13 +98,13 @@ export default function ComplianceRiskDashboard() {
     try {
       const res = await axios.get('/dashboard/compliance-risk-dashboard', {
         params: { org_id: user.organization_id },
-      })
+      }) as Record<string, unknown>
       setStats(res?.stats || {})
-      setSegmentDist(res?.segment_distribution || [])
-      setTopRisks(res?.top_risks || [])
-      setRiskList(res?.risk_list || [])
+      setSegmentDist((res?.segment_distribution || []) as Record<string, unknown>[])
+      setTopRisks((res?.top_risks || []) as Record<string, unknown>[])
+      setRiskList((res?.risk_list || []) as Record<string, unknown>[])
     } catch (error) {
-      console.error('Fetch compliance risk dashboard error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -152,7 +152,7 @@ export default function ComplianceRiskDashboard() {
       render: (level: string) => {
         const cfg = RISK_LEVEL_CONFIG[level] || RISK_LEVEL_CONFIG.low
         return (
-          <Tag color={cfg.tagColor} style={{ borderRadius: 8, fontWeight: 600 }}>
+          <Tag className={`stitch-tag ${cfg.tagClass}`} style={{ borderRadius: 8, fontWeight: 600 }}>
             {cfg.label}
           </Tag>
         )
@@ -163,7 +163,7 @@ export default function ComplianceRiskDashboard() {
       dataIndex: 'segment',
       key: 'segment',
       width: 110,
-      render: (seg: string) => <Tag style={{ borderRadius: 8 }}>{SEGMENT_LABELS[seg] || seg}</Tag>,
+      render: (seg: string) => <Tag className="stitch-tag" style={{ borderRadius: 8 }}>{SEGMENT_LABELS[seg] || seg}</Tag>,
     },
     {
       title: '风险事项',
@@ -198,14 +198,15 @@ export default function ComplianceRiskDashboard() {
       key: 'status',
       width: 100,
       render: (status: string) => {
-        const map: Record<string, { color: string; text: string }> = {
-          pending: { color: 'orange', text: '待处理' },
-          processing: { color: 'blue', text: '处理中' },
-          resolved: { color: 'green', text: '已整改' },
-          overdue: { color: 'red', text: '已超期' },
+        // 使用 stitch-tag 变体替代 color 属性
+        const map: Record<string, { tagClass: string; text: string }> = {
+          pending: { tagClass: 'stitch-tag-warning', text: '待处理' },
+          processing: { tagClass: 'stitch-tag-info', text: '处理中' },
+          resolved: { tagClass: 'stitch-tag-success', text: '已整改' },
+          overdue: { tagClass: 'stitch-tag-error', text: '已超期' },
         }
-        const cfg = map[status] || { color: 'default', text: status }
-        return <Tag color={cfg.color} style={{ borderRadius: 8 }}>{cfg.text}</Tag>
+        const cfg = map[status] || { tagClass: 'stitch-tag', text: status }
+        return <Tag className={`stitch-tag ${cfg.tagClass}`} style={{ borderRadius: 8 }}>{cfg.text}</Tag>
       },
     },
     {
@@ -260,7 +261,7 @@ export default function ComplianceRiskDashboard() {
       render: (level: string) => {
         const cfg = RISK_LEVEL_CONFIG[level] || RISK_LEVEL_CONFIG.low
         return (
-          <Tag color={cfg.tagColor} style={{ borderRadius: 8, fontWeight: 600 }}>
+          <Tag className={`stitch-tag ${cfg.tagClass}`} style={{ borderRadius: 8, fontWeight: 600 }}>
             {cfg.label}
           </Tag>
         )
@@ -296,9 +297,11 @@ export default function ComplianceRiskDashboard() {
           <div style={{ fontSize: 28, fontWeight: 700, color: '#1d1d1f', letterSpacing: -0.4 }}>合规风险监控看板</div>
           <div style={{ fontSize: 14, color: '#6e6e73', marginTop: 4 }}>获客、谈案、办案、财务全环节的风险预警与整改跟踪</div>
         </div>
-        <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading}>
-          刷新
-        </Button>
+        <Space className="stitch-btn-group">
+          <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading}>
+            刷新
+          </Button>
+        </Space>
       </div>
 
       {/* 指标卡片 */}
@@ -337,11 +340,12 @@ export default function ComplianceRiskDashboard() {
         {/* 环节风险分布饼图 */}
         <Col xs={24} lg={10}>
           <Card
+            className="stitch-chart-card"
             style={{ ...cardStyle, height: '100%' }}
             title={
               <Space>
-                <AlertOutlined style={{ color: '#0071e3' }} />
-                <span style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>环节风险分布</span>
+                <AlertOutlined style={{ color: theme.primary }} />
+                <span className="stitch-chart-title" style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>环节风险分布</span>
               </Space>
             }
             styles={{ body: { padding: 24 } }}
@@ -392,11 +396,12 @@ export default function ComplianceRiskDashboard() {
         {/* 高风险事项置顶列表 */}
         <Col xs={24} lg={14}>
           <Card
+            className="stitch-table"
             style={{ ...cardStyle, height: '100%' }}
             title={
               <Space>
                 <ExclamationCircleOutlined style={{ color: '#ff375f' }} />
-                <span style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>高风险事项 TOP 10</span>
+                <span className="stitch-chart-title" style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>高风险事项 TOP 10</span>
               </Space>
             }
             styles={{ body: { padding: 0 } }}
@@ -423,11 +428,12 @@ export default function ComplianceRiskDashboard() {
 
       {/* 风险明细表 */}
       <Card
+        className="stitch-table"
         style={cardStyle}
         title={
           <Space>
-            <WarningOutlined style={{ color: '#0071e3' }} />
-            <span style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>风险明细</span>
+            <WarningOutlined style={{ color: theme.primary }} />
+            <span className="stitch-chart-title" style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>风险明细</span>
             <AntTooltip title="点击「去处理」可跳转到对应合规模块">
               <ExclamationCircleOutlined style={{ color: '#6e6e73', fontSize: 13 }} />
             </AntTooltip>

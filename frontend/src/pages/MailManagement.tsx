@@ -36,6 +36,7 @@ import {
 } from '../api/mail'
 import { formatDateTime } from '../utils/format'
 import axios from '../api/axios'
+import { theme } from '../constants/theme'
 
 const { TextArea } = Input
 
@@ -208,7 +209,7 @@ export default function MailManagement() {
           <Button
             type="text"
             size="small"
-            icon={val ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />}
+            icon={val ? <StarFilled style={{ color: theme.brandGold }} /> : <StarOutlined />}
             onClick={e => handleToggleStar(record.id, e)}
           />
         </Tooltip>
@@ -262,7 +263,7 @@ export default function MailManagement() {
       width: 100,
       render: (_: any, record: any) => {
         if (activeTab === 'inbox') {
-          return record.is_read ? <Tag>已读</Tag> : <Tag color="blue">未读</Tag>
+          return record.is_read ? <Tag className="stitch-tag stitch-tag-info">已读</Tag> : <Tag className="stitch-tag stitch-tag-primary">未读</Tag>
         }
         return '-'
       },
@@ -320,7 +321,7 @@ export default function MailManagement() {
 
       {/* 收件箱筛选条件 */}
       {activeTab === 'inbox' && (
-        <Card style={{ marginBottom: 16, borderRadius: 12 }}>
+        <Card className="stitch-filter-bar" style={{ marginBottom: 16, borderRadius: 12 }}>
           <Space>
             <Input.Search
               placeholder="搜索主题或正文"
@@ -341,7 +342,7 @@ export default function MailManagement() {
             </Button>
             <Button
               type={filterStarred ? 'primary' : 'default'}
-              icon={filterStarred ? <StarFilled style={{ color: '#faad14' }} /> : <StarOutlined />}
+              icon={filterStarred ? <StarFilled style={{ color: theme.brandGold }} /> : <StarOutlined />}
               onClick={() => {
                 setFilterStarred(!filterStarred)
                 setTimeout(() => loadMails(), 0)
@@ -354,7 +355,7 @@ export default function MailManagement() {
       )}
 
       {/* 邮件列表 */}
-      <Card style={{ borderRadius: 12 }}>
+      <Card className="stitch-table" style={{ borderRadius: 12 }}>
         <Table
           columns={columns}
           dataSource={mailList}
@@ -428,24 +429,24 @@ export default function MailManagement() {
       >
         {currentMail && (
           <div>
-            <div style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #f0f0f0' }}>
+            <div style={{ marginBottom: 16, paddingBottom: 16, borderBottom: `1px solid ${theme.borderSecondary}` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ color: '#6e6e73' }}>发件人:</span>
+                <span style={{ color: theme.grayDark }}>发件人:</span>
                 <span>{userList.find(u => u.id === currentMail.sender_id)?.real_name || currentMail.sender_id?.slice(0, 8)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ color: '#6e6e73' }}>时间:</span>
+                <span style={{ color: theme.grayDark }}>时间:</span>
                 <span>{formatDateTime(currentMail.sent_time || currentMail.created_at)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#6e6e73' }}>状态:</span>
+                <span style={{ color: theme.grayDark }}>状态:</span>
                 <span>
-                  {currentMail.is_read ? <Tag>已读</Tag> : <Tag color="blue">未读</Tag>}
-                  {currentMail.is_starred && <Tag color="gold">星标</Tag>}
+                  {currentMail.is_read ? <Tag className="stitch-tag stitch-tag-info">已读</Tag> : <Tag className="stitch-tag stitch-tag-primary">未读</Tag>}
+                  {currentMail.is_starred && <Tag className="stitch-tag stitch-tag-gold">星标</Tag>}
                 </span>
               </div>
             </div>
-            <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: '#1d1d1f' }}>
+            <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: theme.textBase }}>
               {currentMail.content}
             </div>
           </div>

@@ -12,6 +12,7 @@ import {
   batchApproveApprovals,
 } from '../api/approval'
 import axios from '../api/axios'
+import { theme } from '../constants/theme'
 
 // 审批类型中文映射（对齐金助理实勘，涵盖业务/财务/行政三大类）
 const typeLabels: Record<string, string> = {
@@ -82,26 +83,26 @@ const groupedTypeOptions = Object.entries(typeCategoryMap).map(([, { label, type
   options: types.map((value) => ({ value, label: typeLabels[value] })),
 }))
 
-// 审批状态配置
+// 审批状态配置（color 字段值替换为 Stitch 类名变体，保留原数据结构）
 const statusConfig: Record<string, { label: string; color: string }> = {
-  pending: { label: '审批中', color: 'processing' },
-  approved: { label: '已通过', color: 'success' },
-  rejected: { label: '已驳回', color: 'error' },
-  cancelled: { label: '已撤销', color: 'default' },
+  pending: { label: '审批中', color: 'stitch-tag stitch-tag-warning' },
+  approved: { label: '已通过', color: 'stitch-tag stitch-tag-success' },
+  rejected: { label: '已驳回', color: 'stitch-tag stitch-tag-error' },
+  cancelled: { label: '已撤销', color: 'stitch-tag stitch-tag-info' },
 }
 
 const statusOptions = Object.entries(statusConfig).map(([value, { label }]) => ({ value, label }))
 
 export default function ApprovalCenter() {
   const [activeTab, setActiveTab] = useState('pending')
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [filterType, setFilterType] = useState<string | undefined>(undefined)
   const [filterStatus, setFilterStatus] = useState<string | undefined>(undefined)
   // 发起审批弹窗
   const [createModalVisible, setCreateModalVisible] = useState(false)
   const [createForm] = Form.useForm()
-  const [users, setUsers] = useState<any[]>([])
+  const [users, setUsers] = useState<Record<string, unknown>[]>([])
   // 审批意见弹窗
   const [actionModalVisible, setActionModalVisible] = useState(false)
   const [actionType, setActionType] = useState<'approve' | 'reject' | 'return'>('approve')
@@ -117,7 +118,7 @@ export default function ApprovalCenter() {
     setLoading(true)
     try {
       const res = await getApprovals({ mode: activeTab, type: filterType, status: filterStatus })
-      setData(res || [])
+      setData((res as Record<string, unknown>[]) || [])
     } catch (error) {
       message.error('获取审批列表失败')
     } finally {
@@ -134,8 +135,8 @@ export default function ApprovalCenter() {
   // 获取用户列表用于审批人选择
   const fetchUsers = async () => {
     try {
-      const res: any = await axios.get('/users')
-      setUsers(res?.data || [])
+      const res = (await axios.get('/users')) as Record<string, unknown>
+      setUsers((res?.data || []) as Record<string, unknown>[])
     } catch (error) {
       // 忽略
     }
@@ -157,7 +158,7 @@ export default function ApprovalCenter() {
     setCreateModalVisible(true)
   }
 
-  const handleCreate = async (values: any) => {
+  const handleCreate = async (values: Record<string, unknown>) => {
     try {
       await createApproval({
         title: values.title,
@@ -168,8 +169,8 @@ export default function ApprovalCenter() {
       message.success('审批发起成功')
       setCreateModalVisible(false)
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '发起失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '发起失败')
     }
   }
 
@@ -182,22 +183,22 @@ export default function ApprovalCenter() {
   }
 
   // 提交审批意见
-  const handleSubmitAction = async (values: any) => {
+  const handleSubmitAction = async (values: Record<string, unknown>) => {
     try {
       if (actionType === 'approve') {
-        await approveApproval(currentRequestId, { comment: values.comment })
+        await approveApproval(currentRequestId, { comment: values.comment as string | undefined })
         message.success('已同意')
       } else if (actionType === 'reject') {
-        await rejectApproval(currentRequestId, { comment: values.comment })
+        await rejectApproval(currentRequestId, { comment: values.comment as string | undefined })
         message.success('已驳回')
       } else if (actionType === 'return') {
-        await returnApproval(currentRequestId, { comment: values.comment })
+        await returnApproval(currentRequestId, { comment: values.comment as string | undefined })
         message.success('已退回')
       }
       setActionModalVisible(false)
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
     }
   }
 
@@ -213,8 +214,8 @@ export default function ApprovalCenter() {
           await cancelApproval(id)
           message.success('已撤销')
           fetchData()
-        } catch (error: any) {
-          message.error(error?.response?.data?.message || '撤销失败')
+        } catch (error: unknown) {
+          message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '撤销失败')
         }
       },
     })
@@ -235,40 +236,40 @@ export default function ApprovalCenter() {
   }
 
   // 提交批量审批通过
-  const handleSubmitBatchApprove = async (values: any) => {
+  const handleSubmitBatchApprove = async (values: Record<string, unknown>) => {
     try {
-      const res: any = await batchApproveApprovals({ ids: selectedIds, comment: values.comment })
-      const list = Array.isArray(res) ? res : []
-      const successCount = list.filter((r: any) => r.success).length
+      const res = (await batchApproveApprovals({ ids: selectedIds, comment: values.comment as string | undefined })) as Record<string, unknown>
+      const list = (Array.isArray(res) ? res : []) as Record<string, unknown>[]
+      const successCount = list.filter((r: Record<string, unknown>) => r.success).length
       const failCount = selectedIds.length - successCount
       message.success(`批量审批完成：成功 ${successCount} 条${failCount > 0 ? `，失败 ${failCount} 条` : ''}`)
       setBatchApproveModalVisible(false)
       setSelectedIds([])
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '批量审批失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '批量审批失败')
     }
   }
 
   // 批量撤销
   const handleBatchCancel = async () => {
     try {
-      const affected: any = await batchCancelApprovals(selectedIds)
+      const affected = (await batchCancelApprovals(selectedIds)) as number
       message.success(`已撤销 ${affected || 0} 条`)
       setSelectedIds([])
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '批量撤销失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '批量撤销失败')
     }
   }
 
   // 类型列渲染
-  const renderType = (type: string) => <Tag color="blue">{typeLabels[type] || type}</Tag>
+  const renderType = (type: string) => <Tag className="stitch-tag stitch-tag-primary">{typeLabels[type] || type}</Tag>
 
   // 状态列渲染
   const renderStatus = (status: string) => {
-    const cfg = statusConfig[status] || { label: status, color: 'default' }
-    return <Tag color={cfg.color}>{cfg.label}</Tag>
+    const cfg = statusConfig[status] || { label: status, color: 'stitch-tag stitch-tag-info' }
+    return <Tag className={cfg.color}>{cfg.label}</Tag>
   }
 
   // 时间格式化
@@ -284,15 +285,18 @@ export default function ApprovalCenter() {
       title: '操作',
       key: 'action',
       width: 220,
-      render: (_: any, record: any) => (
-        <Space>
-          <Button type="link" onClick={() => handleAction(record.request.id, 'approve')}>同意</Button>
-          <Button type="link" danger onClick={() => handleAction(record.request.id, 'reject')}>驳回</Button>
-          {record.request.status === 'pending' && record.request.current_step > 1 && (
-            <Button type="link" onClick={() => handleReturn(record.request.id)}>退回</Button>
-          )}
-        </Space>
-      ),
+      render: (_: unknown, record: Record<string, unknown>) => {
+        const request = record.request as Record<string, unknown>
+        return (
+          <Space>
+            <Button type="link" onClick={() => handleAction(request.id as string, 'approve')}>同意</Button>
+            <Button type="link" danger onClick={() => handleAction(request.id as string, 'reject')}>驳回</Button>
+            {request.status === 'pending' && Number(request.current_step) > 1 && (
+              <Button type="link" onClick={() => handleReturn(request.id as string)}>退回</Button>
+            )}
+          </Space>
+        )
+      },
     },
   ]
 
@@ -307,7 +311,7 @@ export default function ApprovalCenter() {
       dataIndex: 'result',
       key: 'result',
       render: (r: string) =>
-        r === 'approved' ? <Tag color="success">同意</Tag> : <Tag color="error">驳回</Tag>,
+        r === 'approved' ? <Tag className="stitch-tag stitch-tag-success">同意</Tag> : <Tag className="stitch-tag stitch-tag-error">驳回</Tag>,
     },
     { title: '最终状态', dataIndex: ['request', 'status'], key: 'status', render: renderStatus },
     { title: '审批时间', dataIndex: 'approve_time', key: 'approve_time', render: renderTime },
@@ -320,13 +324,13 @@ export default function ApprovalCenter() {
     {
       title: '当前步骤',
       key: 'currentStep',
-      render: (_: any, record: any) => {
-        const steps = record.steps || []
+      render: (_: unknown, record: Record<string, unknown>) => {
+        const steps = (record.steps || []) as Record<string, unknown>[]
         if (record.status !== 'pending') {
           return '已完成'
         }
-        const cur = steps.find((s: any) => s.step_order === record.current_step)
-        return cur ? `${cur.approver?.real_name || '-'}（第${record.current_step + 1}步）` : '-'
+        const cur = steps.find((s: Record<string, unknown>) => s.step_order === record.current_step)
+        return cur ? `${(cur.approver as Record<string, unknown> | undefined)?.real_name || '-'}（第${Number(record.current_step) + 1}步）` : '-'
       },
     },
     { title: '状态', dataIndex: 'status', key: 'status', render: renderStatus },
@@ -335,9 +339,9 @@ export default function ApprovalCenter() {
       title: '操作',
       key: 'action',
       width: 120,
-      render: (_: any, record: any) =>
+      render: (_: unknown, record: Record<string, unknown>) =>
         record.status === 'pending' ? (
-          <Button type="link" danger onClick={() => handleCancel(record.id)}>撤销</Button>
+          <Button type="link" danger onClick={() => handleCancel(record.id as string)}>撤销</Button>
         ) : (
           '-'
         ),
@@ -362,7 +366,7 @@ export default function ApprovalCenter() {
       </div>
 
       {/* 查询表单 */}
-      <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+      <div className="stitch-filter-bar" style={{ background: theme.bgContainer, padding: 16, borderRadius: 8, marginBottom: 16 }}>
         <Form layout="inline" style={{ gap: 8 }}>
           <Form.Item label="类型">
             <Select
@@ -385,7 +389,7 @@ export default function ApprovalCenter() {
             />
           </Form.Item>
           <Form.Item>
-            <Space>
+            <Space className="stitch-btn-group">
               <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>查询</Button>
               <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
             </Space>
@@ -393,7 +397,7 @@ export default function ApprovalCenter() {
         </Form>
       </div>
 
-      <div style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
+      <div style={{ background: theme.bgContainer, padding: 16, borderRadius: 8 }}>
         <Tabs
           activeKey={activeTab}
           onChange={(key) => setActiveTab(key)}
@@ -403,7 +407,7 @@ export default function ApprovalCenter() {
         {/* 批量操作区：选中记录后显示 */}
         {selectedIds.length > 0 && (
           <div style={{ marginBottom: 16 }}>
-            <Space>
+            <Space className="stitch-btn-group">
               <Button type="primary" onClick={handleOpenBatchApprove}>批量审批通过</Button>
               <Popconfirm
                 title="确认批量撤销"
@@ -414,22 +418,24 @@ export default function ApprovalCenter() {
               >
                 <Button danger>批量撤销</Button>
               </Popconfirm>
-              <span style={{ color: '#888' }}>已选 {selectedIds.length} 条</span>
+              <span style={{ color: theme.textTertiary }}>已选 {selectedIds.length} 条</span>
             </Space>
           </div>
         )}
-        <Table
-          dataSource={data}
-          columns={columns}
-          loading={loading}
-          rowKey={(record: any) => record.request?.id || record.id}
-          rowSelection={{
-            type: 'checkbox',
-            selectedRowKeys: selectedIds,
-            onChange: (keys) => setSelectedIds(keys as string[]),
-          }}
-          pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
-        />
+        <div className="stitch-table">
+          <Table
+            dataSource={data}
+            columns={columns}
+            loading={loading}
+            rowKey={(record: Record<string, unknown>) => (record.request as Record<string, unknown> | undefined)?.id as string || record.id as string}
+            rowSelection={{
+              type: 'checkbox',
+              selectedRowKeys: selectedIds,
+              onChange: (keys) => setSelectedIds(keys as string[]),
+            }}
+            pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+          />
+        </div>
       </div>
 
       {/* 发起审批弹窗 */}
@@ -462,7 +468,7 @@ export default function ApprovalCenter() {
               mode="multiple"
               placeholder="请选择审批人（按顺序）"
               optionLabelProp="label"
-              options={users.map((u: any) => ({
+              options={users.map((u: Record<string, unknown>) => ({
                 value: u.id,
                 label: u.real_name,
               }))}

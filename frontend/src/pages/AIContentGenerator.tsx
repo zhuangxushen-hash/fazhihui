@@ -25,7 +25,7 @@ import {
   BulbOutlined,
 } from '@ant-design/icons'
 import {
-  getContentTemplates,
+getContentTemplates,
   generateContent,
   saveGeneratedContent,
   precheckCompliance,
@@ -41,6 +41,7 @@ import {
   type MaterialComplianceStatus,
 } from '../api/marketing'
 
+import { theme } from '../constants/theme'
 const { TextArea } = Input
 const { Text } = Typography
 
@@ -156,7 +157,7 @@ export default function AIContentGenerator() {
       const res = await getContentTemplates(params)
       setTemplates(res || [])
     } catch (err) {
-      console.error('Fetch templates error:', err)
+      // 错误已由拦截器统一处理
     } finally {
       setTemplatesLoading(false)
     }
@@ -195,7 +196,6 @@ export default function AIContentGenerator() {
       setEditableContent(res.content)
       message.success('内容生成成功')
     } catch (err: any) {
-      console.error('Generate content error:', err)
       message.error(err?.response?.data?.message || '内容生成失败')
     } finally {
       setGenerating(false)
@@ -223,7 +223,6 @@ export default function AIContentGenerator() {
         message.error('检测到严重违规，禁止发布')
       }
     } catch (err: any) {
-      console.error('Precheck error:', err)
       message.error(err?.response?.data?.message || '合规预审失败')
     } finally {
       setPrechecking(false)
@@ -250,7 +249,6 @@ export default function AIContentGenerator() {
       setSavedMaterialId(res.id)
       message.success('已入库素材库（草稿状态）')
     } catch (err: any) {
-      console.error('Save to material error:', err)
       message.error(err?.response?.data?.message || '入库失败')
     } finally {
       setSaving(false)
@@ -272,7 +270,6 @@ export default function AIContentGenerator() {
   const statusBadge = useMemo(() => {
     if (!precheckResult) return null
     const status = precheckResult.status as MaterialComplianceStatus
-    const color = complianceStatusColors[status]
     const label = complianceStatusLabels[status]
     let icon = <CheckCircleOutlined />
     if (status === 'need_modification') icon = <WarningOutlined />
@@ -281,15 +278,13 @@ export default function AIContentGenerator() {
     return (
       <Tag
         icon={icon}
-        style={{
-          background: `${color}15`,
-          color,
-          borderRadius: 12,
-          padding: '4px 12px',
-          fontWeight: 600,
-          border: `1px solid ${color}40`,
-          fontSize: 13,
-        }}
+        className={
+          status === 'passed' ? 'stitch-tag stitch-tag-success' :
+          status === 'need_modification' ? 'stitch-tag stitch-tag-warning' :
+          status === 'forbidden' ? 'stitch-tag stitch-tag-error' :
+          status === 'pending' ? 'stitch-tag stitch-tag-info' :
+          'stitch-tag'
+        }
       >
         {label}
       </Tag>
@@ -305,7 +300,7 @@ export default function AIContentGenerator() {
     <div className="fade-in">
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 24, fontWeight: 700, color: '#1d1d1f', margin: 0 }}>
-          <RobotOutlined style={{ marginRight: 8, color: '#0071e3' }} />
+          <RobotOutlined style={{ marginRight: 8, color: theme.primary }} />
           AI 营销内容生成
         </h2>
         <p style={{ fontSize: 14, color: '#86868b', marginTop: 4 }}>
@@ -389,7 +384,7 @@ export default function AIContentGenerator() {
             style={{
               borderRadius: 10,
               padding: '10px 0',
-              background: '#0071e3',
+              background: theme.primary,
               border: 'none',
               color: '#fff',
               height: 44,
@@ -437,7 +432,7 @@ export default function AIContentGenerator() {
                 )}
               </div>
               {generated && (
-                <Space size={8}>
+                <Space size={8} className="stitch-btn-group">
                   <Button
                     size="small"
                     icon={<CopyOutlined />}
@@ -468,7 +463,7 @@ export default function AIContentGenerator() {
                     disabled={!canSave || saveBlocked}
                     style={{
                       borderRadius: 8,
-                      background: saveBlocked ? '#d1d1d6' : '#0071e3',
+                      background: saveBlocked ? '#d1d1d6' : theme.primary,
                       border: 'none',
                       color: '#fff',
                     }}
@@ -499,16 +494,16 @@ export default function AIContentGenerator() {
                     flexWrap: 'wrap',
                   }}
                 >
-                  <Tag style={{ borderRadius: 10, background: '#0071e310', color: '#0071e3', border: 'none' }}>
+                  <Tag className="stitch-tag stitch-tag-primary">
                     {caseTypeLabels[generated.case_type] || generated.case_type}
                   </Tag>
-                  <Tag style={{ borderRadius: 10, background: '#0071e310', color: '#0071e3', border: 'none' }}>
+                  <Tag className="stitch-tag stitch-tag-primary">
                     {contentTypeLabels[generated.content_type] || generated.content_type}
                   </Tag>
                   {generated.tags.map((t) => (
                     <Tag
                       key={t}
-                      style={{ borderRadius: 10, background: '#f5f5f7', color: '#6e6e73', border: 'none' }}
+                      className="stitch-tag"
                     >
                       {t}
                     </Tag>
@@ -525,7 +520,7 @@ export default function AIContentGenerator() {
                       type="link"
                       size="small"
                       onClick={() => setPrecheckResult(null)}
-                      style={{ paddingLeft: 0, color: '#0071e3' }}
+                      style={{ paddingLeft: 0, color: theme.primary }}
                     >
                       切换为可编辑模式
                     </Button>
@@ -590,7 +585,7 @@ export default function AIContentGenerator() {
                 }}
               >
                 <div style={{ fontSize: 15, fontWeight: 600, color: '#1d1d1f' }}>
-                  <SafetyCertificateOutlined style={{ marginRight: 8, color: '#0071e3' }} />
+                  <SafetyCertificateOutlined style={{ marginRight: 8, color: theme.primary }} />
                   合规预审结果
                 </div>
                 {statusBadge}
@@ -638,13 +633,11 @@ export default function AIContentGenerator() {
                         >
                           <Space size={6}>
                             <Tag
-                              style={{
-                                background: `${severityColorMap[v.severity]}15`,
-                                color: severityColorMap[v.severity],
-                                borderRadius: 10,
-                                border: 'none',
-                                fontWeight: 600,
-                              }}
+                              className={
+                                v.severity === 'serious' ? 'stitch-tag stitch-tag-error' :
+                                v.severity === 'minor' ? 'stitch-tag stitch-tag-warning' :
+                                'stitch-tag'
+                              }
                             >
                               {v.label}
                             </Tag>
@@ -653,13 +646,11 @@ export default function AIContentGenerator() {
                             </Text>
                           </Space>
                           <Tag
-                            style={{
-                              background: `${severityColorMap[v.severity]}15`,
-                              color: severityColorMap[v.severity],
-                              borderRadius: 10,
-                              border: 'none',
-                              fontSize: 11,
-                            }}
+                            className={
+                              v.severity === 'serious' ? 'stitch-tag stitch-tag-error' :
+                              v.severity === 'minor' ? 'stitch-tag stitch-tag-warning' :
+                              'stitch-tag'
+                            }
                           >
                             {severityLabelMap[v.severity]}违规
                           </Tag>

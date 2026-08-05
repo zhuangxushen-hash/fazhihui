@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { Menu, Tabs, Table, Form, Input, Select, DatePicker, Button, Space, Tag, message } from 'antd'
 import { SearchOutlined, ReloadOutlined, DownloadOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
+import { theme } from '../constants/theme'
 
 const { RangePicker } = DatePicker
 
@@ -93,21 +94,21 @@ const subProjectOptions = [
 ]
 
 // 案件状态配置
-const caseStatusConfig: Record<string, { label: string; color: string }> = {
-  pending: { label: '进行中', color: 'processing' },
-  closed: { label: '已结案', color: 'success' },
-  suspended: { label: '已中止', color: 'warning' },
+const caseStatusConfig: Record<string, { label: string; color: string; stitch: string }> = {
+  pending: { label: '进行中', color: 'processing', stitch: 'stitch-tag stitch-tag-info' },
+  closed: { label: '已结案', color: 'success', stitch: 'stitch-tag stitch-tag-success' },
+  suspended: { label: '已中止', color: 'warning', stitch: 'stitch-tag stitch-tag-warning' },
 }
 
 // 收款状态配置
-const paymentStatusConfig: Record<string, { label: string; color: string }> = {
-  unpaid: { label: '未收款', color: 'error' },
-  partial: { label: '部分收款', color: 'warning' },
-  paid: { label: '已收清', color: 'success' },
+const paymentStatusConfig: Record<string, { label: string; color: string; stitch: string }> = {
+  unpaid: { label: '未收款', color: 'error', stitch: 'stitch-tag stitch-tag-error' },
+  partial: { label: '部分收款', color: 'warning', stitch: 'stitch-tag stitch-tag-warning' },
+  paid: { label: '已收清', color: 'success', stitch: 'stitch-tag stitch-tag-success' },
 }
 
 // 本地mock数据（接口不存在时展示）
-const mockData: any[] = [
+const mockData: Record<string, unknown>[] = [
   {
     key: '1',
     filing_time: '2026-01-15',
@@ -173,7 +174,7 @@ const fmtMoney = (v: number) => {
 export default function ComprehensiveQuery() {
   const [activeMenu, setActiveMenu] = useState('biz-established')
   const [activeTab, setActiveTab] = useState('established')
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [form] = Form.useForm()
 
@@ -181,15 +182,15 @@ export default function ComprehensiveQuery() {
     setLoading(true)
     try {
       const values = form.getFieldsValue()
-      const params: any = { ...values, menu: activeMenu, tab: activeTab }
+      const params: Record<string, unknown> = { ...values, menu: activeMenu, tab: activeTab }
       // 处理日期范围
       if (values.filing_date && values.filing_date.length === 2) {
         params.filing_start = values.filing_date[0]?.format('YYYY-MM-DD')
         params.filing_end = values.filing_date[1]?.format('YYYY-MM-DD')
       }
       delete params.filing_date
-      const res: any = await axios.get('/comprehensive/query', { params })
-      setData(Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [])
+      const res = (await axios.get('/comprehensive/query', { params })) as Record<string, unknown>
+      setData((Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : []) as Record<string, unknown>[])
     } catch (error) {
       // 接口不存在时使用本地mock数据展示
       setData(mockData)
@@ -223,11 +224,11 @@ export default function ComprehensiveQuery() {
     const headers = ['立案时间', '案件状态', '项目名称', '主办', '合同金额', '收款状态', '合同交回', '原件']
     const rows = data.map((item) => [
       item.filing_time || '',
-      caseStatusConfig[item.case_status]?.label || item.case_status || '',
+      caseStatusConfig[item.case_status as string]?.label || (item.case_status as string) || '',
       item.project_name || '',
       item.main_lawyer || '',
       item.contract_amount || 0,
-      paymentStatusConfig[item.payment_status]?.label || item.payment_status || '',
+      paymentStatusConfig[item.payment_status as string]?.label || (item.payment_status as string) || '',
       item.contract_returned || '',
       item.original_doc || '',
     ])
@@ -247,23 +248,23 @@ export default function ComprehensiveQuery() {
 
   // 案件状态渲染
   const renderCaseStatus = (status: string) => {
-    const cfg = caseStatusConfig[status] || { label: status, color: 'default' }
-    return <Tag color={cfg.color}>{cfg.label}</Tag>
+    const cfg = caseStatusConfig[status] || { label: status, color: 'default', stitch: 'stitch-tag stitch-tag-primary' }
+    return <Tag className={cfg.stitch}>{cfg.label}</Tag>
   }
 
   // 收款状态渲染
   const renderPaymentStatus = (status: string) => {
-    const cfg = paymentStatusConfig[status] || { label: status, color: 'default' }
-    return <Tag color={cfg.color}>{cfg.label}</Tag>
+    const cfg = paymentStatusConfig[status] || { label: status, color: 'default', stitch: 'stitch-tag stitch-tag-primary' }
+    return <Tag className={cfg.stitch}>{cfg.label}</Tag>
   }
 
   // 合同交回渲染
   const renderReturn = (v: string) =>
-    v === '是' ? <Tag color="success">已交回</Tag> : <Tag color="default">未交回</Tag>
+    v === '是' ? <Tag className="stitch-tag stitch-tag-success">已交回</Tag> : <Tag className="stitch-tag stitch-tag-primary">未交回</Tag>
 
   // 原件渲染
   const renderOriginal = (v: string) =>
-    v === '已收' ? <Tag color="success">已收</Tag> : <Tag color="warning">未收</Tag>
+    v === '已收' ? <Tag className="stitch-tag stitch-tag-success">已收</Tag> : <Tag className="stitch-tag stitch-tag-warning">未收</Tag>
 
   // 列定义
   const columns = [
@@ -293,7 +294,7 @@ export default function ComprehensiveQuery() {
   return (
     <div style={{ display: 'flex', gap: 16 }}>
       {/* 左侧菜单 */}
-      <div style={{ background: '#fff', padding: 8, borderRadius: 8, width: 220, flexShrink: 0 }}>
+      <div style={{ background: theme.white, padding: 8, borderRadius: 8, width: 220, flexShrink: 0 }}>
         <Menu
           mode="inline"
           selectedKeys={[activeMenu]}
@@ -306,7 +307,7 @@ export default function ComprehensiveQuery() {
       {/* 右侧主区域 */}
       <div style={{ flex: 1, minWidth: 0 }}>
         {/* 顶部Tabs */}
-        <div style={{ background: '#fff', padding: '8px 16px 0', borderRadius: 8, marginBottom: 16 }}>
+        <div style={{ background: theme.white, padding: '8px 16px 0', borderRadius: 8, marginBottom: 16 }}>
           <Tabs
             activeKey={activeTab}
             onChange={(key) => setActiveTab(key)}
@@ -315,7 +316,7 @@ export default function ComprehensiveQuery() {
         </div>
 
         {/* 查询条件 */}
-        <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+        <div className="stitch-filter-bar" style={{ background: theme.white, padding: 16, borderRadius: 8, marginBottom: 16 }}>
           <Form form={form} layout="inline" style={{ gap: 8 }}>
             <Form.Item name="project_name" label="项目名称">
               <Input placeholder="请输入项目名称" allowClear style={{ width: 160 }} />
@@ -342,7 +343,7 @@ export default function ComprehensiveQuery() {
               <RangePicker style={{ width: 220 }} />
             </Form.Item>
             <Form.Item>
-              <Space>
+              <Space className="stitch-btn-group">
                 <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>搜索</Button>
                 <Button icon={<DownloadOutlined />} onClick={handleExport}>导出Excel</Button>
                 <Button icon={<ReloadOutlined />} onClick={handleReset}>清空条件</Button>
@@ -352,7 +353,7 @@ export default function ComprehensiveQuery() {
         </div>
 
         {/* 数据列表 */}
-        <div style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
+        <div className="stitch-table" style={{ background: theme.white, padding: 16, borderRadius: 8 }}>
           <Table
             dataSource={data}
             columns={columns}

@@ -45,7 +45,7 @@ const mockSummary = {
 }
 
 // 本地mock收支流水记录
-const mockFlow: any[] = [
+const mockFlow: Record<string, unknown>[] = [
   { key: '1', time: '2026-01-10', type: '收入', payer: '某科技有限公司', summary: '合同首付款', income_amount: 60000, expense_amount: 0, balance_amount: 60000, method: '银行转账' },
   { key: '2', time: '2026-01-15', type: '支出', payer: '某打印店', summary: '材料打印费', income_amount: 0, expense_amount: 1200, balance_amount: 58800, method: '现金' },
   { key: '3', time: '2026-02-05', type: '收入', payer: '某个人客户', summary: '代理费', income_amount: 30000, expense_amount: 0, balance_amount: 88800, method: '微信支付' },
@@ -55,7 +55,7 @@ const mockFlow: any[] = [
 ]
 
 // 本地mock费用支出记录
-const mockExpense: any[] = [
+const mockExpense: Record<string, unknown>[] = [
   { key: '1', time: '2026-01-15', expense_type: '办公费', amount: 1200, operator: '李助理', remark: '材料打印', related_case: '某公司合同纠纷案' },
   { key: '2', time: '2026-02-20', expense_type: '差旅费', amount: 3500, operator: '张律师', remark: '赴京出差', related_case: '某行政诉讼案' },
   { key: '3', time: '2026-03-12', expense_type: '诉讼费', amount: 5800, operator: '王律师', remark: '案件受理费', related_case: '某劳动争议案' },
@@ -64,7 +64,7 @@ const mockExpense: any[] = [
 ]
 
 // 本地mock借款统计
-const mockLoan: any[] = [
+const mockLoan: Record<string, unknown>[] = [
   { key: '1', borrower: '张律师', loan_amount: 100000, repaid_amount: 40000, unpaid_amount: 60000, status: 'partial' },
   { key: '2', borrower: '李律师', loan_amount: 50000, repaid_amount: 0, unpaid_amount: 50000, status: 'unpaid' },
   { key: '3', borrower: '王律师', loan_amount: 50000, repaid_amount: 50000, unpaid_amount: 0, status: 'paid' },
@@ -85,10 +85,10 @@ const loanStatusConfig: Record<string, { label: string; color: string }> = {
 export default function IncomeExpenditure() {
   const [activeMenu, setActiveMenu] = useState('income-summary')
   const [loading, setLoading] = useState(false)
-  const [summary, setSummary] = useState<any>({})
-  const [flow, setFlow] = useState<any[]>([])
-  const [expense, setExpense] = useState<any[]>([])
-  const [loan, setLoan] = useState<any[]>([])
+  const [summary, setSummary] = useState<Record<string, unknown>>({})
+  const [flow, setFlow] = useState<Record<string, unknown>[]>([])
+  const [expense, setExpense] = useState<Record<string, unknown>[]>([])
+  const [loan, setLoan] = useState<Record<string, unknown>[]>([])
   const [form] = Form.useForm()
   // 设置初始结余弹窗
   const [balanceModalVisible, setBalanceModalVisible] = useState(false)
@@ -105,15 +105,15 @@ export default function IncomeExpenditure() {
     setLoading(true)
     try {
       const values = form.getFieldsValue()
-      const params: any = { menu: activeMenu }
+      const params: Record<string, unknown> = { menu: activeMenu }
       if (values.year) {
         params.year = values.year.format('YYYY')
       }
-      const res: any = await axios.get('/finance/income-expenditure', { params })
-      setSummary(res?.summary || {})
-      setFlow(Array.isArray(res?.flow) ? res.flow : [])
-      setExpense(Array.isArray(res?.expense) ? res.expense : [])
-      setLoan(Array.isArray(res?.loan) ? res.loan : [])
+      const res = (await axios.get('/finance/income-expenditure', { params })) as Record<string, unknown>
+      setSummary((res?.summary || {}) as Record<string, unknown>)
+      setFlow((Array.isArray(res?.flow) ? res.flow : []) as Record<string, unknown>[])
+      setExpense((Array.isArray(res?.expense) ? res.expense : []) as Record<string, unknown>[])
+      setLoan((Array.isArray(res?.loan) ? res.loan : []) as Record<string, unknown>[])
     } catch (error) {
       // 接口不存在时使用本地mock数据展示
       setSummary(mockSummary)
@@ -143,7 +143,7 @@ export default function IncomeExpenditure() {
   }
 
   // 提交初始结余设置
-  const handleSaveBalance = async (values: any) => {
+  const handleSaveBalance = async (values: Record<string, unknown>) => {
     try {
       await axios.post('/finance/income-expenditure/initial-balance', {
         year: form.getFieldValue('year')?.format('YYYY'),
@@ -152,8 +152,8 @@ export default function IncomeExpenditure() {
       message.success('初始结余设置成功')
       setBalanceModalVisible(false)
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '设置失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '设置失败')
       setBalanceModalVisible(false)
     }
   }

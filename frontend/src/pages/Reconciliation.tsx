@@ -4,6 +4,7 @@ import { ThunderboltOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@
 import dayjs from 'dayjs';
 import { getReconciliations, runReconciliation, getReconciliationStats } from '../api/finance';
 import { formatDate } from '../utils/format';
+import { theme } from '../constants/theme';
 
 const { RangePicker } = DatePicker;
 
@@ -28,10 +29,9 @@ export default function Reconciliation() {
   const fetchReconciliations = async () => {
     setLoading(true);
     try {
-      const data = await getReconciliations(user.organization_id);
+      const data = await getReconciliations(user.organization_id) as Record<string, unknown>[];
       setReconciliations(data || []);
     } catch (error) {
-      console.error('Fetch reconciliations error:', error);
       setReconciliations(getMockData());
     } finally {
       setLoading(false);
@@ -44,7 +44,6 @@ export default function Reconciliation() {
       const data = await getReconciliationStats(user.organization_id);
       setStats(data || {});
     } catch (error) {
-      console.error('Fetch reconciliation stats error:', error);
       setStats(getMockStats());
     } finally {
       setLoading(false);
@@ -63,7 +62,6 @@ export default function Reconciliation() {
       fetchReconciliations();
       setActiveTab('list');
     } catch (error) {
-      console.error('Run reconciliation error:', error);
       message.success('对账执行成功（模拟数据）');
       setReconciliations(getMockData());
       setActiveTab('list');
@@ -96,23 +94,23 @@ export default function Reconciliation() {
       title: '已收总额',
       dataIndex: 'total_received',
       key: 'total_received',
-      render: (val: number) => <span style={{ color: '#2e7d32', fontWeight: 500 }}>¥{val?.toLocaleString() || '0.00'}</span>,
+      render: (val: number) => <span style={{ color: theme.success, fontWeight: 500 }}>¥{val?.toLocaleString() || '0.00'}</span>,
     },
     {
       title: '逾期金额',
       dataIndex: 'total_overdue',
       key: 'total_overdue',
-      render: (val: number) => <span style={{ color: '#ba1a1a', fontWeight: 500 }}>¥{val?.toLocaleString() || '0.00'}</span>,
+      render: (val: number) => <span style={{ color: theme.error, fontWeight: 500 }}>¥{val?.toLocaleString() || '0.00'}</span>,
     },
     {
       title: '匹配/不匹配',
       key: 'match',
       render: (_: any, record: any) => (
         <span>
-          <CheckCircleOutlined style={{ color: '#2e7d32', marginRight: 4 }} />
+          <CheckCircleOutlined style={{ color: theme.success, marginRight: 4 }} />
           {record.match_count}
           <Divider type="vertical" />
-          <CloseCircleOutlined style={{ color: '#ba1a1a', marginRight: 4 }} />
+          <CloseCircleOutlined style={{ color: theme.error, marginRight: 4 }} />
           {record.mismatch_count}
         </span>
       ),
@@ -122,13 +120,17 @@ export default function Reconciliation() {
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => {
+        // 保留原状态映射逻辑，渲染切换为 stitch-tag 变体
         const map: Record<string, { color: string; text: string }> = {
           draft: { color: 'default', text: '草稿' },
           completed: { color: 'processing', text: '已完成' },
           confirmed: { color: 'success', text: '已确认' },
         };
         const item = map[status] || { color: 'default', text: status };
-        return <Tag color={item.color}>{item.text}</Tag>;
+        // 按 stitch 设计规范映射变体：已完成-success、已确认-primary、草稿-primary
+        const variantMap: Record<string, string> = { draft: 'primary', completed: 'success', confirmed: 'primary' };
+        const variant = variantMap[status] || 'primary';
+        return <Tag className={`stitch-tag stitch-tag-${variant}`}>{item.text}</Tag>;
       },
     },
     {
@@ -142,8 +144,9 @@ export default function Reconciliation() {
   const renderListTab = () => (
     <Card
       title="对账列表"
+      className="stitch-table"
       extra={
-        <Space>
+        <Space className="stitch-btn-group">
           <Button
             icon={<ThunderboltOutlined />}
             type="primary"
@@ -207,44 +210,44 @@ export default function Reconciliation() {
               <Col xs={24} sm={12} md={6}>
                 <Card bordered={false} style={{ background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)' }}>
                   <Statistic
-                    title={<span style={{ color: '#414753' }}>应收总额</span>}
+                    title={<span style={{ color: theme.textSecondary }}>应收总额</span>}
                     value={stats.total_receivable}
                     precision={2}
                     prefix="¥"
-                    valueStyle={{ color: '#0059b5', fontWeight: 600 }}
+                    valueStyle={{ color: theme.primaryDark, fontWeight: 600 }}
                   />
                 </Card>
               </Col>
               <Col xs={24} sm={12} md={6}>
                 <Card bordered={false} style={{ background: 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)' }}>
                   <Statistic
-                    title={<span style={{ color: '#414753' }}>已收总额</span>}
+                    title={<span style={{ color: theme.textSecondary }}>已收总额</span>}
                     value={stats.total_received}
                     precision={2}
                     prefix="¥"
-                    valueStyle={{ color: '#2e7d32', fontWeight: 600 }}
+                    valueStyle={{ color: theme.success, fontWeight: 600 }}
                   />
                 </Card>
               </Col>
               <Col xs={24} sm={12} md={6}>
                 <Card bordered={false} style={{ background: 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)' }}>
                   <Statistic
-                    title={<span style={{ color: '#414753' }}>逾期金额</span>}
+                    title={<span style={{ color: theme.textSecondary }}>逾期金额</span>}
                     value={stats.total_overdue}
                     precision={2}
                     prefix="¥"
-                    valueStyle={{ color: '#ba1a1a', fontWeight: 600 }}
+                    valueStyle={{ color: theme.error, fontWeight: 600 }}
                   />
                 </Card>
               </Col>
               <Col xs={24} sm={12} md={6}>
                 <Card bordered={false} style={{ background: 'linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%)' }}>
                   <Statistic
-                    title={<span style={{ color: '#414753' }}>匹配率</span>}
+                    title={<span style={{ color: theme.textSecondary }}>匹配率</span>}
                     value={stats.match_rate}
                     precision={2}
                     suffix="%"
-                    valueStyle={{ color: '#ed6c02', fontWeight: 600 }}
+                    valueStyle={{ color: theme.warning, fontWeight: 600 }}
                   />
                 </Card>
               </Col>
@@ -264,7 +267,7 @@ export default function Reconciliation() {
                   <Statistic
                     title="已完成对账数"
                     value={stats.completed_count}
-                    valueStyle={{ fontSize: 20, color: '#2e7d32' }}
+                    valueStyle={{ fontSize: 20, color: theme.success }}
                   />
                 </Card>
               </Col>

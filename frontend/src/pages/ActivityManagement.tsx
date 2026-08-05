@@ -23,12 +23,12 @@ const activityStatusOptions = [
   { value: 'cancelled', label: '已取消' },
 ]
 
-// 状态颜色映射
+// 状态样式映射（对齐 Stitch 设计规范，返回 className）
 const statusColorMap: Record<string, string> = {
-  upcoming: 'blue',
-  ongoing: 'green',
-  completed: 'default',
-  cancelled: 'red',
+  upcoming: 'stitch-tag stitch-tag-primary',
+  ongoing: 'stitch-tag stitch-tag-success',
+  completed: 'stitch-tag stitch-tag-info',
+  cancelled: 'stitch-tag stitch-tag-error',
 }
 
 export default function ActivityManagement() {
@@ -74,7 +74,7 @@ export default function ActivityManagement() {
         setData(allActivities)
       }
     } catch (error) {
-      console.error('Fetch activities error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -133,7 +133,6 @@ export default function ActivityManagement() {
       fetchData()
     } catch (error) {
       message.error(editingId ? '更新失败' : '创建失败')
-      console.error('Activity submit error:', error)
     }
   }
 
@@ -144,7 +143,6 @@ export default function ActivityManagement() {
       fetchData()
     } catch (error) {
       message.error('删除失败')
-      console.error('Delete activity error:', error)
     }
   }
 
@@ -153,9 +151,8 @@ export default function ActivityManagement() {
       await registerActivity(id)
       message.success('报名成功')
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '报名失败')
-      console.error('Register activity error:', error)
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '报名失败')
     }
   }
 
@@ -164,9 +161,8 @@ export default function ActivityManagement() {
       await unregisterActivity(id)
       message.success('取消报名成功')
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '取消报名失败')
-      console.error('Unregister activity error:', error)
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '取消报名失败')
     }
   }
 
@@ -185,7 +181,7 @@ export default function ActivityManagement() {
     }},
     { title: '状态', dataIndex: 'status', key: 'status', width: 100, render: (val: string) => {
       const item = activityStatusOptions.find(o => o.value === val)
-      return <Tag color={statusColorMap[val] || 'default'}>{item?.label || val}</Tag>
+      return <Tag className={statusColorMap[val] || 'stitch-tag stitch-tag-info'}>{item?.label || val}</Tag>
     }},
     { title: '操作', key: 'action', width: 200, fixed: 'right' as const, render: (_: any, record: any) => (
       <Space>
@@ -217,7 +213,7 @@ export default function ActivityManagement() {
         {isAdmin && <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>创建活动</Button>}
       </div>
 
-      <div className="search-bar">
+      <div className="search-bar stitch-filter-bar">
         <Input
           placeholder="标题/描述搜索"
           prefix={<SearchOutlined />}
@@ -243,8 +239,10 @@ export default function ActivityManagement() {
         >
           {activityStatusOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
         </Select>
-        <Button type="primary" onClick={handleSearch}>搜索</Button>
-        <Button onClick={handleReset}>重置</Button>
+        <div className="stitch-btn-group">
+          <Button type="primary" onClick={handleSearch}>搜索</Button>
+          <Button onClick={handleReset}>重置</Button>
+        </div>
       </div>
 
       <Tabs activeKey={activeTab} onChange={setActiveTab} items={[
@@ -252,7 +250,9 @@ export default function ActivityManagement() {
         { key: 'mine', label: '我的活动' },
       ]} />
 
-      <Table dataSource={data} columns={columns} loading={loading} rowKey="id" scroll={{ x: 1200 }} />
+      <div className="stitch-table">
+        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" scroll={{ x: 1200 }} />
+      </div>
 
       <Modal
         title={editingId ? '编辑活动' : '创建活动'}

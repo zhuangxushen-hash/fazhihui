@@ -3,6 +3,7 @@ import { Table, Tag, Button, Modal, Form, Input, Select, Space, message } from '
 import { EyeOutlined, SearchOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
+import { theme } from '../constants/theme'
 
 export default function ComplaintManagement() {
   const [data, setData] = useState<any[]>([])
@@ -31,10 +32,10 @@ export default function ComplaintManagement() {
       if (searchParams.client_name) params.client_name = searchParams.client_name
       if (searchParams.status) params.status = searchParams.status
 
-      const res = await axios.get('/compliance/complaints', { params })
+      const res = await axios.get('/compliance/complaints', { params }) as Record<string, unknown>[]
       setData(res || [])
     } catch (error) {
-      console.error('Fetch complaints error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -61,7 +62,6 @@ export default function ComplaintManagement() {
       fetchData()
     } catch (error) {
       message.error('受理失败')
-      console.error('Accept complaint error:', error)
     }
   }
 
@@ -79,7 +79,6 @@ export default function ComplaintManagement() {
       fetchData()
     } catch (error) {
       message.error('处理失败')
-      console.error('Resolve complaint error:', error)
     }
   }
 
@@ -90,7 +89,6 @@ export default function ComplaintManagement() {
       fetchData()
     } catch (error) {
       message.error('关闭失败')
-      console.error('Close complaint error:', error)
     }
   }
 
@@ -114,12 +112,13 @@ export default function ComplaintManagement() {
       other: '其他',
     }[type] || '-') },
     { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => {
+      // 状态对应的 Stitch Tag 类名（原为 antd color 值，现替换为 Stitch 类名变体）
       const colors: Record<string, string> = {
-        new: 'default',
-        accepted: 'processing',
-        processing: 'blue',
-        reviewing: 'orange',
-        closed: 'success',
+        new: 'stitch-tag stitch-tag-info',
+        accepted: 'stitch-tag stitch-tag-primary',
+        processing: 'stitch-tag stitch-tag-primary',
+        reviewing: 'stitch-tag stitch-tag-warning',
+        closed: 'stitch-tag stitch-tag-success',
       }
       const labels: Record<string, string> = {
         new: '待受理',
@@ -128,7 +127,7 @@ export default function ComplaintManagement() {
         reviewing: '审核中',
         closed: '已关闭',
       }
-      return <Tag color={colors[status] || 'default'}>{labels[status] || '-'}</Tag>
+      return <Tag className={colors[status] || 'stitch-tag stitch-tag-info'}>{labels[status] || '-'}</Tag>
     }},
     { title: '投诉日期', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
     { title: '操作', key: 'action', render: (_: any, record: any) => (
@@ -153,7 +152,7 @@ export default function ComplaintManagement() {
         <h2>合规管理</h2>
       </div>
 
-      <div className="search-bar">
+      <div className="search-bar stitch-filter-bar">
         <Input
           placeholder="案件编号搜索"
           prefix={<SearchOutlined />}
@@ -176,11 +175,15 @@ export default function ComplaintManagement() {
         >
           {statusOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
         </Select>
-        <Button type="primary" onClick={handleSearch}>搜索</Button>
-        <Button onClick={handleReset}>重置</Button>
+        <Space className="stitch-btn-group">
+          <Button type="primary" onClick={handleSearch}>搜索</Button>
+          <Button onClick={handleReset}>重置</Button>
+        </Space>
       </div>
 
-      <Table dataSource={data} columns={columns} loading={loading} rowKey="id" />
+      <div className="stitch-table">
+        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" />
+      </div>
 
       <Modal
         title="投诉详情"
@@ -204,13 +207,13 @@ export default function ComplaintManagement() {
                   other: '其他',
                 }[currentComplaint.type as string] || '-')}</span></div>
               <div className="detail-item"><span className="detail-label">状态</span><span className="detail-value">
-                <Tag color={{
-                  new: 'default',
-                  accepted: 'processing',
-                  processing: 'blue',
-                  reviewing: 'orange',
-                  closed: 'success',
-                }[currentComplaint.status as string] || 'default'}>
+                <Tag className={{
+                  new: 'stitch-tag stitch-tag-info',
+                  accepted: 'stitch-tag stitch-tag-primary',
+                  processing: 'stitch-tag stitch-tag-primary',
+                  reviewing: 'stitch-tag stitch-tag-warning',
+                  closed: 'stitch-tag stitch-tag-success',
+                }[currentComplaint.status as string] || 'stitch-tag stitch-tag-info'}>
                   {{
                     new: '待受理',
                     accepted: '已受理',
@@ -236,7 +239,7 @@ export default function ComplaintManagement() {
                   {currentComplaint.process_note}
                 </div>
                 {currentComplaint.updated_at && (
-                  <div style={{ marginTop: 8, fontSize: 13, color: '#666' }}>
+                  <div style={{ marginTop: 8, fontSize: 13, color: theme.textTertiary }}>
                     处理时间：{formatDateTime(currentComplaint.updated_at)}
                   </div>
                 )}

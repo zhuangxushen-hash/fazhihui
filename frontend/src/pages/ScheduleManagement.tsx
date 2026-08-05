@@ -45,16 +45,17 @@ import {
   convertToLog,
 } from '../api/schedule'
 import { formatDateTime } from '../utils/format'
+import { theme } from '../constants/theme'
 
 const { RangePicker } = DatePicker
 
-// 提醒类型中文标签映射
+// 提醒类型中文标签映射（对齐 Stitch 设计规范，返回 className）
 const reminderTypeMap: Record<string, { label: string; color: string }> = {
-  none: { label: '不提醒', color: 'default' },
-  before5min: { label: '提前5分钟', color: 'blue' },
-  before15min: { label: '提前15分钟', color: 'blue' },
-  before1hour: { label: '提前1小时', color: 'orange' },
-  before1day: { label: '提前1天', color: 'gold' },
+  none: { label: '不提醒', color: 'stitch-tag stitch-tag-info' },
+  before5min: { label: '提前5分钟', color: 'stitch-tag stitch-tag-primary' },
+  before15min: { label: '提前15分钟', color: 'stitch-tag stitch-tag-primary' },
+  before1hour: { label: '提前1小时', color: 'stitch-tag stitch-tag-warning' },
+  before1day: { label: '提前1天', color: 'stitch-tag stitch-tag-gold' },
 }
 
 // 提醒类型下拉选项
@@ -66,58 +67,58 @@ const reminderOptions = [
   { value: 'before1day', label: '提前1天' },
 ]
 
-// 日程状态中文映射
+// 日程状态中文映射（对齐 Stitch 设计规范，返回 className）
 const scheduleStatusMap: Record<string, { label: string; color: string }> = {
-  active: { label: '有效', color: 'green' },
-  cancelled: { label: '已取消', color: 'red' },
-  done: { label: '已完成', color: 'blue' },
+  active: { label: '有效', color: 'stitch-tag stitch-tag-success' },
+  cancelled: { label: '已取消', color: 'stitch-tag stitch-tag-error' },
+  done: { label: '已完成', color: 'stitch-tag stitch-tag-primary' },
 }
 
-// 会议室状态中文映射
+// 会议室状态中文映射（对齐 Stitch 设计规范，返回 className）
 const roomStatusMap: Record<string, { label: string; color: string }> = {
-  available: { label: '可用', color: 'green' },
-  inactive: { label: '停用', color: 'default' },
+  available: { label: '可用', color: 'stitch-tag stitch-tag-success' },
+  inactive: { label: '停用', color: 'stitch-tag stitch-tag-info' },
 }
 
-// 参与人响应状态中文映射
+// 参与人响应状态中文映射（对齐 Stitch 设计规范，返回 className）
 const participantStatusMap: Record<string, { label: string; color: string }> = {
-  pending: { label: '待响应', color: 'orange' },
-  accepted: { label: '已接受', color: 'green' },
-  declined: { label: '已拒绝', color: 'red' },
+  pending: { label: '待响应', color: 'stitch-tag stitch-tag-warning' },
+  accepted: { label: '已接受', color: 'stitch-tag stitch-tag-success' },
+  declined: { label: '已拒绝', color: 'stitch-tag stitch-tag-error' },
 }
 
-// 预约状态中文映射
+// 预约状态中文映射（对齐 Stitch 设计规范，返回 className）
 const bookingStatusMap: Record<string, { label: string; color: string }> = {
-  pending: { label: '待审批', color: 'orange' },
-  approved: { label: '已批准', color: 'green' },
-  rejected: { label: '已拒绝', color: 'red' },
+  pending: { label: '待审批', color: 'stitch-tag stitch-tag-warning' },
+  approved: { label: '已批准', color: 'stitch-tag stitch-tag-success' },
+  rejected: { label: '已拒绝', color: 'stitch-tag stitch-tag-error' },
 }
 
 export default function ScheduleManagement() {
   const [activeTab, setActiveTab] = useState('schedule')
 
   // 日程相关状态
-  const [schedules, setSchedules] = useState<any[]>([])
+  const [schedules, setSchedules] = useState<Record<string, unknown>[]>([])
   const [scheduleLoading, setScheduleLoading] = useState(false)
   const [scheduleModalVisible, setScheduleModalVisible] = useState(false)
-  const [editingSchedule, setEditingSchedule] = useState<any>(null)
+  const [editingSchedule, setEditingSchedule] = useState<Record<string, unknown> | null>(null)
   const [scheduleForm] = Form.useForm()
   const [scheduleSearchForm] = Form.useForm()
   const [participantModalVisible, setParticipantModalVisible] = useState(false)
-  const [participantSchedule, setParticipantSchedule] = useState<any>(null)
-  const [participantList, setParticipantList] = useState<any[]>([])
+  const [participantSchedule, setParticipantSchedule] = useState<Record<string, unknown> | null>(null)
+  const [participantList, setParticipantList] = useState<Record<string, unknown>[]>([])
   const [participantLoading, setParticipantLoading] = useState(false)
   const [newParticipantId, setNewParticipantId] = useState('')
 
   // 会议室相关状态
-  const [rooms, setRooms] = useState<any[]>([])
+  const [rooms, setRooms] = useState<Record<string, unknown>[]>([])
   const [roomLoading, setRoomLoading] = useState(false)
   const [roomModalVisible, setRoomModalVisible] = useState(false)
-  const [editingRoom, setEditingRoom] = useState<any>(null)
+  const [editingRoom, setEditingRoom] = useState<Record<string, unknown> | null>(null)
   const [roomForm] = Form.useForm()
 
   // 预约记录相关状态
-  const [bookings, setBookings] = useState<any[]>([])
+  const [bookings, setBookings] = useState<Record<string, unknown>[]>([])
   const [bookingLoading, setBookingLoading] = useState(false)
   const [bookingModalVisible, setBookingModalVisible] = useState(false)
   const [bookingForm] = Form.useForm()
@@ -127,7 +128,7 @@ export default function ScheduleManagement() {
   // 构建日程查询参数
   const buildScheduleParams = () => {
     const values = scheduleSearchForm.getFieldsValue()
-    const params: any = {}
+    const params: Record<string, unknown> = {}
     if (values.dateRange && values.dateRange.length === 2) {
       params.startDate = values.dateRange[0].format('YYYY-MM-DD 00:00:00')
       params.endDate = values.dateRange[1].format('YYYY-MM-DD 23:59:59')
@@ -142,7 +143,7 @@ export default function ScheduleManagement() {
     try {
       const params = buildScheduleParams()
       const res = await getSchedules(params)
-      setSchedules(res || [])
+      setSchedules((res as Record<string, unknown>[]) || [])
     } catch (error) {
       message.error('获取日程列表失败')
     } finally {
@@ -163,13 +164,13 @@ export default function ScheduleManagement() {
   }
 
   // 编辑日程
-  const handleEditSchedule = (record: any) => {
+  const handleEditSchedule = (record: Record<string, unknown>) => {
     setEditingSchedule(record)
     // 反序列化附件：从 JSON 数组字符串转为逗号分隔的展示字符串
     let attachmentsStr = ''
     if (record.attachments) {
       try {
-        const arr = JSON.parse(record.attachments)
+        const arr = JSON.parse(record.attachments as string)
         if (Array.isArray(arr)) {
           attachmentsStr = arr.join(', ')
         } else {
@@ -183,7 +184,7 @@ export default function ScheduleManagement() {
       ...record,
       time_range:
         record.start_time && record.end_time
-          ? [dayjs(record.start_time), dayjs(record.end_time)]
+          ? [dayjs(record.start_time as string), dayjs(record.end_time as string)]
           : null,
       all_day: !!record.all_day,
       theme: record.theme || undefined,
@@ -195,7 +196,7 @@ export default function ScheduleManagement() {
   }
 
   // 提交日程表单（新增/编辑）
-  const handleScheduleSubmit = async (values: any) => {
+  const handleScheduleSubmit = async (values: Record<string, unknown>) => {
     try {
       // 处理附件：将逗号分隔的字符串转为 JSON 数组字符串
       let attachments: string | null = null
@@ -208,14 +209,14 @@ export default function ScheduleManagement() {
           attachments = JSON.stringify(arr)
         }
       }
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         title: values.title,
         description: values.description || null,
-        start_time: values.time_range?.[0]
-          ? values.time_range[0].format('YYYY-MM-DD HH:mm:ss')
+        start_time: (values.time_range as dayjs.Dayjs[] | undefined)?.[0]
+          ? (values.time_range as dayjs.Dayjs[])[0].format('YYYY-MM-DD HH:mm:ss')
           : null,
-        end_time: values.time_range?.[1]
-          ? values.time_range[1].format('YYYY-MM-DD HH:mm:ss')
+        end_time: (values.time_range as dayjs.Dayjs[] | undefined)?.[1]
+          ? (values.time_range as dayjs.Dayjs[])[1].format('YYYY-MM-DD HH:mm:ss')
           : null,
         all_day: !!values.all_day,
         location: values.location || null,
@@ -226,26 +227,26 @@ export default function ScheduleManagement() {
         attachments,
       }
       if (editingSchedule) {
-        await updateSchedule(editingSchedule.id, payload)
+        await updateSchedule(editingSchedule.id as string, payload)
         message.success('日程更新成功')
         // 编辑后追加新增的参与人
-        if (values.participant_ids && values.participant_ids.length) {
-          for (const uid of values.participant_ids) {
+        if (values.participant_ids && (values.participant_ids as string[]).length) {
+          for (const uid of values.participant_ids as string[]) {
             try {
-              await addParticipant(editingSchedule.id, uid)
+              await addParticipant(editingSchedule.id as string, uid)
             } catch (e) {
               // 单个参与人添加失败不阻塞，继续下一个
             }
           }
         }
       } else {
-        const created: any = await createSchedule(payload)
+        const created = (await createSchedule(payload)) as Record<string, unknown>
         message.success('日程创建成功')
         // 创建日程后追加参与人
-        if (values.participant_ids && values.participant_ids.length && created?.id) {
-          for (const uid of values.participant_ids) {
+        if (values.participant_ids && (values.participant_ids as string[]).length && created?.id) {
+          for (const uid of values.participant_ids as string[]) {
             try {
-              await addParticipant(created.id, uid)
+              await addParticipant(created.id as string, uid)
             } catch (e) {
               // 单个参与人添加失败不阻塞
             }
@@ -254,8 +255,8 @@ export default function ScheduleManagement() {
       }
       setScheduleModalVisible(false)
       fetchSchedules()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
     }
   }
 
@@ -275,25 +276,25 @@ export default function ScheduleManagement() {
     try {
       await convertToLog(id)
       message.success('已转入工作日志')
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '转入失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '转入失败')
     }
   }
 
   // 打开参与人管理弹窗
-  const handleManageParticipants = async (record: any) => {
+  const handleManageParticipants = async (record: Record<string, unknown>) => {
     setParticipantSchedule(record)
     setNewParticipantId('')
     setParticipantModalVisible(true)
-    await fetchParticipants(record.id)
+    await fetchParticipants(record.id as string)
   }
 
   // 拉取参与人列表
   const fetchParticipants = async (scheduleId: string) => {
     setParticipantLoading(true)
     try {
-      const list: any = await listParticipants(scheduleId)
-      setParticipantList(list || [])
+      const list = await listParticipants(scheduleId)
+      setParticipantList((list as Record<string, unknown>[]) || [])
     } catch (error) {
       message.error('获取参与人失败')
     } finally {
@@ -308,12 +309,12 @@ export default function ScheduleManagement() {
       return
     }
     try {
-      await addParticipant(participantSchedule.id, newParticipantId)
+      await addParticipant(participantSchedule!.id as string, newParticipantId)
       message.success('参与人添加成功')
       setNewParticipantId('')
-      fetchParticipants(participantSchedule.id)
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '添加失败')
+      fetchParticipants(participantSchedule!.id as string)
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '添加失败')
     }
   }
 
@@ -324,7 +325,7 @@ export default function ScheduleManagement() {
     setRoomLoading(true)
     try {
       const res = await getMeetingRooms()
-      setRooms(res || [])
+      setRooms((res as Record<string, unknown>[]) || [])
     } catch (error) {
       message.error('获取会议室列表失败')
     } finally {
@@ -340,7 +341,7 @@ export default function ScheduleManagement() {
     setRoomModalVisible(true)
   }
 
-  const handleEditRoom = (record: any) => {
+  const handleEditRoom = (record: Record<string, unknown>) => {
     setEditingRoom(record)
     roomForm.setFieldsValue({
       ...record,
@@ -349,7 +350,7 @@ export default function ScheduleManagement() {
     setRoomModalVisible(true)
   }
 
-  const handleRoomSubmit = async (values: any) => {
+  const handleRoomSubmit = async (values: Record<string, unknown>) => {
     try {
       const payload = {
         name: values.name,
@@ -358,7 +359,7 @@ export default function ScheduleManagement() {
         status: values.status || 'available',
       }
       if (editingRoom) {
-        await updateMeetingRoom(editingRoom.id, payload)
+        await updateMeetingRoom(editingRoom.id as string, payload)
         message.success('会议室更新成功')
       } else {
         await createMeetingRoom(payload)
@@ -366,8 +367,8 @@ export default function ScheduleManagement() {
       }
       setRoomModalVisible(false)
       fetchRooms()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
     }
   }
 
@@ -388,7 +389,7 @@ export default function ScheduleManagement() {
     setBookingLoading(true)
     try {
       const res = await getMeetingRoomBookings()
-      setBookings(res || [])
+      setBookings((res as Record<string, unknown>[]) || [])
     } catch (error) {
       message.error('获取预约记录失败')
     } finally {
@@ -403,7 +404,7 @@ export default function ScheduleManagement() {
     setBookingModalVisible(true)
   }
 
-  const handleBookingSubmit = async (values: any) => {
+  const handleBookingSubmit = async (values: Record<string, unknown>) => {
     try {
       if (!values.room_id) {
         message.warning('请选择会议室')
@@ -413,22 +414,23 @@ export default function ScheduleManagement() {
         message.warning('请输入关联日程ID')
         return
       }
-      if (!values.time_range || values.time_range.length !== 2) {
+      if (!values.time_range || (values.time_range as dayjs.Dayjs[]).length !== 2) {
         message.warning('请选择预约时间段')
         return
       }
+      const timeRange = values.time_range as dayjs.Dayjs[]
       const payload = {
         room_id: values.room_id,
         schedule_id: values.schedule_id,
-        start_time: values.time_range[0].format('YYYY-MM-DD HH:mm:ss'),
-        end_time: values.time_range[1].format('YYYY-MM-DD HH:mm:ss'),
+        start_time: timeRange[0].format('YYYY-MM-DD HH:mm:ss'),
+        end_time: timeRange[1].format('YYYY-MM-DD HH:mm:ss'),
       }
       await createBooking(payload)
       message.success('预约提交成功')
       setBookingModalVisible(false)
       fetchBookings()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
     }
   }
 
@@ -438,8 +440,8 @@ export default function ScheduleManagement() {
       await approveBooking(id)
       message.success('已批准该预约')
       fetchBookings()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
     }
   }
 
@@ -449,8 +451,8 @@ export default function ScheduleManagement() {
       await rejectBooking(id)
       message.success('已拒绝该预约')
       fetchBookings()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
     }
   }
 
@@ -512,7 +514,7 @@ export default function ScheduleManagement() {
       key: 'all_day',
       width: 70,
       render: (v: boolean) => (
-        <Tag color={v ? 'blue' : 'default'}>{v ? '是' : '否'}</Tag>
+        <Tag className={v ? 'stitch-tag stitch-tag-primary' : 'stitch-tag stitch-tag-info'}>{v ? '是' : '否'}</Tag>
       ),
     },
     {
@@ -529,8 +531,8 @@ export default function ScheduleManagement() {
       key: 'reminder_type',
       width: 110,
       render: (v: string) => {
-        const cfg = reminderTypeMap[v] || { label: v, color: 'default' }
-        return <Tag color={cfg.color}>{cfg.label}</Tag>
+        const cfg = reminderTypeMap[v] || { label: v, color: 'stitch-tag stitch-tag-info' }
+        return <Tag className={cfg.color}>{cfg.label}</Tag>
       },
     },
     {
@@ -539,15 +541,15 @@ export default function ScheduleManagement() {
       key: 'status',
       width: 90,
       render: (v: string) => {
-        const cfg = scheduleStatusMap[v] || { label: v, color: 'default' }
-        return <Tag color={cfg.color}>{cfg.label}</Tag>
+        const cfg = scheduleStatusMap[v] || { label: v, color: 'stitch-tag stitch-tag-info' }
+        return <Tag className={cfg.color}>{cfg.label}</Tag>
       },
     },
     {
       title: '操作',
       key: 'action',
       width: 320,
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: Record<string, unknown>) => (
         <Space>
           <Button
             type="link"
@@ -569,7 +571,7 @@ export default function ScheduleManagement() {
             description="确定将该日程转入工作日志吗？"
             okText="确定"
             cancelText="取消"
-            onConfirm={() => handleConvertToLog(record.id)}
+            onConfirm={() => handleConvertToLog(record.id as string)}
           >
             <Button type="link" size="small" icon={<FileTextOutlined />}>
               转日志
@@ -580,7 +582,7 @@ export default function ScheduleManagement() {
             description="确定要删除该日程吗？"
             okText="确定"
             cancelText="取消"
-            onConfirm={() => handleDeleteSchedule(record.id)}
+            onConfirm={() => handleDeleteSchedule(record.id as string)}
           >
             <Button type="link" size="small" danger icon={<DeleteOutlined />}>
               删除
@@ -613,15 +615,15 @@ export default function ScheduleManagement() {
       key: 'status',
       width: 100,
       render: (v: string) => {
-        const cfg = roomStatusMap[v] || { label: v, color: 'default' }
-        return <Tag color={cfg.color}>{cfg.label}</Tag>
+        const cfg = roomStatusMap[v] || { label: v, color: 'stitch-tag stitch-tag-info' }
+        return <Tag className={cfg.color}>{cfg.label}</Tag>
       },
     },
     {
       title: '操作',
       key: 'action',
       width: 180,
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: Record<string, unknown>) => (
         <Space>
           <Button
             type="link"
@@ -636,7 +638,7 @@ export default function ScheduleManagement() {
             description="确定要删除该会议室吗？"
             okText="确定"
             cancelText="取消"
-            onConfirm={() => handleDeleteRoom(record.id)}
+            onConfirm={() => handleDeleteRoom(record.id as string)}
           >
             <Button type="link" size="small" danger icon={<DeleteOutlined />}>
               删除
@@ -654,7 +656,8 @@ export default function ScheduleManagement() {
       dataIndex: ['room', 'name'],
       key: 'room_name',
       width: 140,
-      render: (_: any, record: any) => record.room?.name || record.room_id,
+      render: (_: unknown, record: Record<string, unknown>) =>
+        String((record.room as { name?: string } | undefined)?.name || record.room_id || '-'),
     },
     {
       title: '预约日期',
@@ -691,22 +694,22 @@ export default function ScheduleManagement() {
       key: 'status',
       width: 100,
       render: (v: string) => {
-        const cfg = bookingStatusMap[v] || { label: v, color: 'default' }
-        return <Tag color={cfg.color}>{cfg.label}</Tag>
+        const cfg = bookingStatusMap[v] || { label: v, color: 'stitch-tag stitch-tag-info' }
+        return <Tag className={cfg.color}>{cfg.label}</Tag>
       },
     },
     {
       title: '操作',
       key: 'action',
       width: 200,
-      render: (_: any, record: any) =>
+      render: (_: unknown, record: Record<string, unknown>) =>
         record.status === 'pending' ? (
           <Space>
             <Button
               type="link"
               size="small"
               icon={<CheckCircleOutlined />}
-              onClick={() => handleApproveBooking(record.id)}
+              onClick={() => handleApproveBooking(record.id as string)}
             >
               批准
             </Button>
@@ -715,13 +718,13 @@ export default function ScheduleManagement() {
               size="small"
               danger
               icon={<CloseCircleOutlined />}
-              onClick={() => handleRejectBooking(record.id)}
+              onClick={() => handleRejectBooking(record.id as string)}
             >
               拒绝
             </Button>
           </Space>
         ) : (
-          <span style={{ color: '#999' }}>-</span>
+          <span style={{ color: theme.textTertiary }}>-</span>
         ),
     },
   ]
@@ -739,8 +742,8 @@ export default function ScheduleManagement() {
       dataIndex: 'status',
       key: 'status',
       render: (v: string) => {
-        const cfg = participantStatusMap[v] || { label: v, color: 'default' }
-        return <Tag color={cfg.color}>{cfg.label}</Tag>
+        const cfg = participantStatusMap[v] || { label: v, color: 'stitch-tag stitch-tag-info' }
+        return <Tag className={cfg.color}>{cfg.label}</Tag>
       },
     },
     {
@@ -760,6 +763,7 @@ export default function ScheduleManagement() {
         <>
           {/* 查询表单：日期范围、状态筛选 */}
           <div
+            className="stitch-filter-bar"
             style={{
               background: '#fff',
               padding: 16,
@@ -784,7 +788,7 @@ export default function ScheduleManagement() {
                 />
               </Form.Item>
               <Form.Item>
-                <Space>
+                <div className="stitch-btn-group">
                   <Button
                     type="primary"
                     icon={<SearchOutlined />}
@@ -795,7 +799,7 @@ export default function ScheduleManagement() {
                   <Button icon={<ReloadOutlined />} onClick={handleScheduleReset}>
                     重置
                   </Button>
-                </Space>
+                </div>
               </Form.Item>
             </Form>
           </div>
@@ -823,14 +827,16 @@ export default function ScheduleManagement() {
                 新增日程
               </Button>
             </div>
-            <Table
-              dataSource={schedules}
-              columns={scheduleColumns}
-              loading={scheduleLoading}
-              rowKey="id"
-              size="small"
-              pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
-            />
+            <div className="stitch-table">
+              <Table
+                dataSource={schedules}
+                columns={scheduleColumns}
+                loading={scheduleLoading}
+                rowKey="id"
+                size="small"
+                pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+              />
+            </div>
           </div>
         </>
       ),
@@ -854,14 +860,16 @@ export default function ScheduleManagement() {
               </Button>
             }
           >
-            <Table
-              dataSource={rooms}
-              columns={roomColumns}
-              loading={roomLoading}
-              rowKey="id"
-              size="small"
-              pagination={{ pageSize: 10, showTotal: (t) => `共 ${t} 条` }}
-            />
+            <div className="stitch-table">
+              <Table
+                dataSource={rooms}
+                columns={roomColumns}
+                loading={roomLoading}
+                rowKey="id"
+                size="small"
+                pagination={{ pageSize: 10, showTotal: (t) => `共 ${t} 条` }}
+              />
+            </div>
           </Card>
 
           {/* 下半部分：预约记录 */}
@@ -877,14 +885,16 @@ export default function ScheduleManagement() {
               </Button>
             }
           >
-            <Table
-              dataSource={bookings}
-              columns={bookingColumns}
-              loading={bookingLoading}
-              rowKey="id"
-              size="small"
-              pagination={{ pageSize: 10, showTotal: (t) => `共 ${t} 条` }}
-            />
+            <div className="stitch-table">
+              <Table
+                dataSource={bookings}
+                columns={bookingColumns}
+                loading={bookingLoading}
+                rowKey="id"
+                size="small"
+                pagination={{ pageSize: 10, showTotal: (t) => `共 ${t} 条` }}
+              />
+            </div>
           </Card>
         </>
       ),
@@ -994,14 +1004,16 @@ export default function ScheduleManagement() {
             添加
           </Button>
         </div>
-        <Table
-          dataSource={participantList}
-          columns={participantColumns}
-          loading={participantLoading}
-          rowKey="id"
-          size="small"
-          pagination={{ pageSize: 10 }}
-        />
+        <div className="stitch-table">
+          <Table
+            dataSource={participantList}
+            columns={participantColumns}
+            loading={participantLoading}
+            rowKey="id"
+            size="small"
+            pagination={{ pageSize: 10 }}
+          />
+        </div>
       </Modal>
 
       {/* 新增/编辑会议室弹窗 */}

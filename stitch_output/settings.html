@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>JurisIntegrate - System Settings</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700&amp;family=Noto+Sans+SC:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-surface-variant": "#414753",
+                        "on-secondary-fixed": "#131c2a",
+                        "inverse-surface": "#2f3132",
+                        "primary-container": "#0071e3",
+                        "primary-fixed": "#d7e2ff",
+                        "secondary-fixed": "#dae3f7",
+                        "on-tertiary-container": "#fffaf9",
+                        "primary-fixed-dim": "#abc7ff",
+                        "on-error-container": "#93000a",
+                        "tertiary": "#715818",
+                        "on-error": "#ffffff",
+                        "tertiary-container": "#8c702e",
+                        "secondary": "#565f70",
+                        "on-tertiary": "#ffffff",
+                        "background": "#f9f9fb",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#251a00",
+                        "surface-container-lowest": "#ffffff",
+                        "outline-variant": "#c1c6d6",
+                        "on-secondary-fixed-variant": "#3e4758",
+                        "on-secondary-container": "#5a6374",
+                        "on-primary-container": "#fcfbff",
+                        "surface": "#f9f9fb",
+                        "tertiary-fixed-dim": "#e4c278",
+                        "surface-container": "#eeeef0",
+                        "outline": "#717785",
+                        "surface-tint": "#005cbb",
+                        "on-surface": "#1a1c1d",
+                        "surface-bright": "#f9f9fb",
+                        "on-primary": "#ffffff",
+                        "secondary-container": "#d7e0f4",
+                        "error": "#ba1a1a",
+                        "on-background": "#1a1c1d",
+                        "inverse-on-surface": "#f0f0f2",
+                        "on-tertiary-fixed-variant": "#5a4302",
+                        "surface-variant": "#e2e2e4",
+                        "inverse-primary": "#abc7ff",
+                        "tertiary-fixed": "#ffdf9b",
+                        "secondary-fixed-dim": "#bec7db",
+                        "on-primary-fixed": "#001b3f",
+                        "surface-dim": "#d9dadc",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed-variant": "#00458f",
+                        "surface-container-high": "#e8e8ea",
+                        "primary": "#0059b5",
+                        "surface-container-low": "#f3f3f5",
+                        "surface-container-highest": "#e2e2e4"
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px"
+                    },
+                    spacing: {
+                        data_density_sm: "8px",
+                        header_height: "64px",
+                        data_density_md: "12px",
+                        sidebar_width: "260px",
+                        page_padding: "24px",
+                        grid_gutter: "16px",
+                        container_gap: "20px"
+                    },
+                    fontFamily: {
+                        "display-lg": ["Noto Serif SC", "serif"],
+                        "mono-label": ["Noto Sans SC", "sans-serif"],
+                        "label-md": ["Noto Sans SC", "sans-serif"],
+                        "body-md": ["Noto Sans SC", "sans-serif"],
+                        "title-lg": ["Noto Serif SC", "serif"],
+                        "body-lg": ["Noto Sans SC", "sans-serif"],
+                        "display-md": ["Noto Serif SC", "serif"]
+                    },
+                    fontSize: {
+                        "display-lg": ["32px", { lineHeight: "44px", fontWeight: "700" }],
+                        "mono-label": ["12px", { lineHeight: "16px", fontWeight: "600" }],
+                        "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "500" }],
+                        "body-md": ["14px", { lineHeight: "22px", fontWeight: "400" }],
+                        "title-lg": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+                        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "display-md": ["24px", { lineHeight: "32px", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #c1c6d6;
+            border-radius: 10px;
+        }
+        input:focus {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+    </style>
+</head>
+<body class="bg-background font-body-md text-on-surface h-screen flex overflow-hidden">
+<!-- SideNavBar (Shared Component) -->
+<aside class="fixed left-0 h-full w-sidebar_width bg-on-secondary-fixed text-primary bg-on-secondary-fixed z-20">
+<div class="flex flex-col h-full py-page_padding">
+<!-- Brand -->
+<div class="px-6 mb-8 flex items-center gap-4">
+<div class="w-10 h-10 bg-surface-container-lowest rounded flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-secondary-fixed text-xl">gavel</span>
+</div>
+<div>
+<h1 class="font-display-md text-display-md font-bold text-surface-container-lowest truncate">JurisIntegrate</h1>
+<p class="font-label-md text-label-md text-secondary-fixed-dim">Legal Management</p>
+</div>
+</div>
+<!-- CTA -->
+<div class="px-4 mb-6">
+<button class="w-full bg-primary-container text-on-primary-container rounded-lg py-2.5 font-label-md text-label-md flex justify-center items-center gap-2 hover:bg-on-primary-fixed-variant transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+                    New Case
+                </button>
+</div>
+<!-- Navigation Links -->
+<nav class="flex-1 overflow-y-auto custom-scrollbar px-2 space-y-1">
+<a class="text-secondary-fixed-dim hover:text-surface-container-lowest px-4 py-3 flex items-center gap-3 hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg scale-95 active:opacity-80 transition-transform" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="text-secondary-fixed-dim hover:text-surface-container-lowest px-4 py-3 flex items-center gap-3 hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg scale-95 active:opacity-80 transition-transform" href="#">
+<span class="material-symbols-outlined">person_search</span>
+<span class="font-label-md text-label-md">Leads</span>
+</a>
+<a class="text-secondary-fixed-dim hover:text-surface-container-lowest px-4 py-3 flex items-center gap-3 hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg scale-95 active:opacity-80 transition-transform" href="#">
+<span class="material-symbols-outlined">folder_shared</span>
+<span class="font-label-md text-label-md">Cases</span>
+</a>
+<a class="text-secondary-fixed-dim hover:text-surface-container-lowest px-4 py-3 flex items-center gap-3 hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg scale-95 active:opacity-80 transition-transform" href="#">
+<span class="material-symbols-outlined">gavel</span>
+<span class="font-label-md text-label-md">Compliance</span>
+</a>
+<a class="text-secondary-fixed-dim hover:text-surface-container-lowest px-4 py-3 flex items-center gap-3 hover:bg-on-secondary-fixed-variant transition-colors duration-200 rounded-lg scale-95 active:opacity-80 transition-transform" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-md text-label-md">Finance</span>
+</a>
+<a class="text-primary-fixed-dim font-bold bg-on-secondary-fixed-variant rounded-lg mx-2 px-4 py-3 flex items-center gap-3 hover:bg-on-secondary-fixed-variant transition-colors duration-200 scale-95 active:opacity-80 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+</div>
+</aside>
+<!-- Main Content Area -->
+<div class="ml-sidebar_width flex-1 flex flex-col h-full w-full bg-background relative">
+<!-- TopNavBar (Shared Component) -->
+<header class="sticky top-0 w-full h-header_height bg-surface border-b border-outline-variant flex justify-between items-center px-page_padding z-10">
+<!-- Left: Search -->
+<div class="flex-1 max-w-md relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-transparent rounded-full font-body-md text-on-surface focus:border-primary focus:bg-surface-container-lowest transition-colors" placeholder="Search cases, leads, settings..." type="text"/>
+</div>
+<!-- Right: Actions & Profile -->
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low p-2 rounded-full transition-all cursor-pointer transition-opacity duration-150 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low p-2 rounded-full transition-all cursor-pointer transition-opacity duration-150">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="h-6 w-px bg-outline-variant mx-2"></div>
+<button class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer transition-opacity duration-150">
+                    Support
+                </button>
+<button class="bg-primary-container text-on-primary-container px-4 py-2 rounded font-label-md text-label-md flex items-center gap-2 hover:bg-on-primary-fixed-variant transition-colors ml-2 shadow-sm">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+                    Quick Actions
+                </button>
+<div class="ml-4 w-9 h-9 rounded-full bg-secondary-container border border-outline-variant overflow-hidden cursor-pointer flex items-center justify-center shrink-0">
+<img alt="Attorney Profile" class="w-full h-full object-cover" data-alt="A professional studio portrait of a corporate lawyer in a dark navy suit against a clean light grey background, high resolution, soft balanced lighting, conveying trust and authority." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCoVCmThPkF8fBosGvhsYhPUF8EonTYW6y4ndBouShMaD6jWrG3ZXW3-6tpCtNN82rHqZKe8_SpJgl9v6eFvot7-bepm0updzxYpjNw7KQ-4sI4ac7L3eZUP-TPi6a2rWrLU954y6gsaiQSCJ4fIGvct9HADqBk6XXjeb2zWI3g172CS_doyC4XGu6xt5NIdxc7Fr9JJkhLbiGZj8iopD-8qd7T1mWi9C0B2r8Z1THRkOVuIkww17d2YGxIL0PGExWybth3TXLFGF2e"/>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 flex overflow-hidden h-[calc(100vh-64px)]">
+<!-- Secondary Settings Navigation Menu -->
+<div class="w-64 border-r border-outline-variant bg-surface-container-lowest h-full overflow-y-auto flex-shrink-0">
+<div class="p-6">
+<h2 class="font-title-lg text-title-lg text-on-surface mb-6">System Settings</h2>
+<nav class="space-y-1">
+<a class="block px-4 py-2.5 rounded-lg bg-secondary-container text-primary-container font-label-md text-label-md font-semibold border-l-4 border-primary-container transition-colors" href="#">
+                            律所概况
+                            <span class="block text-xs font-normal text-on-surface-variant mt-0.5">Organization Profile</span>
+</a>
+<a class="block px-4 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-label-md text-label-md transition-colors border-l-4 border-transparent" href="#">
+                            角色管理
+                            <span class="block text-xs font-normal text-outline mt-0.5">Role Management</span>
+</a>
+<a class="block px-4 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-label-md text-label-md transition-colors border-l-4 border-transparent" href="#">
+                            用户管理
+                            <span class="block text-xs font-normal text-outline mt-0.5">User Management</span>
+</a>
+<a class="block px-4 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-label-md text-label-md transition-colors border-l-4 border-transparent" href="#">
+                            第三方集成
+                            <span class="block text-xs font-normal text-outline mt-0.5">Third-party Integration</span>
+</a>
+<a class="block px-4 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-label-md text-label-md transition-colors border-l-4 border-transparent" href="#">
+                            数据字典
+                            <span class="block text-xs font-normal text-outline mt-0.5">Data Dictionary</span>
+</a>
+<a class="block px-4 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-label-md text-label-md transition-colors border-l-4 border-transparent" href="#">
+                            操作日志
+                            <span class="block text-xs font-normal text-outline mt-0.5">Operation Log</span>
+</a>
+<a class="block px-4 py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-label-md text-label-md transition-colors border-l-4 border-transparent" href="#">
+                            系统配置
+                            <span class="block text-xs font-normal text-outline mt-0.5">System Config</span>
+</a>
+</nav>
+</div>
+</div>
+<!-- Settings Content Area -->
+<div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+<div class="max-w-5xl mx-auto space-y-8">
+<!-- Organization Profile Section -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
+<div class="border-b border-outline-variant px-6 py-4 flex justify-between items-center bg-surface-container-low">
+<div>
+<h3 class="font-title-lg text-title-lg text-on-surface">律所概况 <span class="text-sm font-normal text-on-surface-variant ml-2 border-l border-outline-variant pl-2">Organization Profile</span></h3>
+</div>
+<button class="bg-primary-container text-on-primary-container px-4 py-2 rounded text-sm font-medium hover:bg-on-primary-fixed-variant transition-colors">
+                                Save Changes
+                            </button>
+</div>
+<div class="p-6">
+<form class="space-y-6">
+<!-- Logo & Name Row -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+<!-- Logo Upload -->
+<div class="md:col-span-4 flex flex-col">
+<label class="font-label-md text-label-md text-on-surface-variant mb-2">律所Logo (Firm Logo)</label>
+<div class="border-2 border-dashed border-outline-variant rounded-lg p-6 flex flex-col items-center justify-center bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer min-h-[140px]">
+<span class="material-symbols-outlined text-3xl text-outline mb-2">cloud_upload</span>
+<span class="text-sm text-on-surface-variant font-medium">Click to upload</span>
+<span class="text-xs text-outline mt-1">PNG, JPG up to 5MB</span>
+</div>
+</div>
+<!-- Key Info Fields -->
+<div class="md:col-span-8 space-y-5">
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1">律所名称 (Organization Name) <span class="text-error">*</span></label>
+<input class="w-full px-3 py-2 border border-outline-variant rounded-md bg-surface-container-lowest text-on-surface focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-shadow" type="text" value="JurisIntegrate Partners"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1">联系人 (Contact Person)</label>
+<input class="w-full px-3 py-2 border border-outline-variant rounded-md bg-surface-container-lowest text-on-surface focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-shadow" type="text" value="Jane Doe"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1">联系电话 (Phone Number)</label>
+<input class="w-full px-3 py-2 border border-outline-variant rounded-md bg-surface-container-lowest text-on-surface focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-shadow" type="tel" value="+1 (555) 123-4567"/>
+</div>
+</div>
+</div>
+</div>
+<hr class="border-outline-variant"/>
+<!-- Detailed Info Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-5">
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1">电子邮箱 (Email Address)</label>
+<input class="w-full px-3 py-2 border border-outline-variant rounded-md bg-surface-container-lowest text-on-surface focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-shadow" type="email" value="contact@jurisintegrate.com"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-1">办公地址 (Office Address)</label>
+<textarea class="w-full px-3 py-2 border border-outline-variant rounded-md bg-surface-container-lowest text-on-surface focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-shadow resize-none" rows="3">1200 Legal Avenue, Suite 400
+Metropolis, NY 10001</textarea>
+</div>
+</div>
+<!-- License Upload -->
+<div class="flex flex-col h-full">
+<label class="font-label-md text-label-md text-on-surface-variant mb-1">执业许可证 (Business License)</label>
+<div class="border border-outline-variant rounded-md p-4 flex-1 bg-surface-container-lowest flex flex-col justify-center relative overflow-hidden group cursor-pointer">
+<div class="absolute inset-0 bg-secondary-container/10 group-hover:bg-secondary-container/20 transition-colors z-0"></div>
+<div class="flex items-center gap-4 z-10">
+<div class="w-12 h-12 bg-surface-container rounded border border-outline-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-outline">description</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-medium text-on-surface">license_2023_certified.pdf</p>
+<p class="text-xs text-on-surface-variant mt-0.5">Uploaded on Oct 12, 2023 • 2.4 MB</p>
+</div>
+<button class="text-primary-container hover:text-on-primary-fixed-variant text-sm font-medium" type="button">Replace</button>
+</div>
+</div>
+</div>
+</div>
+</form>
+</div>
+</section>
+<!-- Role Management Preview Section -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
+<div class="border-b border-outline-variant px-6 py-4 flex justify-between items-center bg-surface-container-low">
+<div>
+<h3 class="font-title-lg text-title-lg text-on-surface">角色权限预览 <span class="text-sm font-normal text-on-surface-variant ml-2 border-l border-outline-variant pl-2">Role Permissions Matrix</span></h3>
+</div>
+<button class="text-primary-container hover:text-on-primary-fixed-variant text-sm font-medium flex items-center gap-1">
+                                Manage Roles
+                                <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container border-b border-outline-variant">
+<th class="py-3 px-6 font-mono-label text-mono-label text-on-surface-variant font-semibold">Role Name</th>
+<th class="py-3 px-4 font-mono-label text-mono-label text-on-surface-variant text-center border-l border-outline-variant/50">获客管理<br/><span class="text-[10px] font-normal">Leads</span></th>
+<th class="py-3 px-4 font-mono-label text-mono-label text-on-surface-variant text-center border-l border-outline-variant/50">销转管理<br/><span class="text-[10px] font-normal">Conversion</span></th>
+<th class="py-3 px-4 font-mono-label text-mono-label text-on-surface-variant text-center border-l border-outline-variant/50">办案管理<br/><span class="text-[10px] font-normal">Case Mgmt</span></th>
+<th class="py-3 px-4 font-mono-label text-mono-label text-on-surface-variant text-center border-l border-outline-variant/50">合规风控<br/><span class="text-[10px] font-normal">Compliance</span></th>
+<th class="py-3 px-4 font-mono-label text-mono-label text-on-surface-variant text-center border-l border-outline-variant/50">财务结算<br/><span class="text-[10px] font-normal">Finance</span></th>
+<th class="py-3 px-4 font-mono-label text-mono-label text-on-surface-variant text-center border-l border-outline-variant/50">系统设置<br/><span class="text-[10px] font-normal">Settings</span></th>
+</tr>
+</thead>
+<tbody class="text-sm">
+<!-- Super Admin -->
+<tr class="border-b border-outline-variant/50 hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-6 font-medium text-on-surface flex items-center gap-2">
+                                            超级管理员
+                                            <span class="text-[10px] bg-error-container text-on-error-container px-1.5 py-0.5 rounded-sm">Admin</span>
+</td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-primary-container"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-primary-container"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-primary-container"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-primary-container"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-primary-container"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-primary-container"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+</tr>
+<!-- Firm Admin -->
+<tr class="border-b border-outline-variant/50 hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-6 font-medium text-on-surface">律所管理员</td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-primary-container"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-primary-container"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-primary-container"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-primary-container"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-primary-container"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-outline"><span class="material-symbols-outlined text-[20px]">remove</span></td>
+</tr>
+<!-- Senior Partner -->
+<tr class="border-b border-outline-variant/50 hover:bg-surface-container-low transition-colors bg-[rgba(201,169,97,0.05)]">
+<td class="py-3 px-6 font-medium text-on-surface border-l-2 border-tertiary-container">高级合伙人</td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-primary-container"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-primary-container"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-primary-container"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-primary-container"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-primary-container"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-outline"><span class="material-symbols-outlined text-[20px]">remove</span></td>
+</tr>
+<!-- Lawyer -->
+<tr class="border-b border-outline-variant/50 hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-6 font-medium text-on-surface">办案律师</td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-outline"><span class="material-symbols-outlined text-[20px]">remove</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-outline"><span class="material-symbols-outlined text-[20px]">remove</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-primary-container"><span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-outline"><span class="material-symbols-outlined text-[20px]">remove</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-outline"><span class="material-symbols-outlined text-[20px]">remove</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-outline"><span class="material-symbols-outlined text-[20px]">remove</span></td>
+</tr>
+<!-- Paralegal -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-6 font-medium text-on-surface">律师助理</td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-outline"><span class="material-symbols-outlined text-[20px]">remove</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-outline"><span class="material-symbols-outlined text-[20px]">remove</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-outline"><span class="material-symbols-outlined text-[18px]">visibility</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-outline"><span class="material-symbols-outlined text-[20px]">remove</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-outline"><span class="material-symbols-outlined text-[20px]">remove</span></td>
+<td class="py-3 px-4 text-center border-l border-outline-variant/50 text-outline"><span class="material-symbols-outlined text-[20px]">remove</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+</div>
+</main>
+</div>
+</body></html>

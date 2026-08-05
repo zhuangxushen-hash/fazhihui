@@ -35,7 +35,8 @@ import {
   CartesianGrid,
 } from 'recharts'
 import axios from '../api/axios'
-
+import type { Dayjs } from 'dayjs'
+import { theme } from '../constants/theme'
 const { RangePicker } = DatePicker
 
 // 案件类型中英文映射
@@ -72,7 +73,7 @@ const metricCardStyle: React.CSSProperties = {
 }
 
 // 案件类型分布饼图颜色
-const PIE_COLORS = ['#0071e3', '#34c759', '#ff9f0a', '#5856d6', '#ff375f', '#5ac8fa', '#af52de']
+const PIE_COLORS = [theme.primary, '#34c759', '#ff9f0a', '#5856d6', '#ff375f', '#5ac8fa', '#af52de']
 
 export default function CaseEfficiencyDashboard() {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
@@ -96,13 +97,13 @@ export default function CaseEfficiencyDashboard() {
         start_date: dateRange[0],
         end_date: dateRange[1],
       }
-      const res = await axios.get('/dashboard/case-efficiency', { params })
+      const res = await axios.get('/dashboard/case-efficiency', { params }) as Record<string, unknown>
       setStats(res?.stats || {})
-      setCaseTypeDist(res?.case_type_distribution || [])
-      setCloseTrend(res?.close_trend || [])
-      setLawyerStats(res?.lawyer_stats || [])
+      setCaseTypeDist((res?.case_type_distribution || []) as Record<string, unknown>[])
+      setCloseTrend((res?.close_trend || []) as Record<string, unknown>[])
+      setLawyerStats((res?.lawyer_stats || []) as Record<string, unknown>[])
     } catch (error) {
-      console.error('Fetch case efficiency error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -114,7 +115,7 @@ export default function CaseEfficiencyDashboard() {
       title: '案件总量',
       value: Number(stats.total_cases || 0).toLocaleString(),
       icon: <FileTextOutlined />,
-      gradient: 'linear-gradient(135deg, #0071e3 0%, #00a8ff 100%)',
+      gradient: `linear-gradient(135deg, ${theme.primary} 0%, #00a8ff 100%)`,
       suffix: '件',
     },
     {
@@ -174,7 +175,7 @@ export default function CaseEfficiencyDashboard() {
       dataIndex: 'avg_closed',
       key: 'avg_closed',
       align: 'right' as const,
-      render: (v: number) => <span style={{ fontVariantNumeric: 'tabular-nums', color: '#0071e3', fontWeight: 600 }}>{(Number(v || 0)).toFixed(1)}</span>,
+      render: (v: number) => <span style={{ fontVariantNumeric: 'tabular-nums', color: theme.primary, fontWeight: 600 }}>{(Number(v || 0)).toFixed(1)}</span>,
     },
     {
       title: '平均周期(天)',
@@ -194,8 +195,9 @@ export default function CaseEfficiencyDashboard() {
       align: 'right' as const,
       render: (v: number) => {
         const rate = Number(v || 0)
-        const color = rate >= 70 ? 'green' : rate >= 40 ? 'orange' : 'red'
-        return <Tag color={color} style={{ borderRadius: 8, fontWeight: 600 }}>{rate.toFixed(1)}%</Tag>
+        // 使用 stitch-tag 变体替代 color 属性
+        const tagClass = rate >= 70 ? 'stitch-tag-success' : rate >= 40 ? 'stitch-tag-warning' : 'stitch-tag-error'
+        return <Tag className={`stitch-tag ${tagClass}`} style={{ borderRadius: 8, fontWeight: 600 }}>{rate.toFixed(1)}%</Tag>
       },
     },
   ]
@@ -215,11 +217,11 @@ export default function CaseEfficiencyDashboard() {
       </div>
 
       {/* 筛选区 */}
-      <Card style={{ ...cardStyle, marginBottom: 16 }} styles={{ body: { padding: 16 } }}>
+      <Card className="stitch-filter-bar" style={{ ...cardStyle, marginBottom: 16 }} styles={{ body: { padding: 16 } }}>
         <Space wrap size={[12, 12]}>
           <RangePicker
             style={{ width: 240 }}
-            value={dateRange as any}
+            value={dateRange as unknown as [Dayjs, Dayjs] | undefined}
             onChange={(_: any, dateStrings: [string, string]) => setDateRange(dateStrings)}
           />
           <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading}>
@@ -264,11 +266,12 @@ export default function CaseEfficiencyDashboard() {
         {/* 案件类型分布饼图 */}
         <Col xs={24} lg={12}>
           <Card
+            className="stitch-chart-card"
             style={{ ...cardStyle, height: '100%' }}
             title={
               <Space>
-                <PieChartOutlined style={{ color: '#0071e3' }} />
-                <span style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>案件类型分布</span>
+                <PieChartOutlined style={{ color: theme.primary }} />
+                <span className="stitch-chart-title" style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>案件类型分布</span>
               </Space>
             }
             styles={{ body: { padding: 24 } }}
@@ -319,11 +322,12 @@ export default function CaseEfficiencyDashboard() {
         {/* 结案趋势折线图 */}
         <Col xs={24} lg={12}>
           <Card
+            className="stitch-chart-card"
             style={{ ...cardStyle, height: '100%' }}
             title={
               <Space>
-                <LineChartOutlined style={{ color: '#0071e3' }} />
-                <span style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>结案趋势</span>
+                <LineChartOutlined style={{ color: theme.primary }} />
+                <span className="stitch-chart-title" style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>结案趋势</span>
               </Space>
             }
             styles={{ body: { padding: 24 } }}
@@ -351,9 +355,9 @@ export default function CaseEfficiencyDashboard() {
                     <Line
                       type="monotone"
                       dataKey="closed_count"
-                      stroke="#0071e3"
+                      stroke={theme.primary}
                       strokeWidth={3}
-                      dot={{ r: 5, fill: '#0071e3', strokeWidth: 2, stroke: '#fff' }}
+                      dot={{ r: 5, fill: theme.primary, strokeWidth: 2, stroke: '#fff' }}
                       activeDot={{ r: 7 }}
                       name="结案数"
                     />
@@ -367,11 +371,12 @@ export default function CaseEfficiencyDashboard() {
 
       {/* 律师效能明细表 */}
       <Card
+        className="stitch-table"
         style={cardStyle}
         title={
           <Space>
-            <TeamOutlined style={{ color: '#0071e3' }} />
-            <span style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>律师效能明细</span>
+            <TeamOutlined style={{ color: theme.primary }} />
+            <span className="stitch-chart-title" style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>律师效能明细</span>
           </Space>
         }
         styles={{ body: { padding: 0 } }}

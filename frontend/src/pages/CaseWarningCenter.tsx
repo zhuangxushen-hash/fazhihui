@@ -33,7 +33,7 @@ import {
   handleWarning,
   triggerWarningGeneration,
   WarningStatistics,
-} from '../api/caseWarning';
+} from '../api/case-warning';
 
 const { TabPane } = Tabs;
 
@@ -153,7 +153,14 @@ const CaseWarningCenter: React.FC = () => {
       key: 'warning_level',
       render: (level: WarningLevel) => {
         const config = warningLevelConfig[level];
-        return <Tag color={config.color}>{config.text}</Tag>;
+        // 根据级别选择 Stitch 变体：紧急→error，警告→warning，提醒→info
+        const stitchClass =
+          level === WarningLevel.URGENT
+            ? 'stitch-tag stitch-tag-error'
+            : level === WarningLevel.WARNING
+            ? 'stitch-tag stitch-tag-warning'
+            : 'stitch-tag stitch-tag-info';
+        return <Tag className={stitchClass}>{config.text}</Tag>;
       },
     },
     {
@@ -194,14 +201,21 @@ const CaseWarningCenter: React.FC = () => {
       key: 'status',
       render: (status: WarningStatus) => {
         const config = warningStatusConfig[status];
-        return <Tag color={config.color}>{config.text}</Tag>;
+        // 根据状态选择 Stitch 变体：待处理→warning，已处理→success，已超期→error
+        const stitchClass =
+          status === WarningStatus.PROCESSED
+            ? 'stitch-tag stitch-tag-success'
+            : status === WarningStatus.OVERDUE
+            ? 'stitch-tag stitch-tag-error'
+            : 'stitch-tag stitch-tag-warning';
+        return <Tag className={stitchClass}>{config.text}</Tag>;
       },
     },
     {
       title: '操作',
       key: 'action',
       render: (_, record) => (
-        <Space>
+        <Space className="stitch-btn-group">
           {record.status === WarningStatus.PENDING && (
             <Button type="link" onClick={() => openHandleModal(record)}>
               处理
@@ -274,17 +288,19 @@ const CaseWarningCenter: React.FC = () => {
           </Button>
         </div>
 
-        <Table
-          columns={columns}
-          dataSource={warnings}
-          rowKey="id"
-          loading={loading}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `共 ${total} 条记录`,
-          }}
-        />
+        <div className="stitch-table">
+          <Table
+            columns={columns}
+            dataSource={warnings}
+            rowKey="id"
+            loading={loading}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total) => `共 ${total} 条记录`,
+            }}
+          />
+        </div>
       </Card>
 
       <Modal
@@ -298,7 +314,7 @@ const CaseWarningCenter: React.FC = () => {
             <Input.TextArea rows={4} placeholder="请输入处理说明" />
           </Form.Item>
           <Form.Item>
-            <Space>
+            <Space className="stitch-btn-group">
               <Button type="primary" htmlType="submit">
                 确认处理
               </Button>

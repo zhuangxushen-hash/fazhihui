@@ -1,0 +1,24 @@
+#!/usr/bin/expect -f
+# 验证测试环境数据库各表数据量及连贯性
+set timeout 120
+set password "s\`3}2KG~n@D?N\$P"
+
+# 上传验证脚本到服务器的backend目录
+spawn scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ./deploy/verify-data.js ubuntu@1.12.57.22:/home/ubuntu/fazhihui-test/backend/verify-data.js
+expect {
+    "password:" {
+        send "$password\r"
+        expect eof
+    }
+    eof
+}
+
+# 在backend目录执行验证脚本(有node_modules)
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "cd /home/ubuntu/fazhihui-test/backend && node verify-data.js"
+expect {
+    "password:" {
+        send "$password\r"
+        expect eof
+    }
+    eof
+}

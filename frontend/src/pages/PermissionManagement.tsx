@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Tree, Button, Modal, Form, Input, InputNumber, Select, Switch, Space, Tag, message, Spin, Empty, Card, Row, Col } from 'antd'
+import type { TreeDataNode } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, FolderOutlined, LockOutlined, SearchOutlined, ReloadOutlined, SaveOutlined, TeamOutlined } from '@ant-design/icons'
 import { getPermissions, createPermission, updatePermission } from '../api/permission'
 import { getRoles, createRole, updateRole, deleteRole, toggleRoleStatus } from '../api/role'
+import { theme } from '../constants/theme'
 
 const moduleOptions = [
   { label: '系统管理', value: 'system' },
@@ -41,26 +43,27 @@ const getTypeLabel = (value: string) => {
 }
 
 const getModuleColor = (module: string) => {
-  const colors: Record<string, string> = {
-    system: 'purple',
-    user: 'blue',
-    role: 'cyan',
-    menu: 'geekblue',
-    crm: 'green',
-    case: 'orange',
-    compliance: 'red',
-    finance: 'gold',
-    marketing: 'magenta',
-    scrm: 'lime',
-    dashboard: 'volcano',
-    client: 'blue',
+  // 模块 Tag 样式映射（对齐 Stitch 设计规范，返回 className）
+  const classMap: Record<string, string> = {
+    system: 'stitch-tag stitch-tag-gold',
+    user: 'stitch-tag stitch-tag-primary',
+    role: 'stitch-tag stitch-tag-info',
+    menu: 'stitch-tag stitch-tag-primary',
+    crm: 'stitch-tag stitch-tag-success',
+    case: 'stitch-tag stitch-tag-warning',
+    compliance: 'stitch-tag stitch-tag-error',
+    finance: 'stitch-tag stitch-tag-gold',
+    marketing: 'stitch-tag stitch-tag-error',
+    scrm: 'stitch-tag stitch-tag-success',
+    dashboard: 'stitch-tag stitch-tag-warning',
+    client: 'stitch-tag stitch-tag-primary',
   }
-  return colors[module] || 'default'
+  return classMap[module] || 'stitch-tag stitch-tag-info'
 }
 
 export default function PermissionManagement() {
-  const [permissions, setPermissions] = useState<any[]>([])
-  const [roles, setRoles] = useState<any[]>([])
+  const [permissions, setPermissions] = useState<Record<string, unknown>[]>([])
+  const [roles, setRoles] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null)
@@ -71,23 +74,23 @@ export default function PermissionManagement() {
   const [moduleFilter, setModuleFilter] = useState<string | undefined>(undefined)
   // 角色管理弹窗
   const [roleModalVisible, setRoleModalVisible] = useState(false)
-  const [editingRole, setEditingRole] = useState<any>(null)
+  const [editingRole, setEditingRole] = useState<Record<string, unknown> | null>(null)
   const [roleForm] = Form.useForm()
   // 权限项管理弹窗
   const [permModalVisible, setPermModalVisible] = useState(false)
-  const [editingPermission, setEditingPermission] = useState<any>(null)
+  const [editingPermission, setEditingPermission] = useState<Record<string, unknown> | null>(null)
   const [permForm] = Form.useForm()
 
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [permList, roleList] = await Promise.all([getPermissions(), getRoles()])
+      const [permList, roleList] = (await Promise.all([getPermissions(), getRoles()])) as [Record<string, unknown>[], Record<string, unknown>[]]
       setPermissions(permList || [])
       setRoles(roleList || [])
       // 默认选中第一个角色
       if (roleList && roleList.length > 0 && !selectedRoleId) {
-        setSelectedRoleId(roleList[0].id)
-        setCheckedCodes(roleList[0].permissions || [])
+        setSelectedRoleId(roleList[0].id as string)
+        setCheckedCodes((roleList[0].permissions as string[]) || [])
       }
     } catch (error) {
       message.error('获取数据失败')
@@ -104,7 +107,7 @@ export default function PermissionManagement() {
   useEffect(() => {
     if (selectedRoleId) {
       const role = roles.find(r => r.id === selectedRoleId)
-      setCheckedCodes(role?.permissions || [])
+      setCheckedCodes((role?.permissions as string[]) || [])
     }
   }, [selectedRoleId, roles])
 
@@ -114,9 +117,9 @@ export default function PermissionManagement() {
     if (keyword) {
       const kw = keyword.toLowerCase()
       filtered = filtered.filter(p =>
-        p.name?.toLowerCase().includes(kw) ||
-        p.code?.toLowerCase().includes(kw) ||
-        p.description?.toLowerCase().includes(kw)
+        (p.name as string)?.toLowerCase().includes(kw) ||
+        (p.code as string)?.toLowerCase().includes(kw) ||
+        (p.description as string)?.toLowerCase().includes(kw)
       )
     }
     if (moduleFilter) {
@@ -124,9 +127,9 @@ export default function PermissionManagement() {
     }
 
     // 按模块分组
-    const moduleMap = new Map<string, any[]>()
+    const moduleMap = new Map<string, Record<string, unknown>[]>()
     for (const perm of filtered) {
-      const mod = perm.module || 'other'
+      const mod = (perm.module as string) || 'other'
       if (!moduleMap.has(mod)) moduleMap.set(mod, [])
       moduleMap.get(mod)!.push(perm)
     }
@@ -136,12 +139,12 @@ export default function PermissionManagement() {
       ...Array.from(moduleMap.keys()).filter(k => !moduleOptions.find(m => m.value === k)),
     ]
 
-    const result: any[] = []
+    const result: TreeDataNode[] = []
     for (const mod of orderedModules) {
       const perms = moduleMap.get(mod)
       if (!perms || perms.length === 0) continue
 
-      perms.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+      perms.sort((a, b) => ((a.sort_order as number) || 0) - ((b.sort_order as number) || 0))
 
       // 模块节点的 key 用模块前缀，避免和权限 id 冲突
       const modKey = `module-${mod}`
@@ -149,27 +152,27 @@ export default function PermissionManagement() {
         key: modKey,
         title: (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            <FolderOutlined style={{ color: '#faad14' }} />
+            <FolderOutlined style={{ color: theme.warning }} />
             <span style={{ fontWeight: 600 }}>{getModuleLabel(mod)}</span>
-            <Tag color={getModuleColor(mod)}>{mod}</Tag>
-            <Tag color="default">{perms.length} 项</Tag>
+            <Tag className={getModuleColor(mod)}>{mod}</Tag>
+            <Tag className="stitch-tag stitch-tag-info">{perms.length} 项</Tag>
           </span>
         ),
         selectable: false,
         children: perms.map(perm => ({
-          key: perm.code,
+          key: perm.code as string,
           title: (
             <Space size={6}>
-              <LockOutlined style={{ color: perm.status ? '#52c41a' : '#d9d9d9' }} />
-              <span>{perm.name}</span>
-              <Tag color="blue" style={{ margin: 0 }}>{perm.code}</Tag>
-              <Tag color="default" style={{ margin: 0 }}>{getTypeLabel(perm.type)}</Tag>
-              {perm.description && <span style={{ color: '#999', fontSize: 12 }}>{perm.description}</span>}
+              <LockOutlined style={{ color: (perm.status as boolean) ? theme.success : theme.textQuaternary }} />
+              <span>{perm.name as string}</span>
+              <Tag className="stitch-tag stitch-tag-primary" style={{ margin: 0 }}>{perm.code as string}</Tag>
+              <Tag className="stitch-tag stitch-tag-info" style={{ margin: 0 }}>{getTypeLabel(perm.type as string)}</Tag>
+              {(perm.description as string) && <span style={{ color: theme.textTertiary, fontSize: 12 }}>{perm.description as string}</span>}
             </Space>
           ),
           selectable: false,
           isLeaf: true,
-          disabled: !perm.status,
+          disabled: !(perm.status as boolean),
         })),
       })
     }
@@ -188,9 +191,9 @@ export default function PermissionManagement() {
     return checkedCodes
   }, [checkedCodes])
 
-  const handleCheck = (checked: any) => {
+  const handleCheck = (checked: unknown) => {
     // checked 可能是 { checked: [], halfChecked: [] } 或数组
-    const codes = Array.isArray(checked) ? checked : checked.checked
+    const codes = (Array.isArray(checked) ? checked : (checked as Record<string, unknown>)?.checked) as string[]
     // 过滤掉模块前缀的 key，只保留权限 code
     setCheckedCodes(codes.filter((k: string) => !k.startsWith('module-')))
   }
@@ -211,7 +214,7 @@ export default function PermissionManagement() {
   }
 
   const handleSelectAll = () => {
-    setCheckedCodes(permissions.filter(p => p.status).map(p => p.code))
+    setCheckedCodes(permissions.filter(p => p.status as boolean).map(p => p.code as string))
   }
 
   const handleClearAll = () => {
@@ -238,26 +241,26 @@ export default function PermissionManagement() {
     setRoleModalVisible(true)
   }
 
-  const handleEditRole = (role: any) => {
+  const handleEditRole = (role: Record<string, unknown>) => {
     setEditingRole(role)
     roleForm.setFieldsValue(role)
     setRoleModalVisible(true)
   }
 
-  const handleRoleSubmit = async (values: any) => {
+  const handleRoleSubmit = async (values: Record<string, unknown>) => {
     try {
       if (editingRole) {
-        await updateRole(editingRole.id, values)
+        await updateRole(editingRole.id as string, values)
         message.success('角色更新成功')
       } else {
-        const newRole = await createRole(values)
+        const newRole = await createRole(values) as Record<string, unknown>
         message.success('角色创建成功')
-        setSelectedRoleId(newRole.id)
+        setSelectedRoleId(newRole.id as string)
       }
       setRoleModalVisible(false)
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
     }
   }
 
@@ -296,10 +299,10 @@ export default function PermissionManagement() {
     setPermModalVisible(true)
   }
 
-  const handlePermSubmit = async (values: any) => {
+  const handlePermSubmit = async (values: Record<string, unknown>) => {
     try {
       if (editingPermission) {
-        await updatePermission(editingPermission.id, values)
+        await updatePermission(editingPermission.id as string, values)
         message.success('权限项更新成功')
       } else {
         await createPermission(values)
@@ -307,8 +310,8 @@ export default function PermissionManagement() {
       }
       setPermModalVisible(false)
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
     }
   }
 
@@ -333,39 +336,39 @@ export default function PermissionManagement() {
                 <div>
                   {roles.map(role => (
                     <div
-                      key={role.id}
+                      key={role.id as string}
                       style={{
                         padding: '10px 12px',
                         marginBottom: 6,
                         borderRadius: 6,
                         cursor: 'pointer',
                         background: selectedRoleId === role.id ? 'rgba(24,144,255,0.08)' : '#fafafa',
-                        border: selectedRoleId === role.id ? '1px solid #1890ff' : '1px solid transparent',
+                        border: selectedRoleId === role.id ? `1px solid ${theme.primary}` : '1px solid transparent',
                         transition: 'all 0.2s',
                       }}
-                      onClick={() => setSelectedRoleId(role.id)}
+                      onClick={() => setSelectedRoleId(role.id as string)}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontWeight: selectedRoleId === role.id ? 600 : 400, fontSize: 13 }}>
-                          {role.name}
+                          {role.name as string}
                         </span>
                         <Space size={2}>
                           <Switch
                             size="small"
-                            checked={role.status}
-                            onChange={(_, e) => { e.stopPropagation(); handleToggleRoleStatus(role.id) }}
+                            checked={role.status as boolean}
+                            onChange={(_, e) => { e.stopPropagation(); handleToggleRoleStatus(role.id as string) }}
                             checkedChildren=""
                             unCheckedChildren=""
                           />
                         </Space>
                       </div>
-                      <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
-                        <Tag color="blue" style={{ fontSize: 10 }}>{role.code}</Tag>
-                        <span>{role.permissions?.length || 0} 项权限</span>
+                      <div style={{ fontSize: 11, color: theme.textTertiary, marginTop: 2 }}>
+                        <Tag className="stitch-tag stitch-tag-primary" style={{ fontSize: 10 }}>{role.code as string}</Tag>
+                        <span>{(role.permissions as string[])?.length || 0} 项权限</span>
                       </div>
                       <div style={{ marginTop: 4 }}>
                         <Button type="link" size="small" icon={<EditOutlined />} onClick={(e) => { e.stopPropagation(); handleEditRole(role) }}>编辑</Button>
-                        <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={(e) => { e.stopPropagation(); handleDeleteRole(role.id) }}>删除</Button>
+                        <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={(e) => { e.stopPropagation(); handleDeleteRole(role.id as string) }}>删除</Button>
                       </div>
                     </div>
                   ))}
@@ -384,19 +387,19 @@ export default function PermissionManagement() {
             title={
               selectedRole ? (
                 <Space>
-                  <span>{selectedRole.name}</span>
-                  <Tag color="blue">{selectedRole.code}</Tag>
-                  <Tag color="green">已选 {checkedCodes.length} 项</Tag>
+                  <span>{selectedRole.name as string}</span>
+                  <Tag className="stitch-tag stitch-tag-primary">{selectedRole.code as string}</Tag>
+                  <Tag className="stitch-tag stitch-tag-success">已选 {checkedCodes.length} 项</Tag>
                 </Space>
               ) : '请选择角色'
             }
             extra={
               selectedRole && (
-                <Space>
+                <div className="stitch-btn-group">
                   <Button size="small" onClick={handleSelectAll}>全选</Button>
                   <Button size="small" onClick={handleClearAll}>清空</Button>
                   <Button size="small" type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave}>保存权限</Button>
-                </Space>
+                </div>
               )
             }
             style={{ minHeight: 500 }}
@@ -404,7 +407,7 @@ export default function PermissionManagement() {
             {selectedRole ? (
               <>
                 {/* 查询条件 */}
-                <div style={{ marginBottom: 12 }}>
+                <div className="stitch-filter-bar" style={{ marginBottom: 12 }}>
                   <Form form={searchForm} layout="inline" style={{ gap: 8 }}>
                     <Form.Item name="keyword" label="关键词">
                       <Input placeholder="搜索名称/代码/描述" allowClear style={{ width: 180 }} onPressEnter={handleSearch} />
@@ -413,10 +416,10 @@ export default function PermissionManagement() {
                       <Select placeholder="全部模块" allowClear style={{ width: 130 }} options={moduleOptions} />
                     </Form.Item>
                     <Form.Item>
-                      <Space>
+                      <div className="stitch-btn-group">
                         <Button type="primary" size="small" icon={<SearchOutlined />} onClick={handleSearch}>查询</Button>
                         <Button size="small" icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
-                      </Space>
+                      </div>
                     </Form.Item>
                   </Form>
                 </div>

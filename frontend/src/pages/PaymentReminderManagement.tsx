@@ -8,24 +8,24 @@ import {
   markPaidPayment,
   giveUpPayment,
   deletePaymentReminder,
-} from '../api/paymentReminder'
+} from '../api/payment-reminder'
 import { formatDate } from '../utils/format'
-
+import { theme } from '../constants/theme'
 // === Material Design 3 Style Tokens ===
 const pageH2Style: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
   fontSize: 22,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
   margin: 0,
   letterSpacing: '0.01em',
 }
 
 const searchBarStyle: React.CSSProperties = {
-  background: '#ffffff',
+  background: theme.white,
   padding: 16,
   borderRadius: 12,
-  border: '1px solid #c1c6d6',
+  border: `1px solid ${theme.border}`,
   marginBottom: 16,
   display: 'flex',
   gap: 12,
@@ -43,11 +43,11 @@ type PillKind = 'neutral' | 'blue' | 'gold' | 'green' | 'red' | 'orange' | 'purp
 
 const pillColorMap: Record<PillKind, { bg: string; color: string }> = {
   neutral: { bg: 'rgba(113, 119, 133, 0.12)', color: '#5f6672' },
-  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: '#0071e3' },
+  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: theme.primary },
   gold: { bg: 'rgba(201, 169, 97, 0.15)', color: '#8c702e' },
-  green: { bg: 'rgba(46, 125, 50, 0.1)', color: '#2e7d32' },
-  red: { bg: 'rgba(186, 26, 26, 0.1)', color: '#ba1a1a' },
-  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: '#ed6c02' },
+  green: { bg: 'rgba(46, 125, 50, 0.1)', color: theme.success },
+  red: { bg: 'rgba(186, 26, 26, 0.1)', color: theme.error },
+  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: theme.warning },
   purple: { bg: 'rgba(114, 46, 209, 0.1)', color: '#722ed1' },
 }
 
@@ -104,10 +104,10 @@ export default function PaymentReminderManagement() {
         org_id: user.organization_id,
         status: activeTab,
         keyword: keyword || undefined,
-      })
+      }) as Record<string, unknown>[]
       setList(res || [])
     } catch (error) {
-      console.error('Fetch payment reminders error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -138,7 +138,6 @@ export default function PaymentReminderManagement() {
       fetchList()
     } catch (error) {
       message.error('创建失败')
-      console.error('Create payment reminder error:', error)
     }
   }
 
@@ -149,7 +148,6 @@ export default function PaymentReminderManagement() {
       fetchList()
     } catch (error) {
       message.error('催款操作失败')
-      console.error('Remind error:', error)
     }
   }
 
@@ -160,7 +158,6 @@ export default function PaymentReminderManagement() {
       fetchList()
     } catch (error) {
       message.error('操作失败')
-      console.error('Mark paid error:', error)
     }
   }
 
@@ -171,7 +168,6 @@ export default function PaymentReminderManagement() {
       fetchList()
     } catch (error) {
       message.error('操作失败')
-      console.error('Give up error:', error)
     }
   }
 
@@ -182,7 +178,6 @@ export default function PaymentReminderManagement() {
       fetchList()
     } catch (error) {
       message.error('删除失败')
-      console.error('Delete error:', error)
     }
   }
 
@@ -194,7 +189,7 @@ export default function PaymentReminderManagement() {
       dataIndex: 'receivable_amount',
       key: 'receivable_amount',
       render: (v: number) => (
-        <span style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 600, color: '#0059b5' }}>
+        <span style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 600, color: theme.primaryDark }}>
           ¥{Number(v || 0).toFixed(2)}
         </span>
       ),
@@ -204,7 +199,7 @@ export default function PaymentReminderManagement() {
       dataIndex: 'received_amount',
       key: 'received_amount',
       render: (v: number) => (
-        <span style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 600, color: '#2e7d32' }}>
+        <span style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 600, color: theme.success }}>
           ¥{Number(v || 0).toFixed(2)}
         </span>
       ),
@@ -214,7 +209,7 @@ export default function PaymentReminderManagement() {
       dataIndex: 'overdue_amount',
       key: 'overdue_amount',
       render: (v: number) => (
-        <span style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 600, color: '#ba1a1a' }}>
+        <span style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 600, color: theme.error }}>
           ¥{Number(v || 0).toFixed(2)}
         </span>
       ),
@@ -235,7 +230,7 @@ export default function PaymentReminderManagement() {
       key: 'action',
       width: 280,
       render: (_: any, record: any) => (
-        <Space>
+        <Space className="stitch-btn-group">
           {record.status !== 'paid' && record.status !== 'given_up' && (
             <Button type="link" size="small" icon={<PhoneOutlined />} onClick={() => handleRemind(record)}>
               催款
@@ -273,7 +268,7 @@ export default function PaymentReminderManagement() {
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增催款</Button>
       </div>
 
-      <div className="search-bar" style={searchBarStyle}>
+      <div className="search-bar stitch-filter-bar" style={searchBarStyle}>
         <Input
           placeholder="客户名搜索"
           prefix={<SearchOutlined />}
@@ -287,7 +282,7 @@ export default function PaymentReminderManagement() {
 
       <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems.map(t => ({ key: t.key, label: t.label }))} />
 
-      <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+      <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
         <Table dataSource={list} columns={columns} loading={loading} rowKey="id" size="small" pagination={{ pageSize: 10 }} />
       </Card>
 

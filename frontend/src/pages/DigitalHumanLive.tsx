@@ -18,6 +18,7 @@ import {
   Popconfirm,
   Badge,
 } from 'antd'
+import type { BadgeProps } from 'antd'
 import {
   PlusOutlined,
   EditOutlined,
@@ -36,7 +37,7 @@ import {
 } from '@ant-design/icons'
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
-
+import { theme } from '../constants/theme'
 const { TextArea } = Input
 
 const caseTypeOptions = [
@@ -72,7 +73,7 @@ export default function DigitalHumanLive() {
       const res: any = await axios.get('/marketing/digital-human-lives', { params })
       setLiveList(res || [])
     } catch (error) {
-      console.error('Fetch live list error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -85,7 +86,7 @@ export default function DigitalHumanLive() {
       })
       setStats(res || {})
     } catch (error) {
-      console.error('Fetch stats error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -132,7 +133,7 @@ export default function DigitalHumanLive() {
       fetchList()
       fetchStats()
     } catch (error) {
-      console.error('Submit error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -153,8 +154,8 @@ export default function DigitalHumanLive() {
       message.success('开播成功')
       fetchList()
       fetchStats()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '开播失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '开播失败')
     }
   }
 
@@ -164,8 +165,8 @@ export default function DigitalHumanLive() {
       message.success('直播已结束')
       fetchList()
       fetchStats()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '结束失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '结束失败')
     }
   }
 
@@ -194,7 +195,7 @@ export default function DigitalHumanLive() {
           style={{
             borderRadius: 10,
             padding: '8px 20px',
-            background: '#0071e3',
+            background: theme.primary,
             border: 'none',
           }}
         >
@@ -235,8 +236,20 @@ export default function DigitalHumanLive() {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                     <Badge
-                      status={statusInfo.badge as any}
-                      text={<Tag color={statusInfo.color} style={{ borderRadius: 999 }}>{statusInfo.label}</Tag>}
+                      status={statusInfo.badge as BadgeProps['status']}
+                      text={
+                        <Tag
+                          className={
+                            item.status === 'live' ? 'stitch-tag stitch-tag-error' :
+                            item.status === 'scheduled' ? 'stitch-tag stitch-tag-primary' :
+                            item.status === 'ended' ? 'stitch-tag' :
+                            'stitch-tag'
+                          }
+                          style={{ borderRadius: 999 }}
+                        >
+                          {statusInfo.label}
+                        </Tag>
+                      }
                     />
                     <Button
                       type="text"
@@ -248,7 +261,7 @@ export default function DigitalHumanLive() {
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <RobotOutlined style={{ fontSize: 20, color: '#0071e3' }} />
+                    <RobotOutlined style={{ fontSize: 20, color: theme.primary }} />
                     <span
                       style={{
                         fontSize: 16,
@@ -272,7 +285,7 @@ export default function DigitalHumanLive() {
                     </div>
                     {item.case_type && (
                       <div style={{ marginBottom: 4 }}>
-                        <Tag color="blue" style={{ borderRadius: 999 }}>
+                        <Tag className="stitch-tag stitch-tag-primary" style={{ borderRadius: 999 }}>
                           {caseTypeOptions.find(o => o.value === item.case_type)?.label || item.case_type}
                         </Tag>
                       </div>
@@ -298,7 +311,7 @@ export default function DigitalHumanLive() {
                     }}
                   >
                     <div style={{ flex: 1, textAlign: 'center' }}>
-                      <EyeOutlined style={{ color: '#0071e3' }} />
+                      <EyeOutlined style={{ color: theme.primary }} />
                       <div style={{ fontSize: 16, fontWeight: 600, color: '#1a1c1d' }}>
                         {item.viewer_count || 0}
                       </div>
@@ -447,14 +460,14 @@ export default function DigitalHumanLive() {
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0, marginTop: 16 }}>
-            <Space>
+            <Space className="stitch-btn-group">
               <Button
                 type="primary"
                 onClick={handleSubmit}
                 style={{
                   borderRadius: 10,
                   padding: '8px 24px',
-                  background: '#0071e3',
+                  background: theme.primary,
                   border: 'none',
                 }}
               >
@@ -497,8 +510,8 @@ export default function DigitalHumanLive() {
             <Statistic
               title="总场次"
               value={stats.total_sessions || 0}
-              prefix={<VideoCameraOutlined style={{ color: '#0071e3' }} />}
-              valueStyle={{ color: '#0071e3', fontSize: 32, fontWeight: 700 }}
+              prefix={<VideoCameraOutlined style={{ color: theme.primary }} />}
+              valueStyle={{ color: theme.primary, fontSize: 32, fontWeight: 700 }}
             />
           </Card>
         </Col>
@@ -529,8 +542,8 @@ export default function DigitalHumanLive() {
             <Statistic
               title="观看人数"
               value={stats.total_viewers || 0}
-              prefix={<EyeOutlined style={{ color: '#0071e3' }} />}
-              valueStyle={{ color: '#0071e3', fontSize: 32, fontWeight: 700 }}
+              prefix={<EyeOutlined style={{ color: theme.primary }} />}
+              valueStyle={{ color: theme.primary, fontSize: 32, fontWeight: 700 }}
             />
           </Card>
         </Col>
@@ -582,8 +595,8 @@ export default function DigitalHumanLive() {
               value={stats.conversion_rate || 0}
               precision={2}
               suffix="%"
-              prefix={<FundOutlined style={{ color: '#0071e3' }} />}
-              valueStyle={{ color: '#0071e3', fontSize: 28, fontWeight: 700 }}
+              prefix={<FundOutlined style={{ color: theme.primary }} />}
+              valueStyle={{ color: theme.primary, fontSize: 28, fontWeight: 700 }}
             />
           </Card>
         </Col>
@@ -592,7 +605,7 @@ export default function DigitalHumanLive() {
       <Card
         title={
           <span style={{ fontSize: 16, fontWeight: 600 }}>
-            <ClockCircleOutlined style={{ marginRight: 8, color: '#0071e3' }} />
+            <ClockCircleOutlined style={{ marginRight: 8, color: theme.primary }} />
             最近直播记录
           </span>
         }
@@ -636,7 +649,7 @@ export default function DigitalHumanLive() {
                       flexShrink: 0,
                     }}
                   >
-                    <RobotOutlined style={{ color: '#0071e3', fontSize: 18 }} />
+                    <RobotOutlined style={{ color: theme.primary, fontSize: 18 }} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
@@ -670,7 +683,12 @@ export default function DigitalHumanLive() {
                     </div>
                   </div>
                   <Tag
-                    color={statusInfo.color}
+                    className={
+                      item.status === 'live' ? 'stitch-tag stitch-tag-error' :
+                      item.status === 'scheduled' ? 'stitch-tag stitch-tag-primary' :
+                      item.status === 'ended' ? 'stitch-tag' :
+                      'stitch-tag'
+                    }
                     style={{ borderRadius: 999, marginLeft: 16, flexShrink: 0 }}
                   >
                     {statusInfo.label}

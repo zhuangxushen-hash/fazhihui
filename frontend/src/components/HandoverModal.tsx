@@ -4,7 +4,7 @@ import { UserOutlined, FileTextOutlined, SolutionOutlined } from '@ant-design/ic
 import { getUserAssets, batchTransfer } from '../api/handover'
 import { HandoverType } from '../types'
 import { formatDateTime } from '../utils/format'
-
+import { theme } from '../constants/theme'
 interface HandoverModalProps {
   visible: boolean
   onCancel: () => void
@@ -39,7 +39,7 @@ export default function HandoverModal({ visible, onCancel, onSuccess, fromUser, 
 
     setAssetsLoading(true)
     try {
-      const res = await getUserAssets(fromUser.id)
+      const res = (await getUserAssets(fromUser.id)) as { data: Record<string, unknown> }
       setAssets(res.data || {
         leads: [],
         opportunities: [],
@@ -47,9 +47,9 @@ export default function HandoverModal({ visible, onCancel, onSuccess, fromUser, 
         stats: { leadCount: 0, opportunityCount: 0, caseCount: 0 },
       })
       // 默认全选
-      const leads = res.data?.leads || []
-      const opportunities = res.data?.opportunities || []
-      const cases = res.data?.cases || []
+      const leads = (res.data?.leads as unknown[]) || []
+      const opportunities = (res.data?.opportunities as unknown[]) || []
+      const cases = (res.data?.cases as unknown[]) || []
       setSelectedLeads(leads.map((l: any) => l.id))
       setSelectedOpportunities(opportunities.map((o: any) => o.id))
       setSelectedCases(cases.map((c: any) => c.id))
@@ -249,13 +249,13 @@ export default function HandoverModal({ visible, onCancel, onSuccess, fromUser, 
           </div>
           <div style={{ fontSize: 13, color: '#86868b', marginTop: 8 }}>
             资产统计：
-            <span style={{ marginLeft: 8, color: '#0071e3' }}>
+            <span style={{ marginLeft: 8, color: theme.primary }}>
               线索 {assets.stats.leadCount} 条
             </span>
-            <span style={{ marginLeft: 12, color: '#0071e3' }}>
+            <span style={{ marginLeft: 12, color: theme.primary }}>
               商机 {assets.stats.opportunityCount} 个
             </span>
-            <span style={{ marginLeft: 12, color: '#0071e3' }}>
+            <span style={{ marginLeft: 12, color: theme.primary }}>
               案件 {assets.stats.caseCount} 个
             </span>
           </div>

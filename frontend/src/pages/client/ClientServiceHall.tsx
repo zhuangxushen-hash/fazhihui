@@ -59,10 +59,10 @@ export default function ClientServiceHall() {
   const fetchCases = async () => {
     setLoadingCases(true)
     try {
-      const res = await axios.post('/client/cases', { client_id: user.id })
+      const res = await axios.post('/client/cases', { client_id: user.id }) as Record<string, unknown>[]
       setCases(res || [])
     } catch (error) {
-      console.error('Fetch cases error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoadingCases(false)
     }
@@ -157,7 +157,6 @@ export default function ClientServiceHall() {
       setSignSuccess(true)
       message.success('签约成功')
     } catch (error) {
-      console.error('Online sign error:', error)
       message.error('签约失败，请重试')
     } finally {
       setSigning(false)
@@ -169,10 +168,10 @@ export default function ClientServiceHall() {
     setInvoiceModalOpen(true)
     setLoadingPayments(true)
     try {
-      const res = await axios.post('/client/payments', { client_id: user.id })
+      const res = await axios.post('/client/payments', { client_id: user.id }) as Record<string, unknown>[]
       setPayments(res || [])
     } catch (error) {
-      console.error('Fetch payments error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoadingPayments(false)
     }
@@ -186,7 +185,6 @@ export default function ClientServiceHall() {
       setInvoiceDetailOpen(true)
       message.success('发票生成成功')
     } catch (error) {
-      console.error('Download invoice error:', error)
       message.error('发票下载失败')
     } finally {
       setDownloadingId('')
@@ -234,7 +232,6 @@ export default function ClientServiceHall() {
       message.success('证据材料上传成功')
       setEvidenceModalOpen(false)
     } catch (error) {
-      console.error('Upload evidence error:', error)
       message.error('上传失败，请重试')
     } finally {
       setUploading(false)

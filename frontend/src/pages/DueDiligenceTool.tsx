@@ -7,22 +7,22 @@ import {
   getDueDiligenceById,
 } from '../api/dueDiligence'
 import { formatDateTime } from '../utils/format'
-
+import { theme } from '../constants/theme'
 // === Material Design 3 Style Tokens ===
 const pageH2Style: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
   fontSize: 22,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
   margin: 0,
   letterSpacing: '0.01em',
 }
 
 const searchCardStyle: React.CSSProperties = {
-  background: '#ffffff',
+  background: theme.bgContainer,
   padding: 20,
   borderRadius: 16,
-  border: '1px solid #c1c6d6',
+  border: `1px solid ${theme.border}`,
   marginBottom: 16,
 }
 
@@ -36,11 +36,11 @@ type PillKind = 'neutral' | 'blue' | 'gold' | 'green' | 'red' | 'orange' | 'purp
 
 const pillColorMap: Record<PillKind, { bg: string; color: string }> = {
   neutral: { bg: 'rgba(113, 119, 133, 0.12)', color: '#5f6672' },
-  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: '#0071e3' },
+  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: theme.primary },
   gold: { bg: 'rgba(201, 169, 97, 0.15)', color: '#8c702e' },
-  green: { bg: 'rgba(46, 125, 50, 0.1)', color: '#2e7d32' },
-  red: { bg: 'rgba(186, 26, 26, 0.1)', color: '#ba1a1a' },
-  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: '#ed6c02' },
+  green: { bg: 'rgba(46, 125, 50, 0.1)', color: theme.success },
+  red: { bg: 'rgba(186, 26, 26, 0.1)', color: theme.error },
+  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: theme.warning },
   purple: { bg: 'rgba(114, 46, 209, 0.1)', color: '#722ed1' },
 }
 
@@ -162,16 +162,16 @@ function safeParseJSON<T>(raw?: string): T | null {
 const sectionTitleStyle: React.CSSProperties = {
   fontSize: 14,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
   marginBottom: 8,
   paddingLeft: 8,
-  borderLeft: '3px solid #0071e3',
+  borderLeft: `3px solid ${theme.primary}`,
 }
 
 // 分区卡片容器样式
 const sectionCardStyle: React.CSSProperties = {
-  background: '#ffffff',
-  border: '1px solid #e5e7eb',
+  background: theme.bgContainer,
+  border: `1px solid ${theme.borderSecondary}`,
   borderRadius: 8,
   padding: 12,
 }
@@ -202,17 +202,19 @@ function ReportSections({ record }: { record: DueDiligenceRecord | null }) {
       <div style={sectionCardStyle}>
         <div style={sectionTitleStyle}>股东信息</div>
         {shareholders && shareholders.length > 0 ? (
-          <Table
-            size="small"
-            rowKey={(_, idx) => String(idx)}
-            dataSource={shareholders}
-            pagination={false}
-            columns={[
-              { title: '股东姓名', dataIndex: 'name', key: 'name' },
-              { title: '持股比例', dataIndex: 'ratio', key: 'ratio' },
-              { title: '出资额', dataIndex: 'amount', key: 'amount' },
-            ]}
-          />
+          <div className="stitch-table">
+            <Table
+              size="small"
+              rowKey={(_, idx) => String(idx)}
+              dataSource={shareholders}
+              pagination={false}
+              columns={[
+                { title: '股东姓名', dataIndex: 'name', key: 'name' },
+                { title: '持股比例', dataIndex: 'ratio', key: 'ratio' },
+                { title: '出资额', dataIndex: 'amount', key: 'amount' },
+              ]}
+            />
+          </div>
         ) : (
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无股东信息" />
         )}
@@ -254,16 +256,16 @@ function ReportSections({ record }: { record: DueDiligenceRecord | null }) {
         {risk ? (
           <Descriptions size="small" column={2} colon labelStyle={{ width: 90, color: '#5f6672' }}>
             <Descriptions.Item label="诉讼数">
-              <Tag color={risk.litigation_count ? 'orange' : 'green'}>{risk.litigation_count ?? 0}</Tag>
+              <Tag className={`stitch-tag stitch-tag-${risk.litigation_count ? 'warning' : 'success'}`}>{risk.litigation_count ?? 0}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="行政处罚">
-              <Tag color={risk.admin_penalty ? 'red' : 'green'}>{risk.admin_penalty ?? 0}</Tag>
+              <Tag className={`stitch-tag stitch-tag-${risk.admin_penalty ? 'error' : 'success'}`}>{risk.admin_penalty ?? 0}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="失信记录">
-              <Tag color={risk.dishonest_count ? 'red' : 'green'}>{risk.dishonest_count ?? 0}</Tag>
+              <Tag className={`stitch-tag stitch-tag-${risk.dishonest_count ? 'error' : 'success'}`}>{risk.dishonest_count ?? 0}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="经营异常">
-              <Tag color={risk.abnormal_operation ? 'red' : 'green'}>{risk.abnormal_operation ? '是' : '否'}</Tag>
+              <Tag className={`stitch-tag stitch-tag-${risk.abnormal_operation ? 'error' : 'success'}`}>{risk.abnormal_operation ? '是' : '否'}</Tag>
             </Descriptions.Item>
           </Descriptions>
         ) : (
@@ -282,7 +284,7 @@ function ReportSections({ record }: { record: DueDiligenceRecord | null }) {
               fontFamily: "'Noto Sans SC', sans-serif",
               fontSize: 13,
               lineHeight: 1.8,
-              color: '#1a1c1d',
+              color: theme.textBase,
               margin: 0,
             }}
           >
@@ -317,10 +319,10 @@ export default function DueDiligenceTool() {
   const fetchList = async () => {
     setLoading(true)
     try {
-      const res = await getDueDiligences({ org_id: user.organization_id })
+      const res = await getDueDiligences({ org_id: user.organization_id }) as Record<string, unknown>[]
       setList(res || [])
     } catch (error) {
-      console.error('Fetch due diligences error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -342,8 +344,8 @@ export default function DueDiligenceTool() {
         query_type: queryType,
         organization_id: user.organization_id,
         template_id: templateId,
-      })
-      setReportContent(res?.report_content || '暂无报告内容')
+      }) as Record<string, unknown> | null
+      setReportContent((res?.report_content as string) || '暂无报告内容')
       setReportCompany(companyName)
       // 保存完整记录用于分区展示
       setCurrentRecord(res ? (res as DueDiligenceRecord) : null)
@@ -351,7 +353,6 @@ export default function DueDiligenceTool() {
       fetchList()
     } catch (error) {
       message.error('查询失败')
-      console.error('Check due diligence error:', error)
     } finally {
       setSearching(false)
     }
@@ -359,14 +360,13 @@ export default function DueDiligenceTool() {
 
   const handleViewDetail = async (record: any) => {
     try {
-      const res = await getDueDiligenceById(record.id)
+      const res = await getDueDiligenceById(record.id) as Record<string, unknown>
       setDetailCompany(res?.company_name || record.company_name)
       // 保存完整记录用于分区展示
       setDetailRecord(res ? (res as DueDiligenceRecord) : null)
       setDetailVisible(true)
     } catch (error) {
       message.error('获取详情失败')
-      console.error('Get detail error:', error)
     }
   }
 
@@ -406,8 +406,8 @@ export default function DueDiligenceTool() {
       </div>
 
       {/* 顶部搜索区 */}
-      <Card style={searchCardStyle}>
-        <Space style={{ width: '100%' }} size={12} wrap>
+      <Card className="stitch-filter-bar" style={searchCardStyle}>
+        <Space className="stitch-btn-group" style={{ width: '100%' }} size={12} wrap>
           <Input
             placeholder="请输入企业名称"
             prefix={<SearchOutlined />}
@@ -453,10 +453,10 @@ export default function DueDiligenceTool() {
       )}
 
       {/* 历史查询记录列表 */}
-      <div style={{ fontWeight: 600, color: '#1a1c1d', fontSize: 16, fontFamily: "'Noto Serif SC', serif" }}>
+      <div style={{ fontWeight: 600, color: theme.textBase, fontSize: 16, fontFamily: "'Noto Serif SC', serif" }}>
         历史查询记录
       </div>
-      <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+      <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
         <Table dataSource={list} columns={columns} loading={loading} rowKey="id" size="small" pagination={{ pageSize: 10 }} />
       </Card>
 

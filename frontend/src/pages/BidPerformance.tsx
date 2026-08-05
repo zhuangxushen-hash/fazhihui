@@ -68,7 +68,7 @@ const industryOptions = [
 export default function BidPerformance() {
   const [activeMenu, setActiveMenu] = useState('borrow-manage')
   const [activeTab, setActiveTab] = useState('my-performance')
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [form] = Form.useForm()
   // 业绩提报弹窗
@@ -82,14 +82,15 @@ export default function BidPerformance() {
     setLoading(true)
     try {
       const values = form.getFieldsValue()
-      const res: any = await axios.get('/bid-performances', {
+      const res = (await axios.get('/bid-performances', {
         params: {
           menu: activeMenu,
           tab: activeTab,
           ...values,
         },
-      })
-      const list = res?.data?.list || res?.list || []
+      })) as Record<string, unknown>
+      const resData = res?.data as Record<string, unknown> | undefined
+      const list = (resData?.list as Record<string, unknown>[]) || (res?.list as Record<string, unknown>[]) || []
       setData(list)
     } catch (error) {
       setData([])
@@ -122,7 +123,7 @@ export default function BidPerformance() {
   }
 
   // 提交业绩提报
-  const handleCreate = async (values: any) => {
+  const handleCreate = async (values: Record<string, unknown>) => {
     try {
       await axios.post('/bid-performances', values)
       message.success('业绩提报成功')
@@ -145,7 +146,7 @@ export default function BidPerformance() {
   }
 
   // 审核操作
-  const handleAudit = async (record: any, action: 'approve' | 'reject') => {
+  const handleAudit = async (record: Record<string, unknown>, action: 'approve' | 'reject') => {
     try {
       await axios.put(`/bid-performances/${record.key}/audit`, { action })
       message.success(action === 'approve' ? '已通过' : '已驳回')
@@ -209,15 +210,21 @@ export default function BidPerformance() {
       width: 110,
       render: (status: string) => {
         const cfg = auditStatusConfig[status] || { label: status, color: 'default' }
-        return <Tag color={cfg.color}>{cfg.label}</Tag>
+        // 根据审核状态映射 stitch-tag 类名
+        const tagClass =
+          status === 'pending' ? 'stitch-tag stitch-tag-info' :
+          status === 'approved' ? 'stitch-tag stitch-tag-success' :
+          status === 'rejected' ? 'stitch-tag stitch-tag-error' :
+          'stitch-tag'
+        return <Tag className={tagClass}>{cfg.label}</Tag>
       },
     },
     {
       title: '操作',
       key: 'action',
       width: 180,
-      render: (_: any, record: any) => (
-        <Space>
+      render: (_: unknown, record: Record<string, unknown>) => (
+        <Space className="stitch-btn-group">
           {record.audit_status === 'pending' && (
             <>
               <Button type="link" size="small" onClick={() => handleAudit(record, 'approve')}>通过</Button>
@@ -242,7 +249,7 @@ export default function BidPerformance() {
     <div>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
         <h2 style={{ margin: 0 }}>投标业绩库</h2>
-        <Space>
+        <Space className="stitch-btn-group">
           <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreate}>业绩提报</Button>
           <Button icon={<DownloadOutlined />} onClick={handleBatchDownload}>批量下载文件</Button>
         </Space>
@@ -272,7 +279,7 @@ export default function BidPerformance() {
           </div>
 
           {/* 查询条件（10个） */}
-          <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+          <div className="stitch-filter-bar" style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
             <Form form={form} layout="inline" style={{ gap: 8 }}>
               <Form.Item name="performance_title" label="业绩标题">
                 <Input placeholder="请输入" allowClear style={{ width: 160 }} />
@@ -305,7 +312,7 @@ export default function BidPerformance() {
                 <Select placeholder="请选择" allowClear style={{ width: 140 }} options={industryOptions} />
               </Form.Item>
               <Form.Item>
-                <Space>
+                <Space className="stitch-btn-group">
                   <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>搜索</Button>
                   <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
                 </Space>
@@ -314,7 +321,7 @@ export default function BidPerformance() {
           </div>
 
           {/* 列表 */}
-          <div style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
+          <div className="stitch-table" style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
             {selectedIds.length > 0 && (
               <div style={{ marginBottom: 16 }}>
                 <span style={{ color: '#888' }}>已选 {selectedIds.length} 条</span>

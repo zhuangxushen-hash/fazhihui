@@ -62,9 +62,9 @@ import {
   getSocialPostStatsByStatus,
   getSocialPostStatsByPlatform,
   getSocialPostDailyTrend,
-} from '../api/socialAccount'
+} from '../api/social-account'
 import { formatDateTime } from '../utils/format'
-
+import { theme } from '../constants/theme'
 // 平台选项
 const platformOptions: { value: SocialPlatform; label: string; color: string }[] = [
   { value: 'douyin', label: '抖音', color: '#000000' },
@@ -94,14 +94,14 @@ const authStatusMap: Record<string, { label: string; color: string }> = {
 
 const postStatusOptions: { value: SocialPostStatus; label: string; color: string }[] = [
   { value: 'draft', label: '草稿', color: '#86868b' },
-  { value: 'scheduled', label: '已排期', color: '#0071e3' },
+  { value: 'scheduled', label: '已排期', color: theme.primary },
   { value: 'published', label: '已发布', color: '#34c759' },
   { value: 'failed', label: '失败', color: '#ff3b30' },
 ]
 
 const postStatusMap: Record<string, { label: string; color: string }> = {
   draft: { label: '草稿', color: '#86868b' },
-  scheduled: { label: '已排期', color: '#0071e3' },
+  scheduled: { label: '已排期', color: theme.primary },
   published: { label: '已发布', color: '#34c759' },
   failed: { label: '失败', color: '#ff3b30' },
 }
@@ -188,7 +188,7 @@ function AccountsTab() {
       const res = await getSocialAccounts(params)
       setData(res || [])
     } catch (error) {
-      console.error('Fetch social accounts error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -199,7 +199,7 @@ function AccountsTab() {
       const res = await getSocialAccountGroups(user.organization_id)
       setGroups(res || [])
     } catch (error) {
-      console.error('Fetch groups error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -271,7 +271,7 @@ function AccountsTab() {
       setModalVisible(false)
       fetchAccounts()
       fetchGroups()
-    } catch (error: any) {
+    } catch (error: unknown) {
       message.error(editingAccount ? '更新失败' : '创建失败')
     }
   }
@@ -353,17 +353,7 @@ function AccountsTab() {
       render: (val: string) => {
         const p = platformMap[val] || { label: val, color: '#86868b' }
         return (
-          <Tag
-            style={{
-              background: `${p.color}10`,
-              color: p.color,
-              borderRadius: 12,
-              padding: '2px 10px',
-              fontSize: 11,
-              fontWeight: 500,
-              border: 'none',
-            }}
-          >
+          <Tag className="stitch-tag">
             {p.label}
           </Tag>
         )
@@ -385,7 +375,7 @@ function AccountsTab() {
       width: 120,
       render: (val: string) =>
         val ? (
-          <Tag style={{ background: '#f5f5f7', color: '#6e6e73', borderRadius: 10, border: 'none' }}>
+          <Tag className="stitch-tag">
             {val}
           </Tag>
         ) : (
@@ -398,7 +388,7 @@ function AccountsTab() {
       key: 'followers',
       width: 110,
       render: (val: number) => (
-        <span style={{ fontWeight: 600, color: '#0071e3' }}>{formatNumber(val)}</span>
+        <span style={{ fontWeight: 600, color: theme.primary }}>{formatNumber(val)}</span>
       ),
     },
     {
@@ -422,18 +412,14 @@ function AccountsTab() {
       width: 110,
       render: (val: string) => {
         const s = authStatusMap[val] || { label: val, color: '#86868b' }
+        // 根据授权状态映射 stitch-tag 类名
+        const tagClass =
+          val === 'authorized' ? 'stitch-tag stitch-tag-success' :
+          val === 'unauthorized' ? 'stitch-tag stitch-tag-warning' :
+          val === 'expired' ? 'stitch-tag stitch-tag-error' :
+          'stitch-tag'
         return (
-          <Tag
-            style={{
-              background: `${s.color}10`,
-              color: s.color,
-              borderRadius: 12,
-              padding: '2px 10px',
-              fontSize: 11,
-              fontWeight: 500,
-              border: 'none',
-            }}
-          >
+          <Tag className={tagClass}>
             {s.label}
           </Tag>
         )
@@ -453,7 +439,7 @@ function AccountsTab() {
       key: 'action',
       width: 200,
       render: (_: any, record: SocialAccount) => (
-        <Space>
+        <Space className="stitch-btn-group">
           {canEdit && (
             <Button
               size="small"
@@ -502,6 +488,7 @@ function AccountsTab() {
   return (
     <>
       <div
+        className="stitch-filter-bar"
         style={{
           background: '#fff',
           borderRadius: 16,
@@ -554,7 +541,7 @@ function AccountsTab() {
             style={{
               borderRadius: 10,
               padding: '8px 20px',
-              background: '#0071e3',
+              background: theme.primary,
               border: 'none',
               color: '#fff',
             }}
@@ -592,7 +579,7 @@ function AccountsTab() {
                 style={{
                   borderRadius: 10,
                   padding: '8px 20px',
-                  background: '#0071e3',
+                  background: theme.primary,
                   border: 'none',
                   color: '#fff',
                   boxShadow: '0 2px 8px rgba(0, 113, 227, 0.25)',
@@ -607,6 +594,7 @@ function AccountsTab() {
       </div>
 
       <div
+        className="stitch-table"
         style={{
           background: '#fff',
           borderRadius: 16,
@@ -712,7 +700,7 @@ function AccountsTab() {
                 style={{
                   borderRadius: 10,
                   padding: '10px 32px',
-                  background: '#0071e3',
+                  background: theme.primary,
                   border: 'none',
                   color: '#fff',
                 }}
@@ -764,7 +752,7 @@ function AccountsTab() {
                 style={{
                   borderRadius: 10,
                   padding: '10px 32px',
-                  background: '#0071e3',
+                  background: theme.primary,
                   border: 'none',
                   color: '#fff',
                 }}
@@ -818,7 +806,7 @@ function AccountsTab() {
                   style={{
                     borderRadius: 10,
                     padding: '10px 32px',
-                    background: '#0071e3',
+                    background: theme.primary,
                     border: 'none',
                     color: '#fff',
                   }}
@@ -876,7 +864,7 @@ function PostsTab() {
       const res = await getSocialPosts(params)
       setPosts(res || [])
     } catch (error) {
-      console.error('Fetch posts error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -887,7 +875,7 @@ function PostsTab() {
       const res = await getSocialAccounts({ org_id: user.organization_id })
       setAccounts(res || [])
     } catch (error) {
-      console.error('Fetch accounts error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -967,7 +955,7 @@ function PostsTab() {
       }
       setModalVisible(false)
       fetchPosts()
-    } catch (error: any) {
+    } catch (error: unknown) {
       message.error(editingPost ? '更新失败' : '创建失败')
     }
   }
@@ -988,7 +976,7 @@ function PostsTab() {
       message.success('多账号同步发布已创建')
       setMultiModalVisible(false)
       fetchPosts()
-    } catch (error: any) {
+    } catch (error: unknown) {
       message.error('同步发布创建失败')
     }
   }
@@ -998,8 +986,8 @@ function PostsTab() {
       await publishSocialPost(id)
       message.success('已标记为发布')
       fetchPosts()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
     }
   }
 
@@ -1058,16 +1046,7 @@ function PostsTab() {
         const p = platformMap[platform] || { label: '', color: '#86868b' }
         return (
           <Space>
-            <Tag
-              style={{
-                background: `${p.color}10`,
-                color: p.color,
-                borderRadius: 10,
-                padding: '2px 8px',
-                fontSize: 11,
-                border: 'none',
-              }}
-            >
+            <Tag className="stitch-tag">
               {p.label}
             </Tag>
             <span style={{ color: '#1d1d1f', fontSize: 13 }}>{getAccountName(val)}</span>
@@ -1082,7 +1061,7 @@ function PostsTab() {
       width: 170,
       render: (val: string) =>
         val ? (
-          <span style={{ color: '#0071e3', fontSize: 13 }}>{formatDateTime(val)}</span>
+          <span style={{ color: theme.primary, fontSize: 13 }}>{formatDateTime(val)}</span>
         ) : (
           <span style={{ color: '#c7c7cc' }}>未排期</span>
         ),
@@ -1106,18 +1085,15 @@ function PostsTab() {
       width: 110,
       render: (val: string) => {
         const s = postStatusMap[val] || { label: val, color: '#86868b' }
+        // 根据内容状态映射 stitch-tag 类名
+        const tagClass =
+          val === 'draft' ? 'stitch-tag stitch-tag-primary' :
+          val === 'scheduled' ? 'stitch-tag stitch-tag-info' :
+          val === 'published' ? 'stitch-tag stitch-tag-success' :
+          val === 'failed' ? 'stitch-tag stitch-tag-error' :
+          'stitch-tag'
         return (
-          <Tag
-            style={{
-              background: `${s.color}10`,
-              color: s.color,
-              borderRadius: 12,
-              padding: '2px 10px',
-              fontSize: 11,
-              fontWeight: 500,
-              border: 'none',
-            }}
-          >
+          <Tag className={tagClass}>
             {s.label}
           </Tag>
         )
@@ -1141,7 +1117,7 @@ function PostsTab() {
       key: 'action',
       width: 220,
       render: (_: any, record: SocialPost) => (
-        <Space wrap>
+        <Space wrap className="stitch-btn-group">
           {canEdit && record.status !== 'published' && (
             <Button
               size="small"
@@ -1184,6 +1160,7 @@ function PostsTab() {
   return (
     <>
       <div
+        className="stitch-filter-bar"
         style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -1210,7 +1187,7 @@ function PostsTab() {
           />
         </Space>
         {canEdit && (
-          <Space>
+          <Space className="stitch-btn-group">
             <Button
               onClick={handleMultiAdd}
               icon={<ShareAltOutlined />}
@@ -1227,7 +1204,7 @@ function PostsTab() {
               style={{
                 borderRadius: 10,
                 padding: '8px 20px',
-                background: '#0071e3',
+                background: theme.primary,
                 border: 'none',
                 color: '#fff',
                 boxShadow: '0 2px 8px rgba(0, 113, 227, 0.25)',
@@ -1260,7 +1237,7 @@ function PostsTab() {
             color: '#1d1d1f',
           }}
         >
-          <ScheduleOutlined style={{ marginRight: 8, color: '#0071e3' }} />
+          <ScheduleOutlined style={{ marginRight: 8, color: theme.primary }} />
           排期日历
         </div>
         <Calendar
@@ -1304,6 +1281,7 @@ function PostsTab() {
 
       {/* 发布记录列表 */}
       <div
+        className="stitch-table"
         style={{
           background: '#fff',
           borderRadius: 16,
@@ -1390,7 +1368,7 @@ function PostsTab() {
                 style={{
                   borderRadius: 10,
                   padding: '10px 32px',
-                  background: '#0071e3',
+                  background: theme.primary,
                   border: 'none',
                   color: '#fff',
                 }}
@@ -1477,7 +1455,7 @@ function PostsTab() {
                 style={{
                   borderRadius: 10,
                   padding: '10px 32px',
-                  background: '#0071e3',
+                  background: theme.primary,
                   border: 'none',
                   color: '#fff',
                 }}
@@ -1537,7 +1515,7 @@ function StatsTab() {
         setDailyTrend(trend || [])
       }
     } catch (error) {
-      console.error('Fetch stats error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -1586,7 +1564,7 @@ function StatsTab() {
             <Statistic
               title={<span style={{ color: '#86868b', fontSize: 13 }}>账号总数</span>}
               value={Number(overview?.account_count || 0)}
-              valueStyle={{ color: '#0071e3', fontWeight: 700, fontSize: 28 }}
+              valueStyle={{ color: theme.primary, fontWeight: 700, fontSize: 28 }}
             />
             <div style={{ marginTop: 8, fontSize: 12, color: '#86868b' }}>
               已授权 {Number(overview?.authorized_count || 0)} 个
@@ -1676,17 +1654,7 @@ function StatsTab() {
                   }}
                 >
                   <Space>
-                    <Tag
-                      style={{
-                        background: `${info.color}10`,
-                        color: info.color,
-                        borderRadius: 10,
-                        padding: '2px 10px',
-                        fontSize: 12,
-                        border: 'none',
-                        fontWeight: 500,
-                      }}
-                    >
+                    <Tag className="stitch-tag">
                       {info.label}
                     </Tag>
                     <span style={{ color: '#6e6e73', fontSize: 13 }}>
@@ -1726,6 +1694,7 @@ function StatsTab() {
         {/* 按分组统计 */}
         <Col span={12}>
           <div
+            className="stitch-table"
             style={{
               background: '#fff',
               borderRadius: 16,
@@ -1749,14 +1718,7 @@ function StatsTab() {
                   dataIndex: 'group_name',
                   key: 'group_name',
                   render: (val: string) => (
-                    <Tag
-                      style={{
-                        background: '#f5f5f7',
-                        color: '#6e6e73',
-                        borderRadius: 10,
-                        border: 'none',
-                      }}
-                    >
+                    <Tag className="stitch-tag">
                       {val}
                     </Tag>
                   ),
@@ -1773,7 +1735,7 @@ function StatsTab() {
                   dataIndex: 'total_followers',
                   key: 'total_followers',
                   render: (v: number) => (
-                    <span style={{ color: '#0071e3' }}>{formatNumber(Number(v))}</span>
+                    <span style={{ color: theme.primary }}>{formatNumber(Number(v))}</span>
                   ),
                 },
                 {
@@ -1845,6 +1807,7 @@ function StatsTab() {
 
       {/* 按平台统计发布数据 */}
       <div
+        className="stitch-table"
         style={{
           background: '#fff',
           borderRadius: 16,
@@ -1869,15 +1832,7 @@ function StatsTab() {
               render: (val: string) => {
                 const info = platformMap[val] || { label: val, color: '#86868b' }
                 return (
-                  <Tag
-                    style={{
-                      background: `${info.color}10`,
-                      color: info.color,
-                      borderRadius: 10,
-                      padding: '2px 10px',
-                      border: 'none',
-                    }}
-                  >
+                  <Tag className="stitch-tag">
                     {info.label}
                   </Tag>
                 )
@@ -1902,7 +1857,7 @@ function StatsTab() {
               dataIndex: 'scheduled_count',
               key: 'scheduled_count',
               render: (v: number) => (
-                <span style={{ color: '#0071e3' }}>{Number(v) || 0}</span>
+                <span style={{ color: theme.primary }}>{Number(v) || 0}</span>
               ),
             },
             {
@@ -1958,7 +1913,7 @@ function StatsTab() {
               onClick={handleTrendQuery}
               style={{
                 borderRadius: 10,
-                background: '#0071e3',
+                background: theme.primary,
                 border: 'none',
                 color: '#fff',
               }}
@@ -1985,7 +1940,7 @@ function StatsTab() {
                       flex: 1,
                       minWidth: 8,
                       height: Math.max(height, 2),
-                      background: 'linear-gradient(180deg, #0071e3, #00a8ff)',
+                      background: `linear-gradient(180deg, ${theme.primary}, #00a8ff)`,
                       borderRadius: '4px 4px 0 0',
                       transition: 'height 0.3s',
                     }}
@@ -2032,7 +1987,7 @@ function StatsTab() {
                 <Space style={{ width: '100%', justifyContent: 'space-between' }}>
                   <span style={{ color: '#1d1d1f', fontWeight: 500 }}>{item.date}</span>
                   <Space size="middle">
-                    <span style={{ color: '#0071e3' }}>发布 {item.count}</span>
+                    <span style={{ color: theme.primary }}>发布 {item.count}</span>
                     <span style={{ color: '#ff3b30' }}>赞 {formatNumber(Number(item.likes) || 0)}</span>
                     <span style={{ color: '#86868b' }}>评 {formatNumber(Number(item.comments) || 0)}</span>
                     <span style={{ color: '#34c759' }}>转 {formatNumber(Number(item.shares) || 0)}</span>

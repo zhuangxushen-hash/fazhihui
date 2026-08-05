@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Case Management - JurisIntegrate</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&amp;family=Noto+Sans+SC:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#8c702e",
+                        "on-error": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "secondary": "#565f70",
+                        "error-container": "#ffdad6",
+                        "surface-tint": "#005cbb",
+                        "on-secondary-fixed-variant": "#3e4758",
+                        "primary-container": "#0071e3",
+                        "surface-variant": "#e2e2e4",
+                        "primary": "#0059b5",
+                        "surface-dim": "#d9dadc",
+                        "secondary-fixed-dim": "#bec7db",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed": "#001b3f",
+                        "on-surface-variant": "#414753",
+                        "on-secondary-fixed": "#131c2a",
+                        "on-primary-fixed-variant": "#00458f",
+                        "surface": "#f9f9fb",
+                        "surface-container": "#eeeef0",
+                        "surface-bright": "#f9f9fb",
+                        "on-surface": "#1a1c1d",
+                        "on-error-container": "#93000a",
+                        "outline": "#717785",
+                        "surface-container-high": "#e8e8ea",
+                        "primary-fixed": "#d7e2ff",
+                        "on-tertiary-fixed": "#251a00",
+                        "error": "#ba1a1a",
+                        "secondary-fixed": "#dae3f7",
+                        "on-tertiary-fixed-variant": "#5a4302",
+                        "inverse-on-surface": "#f0f0f2",
+                        "outline-variant": "#c1c6d6",
+                        "inverse-primary": "#abc7ff",
+                        "inverse-surface": "#2f3132",
+                        "secondary-container": "#d7e0f4",
+                        "on-primary-container": "#fcfbff",
+                        "surface-container-lowest": "#ffffff",
+                        "background": "#f9f9fb",
+                        "surface-container-low": "#f3f3f5",
+                        "surface-container-highest": "#e2e2e4",
+                        "tertiary-fixed": "#ffdf9b",
+                        "tertiary": "#715818",
+                        "primary-fixed-dim": "#abc7ff",
+                        "on-background": "#1a1c1d",
+                        "tertiary-fixed-dim": "#e4c278",
+                        "on-tertiary-container": "#fffaf9",
+                        "on-secondary-container": "#5a6374",
+                        "on-primary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "data_density_sm": "8px",
+                        "data_density_md": "12px",
+                        "page_padding": "24px",
+                        "grid_gutter": "16px",
+                        "container_gap": "20px",
+                        "sidebar_width": "260px",
+                        "header_height": "64px"
+                    },
+                    "fontFamily": {
+                        "display-md": ["Noto Serif SC"],
+                        "body-lg": ["Noto Sans SC"],
+                        "label-md": ["Noto Sans SC"],
+                        "title-lg": ["Noto Serif SC"],
+                        "display-lg": ["Noto Serif SC"],
+                        "body-md": ["Noto Sans SC"],
+                        "mono-label": ["Noto Sans SC"]
+                    },
+                    "fontSize": {
+                        "display-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "title-lg": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "44px", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "mono-label": ["12px", { "lineHeight": "16px", "fontWeight": "600" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md h-screen flex overflow-hidden">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-screen w-sidebar_width bg-inverse-surface dark:bg-inverse-surface flex flex-col py-page_padding z-40">
+<div class="px-6 mb-8 flex items-center gap-4">
+<img alt="Law Firm Logo" class="w-10 h-10 object-contain" data-alt="A sophisticated, minimalist logo for a high-end law firm. The logo features a stylized scales of justice or a classic serif monogram in gold (#c9a961) against a transparent or very dark navy background. The style is modern corporate, exuding trust and authority." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCid7MZ09R1vk1Jo1npFHQHbZM4IV503toicmy8PXw2uyh5CQNZ93eBx-M1V6PzwpEyrItdm6YpoB7uiiwx3e9deMdSUS5In_HKHjH6yvEvogP87ofmTCI6cBQISJsvOG3RUWiYlaCELrRpQHc4FscONr-9uRkpaynUomSqPwbibbna2DU0_LkVtIGkRfW1EWKzx30wcOPkWEjmUGIgdnK6sZjIaMAycYEai9lMLf4ymcGgOc2QVlUxDkNE8mwICVpv3V1X3OYxRW6-"/>
+<div>
+<h1 class="font-title-lg text-title-lg font-bold text-tertiary-fixed">LegalSuite Pro</h1>
+<p class="text-surface-variant/70 text-xs mt-1">Managing Partner</p>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto w-full">
+<ul class="space-y-1 w-full px-2">
+<li>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-surface-variant/70 font-body-md hover:bg-on-secondary-fixed-variant/10 hover:text-surface-variant transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-surface-variant/70 font-body-md hover:bg-on-secondary-fixed-variant/10 hover:text-surface-variant transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="person_search">person_search</span>
+<span>Leads</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-tertiary-fixed border-l-4 border-tertiary-fixed bg-on-secondary-fixed-variant/20 transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined icon-filled" data-icon="folder_shared">folder_shared</span>
+<span class="font-bold">Cases</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-surface-variant/70 font-body-md hover:bg-on-secondary-fixed-variant/10 hover:text-surface-variant transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span>Financials</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-surface-variant/70 font-body-md hover:bg-on-secondary-fixed-variant/10 hover:text-surface-variant transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="gavel">gavel</span>
+<span>Compliance</span>
+</a>
+</li>
+</ul>
+</div>
+<div class="mt-auto px-2">
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-surface-variant/70 font-body-md hover:bg-on-secondary-fixed-variant/10 hover:text-surface-variant transition-colors duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 ml-[260px] flex flex-col h-screen overflow-hidden">
+<!-- TopNavBar -->
+<header class="sticky top-0 right-0 z-30 bg-surface-container-lowest dark:bg-surface-container-lowest border-b border-outline-variant flex justify-between items-center h-header_height px-page_padding w-full">
+<div class="flex items-center gap-2">
+<span class="font-title-lg text-title-lg font-bold text-primary">LegalSuite Management</span>
+</div>
+<div class="flex items-center gap-6">
+<!-- Search -->
+<div class="relative hidden md:block w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm" data-icon="search">search</span>
+<input class="w-full pl-9 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-full text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" placeholder="Search across firm..." type="text"/>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<button class="hover:text-primary transition-colors cursor-pointer active:opacity-70 p-2 rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="hover:text-primary transition-colors cursor-pointer active:opacity-70 p-2 rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<button class="hover:text-primary transition-colors cursor-pointer active:opacity-70 p-2 rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined" data-icon="apps">apps</span>
+</button>
+<div class="h-8 w-8 rounded-full border border-outline-variant overflow-hidden ml-2 cursor-pointer">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A professional headshot of a corporate lawyer in a sharp dark suit. The lighting is bright and modern, suggesting a high-end office environment. The style is a clean, realistic portrait photograph." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVzchOddo6v_QM2dNModTU6DnUMWMv09TQZEO7x95dqZMHVixEBdOhFkIuNEg8eBoj3HRK_4FjEJQ_5pfBm8ZYdCM2hMEbP_05ETDGpHMY3dR4Bo-wd_iNuntBu5yALAT-acTwh5ntmK6_cFvoSfVNp2pkcx6SVjhU2h9JL98aM4ZVk6gpxNGOt6Kg49lx_lW2kp1lfaOoRZI7coeqyl7d7bcgoNKOPs1SNiy8njfHLwClXXDAs0eH3BaaQIlgg7_NaWVKkgrko7er"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 overflow-y-auto p-page_padding bg-surface">
+<!-- Header & Actions -->
+<div class="flex justify-between items-end mb-6">
+<div>
+<h2 class="font-display-md text-display-md text-on-surface mb-1">Case Portfolio</h2>
+<p class="font-body-md text-on-surface-variant">Manage active litigation, corporate structuring, and client matters.</p>
+</div>
+<div class="flex gap-3">
+<!-- View Toggle -->
+<div class="flex bg-surface-container-low rounded-lg p-1 border border-outline-variant">
+<button class="px-3 py-1.5 rounded-md bg-surface-container-lowest text-primary font-label-md text-label-md shadow-sm transition-all flex items-center gap-2" id="btn-kanban">
+<span class="material-symbols-outlined text-[18px]">view_kanban</span> Kanban
+                        </button>
+<button class="px-3 py-1.5 rounded-md text-on-surface-variant font-label-md text-label-md hover:bg-surface-variant transition-all flex items-center gap-2" id="btn-list">
+<span class="material-symbols-outlined text-[18px]">table_rows</span> List
+                        </button>
+</div>
+<button class="bg-primary-container text-on-primary-container px-4 py-2 rounded-lg font-label-md text-label-md font-bold hover:bg-primary transition-colors flex items-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-[18px]">add</span> New Case
+                    </button>
+</div>
+</div>
+<!-- Filter Bar (Bento-style) -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 mb-container_gap shadow-sm grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+<div class="md:col-span-4 relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
+<input class="w-full pl-9 pr-4 py-2.5 bg-surface rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary text-sm transition-colors" placeholder="Search by Case ID or Client Name..." type="text"/>
+</div>
+<div class="md:col-span-2">
+<select class="w-full py-2.5 px-3 bg-surface rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary text-sm text-on-surface-variant appearance-none">
+<option value="">All Case Types</option>
+<option value="civil">Civil Litigation</option>
+<option value="corporate">Corporate</option>
+<option value="marriage">Family &amp; Marriage</option>
+<option value="labor">Labor Disputes</option>
+</select>
+</div>
+<div class="md:col-span-2">
+<select class="w-full py-2.5 px-3 bg-surface rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary text-sm text-on-surface-variant appearance-none">
+<option value="">All Statuses</option>
+<option value="pending">Pending Assignment</option>
+<option value="progress">In Progress</option>
+<option value="hearing">Hearing/Evidence</option>
+<option value="closed">Closed</option>
+</select>
+</div>
+<div class="md:col-span-2 flex items-center gap-2 px-2">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-9 h-5 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-error"></div>
+<span class="ml-3 text-sm font-label-md text-on-surface-variant">High Priority</span>
+</label>
+</div>
+<div class="md:col-span-2 flex justify-end">
+<button class="text-on-surface-variant hover:text-primary font-label-md text-sm px-4 py-2 transition-colors">Clear All</button>
+</div>
+</div>
+<!-- Views Container -->
+<div class="h-[calc(100vh-280px)] overflow-x-auto overflow-y-hidden" id="view-kanban">
+<div class="flex gap-container_gap h-full min-w-max pb-4">
+<!-- Column: Pending Assignment -->
+<div class="w-[320px] flex flex-col bg-surface-container-low rounded-xl border border-surface-variant overflow-hidden">
+<div class="p-3 bg-surface-container-high border-b border-surface-variant flex justify-between items-center">
+<h3 class="font-title-lg text-title-lg text-sm text-on-surface">Pending Assignment</h3>
+<span class="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded-full text-xs font-mono-label">2</span>
+</div>
+<div class="p-3 flex-1 overflow-y-auto space-y-3">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest p-4 rounded-lg border border-outline-variant shadow-sm hover:shadow-md hover:border-primary/50 transition-all cursor-pointer group">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-mono-label text-outline bg-surface px-1.5 py-0.5 rounded border border-outline-variant">CORP-2026-042</span>
+<span class="bg-error/10 text-error px-2 py-0.5 rounded text-[10px] font-bold border border-error/20 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">priority_high</span> High
+                                    </span>
+</div>
+<h4 class="font-title-lg text-[15px] leading-tight text-on-surface mb-1 group-hover:text-primary transition-colors">TechCorp Mergers &amp; Acquisitions Restructuring</h4>
+<p class="text-sm text-on-surface-variant mb-4">Client: Horizon Technologies Ltd.</p>
+<div class="flex justify-between items-end mt-4 pt-3 border-t border-surface-variant">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-dim border border-outline-variant flex items-center justify-center text-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">person_add</span>
+</div>
+<span class="text-xs text-outline">Unassigned</span>
+</div>
+<span class="text-xs font-bold text-error">Overdue 2d</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: In Progress -->
+<div class="w-[320px] flex flex-col bg-surface-container-low rounded-xl border border-surface-variant overflow-hidden">
+<div class="p-3 bg-surface-container-high border-b border-surface-variant flex justify-between items-center border-t-2 border-t-primary">
+<h3 class="font-title-lg text-title-lg text-sm text-on-surface">In Progress</h3>
+<span class="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded-full text-xs font-mono-label">3</span>
+</div>
+<div class="p-3 flex-1 overflow-y-auto space-y-3">
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest p-4 rounded-lg border border-outline-variant shadow-sm hover:shadow-md hover:border-primary/50 transition-all cursor-pointer group">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-mono-label text-outline bg-surface px-1.5 py-0.5 rounded border border-outline-variant">MARRIAGE-2026-001</span>
+<span class="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded text-[10px] font-bold border border-outline-variant">Normal</span>
+</div>
+<h4 class="font-title-lg text-[15px] leading-tight text-on-surface mb-1 group-hover:text-primary transition-colors">Chen vs. Wang Asset Division</h4>
+<p class="text-sm text-on-surface-variant mb-4">Client: Emily Chen</p>
+<div class="flex justify-between items-end mt-4 pt-3 border-t border-surface-variant">
+<div class="flex items-center gap-2">
+<img alt="Lawyer" class="w-6 h-6 rounded-full border border-outline-variant object-cover" data-alt="Small avatar of a female lawyer with glasses." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCrxu6z56Hj4ZFxhgSGXZtRaw5vSQfesZ2HCxmBct2RzXmZ80keuiCkq9jlJzO4UIZUfOyAD5LZx2ywL173pec5gWxbU_kROKk-G0luzqeJeMk7A7DaeLeKlzunAQYqH-VXH0nk4iMV4QlOhKdbAvGXCkDOU_IhTAmpNISocx5ipYNQOhDfWlQdMDDNtm2M2qRcigc_f4_5Rz32r8UNJw8baQ5Y4tPMA5Z3WUfvl38rOWR6hIpxe-hfmk7YNZ-gS-jLw9dMynd5ym1z"/>
+<span class="text-xs text-on-surface-variant">Sarah Jenkins</span>
+</div>
+<span class="text-xs text-outline">14d left</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest p-4 rounded-lg border border-tertiary-fixed shadow-sm hover:shadow-md transition-all cursor-pointer group relative overflow-hidden">
+<div class="absolute top-0 right-0 w-8 h-8 bg-tertiary-container/10 flex items-center justify-center rounded-bl-lg">
+<span class="material-symbols-outlined text-tertiary-container text-[14px]">star</span>
+</div>
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-mono-label text-outline bg-surface px-1.5 py-0.5 rounded border border-outline-variant">CIVIL-2026-118</span>
+</div>
+<h4 class="font-title-lg text-[15px] leading-tight text-on-surface mb-1 group-hover:text-primary transition-colors">Estate of Jonathan Doe</h4>
+<p class="text-sm text-on-surface-variant mb-4">Client: Doe Family Trust</p>
+<div class="flex justify-between items-end mt-4 pt-3 border-t border-surface-variant">
+<div class="flex items-center gap-2">
+<img alt="Lawyer" class="w-6 h-6 rounded-full border border-outline-variant object-cover" data-alt="Small avatar of a male lawyer in a blue suit." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLJcDmcCQQVsT2lLumd1b2GKw5WstS-2KJifWadOUMDSKjI8SXXDzZKZyQnMs2OYu9EnfMlyPuDY1ZYjZ_mcGCXZNGxhY6OEGFI7hlUEG07eP86_uHDGD92eonQZ7chdShIEgmNjQ8F7ONUZTCK59RvZT-dIoCgflP_Jz5E6qMj8qYw6_C9Gbu-LEG-hut_Rj2oaMVKFLHgIsaQbcP9TLKYYsVJL6gwLoXj0Q7O6c26yhk10Hs2GtHntUSh8YLvE9LXtBz2-0K4tjS"/>
+<span class="text-xs text-on-surface-variant">Michael Ross</span>
+</div>
+<span class="text-xs text-outline">30d left</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: Hearing/Evidence -->
+<div class="w-[320px] flex flex-col bg-surface-container-low rounded-xl border border-surface-variant overflow-hidden">
+<div class="p-3 bg-surface-container-high border-b border-surface-variant flex justify-between items-center border-t-2 border-t-tertiary-container">
+<h3 class="font-title-lg text-title-lg text-sm text-on-surface">Hearing / Evidence</h3>
+<span class="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded-full text-xs font-mono-label">1</span>
+</div>
+<div class="p-3 flex-1 overflow-y-auto space-y-3">
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest p-4 rounded-lg border border-outline-variant shadow-sm hover:shadow-md hover:border-primary/50 transition-all cursor-pointer group">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] font-mono-label text-outline bg-surface px-1.5 py-0.5 rounded border border-outline-variant">LABOR-2026-088</span>
+<span class="bg-error/10 text-error px-2 py-0.5 rounded text-[10px] font-bold border border-error/20 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">priority_high</span> High
+                                    </span>
+</div>
+<h4 class="font-title-lg text-[15px] leading-tight text-on-surface mb-1 group-hover:text-primary transition-colors">Class Action vs. OmniCorp</h4>
+<p class="text-sm text-on-surface-variant mb-4">Client: Workers Union Local 404</p>
+<div class="bg-tertiary-fixed-dim/20 border border-tertiary-fixed-dim/50 rounded p-2 mb-3">
+<p class="text-[11px] text-on-surface-variant font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-tertiary-container">gavel</span> Hearing Tomorrow @ 9AM</p>
+</div>
+<div class="flex justify-between items-end mt-2 pt-3 border-t border-surface-variant">
+<div class="flex items-center gap-2">
+<img alt="Lawyer" class="w-6 h-6 rounded-full border border-outline-variant object-cover" data-alt="Small avatar of a female senior partner lawyer." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA62qcACfJOPkpeMiDfwPmVepVA1PcnZ7G88Nn0LJ57L45TqmDZ1DSKlfy1r9WzEySDjjdZgNaokBjbn_VvZXXmjrtCB7ybSZzT0KHVKnzzLkrQqulh7LOu7xrYttdgPyHdOeOgL98um-K0CgCalRfmtR2vCiTgZ0kUvATvZ9RsVqPB0k5fLdeFvHzMZjUlzCMwXiWbPIJVUoDDjHMr1mvcl1Nn_vBj3mCBW4X1ddfAIk4OfKI0vQBzZ6V-R9VX-De-yRjdtYqPZ4Nc"/>
+<span class="text-xs text-on-surface-variant">Jessica Pearson</span>
+</div>
+<span class="text-xs font-bold text-tertiary-container">1d left</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: Closed -->
+<div class="w-[320px] flex flex-col bg-surface-container-low rounded-xl border border-surface-variant overflow-hidden opacity-75">
+<div class="p-3 bg-surface-container-high border-b border-surface-variant flex justify-between items-center">
+<h3 class="font-title-lg text-title-lg text-sm text-on-surface">Closed</h3>
+<span class="bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded-full text-xs font-mono-label">12+</span>
+</div>
+<div class="p-3 flex-1 overflow-y-auto space-y-3">
+<!-- Card 5 -->
+<div class="bg-surface-container-lowest p-3 rounded-lg border border-outline-variant shadow-sm cursor-pointer grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all">
+<div class="flex justify-between items-center mb-1">
+<span class="text-[10px] font-mono-label text-outline">CIVIL-2025-992</span>
+<span class="material-symbols-outlined text-[14px] text-outline">check_circle</span>
+</div>
+<h4 class="font-title-lg text-[13px] leading-tight text-on-surface-variant mb-1 line-through">Smith Property Dispute</h4>
+<p class="text-xs text-outline mb-2">Closed: Oct 12, 2025</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- List View (Hidden by default) -->
+<div class="hidden bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm" id="view-list">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant">
+<th class="py-3 px-4 font-label-md text-xs text-on-surface-variant uppercase tracking-wider">Case ID</th>
+<th class="py-3 px-4 font-label-md text-xs text-on-surface-variant uppercase tracking-wider">Title / Client</th>
+<th class="py-3 px-4 font-label-md text-xs text-on-surface-variant uppercase tracking-wider">Type</th>
+<th class="py-3 px-4 font-label-md text-xs text-on-surface-variant uppercase tracking-wider">Status</th>
+<th class="py-3 px-4 font-label-md text-xs text-on-surface-variant uppercase tracking-wider">Lawyer</th>
+<th class="py-3 px-4 font-label-md text-xs text-on-surface-variant uppercase tracking-wider text-right">Deadline</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-variant">
+<tr class="hover:bg-primary-fixed/30 transition-colors cursor-pointer">
+<td class="py-3 px-4 font-mono-label text-xs text-on-surface">MARRIAGE-2026-001</td>
+<td class="py-3 px-4">
+<div class="font-title-lg text-sm text-on-surface font-semibold">Chen vs. Wang Asset Division</div>
+<div class="text-xs text-on-surface-variant mt-0.5">Emily Chen</div>
+</td>
+<td class="py-3 px-4"><span class="px-2 py-1 rounded text-[10px] font-bold bg-secondary-container text-on-secondary-container border border-outline-variant/30">Family Law</span></td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-1.5">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<span class="text-xs text-on-surface-variant">In Progress</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-2">
+<img alt="Lawyer" class="w-6 h-6 rounded-full border border-outline-variant object-cover" data-alt="Small avatar of a female lawyer." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7C753hWLhm5z9EpgkYoV2TpCI5LIYtHNAwgCyLALetztwcE2lnpKJ2LUhjt4eFdVeYlFW9I4eYNpXm9EJeVPseSg7EgPIn9cNGp_0hjO7LZcHtxuJT6w5HpMkrczetspnUxcbG3QUqJKrSK2uoMI2FU5kw_N-DaAy4qG8GeT4FHozATK4XxU7kkwGC4QC1nlCYKeqymjFNE0D1o95BiFqYDUng_jgqtu5GvyxNdZRwKPTF1F-hJntH8T9lnpec93iBLftQ9WcXLiY"/>
+<span class="text-xs text-on-surface-variant">Sarah J.</span>
+</div>
+</td>
+<td class="py-3 px-4 text-right text-xs text-on-surface-variant">14 days</td>
+</tr>
+<tr class="hover:bg-primary-fixed/30 transition-colors cursor-pointer bg-error/5">
+<td class="py-3 px-4 font-mono-label text-xs text-on-surface">CORP-2026-042</td>
+<td class="py-3 px-4">
+<div class="font-title-lg text-sm text-on-surface font-semibold flex items-center gap-2">
+                                    TechCorp M&amp;A 
+                                    <span class="material-symbols-outlined text-[14px] text-error">warning</span>
+</div>
+<div class="text-xs text-on-surface-variant mt-0.5">Horizon Tech Ltd.</div>
+</td>
+<td class="py-3 px-4"><span class="px-2 py-1 rounded text-[10px] font-bold bg-tertiary-container/20 text-tertiary-container border border-outline-variant/30">Corporate</span></td>
+<td class="py-3 px-4">
+<div class="flex items-center gap-1.5">
+<div class="w-2 h-2 rounded-full bg-surface-variant border border-outline-variant"></div>
+<span class="text-xs text-on-surface-variant">Pending</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="text-xs text-outline italic">Unassigned</span>
+</td>
+<td class="py-3 px-4 text-right text-xs font-bold text-error">Overdue</td>
+</tr>
+</tbody>
+</table>
+</div>
+</main>
+</div>
+<script>
+        // Simple view toggle logic
+        const btnKanban = document.getElementById('btn-kanban');
+        const btnList = document.getElementById('btn-list');
+        const viewKanban = document.getElementById('view-kanban');
+        const viewList = document.getElementById('view-list');
+
+        btnKanban.addEventListener('click', () => {
+            viewKanban.classList.remove('hidden');
+            viewList.classList.add('hidden');
+            
+            btnKanban.classList.add('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
+            btnKanban.classList.remove('text-on-surface-variant', 'hover:bg-surface-variant');
+            
+            btnList.classList.remove('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
+            btnList.classList.add('text-on-surface-variant', 'hover:bg-surface-variant');
+        });
+
+        btnList.addEventListener('click', () => {
+            viewList.classList.remove('hidden');
+            viewKanban.classList.add('hidden');
+            
+            btnList.classList.add('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
+            btnList.classList.remove('text-on-surface-variant', 'hover:bg-surface-variant');
+            
+            btnKanban.classList.remove('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
+            btnKanban.classList.add('text-on-surface-variant', 'hover:bg-surface-variant');
+        });
+    </script>
+</body></html>

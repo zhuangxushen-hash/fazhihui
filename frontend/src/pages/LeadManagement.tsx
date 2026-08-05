@@ -3,16 +3,17 @@ import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, InputNu
 import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, HistoryOutlined, SaveOutlined, SwapOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
+import { theme } from '../constants/theme'
 
-// 转化状态中文映射
+// 转化状态中文映射（color 字段存放 stitch-tag 变体类名）
 const conversionStatusMap: Record<string, { label: string; color: string }> = {
-  not_converted: { label: '未转化', color: 'default' },
-  converting: { label: '转化中', color: 'processing' },
-  converted: { label: '已转化', color: 'success' },
+  not_converted: { label: '未转化', color: 'stitch-tag stitch-tag-primary' },
+  converting: { label: '转化中', color: 'stitch-tag stitch-tag-info' },
+  converted: { label: '已转化', color: 'stitch-tag stitch-tag-success' },
 }
 
 export default function LeadManagement() {
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [detailVisible, setDetailVisible] = useState(false)
@@ -21,8 +22,8 @@ export default function LeadManagement() {
   const [form] = Form.useForm()
   const [followUpForm] = Form.useForm()
   const [statusForm] = Form.useForm()
-  const [currentLead, setCurrentLead] = useState<any>(null)
-  const [followUps, setFollowUps] = useState<any[]>([])
+  const [currentLead, setCurrentLead] = useState<Record<string, unknown> | null>(null)
+  const [followUps, setFollowUps] = useState<Record<string, unknown>[]>([])
   const [editingFee, setEditingFee] = useState(false)
   const [feeValue, setFeeValue] = useState(0)
   const [searchParams, setSearchParams] = useState({
@@ -48,24 +49,24 @@ export default function LeadManagement() {
     setLoading(true)
     try {
       // 仅查询私有线索（公共线索池功能已合并入 LeadPool 专项页）
-      const params: any = { org_id: user.organization_id }
+      const params: Record<string, unknown> = { org_id: user.organization_id }
       if (searchParams.phone) params.phone = searchParams.phone
       if (searchParams.status) params.status = searchParams.status
       if (searchParams.case_type) params.case_type = searchParams.case_type
       if (searchParams.source_channel) params.source_channel = searchParams.source_channel
       if (searchParams.days_no_follow) params.days_no_follow = searchParams.days_no_follow
 
-      const res = await axios.get('/leads', { params })
-      setData(res.data || [])
+      const res = (await axios.get('/leads', { params })) as Record<string, unknown>
+      setData((res?.data || []) as Record<string, unknown>[])
     } catch (error) {
-      console.error('Fetch leads error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
   }
 
   // 打开转化为案件弹窗
-  const handleConvert = (record: any) => {
+  const handleConvert = (record: Record<string, unknown>) => {
     setCurrentLead(record)
     convertForm.resetFields()
     convertForm.setFieldsValue({ fee_amount: record.service_fee || 0 })
@@ -73,7 +74,8 @@ export default function LeadManagement() {
   }
 
   // 确认转化为案件
-  const handleConvertSubmit = async (values: any) => {
+  const handleConvertSubmit = async (values: Record<string, unknown>) => {
+    if (!currentLead) return
     setConverting(true)
     try {
       await axios.post(`/leads/${currentLead.id}/convert`, values)
@@ -82,7 +84,6 @@ export default function LeadManagement() {
       fetchData()
     } catch (error) {
       message.error('线索转化案件失败')
-      console.error('Convert lead to case error:', error)
     } finally {
       setConverting(false)
     }
@@ -102,7 +103,7 @@ export default function LeadManagement() {
     setModalVisible(true)
   }
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: Record<string, unknown>) => {
     try {
       await axios.post('/leads', { ...values, organization_id: user.organization_id })
       setModalVisible(false)
@@ -110,26 +111,24 @@ export default function LeadManagement() {
       fetchData()
     } catch (error) {
       message.error('线索添加失败')
-      console.error('Create lead error:', error)
     }
   }
 
-  const handleAssign = async (record: any) => {
+  const handleAssign = async (record: Record<string, unknown>) => {
     try {
       await axios.put(`/leads/${record.id}/assign`, { sales_id: user.id })
       message.success('线索分配成功')
       fetchData()
     } catch (error) {
       message.error('线索分配失败')
-      console.error('Assign lead error:', error)
     }
   }
 
-  const handleViewDetail = async (record: any) => {
+  const handleViewDetail = async (record: Record<string, unknown>) => {
     setCurrentLead(record)
     try {
       const res = await axios.get(`/leads/${record.id}/follow-ups`)
-      setFollowUps(res || [])
+      setFollowUps((res as Record<string, unknown>[]) || [])
     } catch (error) {
       setFollowUps([])
     }
@@ -141,7 +140,8 @@ export default function LeadManagement() {
     setFollowUpVisible(true)
   }
 
-  const handleSubmitFollowUp = async (values: any) => {
+  const handleSubmitFollowUp = async (values: Record<string, unknown>) => {
+    if (!currentLead) return
     try {
       await axios.post(`/leads/${currentLead.id}/follow-up`, {
         ...values,
@@ -150,21 +150,21 @@ export default function LeadManagement() {
       setFollowUpVisible(false)
       message.success('跟进记录添加成功')
       const res = await axios.get(`/leads/${currentLead.id}/follow-ups`)
-      setFollowUps(res || [])
+      setFollowUps((res as Record<string, unknown>[]) || [])
       fetchData()
     } catch (error) {
       message.error('跟进记录添加失败')
-      console.error('Add follow-up error:', error)
     }
   }
 
-  const handleChangeStatus = (record: any) => {
+  const handleChangeStatus = (record: Record<string, unknown>) => {
     setCurrentLead(record)
     statusForm.setFieldsValue({ status: record.status })
     setStatusVisible(true)
   }
 
-  const handleSubmitStatus = async (values: any) => {
+  const handleSubmitStatus = async (values: Record<string, unknown>) => {
+    if (!currentLead) return
     try {
       await axios.put(`/leads/${currentLead.id}/status`, values)
       setStatusVisible(false)
@@ -172,17 +172,17 @@ export default function LeadManagement() {
       fetchData()
     } catch (error) {
       message.error('状态更新失败')
-      console.error('Update status error:', error)
     }
   }
 
-  const handleEditFee = (record: any) => {
+  const handleEditFee = (record: Record<string, unknown>) => {
     setCurrentLead(record)
-    setFeeValue(record.service_fee || 0)
+    setFeeValue((record.service_fee as number) || 0)
     setEditingFee(true)
   }
 
   const handleSaveFee = async () => {
+    if (!currentLead) return
     try {
       await axios.put(`/leads/${currentLead.id}/fee`, { service_fee: feeValue })
       setEditingFee(false)
@@ -190,7 +190,6 @@ export default function LeadManagement() {
       fetchData()
     } catch (error) {
       message.error('服务费用更新失败')
-      console.error('Update fee error:', error)
     }
   }
 
@@ -240,14 +239,15 @@ export default function LeadManagement() {
     }[channel]) },
     { title: '服务费用', dataIndex: 'service_fee', key: 'service_fee', render: (fee: number) => fee ? `¥${fee.toFixed(2)}` : '-' },
     { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => {
+      // colors 映射存放 stitch-tag 变体类名
       const colors: Record<string, string> = {
-        new: 'default',
-        pending_follow: 'processing',
-        following: 'blue',
-        inviting: 'purple',
-        negotiating: 'orange',
-        pending_sign: 'gold',
-        lost: 'red',
+        new: 'stitch-tag stitch-tag-primary',
+        pending_follow: 'stitch-tag stitch-tag-info',
+        following: 'stitch-tag stitch-tag-info',
+        inviting: 'stitch-tag stitch-tag-info',
+        negotiating: 'stitch-tag stitch-tag-info',
+        pending_sign: 'stitch-tag stitch-tag-gold',
+        lost: 'stitch-tag stitch-tag-error',
       }
       const labels: Record<string, string> = {
         new: '新线索',
@@ -258,14 +258,14 @@ export default function LeadManagement() {
         pending_sign: '待签约',
         lost: '已流失',
       }
-      return <Tag color={colors[status]}>{labels[status]}</Tag>
+      return <Tag className={colors[status]}>{labels[status]}</Tag>
     }},
     { title: '转化状态', dataIndex: 'conversion_status', key: 'conversion_status', render: (status: string) => {
       const info = conversionStatusMap[status] || conversionStatusMap.not_converted
-      return <Tag color={info.color}>{info.label}</Tag>
+      return <Tag className={info.color}>{info.label}</Tag>
     }},
     { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
-    { title: '操作', key: 'action', render: (_: any, record: any) => (
+    { title: '操作', key: 'action', render: (_: unknown, record: Record<string, unknown>) => (
       <Space>
         <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
         <Button size="small" icon={<EditOutlined />} onClick={() => handleChangeStatus(record)}>状态</Button>
@@ -287,7 +287,7 @@ export default function LeadManagement() {
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAddLead}>添加线索</Button>
       </div>
 
-      <div className="search-bar">
+      <div className="search-bar stitch-filter-bar">
         <Input
           placeholder="手机号搜索"
           prefix={<SearchOutlined />}
@@ -337,7 +337,9 @@ export default function LeadManagement() {
         <Button onClick={handleReset}>重置</Button>
       </div>
 
-      <Table dataSource={data} columns={columns} loading={loading} rowKey="id" />
+      <div className="stitch-table">
+        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" />
+      </div>
 
       <Modal
         title="添加线索"
@@ -347,26 +349,26 @@ export default function LeadManagement() {
       >
         <Form onFinish={handleSubmit}>
           <Form.Item name="phone" label="手机号" rules={[{ required: true }]}>
-            <Input placeholder="请输入手机号" />
+            <Input className="stitch-input" placeholder="请输入手机号" />
           </Form.Item>
           <Form.Item name="contact_name" label="联系人">
-            <Input placeholder="请输入联系人姓名" />
+            <Input className="stitch-input" placeholder="请输入联系人姓名" />
           </Form.Item>
           <Form.Item name="case_type" label="案由" rules={[{ required: true }]}>
-            <Select>
+            <Select className="stitch-input">
               {caseTypeOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
             </Select>
           </Form.Item>
           <Form.Item name="source_channel" label="来源渠道" rules={[{ required: true }]}>
-            <Select>
+            <Select className="stitch-input">
               {channelOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
             </Select>
           </Form.Item>
           <Form.Item name="source_keyword" label="来源关键词">
-            <Input placeholder="请输入来源关键词" />
+            <Input className="stitch-input" placeholder="请输入来源关键词" />
           </Form.Item>
           <Form.Item name="case_description" label="咨询内容">
-            <Input.TextArea placeholder="请输入咨询内容" />
+            <Input.TextArea className="stitch-input" placeholder="请输入咨询内容" />
           </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit">提交</Button>
@@ -381,36 +383,38 @@ export default function LeadManagement() {
         footer={null}
         width={700}
       >
-        {currentLead && (
+        {currentLead && (() => {
+          const lead = currentLead as Record<string, unknown>
+          return (
           <div>
             <div className="detail-grid">
-              <div className="detail-item"><span className="detail-label">线索ID</span><span className="detail-value">{currentLead.id}</span></div>
-              <div className="detail-item"><span className="detail-label">手机号</span><span className="detail-value">{currentLead.phone}</span></div>
-              <div className="detail-item"><span className="detail-label">联系人</span><span className="detail-value">{currentLead.contact_name || '-'}</span></div>
+              <div className="detail-item"><span className="detail-label">线索ID</span><span className="detail-value">{String(lead.id ?? '')}</span></div>
+              <div className="detail-item"><span className="detail-label">手机号</span><span className="detail-value">{String(lead.phone ?? '')}</span></div>
+              <div className="detail-item"><span className="detail-label">联系人</span><span className="detail-value">{String(lead.contact_name || '-')}</span></div>
               <div className="detail-item"><span className="detail-label">案由</span><span className="detail-value">{({
                   marriage: '婚姻家事',
                   traffic: '交通事故',
                   labor: '劳动争议',
                   debt: '债务逾期',
                   other: '其他',
-                }[currentLead.case_type as string])}</span></div>
+                }[lead.case_type as string])}</span></div>
               <div className="detail-item"><span className="detail-label">来源渠道</span><span className="detail-value">{({
                   douyin: '抖音',
                   baidu: '百度',
                   kuaishou: '快手',
                   wechat: '微信',
                   other: '其他',
-                }[currentLead.source_channel as string])}</span></div>
+                }[lead.source_channel as string])}</span></div>
               <div className="detail-item"><span className="detail-label">状态</span><span className="detail-value">
-                <Tag color={{
-                  new: 'default',
-                  pending_follow: 'processing',
-                  following: 'blue',
-                  inviting: 'purple',
-                  negotiating: 'orange',
-                  pending_sign: 'gold',
-                  lost: 'red',
-                }[currentLead.status as string]}>
+                <Tag className={{
+                  new: 'stitch-tag stitch-tag-primary',
+                  pending_follow: 'stitch-tag stitch-tag-info',
+                  following: 'stitch-tag stitch-tag-info',
+                  inviting: 'stitch-tag stitch-tag-info',
+                  negotiating: 'stitch-tag stitch-tag-info',
+                  pending_sign: 'stitch-tag stitch-tag-gold',
+                  lost: 'stitch-tag stitch-tag-error',
+                }[lead.status as string]}>
                   {{
                     new: '新线索',
                     pending_follow: '待跟进',
@@ -419,16 +423,16 @@ export default function LeadManagement() {
                     negotiating: '谈判中',
                     pending_sign: '待签约',
                     lost: '已流失',
-                  }[currentLead.status as string]}
+                  }[lead.status as string]}
                 </Tag>
               </span></div>
-              <div className="detail-item"><span className="detail-label">来源关键词</span><span className="detail-value">{currentLead.source_keyword || '-'}</span></div>
-              <div className="detail-item"><span className="detail-label">创建时间</span><span className="detail-value">{formatDateTime(currentLead.created_at)}</span></div>
+              <div className="detail-item"><span className="detail-label">来源关键词</span><span className="detail-value">{String(lead.source_keyword || '-')}</span></div>
+              <div className="detail-item"><span className="detail-label">创建时间</span><span className="detail-value">{formatDateTime(lead.created_at as string)}</span></div>
             </div>
             <div style={{ marginBottom: 24 }}>
               <div style={{ fontWeight: 'bold', marginBottom: 8 }}>咨询内容</div>
               <div className="info-block">
-                {currentLead.case_description || '-'}
+                {String(lead.case_description || '-')}
               </div>
             </div>
             <div>
@@ -438,27 +442,31 @@ export default function LeadManagement() {
               </div>
               <div style={{ maxHeight: 300, overflow: 'auto' }}>
                 {followUps.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#999', padding: 24 }}>暂无跟进记录</div>
+                  <div style={{ textAlign: 'center', color: theme.gray, padding: 24 }}>暂无跟进记录</div>
                 ) : (
-                  followUps.map((item) => (
-                    <div key={item.id} style={{ borderBottom: '1px solid #f0f0f0', padding: '12px 0' }}>
+                  followUps.map((item) => {
+                    const fu = item as Record<string, unknown>
+                    return (
+                    <div key={fu.id as React.Key} style={{ borderBottom: `1px solid ${theme.borderSecondary}`, padding: '12px 0' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ fontWeight: 'bold' }}>{item.created_at}</span>
+                        <span style={{ fontWeight: 'bold' }}>{String(fu.created_at ?? '')}</span>
                       </div>
-                      <div style={{ marginTop: 8 }}>{item.content}</div>
-                      {item.next_action && (
-                        <div style={{ marginTop: 4, color: '#666', fontSize: 13 }}>
-                          下一步：{item.next_action}
-                          {item.next_action_time && ` (${item.next_action_time})`}
+                      <div style={{ marginTop: 8 }}>{String(fu.content ?? '')}</div>
+                      {Boolean(fu.next_action) && (
+                        <div style={{ marginTop: 4, color: theme.grayDark, fontSize: 13 }}>
+                          下一步：{String(fu.next_action)}
+                          {fu.next_action_time ? ` (${String(fu.next_action_time)})` : ''}
                         </div>
                       )}
                     </div>
-                  ))
+                    )
+                  })
                 )}
               </div>
             </div>
           </div>
-        )}
+          )
+        })()}
       </Modal>
 
       <Modal
@@ -469,13 +477,13 @@ export default function LeadManagement() {
       >
         <Form onFinish={handleSubmitFollowUp}>
           <Form.Item name="content" label="跟进内容" rules={[{ required: true }]}>
-            <Input.TextArea placeholder="请输入跟进内容" rows={4} />
+            <Input.TextArea className="stitch-input" placeholder="请输入跟进内容" rows={4} />
           </Form.Item>
           <Form.Item name="next_action" label="下一步行动">
-            <Input placeholder="请输入下一步行动" />
+            <Input className="stitch-input" placeholder="请输入下一步行动" />
           </Form.Item>
           <Form.Item name="next_action_time" label="下次跟进时间">
-            <Input type="datetime-local" />
+            <Input className="stitch-input" type="datetime-local" />
           </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit">提交</Button>
@@ -491,7 +499,7 @@ export default function LeadManagement() {
       >
         <Form onFinish={handleSubmitStatus}>
           <Form.Item name="status" label="选择状态" rules={[{ required: true }]}>
-            <Select>
+            <Select className="stitch-input">
               {statusOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
             </Select>
           </Form.Item>
@@ -509,7 +517,7 @@ export default function LeadManagement() {
       >
         <div style={{ padding: '16px 0' }}>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: 14, color: '#666', marginBottom: 8 }}>服务费用（元）</label>
+            <label style={{ display: 'block', fontSize: 14, color: theme.grayDark, marginBottom: 8 }}>服务费用（元）</label>
             <InputNumber
               value={feeValue}
               onChange={(value) => setFeeValue(value || 0)}
@@ -531,10 +539,10 @@ export default function LeadManagement() {
       >
         <Form onFinish={handleConvertSubmit} form={convertForm}>
           <Form.Item name="case_no" label="案件编号">
-            <Input placeholder="选填，如不填将自动生成" />
+            <Input className="stitch-input" placeholder="选填，如不填将自动生成" />
           </Form.Item>
           <Form.Item name="assignee_lawyer_id" label="承办律师ID">
-            <Input placeholder="选填，可后续分配" />
+            <Input className="stitch-input" placeholder="选填，可后续分配" />
           </Form.Item>
           <Form.Item name="fee_amount" label="案件费用（元）">
             <InputNumber style={{ width: '100%' }} min={0} step={100} prefix="¥" />

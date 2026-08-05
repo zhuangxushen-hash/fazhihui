@@ -8,6 +8,7 @@ import {
   UserOutlined, PlusOutlined, DeleteOutlined, UploadOutlined, PhoneOutlined,
 } from '@ant-design/icons'
 import axios from '../api/axios'
+import { theme } from '../constants/theme'
 
 const { TextArea } = Input
 
@@ -34,11 +35,11 @@ const majorOptions = [
   { value: 'admin', label: '行政' },
 ]
 
-// 订单状态颜色
+// 订单状态映射（中文标签 + Tag 样式，对齐 Stitch 设计规范，返回 className）
 const orderStatusConfig: Record<string, { label: string; color: string }> = {
-  paid: { label: '已支付', color: 'success' },
-  pending: { label: '待支付', color: 'processing' },
-  cancelled: { label: '已取消', color: 'default' },
+  paid: { label: '已支付', color: 'stitch-tag stitch-tag-success' },
+  pending: { label: '待支付', color: 'stitch-tag stitch-tag-warning' },
+  cancelled: { label: '已取消', color: 'stitch-tag stitch-tag-info' },
 }
 
 // 动态条目类型（案例/荣誉/研究/新闻）
@@ -53,7 +54,7 @@ const genId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
 export default function PersonalCenter() {
   const [activeKey, setActiveKey] = useState('resume')
-  const [profile, setProfile] = useState<any>({})
+  const [profile, setProfile] = useState<Record<string, unknown>>({})
   const [loading, setLoading] = useState(false)
   const [resumeForm] = Form.useForm()
   const [passwordForm] = Form.useForm()
@@ -73,11 +74,12 @@ export default function PersonalCenter() {
   const fetchProfile = async () => {
     setLoading(true)
     try {
-      const res: any = await axios.get('/users/profile')
-      if (res?.data) {
-        setProfile(res.data)
-        resumeForm.setFieldsValue(res.data)
-        bankForm.setFieldsValue(res.data?.bank)
+      const res = (await axios.get('/users/profile')) as Record<string, unknown>
+      const data = res?.data as Record<string, unknown> | undefined
+      if (data) {
+        setProfile(data)
+        resumeForm.setFieldsValue(data)
+        bankForm.setFieldsValue(data?.bank as Record<string, unknown>)
       }
     } catch (error) {
       // 忽略
@@ -151,7 +153,7 @@ export default function PersonalCenter() {
   )
 
   // 保存简历
-  const handleSaveResume = async (values: any) => {
+  const handleSaveResume = async (values: Record<string, unknown>) => {
     try {
       await axios.put('/users/profile', {
         ...values,
@@ -161,13 +163,13 @@ export default function PersonalCenter() {
         news,
       })
       message.success('简历已保存')
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '保存失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '保存失败')
     }
   }
 
   // 修改密码
-  const handleChangePassword = async (values: any) => {
+  const handleChangePassword = async (values: Record<string, unknown>) => {
     if (values.newPassword !== values.confirmPassword) {
       message.error('两次输入的新密码不一致')
       return
@@ -179,44 +181,44 @@ export default function PersonalCenter() {
       })
       message.success('密码修改成功')
       passwordForm.resetFields()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '修改失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '修改失败')
     }
   }
 
   // 保存银行账号
-  const handleSaveBank = async (values: any) => {
+  const handleSaveBank = async (values: Record<string, unknown>) => {
     try {
       await axios.put('/users/bank', values)
       message.success('银行账号已保存')
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '保存失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '保存失败')
     }
   }
 
   // 提交绑定手机
-  const handleBindPhone = async (values: any) => {
+  const handleBindPhone = async (values: Record<string, unknown>) => {
     try {
       await axios.put('/users/phone', { phone: values.phone, code: values.code })
       message.success('手机绑定成功')
       setPhoneModalVisible(false)
       phoneForm.resetFields()
       fetchProfile()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '绑定失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '绑定失败')
     }
   }
 
   // 提交绑定邮箱
-  const handleBindEmail = async (values: any) => {
+  const handleBindEmail = async (values: Record<string, unknown>) => {
     try {
       await axios.put('/users/email', { email: values.email, code: values.code })
       message.success('邮箱绑定成功')
       setEmailModalVisible(false)
       emailForm.resetFields()
       fetchProfile()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '绑定失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '绑定失败')
     }
   }
 
@@ -229,16 +231,16 @@ export default function PersonalCenter() {
     {
       title: '状态', dataIndex: 'status', key: 'status',
       render: (s: string) => {
-        const cfg = orderStatusConfig[s] || { label: s, color: 'default' }
-        return <Tag color={cfg.color}>{cfg.label}</Tag>
+        const cfg = orderStatusConfig[s] || { label: s, color: 'stitch-tag stitch-tag-info' }
+        return <Tag className={cfg.color}>{cfg.label}</Tag>
       },
     },
   ]
 
-  const orders = profile?.orders || []
+  const orders = (profile?.orders as Record<string, unknown>[]) || []
 
   // 等级权益列表
-  const levelBenefits = profile?.benefits || [
+  const levelBenefits = (profile?.benefits as { id: string; name: string; desc: string }[]) || [
     { id: 'b1', name: '专属客服', desc: '7x24小时专属客服支持' },
     { id: 'b2', name: '工具折扣', desc: '法律工具9折优惠' },
     { id: 'b3', name: '优先体验', desc: '新功能优先体验权' },
@@ -246,7 +248,7 @@ export default function PersonalCenter() {
   ]
 
   // 仪表盘组件列表
-  const dashboardWidgets = profile?.widgets || [
+  const dashboardWidgets = (profile?.widgets as { id: string; name: string; desc: string }[]) || [
     { id: 'w1', name: '待办事项', desc: '展示今日待办任务' },
     { id: 'w2', name: '审批动态', desc: '展示最近审批进度' },
     { id: 'w3', name: '案件概览', desc: '展示负责案件统计' },
@@ -309,7 +311,7 @@ export default function PersonalCenter() {
         return (
           <Card title="头像设置" loading={loading}>
             <div style={{ textAlign: 'center' }}>
-              <Avatar size={120} src={profile?.avatar} icon={<UserOutlined />} />
+              <Avatar size={120} src={profile?.avatar as string} icon={<UserOutlined />} />
               <div style={{ marginTop: 16 }}>
                 <Upload listType="picture-card" maxCount={1} beforeUpload={() => false} showUploadList>
                   <div><UploadOutlined /><div style={{ marginTop: 4 }}>上传头像</div></div>
@@ -325,7 +327,7 @@ export default function PersonalCenter() {
             <Descriptions column={1}>
               <Descriptions.Item label="当前绑定手机">
                 <Space>
-                  <span>{profile?.phone || '未绑定'}</span>
+                  <span>{(profile?.phone as string) || '未绑定'}</span>
                   <Button type="link" onClick={() => { phoneForm.resetFields(); setPhoneModalVisible(true) }}>修改</Button>
                 </Space>
               </Descriptions.Item>
@@ -338,7 +340,7 @@ export default function PersonalCenter() {
             <Descriptions column={1}>
               <Descriptions.Item label="当前绑定邮箱">
                 <Space>
-                  <span>{profile?.email || '未绑定'}</span>
+                  <span>{(profile?.email as string) || '未绑定'}</span>
                   <Button type="link" onClick={() => { emailForm.resetFields(); setEmailModalVisible(true) }}>修改</Button>
                 </Space>
               </Descriptions.Item>
@@ -382,12 +384,14 @@ export default function PersonalCenter() {
       case 'orders':
         return (
           <Card title="我的订单">
-            <Table
-              dataSource={orders}
-              columns={orderColumns}
-              rowKey="orderNo"
-              pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
-            />
+            <div className="stitch-table">
+              <Table
+                dataSource={orders}
+                columns={orderColumns}
+                rowKey="orderNo"
+                pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+              />
+            </div>
           </Card>
         )
       case 'level':
@@ -396,16 +400,16 @@ export default function PersonalCenter() {
             <div style={{ marginBottom: 16 }}>
               <Space size="large">
                 <span style={{ fontSize: 16 }}>当前等级：</span>
-                <Tag color="gold">{profile?.level || 'Lv1'}</Tag>
-                <span>经验值：{profile?.exp || 0} / 1000</span>
+                <Tag className="stitch-tag stitch-tag-gold">{(profile?.level as string) || 'Lv1'}</Tag>
+                <span>经验值：{(profile?.exp as number) || 0} / 1000</span>
               </Space>
             </div>
-            <Progress percent={Number(profile?.expPercent || 10)} style={{ maxWidth: 400, marginBottom: 24 }} />
+            <Progress percent={Number((profile?.expPercent as number) || 10)} style={{ maxWidth: 400, marginBottom: 24 }} />
             <h4>等级权益</h4>
-            {levelBenefits.map((b: any) => (
+            {levelBenefits.map((b) => (
               <div key={b.id} style={{ marginBottom: 8 }}>
-                <Tag color="blue">{b.name}</Tag>
-                <span style={{ color: '#666' }}>{b.desc}</span>
+                <Tag className="stitch-tag stitch-tag-primary">{b.name}</Tag>
+                <span style={{ color: theme.textTertiary }}>{b.desc}</span>
               </div>
             ))}
           </Card>
@@ -413,13 +417,13 @@ export default function PersonalCenter() {
       case 'dashboard':
         return (
           <Card title="管理仪表盘">
-            <p style={{ color: '#888' }}>可自定义展示的仪表盘组件：</p>
-            {dashboardWidgets.map((w: any) => (
+            <p style={{ color: theme.textTertiary }}>可自定义展示的仪表盘组件：</p>
+            {dashboardWidgets.map((w) => (
               <Card key={w.id} size="small" style={{ marginBottom: 8 }}>
                 <Space style={{ justifyContent: 'space-between', width: '100%' }}>
                   <div>
                     <strong>{w.name}</strong>
-                    <span style={{ marginLeft: 12, color: '#888' }}>{w.desc}</span>
+                    <span style={{ marginLeft: 12, color: theme.textTertiary }}>{w.desc}</span>
                   </div>
                   <Button type="link">添加到仪表盘</Button>
                 </Space>
@@ -437,15 +441,15 @@ export default function PersonalCenter() {
       {/* 顶部用户信息卡片 */}
       <Card style={{ marginBottom: 16 }} loading={loading}>
         <Space size="large">
-          <Avatar size={72} src={profile?.avatar} icon={<UserOutlined />} />
+          <Avatar size={72} src={profile?.avatar as string} icon={<UserOutlined />} />
           <Descriptions column={4}>
-            <Descriptions.Item label="姓名">{profile?.name || '-'}</Descriptions.Item>
-            <Descriptions.Item label="职位">{profile?.position || '-'}</Descriptions.Item>
-            <Descriptions.Item label="手机号">{profile?.phone || '-'}</Descriptions.Item>
-            <Descriptions.Item label="邮箱">{profile?.email || '-'}</Descriptions.Item>
-            <Descriptions.Item label="律所名称">{profile?.firmName || '-'}</Descriptions.Item>
+            <Descriptions.Item label="姓名">{(profile?.name as string) || '-'}</Descriptions.Item>
+            <Descriptions.Item label="职位">{(profile?.position as string) || '-'}</Descriptions.Item>
+            <Descriptions.Item label="手机号">{(profile?.phone as string) || '-'}</Descriptions.Item>
+            <Descriptions.Item label="邮箱">{(profile?.email as string) || '-'}</Descriptions.Item>
+            <Descriptions.Item label="律所名称">{(profile?.firmName as string) || '-'}</Descriptions.Item>
             <Descriptions.Item label="等级">
-              <Tag color="gold">{profile?.level || 'Lv1'}</Tag>
+              <Tag className="stitch-tag stitch-tag-gold">{(profile?.level as string) || 'Lv1'}</Tag>
             </Descriptions.Item>
           </Descriptions>
         </Space>

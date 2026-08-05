@@ -35,8 +35,10 @@ import {
   HistoryOutlined,
 } from '@ant-design/icons'
 import axios from '../api/axios'
+import type { AxiosRequestConfig } from 'axios'
+import type { Dayjs } from 'dayjs'
 import { formatDateTime } from '../utils/format'
-
+import { theme } from '../constants/theme'
 const { RangePicker } = DatePicker
 
 const cardStyle: React.CSSProperties = {
@@ -157,7 +159,7 @@ export default function CustomReport() {
       const list: ReportTemplate[] = Array.isArray(res) ? res : (res?.data || [])
       setTemplates(list)
     } catch (error) {
-      console.error('Fetch templates error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -174,7 +176,7 @@ export default function CustomReport() {
       setExportLogs(list)
       setExportLogsPagination({ ...exportLogsPagination, page, total })
     } catch (error) {
-      console.error('Fetch export logs error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -190,7 +192,7 @@ export default function CustomReport() {
         value: u.id,
       })))
     } catch (error) {
-      console.error('Fetch subscribers error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -257,7 +259,7 @@ export default function CustomReport() {
               const num = Number(v || 0)
               const isMoney = ['revenue', 'cost', 'profit'].includes(metric)
               return isMoney
-                ? <span style={{ fontVariantNumeric: 'tabular-nums', color: '#0071e3', fontWeight: 600 }}>¥{num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                ? <span style={{ fontVariantNumeric: 'tabular-nums', color: theme.primary, fontWeight: 600 }}>¥{num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 : <span style={{ fontVariantNumeric: 'tabular-nums' }}>{num.toLocaleString()}</span>
             },
           })
@@ -265,11 +267,10 @@ export default function CustomReport() {
       }
       setReportColumns(cols)
       message.success('报表生成成功')
-    } catch (error: any) {
-      if (error?.errorFields) {
+    } catch (error: unknown) {
+      if ((error as { errorFields?: unknown })?.errorFields) {
         message.error('请完整填写报表配置')
       } else {
-        console.error('Generate report error:', error)
         message.error('报表生成失败')
       }
     } finally {
@@ -291,7 +292,7 @@ export default function CustomReport() {
         end_date: customDateRange[1],
       }
       setLoading(true)
-      const res: any = await axios.post('/dashboard/reports/export-excel', params, { responseType: 'blob' } as any)
+      const res: any = await axios.post('/dashboard/reports/export-excel', params, { responseType: 'blob' } as AxiosRequestConfig)
       // 优先按文件流处理；如返回 file_path 则后端已落盘
       if (res?.file_path) {
         message.success(`导出成功，文件已保存到服务器：${res.file_path}`)
@@ -310,7 +311,6 @@ export default function CustomReport() {
       }
       fetchExportLogs(1)
     } catch (error) {
-      console.error('Export Excel error:', error)
       message.error('Excel 导出失败')
     } finally {
       setLoading(false)
@@ -331,7 +331,7 @@ export default function CustomReport() {
         end_date: customDateRange[1],
       }
       setLoading(true)
-      const res: any = await axios.post('/dashboard/reports/export-pdf', params, { responseType: 'blob' } as any)
+      const res: any = await axios.post('/dashboard/reports/export-pdf', params, { responseType: 'blob' } as AxiosRequestConfig)
       if (res?.file_path) {
         message.success(`导出成功，文件已保存到服务器：${res.file_path}`)
       } else if (res instanceof Blob) {
@@ -349,7 +349,6 @@ export default function CustomReport() {
       }
       fetchExportLogs(1)
     } catch (error) {
-      console.error('Export PDF error:', error)
       message.error('PDF 导出失败')
     } finally {
       setLoading(false)
@@ -397,7 +396,6 @@ export default function CustomReport() {
       setSaveModalOpen(false)
       fetchTemplates()
     } catch (error) {
-      console.error('Save template error:', error)
       message.error('模板保存失败')
     } finally {
       setLoading(false)
@@ -416,7 +414,6 @@ export default function CustomReport() {
       }
       fetchTemplates()
     } catch (error) {
-      console.error('Delete template error:', error)
       message.error('删除失败')
     } finally {
       setLoading(false)
@@ -442,7 +439,6 @@ export default function CustomReport() {
       message.success('订阅设置已保存')
       fetchTemplates()
     } catch (error) {
-      console.error('Subscribe error:', error)
       message.error('订阅设置失败')
     } finally {
       setLoading(false)
@@ -468,7 +464,7 @@ export default function CustomReport() {
       key: 'file_name',
       render: (v: string, record: ExportLog) => (
         <Space>
-          <FileTextOutlined style={{ color: FILE_TYPE_COLOR[record.file_type] || '#0071e3' }} />
+          <FileTextOutlined style={{ color: FILE_TYPE_COLOR[record.file_type] || theme.primary }} />
           <span style={{ fontWeight: 500, color: '#1d1d1f' }}>{v || '-'}</span>
         </Space>
       ),
@@ -479,7 +475,7 @@ export default function CustomReport() {
       key: 'file_type',
       width: 80,
       render: (v: string) => (
-        <Tag color={v === 'excel' ? 'green' : 'red'} style={{ borderRadius: 8 }}>
+        <Tag className={`stitch-tag ${v === 'excel' ? 'stitch-tag-success' : 'stitch-tag-error'}`} style={{ borderRadius: 8 }}>
           {v === 'excel' ? 'Excel' : 'PDF'}
         </Tag>
       ),
@@ -497,13 +493,14 @@ export default function CustomReport() {
       key: 'status',
       width: 100,
       render: (status: string) => {
-        const map: Record<string, { color: string; text: string }> = {
-          success: { color: 'green', text: '成功' },
-          failed: { color: 'red', text: '失败' },
-          pending: { color: 'orange', text: '处理中' },
+        // 使用 stitch-tag 变体替代 color 属性
+        const map: Record<string, { tagClass: string; text: string }> = {
+          success: { tagClass: 'stitch-tag-success', text: '成功' },
+          failed: { tagClass: 'stitch-tag-error', text: '失败' },
+          pending: { tagClass: 'stitch-tag-warning', text: '处理中' },
         }
-        const cfg = map[status] || { color: 'default', text: status }
-        return <Tag color={cfg.color} style={{ borderRadius: 8 }}>{cfg.text}</Tag>
+        const cfg = map[status] || { tagClass: 'stitch-tag', text: status }
+        return <Tag className={`stitch-tag ${cfg.tagClass}`} style={{ borderRadius: 8 }}>{cfg.text}</Tag>
       },
     },
     {
@@ -533,12 +530,12 @@ export default function CustomReport() {
         }
         .template-item:hover {
           background: rgba(255,255,255,0.95);
-          border-color: #0071e3;
+          border-color: ${theme.primary};
           transform: translateX(2px);
         }
         .template-item.active {
           background: rgba(0,113,227,0.08);
-          border-color: #0071e3;
+          border-color: ${theme.primary};
         }
       `}</style>
 
@@ -547,7 +544,7 @@ export default function CustomReport() {
           <div style={{ fontSize: 28, fontWeight: 700, color: '#1d1d1f', letterSpacing: -0.4 }}>自定义报表导出</div>
           <div style={{ fontSize: 14, color: '#6e6e73', marginTop: 4 }}>自定义维度与指标，一键生成报表并导出 Excel / PDF</div>
         </div>
-        <Space>
+        <Space className="stitch-btn-group">
           <Button icon={<ReloadOutlined />} onClick={() => { fetchTemplates(); fetchExportLogs(1) }} loading={loading}>
             刷新
           </Button>
@@ -564,8 +561,8 @@ export default function CustomReport() {
             style={sectionCardStyle}
             title={
               <Space>
-                <FileTextOutlined style={{ color: '#0071e3' }} />
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#1d1d1f' }}>报表模板</span>
+                <FileTextOutlined style={{ color: theme.primary }} />
+                <span className="stitch-chart-title" style={{ fontSize: 15, fontWeight: 600, color: '#1d1d1f' }}>报表模板</span>
               </Space>
             }
             styles={{ body: { padding: 12, maxHeight: 720, overflowY: 'auto' } }}
@@ -625,10 +622,10 @@ export default function CustomReport() {
             style={sectionCardStyle}
             title={
               <Space>
-                <ThunderboltOutlined style={{ color: '#0071e3' }} />
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#1d1d1f' }}>报表配置</span>
+                <ThunderboltOutlined style={{ color: theme.primary }} />
+                <span className="stitch-chart-title" style={{ fontSize: 15, fontWeight: 600, color: '#1d1d1f' }}>报表配置</span>
                 {selectedTemplateId && (
-                  <Tag color="blue" style={{ borderRadius: 8 }}>当前模板已加载</Tag>
+                  <Tag className="stitch-tag stitch-tag-info" style={{ borderRadius: 8 }}>当前模板已加载</Tag>
                 )}
               </Space>
             }
@@ -696,7 +693,7 @@ export default function CustomReport() {
                       {timeRangePreset === 'custom' && (
                         <RangePicker
                           style={{ width: '100%' }}
-                          value={customDateRange as any}
+                          value={customDateRange as unknown as [Dayjs, Dayjs] | undefined}
                           onChange={(_: any, dateStrings: [string, string]) => setCustomDateRange(dateStrings)}
                         />
                       )}
@@ -705,7 +702,7 @@ export default function CustomReport() {
                 </Row>
 
                 {/* 操作按钮 */}
-                <Space wrap size={[8, 8]} style={{ marginTop: 8, marginBottom: 24 }}>
+                <Space className="stitch-btn-group" wrap size={[8, 8]} style={{ marginTop: 8, marginBottom: 24 }}>
                   <Button
                     type="primary"
                     icon={<ThunderboltOutlined />}
@@ -742,9 +739,9 @@ export default function CustomReport() {
 
                 {/* 报表数据 */}
                 {reportData.length > 0 && (
-                  <div style={{ marginBottom: 24 }}>
+                  <div className="stitch-table" style={{ marginBottom: 24 }}>
                     <div style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f', marginBottom: 12 }}>
-                      <FileTextOutlined style={{ color: '#0071e3', marginRight: 6 }} />
+                      <FileTextOutlined style={{ color: theme.primary, marginRight: 6 }} />
                       报表数据（共 {reportData.length} 条）
                     </div>
                     <Table
@@ -766,7 +763,7 @@ export default function CustomReport() {
                   border: '1px solid rgba(0,113,227,0.08)',
                 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f', marginBottom: 12 }}>
-                    <BellOutlined style={{ color: '#0071e3', marginRight: 6 }} />
+                    <BellOutlined style={{ color: theme.primary, marginRight: 6 }} />
                     订阅设置
                   </div>
                   <Row gutter={16}>
@@ -813,11 +810,12 @@ export default function CustomReport() {
 
       {/* 底部：导出日志 */}
       <Card
+        className="stitch-table"
         style={{ ...cardStyle, marginTop: 16 }}
         title={
           <Space>
-            <HistoryOutlined style={{ color: '#0071e3' }} />
-            <span style={{ fontSize: 15, fontWeight: 600, color: '#1d1d1f' }}>导出日志</span>
+            <HistoryOutlined style={{ color: theme.primary }} />
+            <span className="stitch-chart-title" style={{ fontSize: 15, fontWeight: 600, color: '#1d1d1f' }}>导出日志</span>
             <ClockCircleOutlined style={{ color: '#6e6e73', fontSize: 12 }} />
           </Space>
         }
@@ -849,7 +847,7 @@ export default function CustomReport() {
         cancelText="取消"
       >
         <div style={{ marginBottom: 8, color: '#6e6e73', fontSize: 13 }}>
-          <Avatar size={28} style={{ background: 'linear-gradient(135deg, #0071e3 0%, #00a8ff 100%)', marginRight: 8, verticalAlign: 'middle' }}>
+          <Avatar size={28} style={{ background: `linear-gradient(135deg, ${theme.primary} 0%, #00a8ff 100%)`, marginRight: 8, verticalAlign: 'middle' }}>
             <SaveOutlined />
           </Avatar>
           输入模板名称以保存当前配置

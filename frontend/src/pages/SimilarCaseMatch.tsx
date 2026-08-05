@@ -2,21 +2,21 @@ import { useState, useEffect } from 'react'
 import { Table, Button, Input, Select, Space, Card, Tag, Statistic, Row, Col, Progress, message } from 'antd'
 import { SearchOutlined, FileSearchOutlined, RiseOutlined, FundOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
-
+import { theme } from '../constants/theme'
 const pageH2Style: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
   fontSize: 22,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
   margin: 0,
   letterSpacing: '0.01em',
 }
 
 const searchBarStyle: React.CSSProperties = {
-  background: '#ffffff',
+  background: theme.white,
   padding: 20,
   borderRadius: 12,
-  border: '1px solid #c1c6d6',
+  border: `1px solid ${theme.border}`,
   marginBottom: 16,
   display: 'flex',
   gap: 16,
@@ -49,10 +49,10 @@ const getCaseTypeLabel = (value: string) => {
 }
 
 const getSimilarityColor = (score: number) => {
-  if (score >= 0.8) return '#2e7d32'
-  if (score >= 0.6) return '#0071e3'
-  if (score >= 0.4) return '#ed6c02'
-  return '#717785'
+  if (score >= 0.8) return theme.success
+  if (score >= 0.6) return theme.primary
+  if (score >= 0.4) return theme.warning
+  return theme.textTertiary
 }
 
 const getSimilarityLabel = (score: number) => {
@@ -82,13 +82,13 @@ export default function SimilarCaseMatch() {
 
   const fetchStats = async () => {
     try {
-      const res = await axios.get('/similar-cases/stats', {
+      const res = (await axios.get('/similar-cases/stats', {
         params: { org_id: user.organization_id },
-      })
+      })) as Record<string, unknown>
       const data = res.data || res
       setStats(data)
     } catch (error) {
-      console.error('获取统计数据失败:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -106,9 +106,10 @@ export default function SimilarCaseMatch() {
       if (searchParams.court) payload.court = searchParams.court
       if (searchParams.year) payload.year = Number(searchParams.year)
 
-      const res = await axios.post('/similar-cases/search', payload)
-      const data = res.data || res
-      const list = data.data || []
+      const res = (await axios.post('/similar-cases/search', payload)) as Record<string, unknown>
+      const data = (res.data || res) as Record<string, unknown>
+      // 兼容接口返回 { data: [...] } 或直接返回数组
+      const list = (data.data || []) as Record<string, unknown>[]
       setResults(list)
       if (list.length === 0) {
         message.info('未找到匹配的相似案件')
@@ -117,7 +118,6 @@ export default function SimilarCaseMatch() {
       }
     } catch (error) {
       message.error('搜索失败')
-      console.error('Search similar cases error:', error)
     } finally {
       setLoading(false)
     }
@@ -149,7 +149,7 @@ export default function SimilarCaseMatch() {
               showInfo={false}
               style={{ marginBottom: 4 }}
             />
-            <Tag color="default" style={{ color, borderColor: color, background: 'transparent' }}>
+            <Tag className="stitch-tag" style={{ color, borderColor: color, background: 'transparent' }}>
               {getSimilarityLabel(score)} ({percent}%)
             </Tag>
           </div>
@@ -162,7 +162,7 @@ export default function SimilarCaseMatch() {
       dataIndex: 'case_type',
       key: 'case_type',
       width: 120,
-      render: (type: string) => <Tag color="purple">{getCaseTypeLabel(type)}</Tag>,
+      render: (type: string) => <Tag className="stitch-tag stitch-tag-primary">{getCaseTypeLabel(type)}</Tag>,
     },
     {
       title: '涉案金额',
@@ -170,7 +170,7 @@ export default function SimilarCaseMatch() {
       key: 'amount',
       width: 130,
       render: (amount: number) => {
-        if (!amount) return <span style={{ color: '#717785' }}>-</span>
+        if (!amount) return <span style={{ color: theme.textTertiary }}>-</span>
         return <span style={{ fontWeight: 500 }}>{`¥${Number(amount).toLocaleString()}`}</span>
       },
     },
@@ -198,7 +198,7 @@ export default function SimilarCaseMatch() {
       width: 100,
       render: (_: any, record: any) => {
         const matched = record.case_type === searchParams.case_type
-        return <Tag color={matched ? 'green' : 'default'}>{matched ? '是' : '否'}</Tag>
+        return <Tag className={matched ? 'stitch-tag stitch-tag-success' : 'stitch-tag stitch-tag-primary'}>{matched ? '是' : '否'}</Tag>
       },
     },
     {
@@ -207,14 +207,14 @@ export default function SimilarCaseMatch() {
       width: 120,
       render: (_: any, record: any) => {
         if (!searchParams.amount || !record.amount) {
-          return <span style={{ color: '#717785' }}>-</span>
+          return <span style={{ color: theme.textTertiary }}>-</span>
         }
         const diff = Math.abs(Number(record.amount) - Number(searchParams.amount))
         const base = Math.max(Number(record.amount), Number(searchParams.amount))
         const score = Math.max(0, 1 - diff / base)
         const percent = Math.round(score * 100)
         return (
-          <Tag color={score >= 0.8 ? 'green' : score >= 0.5 ? 'orange' : 'red'}>
+          <Tag className={score >= 0.8 ? 'stitch-tag stitch-tag-success' : score >= 0.5 ? 'stitch-tag stitch-tag-warning' : 'stitch-tag stitch-tag-error'}>
             {percent}%
           </Tag>
         )
@@ -235,8 +235,8 @@ export default function SimilarCaseMatch() {
               <Statistic
                 title="历史结案数"
                 value={stats.total_cases || 0}
-                prefix={<FileSearchOutlined style={{ color: '#0071e3' }} />}
-                valueStyle={{ color: '#0071e3' }}
+                prefix={<FileSearchOutlined style={{ color: theme.primary }} />}
+                valueStyle={{ color: theme.primary }}
               />
             </Card>
           </Col>
@@ -245,8 +245,8 @@ export default function SimilarCaseMatch() {
               <Statistic
                 title="近30天新增"
                 value={stats.recent_cases_count || 0}
-                prefix={<RiseOutlined style={{ color: '#2e7d32' }} />}
-                valueStyle={{ color: '#2e7d32' }}
+                prefix={<RiseOutlined style={{ color: theme.success }} />}
+                valueStyle={{ color: theme.success }}
               />
             </Card>
           </Col>
@@ -257,7 +257,7 @@ export default function SimilarCaseMatch() {
                 value={stats.average_amount || 0}
                 prefix="¥"
                 precision={0}
-                valueStyle={{ color: '#ed6c02' }}
+                valueStyle={{ color: theme.warning }}
               />
             </Card>
           </Col>
@@ -274,10 +274,10 @@ export default function SimilarCaseMatch() {
         </Row>
       )}
 
-      <div style={searchBarStyle}>
+      <div className="stitch-filter-bar" style={searchBarStyle}>
         <div style={{ width: '100%', display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 13, color: '#414753', fontWeight: 500 }}>案由：</span>
+            <span style={{ fontSize: 13, color: theme.textSecondary, fontWeight: 500 }}>案由：</span>
             <Select
               placeholder="选择案由"
               style={{ width: 180 }}
@@ -289,17 +289,17 @@ export default function SimilarCaseMatch() {
             </Select>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 13, color: '#414753', fontWeight: 500 }}>金额：</span>
+            <span style={{ fontSize: 13, color: theme.textSecondary, fontWeight: 500 }}>金额：</span>
             <Input
               placeholder="涉案金额（元）"
               style={{ width: 160 }}
               value={searchParams.amount}
               onChange={(e) => setSearchParams({ ...searchParams, amount: e.target.value })}
-              prefix={<span style={{ color: '#717785' }}>¥</span>}
+              prefix={<span style={{ color: theme.textTertiary }}>¥</span>}
             />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 13, color: '#414753', fontWeight: 500 }}>法院：</span>
+            <span style={{ fontSize: 13, color: theme.textSecondary, fontWeight: 500 }}>法院：</span>
             <Input
               placeholder="受理法院关键词"
               style={{ width: 180 }}
@@ -308,7 +308,7 @@ export default function SimilarCaseMatch() {
             />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 13, color: '#414753', fontWeight: 500 }}>年份：</span>
+            <span style={{ fontSize: 13, color: theme.textSecondary, fontWeight: 500 }}>年份：</span>
             <Select
               placeholder="选择年份"
               style={{ width: 120 }}
@@ -323,7 +323,7 @@ export default function SimilarCaseMatch() {
             </Select>
           </div>
           <div style={{ flex: 1 }} />
-          <Space>
+          <Space className="stitch-btn-group">
             <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
               开始匹配
             </Button>
@@ -332,7 +332,7 @@ export default function SimilarCaseMatch() {
         </div>
       </div>
 
-      <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+      <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
         <Table
           dataSource={results}
           columns={columns}

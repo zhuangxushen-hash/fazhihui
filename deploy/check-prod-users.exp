@@ -1,0 +1,15 @@
+#!/usr/bin/expect -f
+set timeout 60
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ./deploy/check-prod-login.js ubuntu@1.12.57.22:/home/ubuntu/fazhihui-prod/backend/check-prod-login.js
+expect {
+    "password:" { send "$password\r"; expect eof }
+    eof
+}
+
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "cd /home/ubuntu/fazhihui-prod/backend && node check-prod-login.js"
+expect {
+    "password:" { send "$password\r"; expect eof }
+    eof
+}

@@ -75,7 +75,7 @@ const mindMapTemplates = [
 
 export default function DocumentManagement() {
   const [activeMenu, setActiveMenu] = useState('my-doc')
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [searchKeyword, setSearchKeyword] = useState('')
   // 新建文档弹窗
@@ -88,8 +88,9 @@ export default function DocumentManagement() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const res: any = await axios.get('/documents', { params: { menu: activeMenu, keyword: searchKeyword, folder: selectedFolder } })
-      const list = res?.data?.list || res?.list || []
+      const res = (await axios.get('/documents', { params: { menu: activeMenu, keyword: searchKeyword, folder: selectedFolder } })) as Record<string, unknown>
+      const resData = res?.data as Record<string, unknown> | undefined
+      const list = (resData?.list as Record<string, unknown>[]) || (res?.list as Record<string, unknown>[]) || []
       setData(list)
     } catch (error) {
       setData([])
@@ -130,7 +131,7 @@ export default function DocumentManagement() {
     setCreateModalVisible(true)
   }
 
-  const handleCreate = async (values: any) => {
+  const handleCreate = async (values: Record<string, unknown>) => {
     try {
       await axios.post('/documents', { name: values.name, type: activeMenu })
       message.success('文档创建成功')
@@ -144,7 +145,7 @@ export default function DocumentManagement() {
   }
 
   // 预览
-  const handlePreview = (record: any) => {
+  const handlePreview = (record: Record<string, unknown>) => {
     Modal.info({
       title: '文档预览',
       content: `文档名称：${record.name}`,
@@ -153,7 +154,7 @@ export default function DocumentManagement() {
   }
 
   // 编辑
-  const handleEdit = (record: any) => {
+  const handleEdit = (record: Record<string, unknown>) => {
     Modal.info({
       title: '编辑文档',
       content: `编辑文档：${record.name}`,
@@ -162,12 +163,12 @@ export default function DocumentManagement() {
   }
 
   // 下载
-  const handleDownload = (record: any) => {
+  const handleDownload = (record: Record<string, unknown>) => {
     message.info(`正在下载：${record.name}`)
   }
 
   // 删除
-  const handleDelete = async (record: any) => {
+  const handleDelete = async (record: Record<string, unknown>) => {
     try {
       await axios.delete(`/documents/${record.key}`)
       message.success('删除成功')
@@ -185,14 +186,14 @@ export default function DocumentManagement() {
   }
 
   // 文件夹树选中
-  const handleTreeSelect = (keys: any) => {
+  const handleTreeSelect = (keys: unknown[]) => {
     if (keys && keys.length > 0) {
       setSelectedFolder(keys[0] as string)
     }
   }
 
   // 使用思维导图模板
-  const handleUseTemplate = (template: any) => {
+  const handleUseTemplate = (template: Record<string, unknown>) => {
     message.info(`${template.name}：会员功能，请开通会员`)
   }
 
@@ -211,7 +212,7 @@ export default function DocumentManagement() {
       title: '操作',
       key: 'action',
       width: 260,
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: Record<string, unknown>) => (
         <Space>
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handlePreview(record)}>预览</Button>
           <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
@@ -240,7 +241,7 @@ export default function DocumentManagement() {
       title: '操作',
       key: 'action',
       width: 180,
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: Record<string, unknown>) => (
         <Space>
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handlePreview(record)}>预览</Button>
           <Button type="link" size="small" icon={<DownloadOutlined />} onClick={() => handleDownload(record)}>下载</Button>
@@ -253,14 +254,14 @@ export default function DocumentManagement() {
   const renderMyDoc = () => (
     <div>
       {/* 顶部操作按钮 */}
-      <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Space>
+      <div className="stitch-filter-bar" style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Space className="stitch-btn-group">
           <Upload {...uploadProps}>
             <Button type="primary" icon={<UploadOutlined />}>上传</Button>
           </Upload>
           <Button icon={<PlusOutlined />} onClick={handleOpenCreate}>新建</Button>
         </Space>
-        <Space>
+        <Space className="stitch-btn-group">
           <Input
             placeholder="搜索文档名称"
             value={searchKeyword}
@@ -272,7 +273,7 @@ export default function DocumentManagement() {
           <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>搜索</Button>
         </Space>
       </div>
-      <div style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
+      <div className="stitch-table" style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
         <Table
           dataSource={data}
           columns={myDocColumns}
@@ -288,13 +289,13 @@ export default function DocumentManagement() {
   const renderFirmDoc = () => (
     <div>
       {/* 顶部操作按钮 */}
-      <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Space>
+      <div className="stitch-filter-bar" style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Space className="stitch-btn-group">
           <Upload {...uploadProps}>
             <Button type="primary" icon={<UploadOutlined />}>上传</Button>
           </Upload>
         </Space>
-        <Space>
+        <Space className="stitch-btn-group">
           <Input
             placeholder="搜索文档名称"
             value={searchKeyword}
@@ -319,7 +320,7 @@ export default function DocumentManagement() {
           />
         </div>
         {/* 右侧文档列表 */}
-        <div style={{ flex: 1, minWidth: 0, background: '#fff', padding: 16, borderRadius: 8 }}>
+        <div className="stitch-table" style={{ flex: 1, minWidth: 0, background: '#fff', padding: 16, borderRadius: 8 }}>
           <Table
             dataSource={data}
             columns={firmDocColumns}

@@ -11,23 +11,23 @@ import {
   adjustInvoice,
 } from '../api/invoice'
 import { formatDate } from '../utils/format'
-import dayjs from 'dayjs'
-
+import dayjs, { Dayjs } from 'dayjs'
+import { theme } from '../constants/theme'
 // === Material Design 3 Style Tokens ===
 const pageH2Style: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
   fontSize: 22,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
   margin: 0,
   letterSpacing: '0.01em',
 }
 
 const searchBarStyle: React.CSSProperties = {
-  background: '#ffffff',
+  background: theme.white,
   padding: 16,
   borderRadius: 12,
-  border: '1px solid #c1c6d6',
+  border: `1px solid ${theme.border}`,
   marginBottom: 16,
   display: 'flex',
   gap: 12,
@@ -45,11 +45,11 @@ type PillKind = 'neutral' | 'blue' | 'gold' | 'green' | 'red' | 'orange' | 'purp
 
 const pillColorMap: Record<PillKind, { bg: string; color: string }> = {
   neutral: { bg: 'rgba(113, 119, 133, 0.12)', color: '#5f6672' },
-  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: '#0071e3' },
+  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: theme.primary },
   gold: { bg: 'rgba(201, 169, 97, 0.15)', color: '#8c702e' },
-  green: { bg: 'rgba(46, 125, 50, 0.1)', color: '#2e7d32' },
-  red: { bg: 'rgba(186, 26, 26, 0.1)', color: '#ba1a1a' },
-  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: '#ed6c02' },
+  green: { bg: 'rgba(46, 125, 50, 0.1)', color: theme.success },
+  red: { bg: 'rgba(186, 26, 26, 0.1)', color: theme.error },
+  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: theme.warning },
   purple: { bg: 'rgba(114, 46, 209, 0.1)', color: '#722ed1' },
 }
 
@@ -104,11 +104,11 @@ const { RangePicker } = DatePicker
 
 export default function InvoiceManagement() {
   const [activeTab, setActiveTab] = useState('issued')
-  const [list, setList] = useState<any[]>([])
+  const [list, setList] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [voidModalVisible, setVoidModalVisible] = useState(false)
-  const [currentRecord, setCurrentRecord] = useState<any>(null)
+  const [currentRecord, setCurrentRecord] = useState<Record<string, unknown> | null>(null)
   const [voidReason, setVoidReason] = useState('')
   // 退款弹窗状态
   const [refundModalVisible, setRefundModalVisible] = useState(false)
@@ -143,7 +143,7 @@ export default function InvoiceManagement() {
   const fetchList = async () => {
     setLoading(true)
     try {
-      const params: any = {
+      const params: Record<string, unknown> = {
         org_id: user.organization_id,
         status: activeTab,
       }
@@ -154,9 +154,9 @@ export default function InvoiceManagement() {
         params.end_date = searchParams.dateRange[1].format('YYYY-MM-DD')
       }
       const res = await getInvoices(params)
-      setList(res || [])
+      setList((res as Record<string, unknown>[]) || [])
     } catch (error) {
-      console.error('Fetch invoices error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -186,13 +186,13 @@ export default function InvoiceManagement() {
     setModalVisible(true)
   }
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: Record<string, unknown>) => {
     try {
       const data = {
         ...values,
         tax_amount: taxAmount,
         total_amount: totalAmount,
-        issue_date: values.issue_date ? values.issue_date.format('YYYY-MM-DD') : undefined,
+        issue_date: values.issue_date ? (values.issue_date as dayjs.Dayjs).format('YYYY-MM-DD') : undefined,
         organization_id: user.organization_id,
       }
       await createInvoice(data)
@@ -201,11 +201,10 @@ export default function InvoiceManagement() {
       fetchList()
     } catch (error) {
       message.error('开票失败')
-      console.error('Create invoice error:', error)
     }
   }
 
-  const handleVoid = (record: any) => {
+  const handleVoid = (record: Record<string, unknown>) => {
     setCurrentRecord(record)
     setVoidReason('')
     setVoidModalVisible(true)
@@ -216,41 +215,39 @@ export default function InvoiceManagement() {
       message.warning('请填写作废原因')
       return
     }
+    if (!currentRecord) return
     try {
-      await voidInvoice(currentRecord.id, voidReason)
+      await voidInvoice(currentRecord.id as string, voidReason)
       message.success('发票已作废')
       setVoidModalVisible(false)
       fetchList()
     } catch (error) {
       message.error('作废失败')
-      console.error('Void invoice error:', error)
     }
   }
 
-  const handleRedFlush = async (record: any) => {
+  const handleRedFlush = async (record: Record<string, unknown>) => {
     try {
-      await redFlushInvoice(record.id)
+      await redFlushInvoice(record.id as string)
       message.success('发票已冲红')
       fetchList()
     } catch (error) {
       message.error('冲红失败')
-      console.error('Red flush error:', error)
     }
   }
 
-  const handleDelete = async (record: any) => {
+  const handleDelete = async (record: Record<string, unknown>) => {
     try {
-      await deleteInvoice(record.id)
+      await deleteInvoice(record.id as string)
       message.success('删除成功')
       fetchList()
     } catch (error) {
       message.error('删除失败')
-      console.error('Delete error:', error)
     }
   }
 
   // 打开退款弹窗
-  const handleRefund = (record: any) => {
+  const handleRefund = (record: Record<string, unknown>) => {
     setCurrentRecord(record)
     refundForm.resetFields()
     refundForm.setFieldsValue({ date: dayjs() })
@@ -259,25 +256,25 @@ export default function InvoiceManagement() {
 
   // 提交退款
   const handleRefundSubmit = async () => {
+    if (!currentRecord) return
     try {
       const values = await refundForm.validateFields()
       const data = {
         amount: Number(values.amount),
-        date: values.date ? values.date.format('YYYY-MM-DD') : '',
+        date: values.date ? (values.date as dayjs.Dayjs).format('YYYY-MM-DD') : '',
       }
-      await refundInvoice(currentRecord.id, data)
+      await refundInvoice(currentRecord.id as string, data)
       message.success('退款成功')
       setRefundModalVisible(false)
       fetchList()
-    } catch (error: any) {
-      if (error?.errorFields) return
+    } catch (error: unknown) {
+      if ((error as { errorFields?: unknown })?.errorFields) return
       message.error('退款失败')
-      console.error('Refund invoice error:', error)
     }
   }
 
   // 打开调账弹窗
-  const handleAdjust = (record: any) => {
+  const handleAdjust = (record: Record<string, unknown>) => {
     setCurrentRecord(record)
     adjustForm.resetFields()
     setAdjustModalVisible(true)
@@ -285,6 +282,7 @@ export default function InvoiceManagement() {
 
   // 提交调账
   const handleAdjustSubmit = async () => {
+    if (!currentRecord) return
     try {
       const values = await adjustForm.validateFields()
       const data = {
@@ -292,14 +290,13 @@ export default function InvoiceManagement() {
         amount: Number(values.amount),
         operator_id: user.id,
       }
-      await adjustInvoice(currentRecord.id, data)
+      await adjustInvoice(currentRecord.id as string, data)
       message.success('调账成功')
       setAdjustModalVisible(false)
       fetchList()
-    } catch (error: any) {
-      if (error?.errorFields) return
+    } catch (error: unknown) {
+      if ((error as { errorFields?: unknown })?.errorFields) return
       message.error('调账失败')
-      console.error('Adjust invoice error:', error)
     }
   }
 
@@ -318,7 +315,7 @@ export default function InvoiceManagement() {
       dataIndex: 'amount',
       key: 'amount',
       render: (v: number) => (
-        <span style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 600, color: '#1a1c1d' }}>
+        <span style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 600, color: theme.textBase }}>
           ¥{Number(v || 0).toFixed(2)}
         </span>
       ),
@@ -328,7 +325,7 @@ export default function InvoiceManagement() {
       dataIndex: 'tax_amount',
       key: 'tax_amount',
       render: (v: number) => (
-        <span style={{ color: '#414753' }}>¥{Number(v || 0).toFixed(2)}</span>
+        <span style={{ color: theme.textSecondary }}>¥{Number(v || 0).toFixed(2)}</span>
       ),
     },
     {
@@ -336,7 +333,7 @@ export default function InvoiceManagement() {
       dataIndex: 'total_amount',
       key: 'total_amount',
       render: (v: number) => (
-        <span style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 600, color: '#0059b5' }}>
+        <span style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 600, color: theme.primaryDark }}>
           ¥{Number(v || 0).toFixed(2)}
         </span>
       ),
@@ -353,7 +350,7 @@ export default function InvoiceManagement() {
       dataIndex: 'refund_amount',
       key: 'refund_amount',
       render: (v: number) => (
-        <span style={{ color: '#ba1a1a' }}>¥{Number(v || 0).toFixed(2)}</span>
+        <span style={{ color: theme.error }}>¥{Number(v || 0).toFixed(2)}</span>
       ),
     },
     {
@@ -368,8 +365,8 @@ export default function InvoiceManagement() {
       title: '操作',
       key: 'action',
       width: 320,
-      render: (_: any, record: any) => (
-        <Space>
+      render: (_: unknown, record: Record<string, unknown>) => (
+        <Space className="stitch-btn-group">
           {record.status === 'issued' && (
             <Button type="link" size="small" danger onClick={() => handleVoid(record)}>作废</Button>
           )}
@@ -401,7 +398,7 @@ export default function InvoiceManagement() {
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>开票</Button>
       </div>
 
-      <div className="search-bar" style={searchBarStyle}>
+      <div className="search-bar stitch-filter-bar" style={searchBarStyle}>
         <Select
           placeholder="发票类型"
           style={{ width: 140 }}
@@ -424,7 +421,7 @@ export default function InvoiceManagement() {
         />
         <RangePicker
           value={searchParams.dateRange}
-          onChange={(dates) => setSearchParams({ ...searchParams, dateRange: dates as any })}
+          onChange={(dates) => setSearchParams({ ...searchParams, dateRange: dates as [Dayjs, Dayjs] | null })}
         />
         <Button type="primary" onClick={handleSearch}>搜索</Button>
         <Button onClick={handleReset}>重置</Button>
@@ -432,7 +429,7 @@ export default function InvoiceManagement() {
 
       <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems.map(t => ({ key: t.key, label: t.label }))} />
 
-      <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+      <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
         <Table dataSource={list} columns={columns} loading={loading} rowKey="id" size="small" pagination={{ pageSize: 10 }} />
       </Card>
 
@@ -458,7 +455,7 @@ export default function InvoiceManagement() {
             <Input placeholder="请输入关联案件ID（可空）" />
           </Form.Item>
 
-          <div style={{ fontWeight: 600, marginBottom: 8, color: '#1a1c1d' }}>购方信息</div>
+          <div style={{ fontWeight: 600, marginBottom: 8, color: theme.textBase }}>购方信息</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 12px' }}>
             <Form.Item name="buyer_name" label="购方名称">
               <Input placeholder="购方名称" />
@@ -480,7 +477,7 @@ export default function InvoiceManagement() {
             </Form.Item>
           </div>
 
-          <div style={{ fontWeight: 600, marginBottom: 8, color: '#1a1c1d' }}>销方信息</div>
+          <div style={{ fontWeight: 600, marginBottom: 8, color: theme.textBase }}>销方信息</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 12px' }}>
             <Form.Item name="seller_name" label="销方名称">
               <Input placeholder="销方名称" />
@@ -502,7 +499,7 @@ export default function InvoiceManagement() {
             </Form.Item>
           </div>
           <Form.Item label="价税合计（自动）">
-            <Input value={`¥${totalAmount.toFixed(2)}`} disabled style={{ fontWeight: 600, color: '#0059b5' }} />
+            <Input value={`¥${totalAmount.toFixed(2)}`} disabled style={{ fontWeight: 600, color: theme.primaryDark }} />
           </Form.Item>
           <Form.Item name="issue_date" label="开票日期" rules={[{ required: true, message: '请选择开票日期' }]}>
             <DatePicker style={{ width: '100%' }} />
@@ -522,7 +519,7 @@ export default function InvoiceManagement() {
         okText="确认作废"
         okButtonProps={{ danger: true }}
       >
-        <p>发票号：{currentRecord?.invoice_no}</p>
+        <p>发票号：{String(currentRecord?.invoice_no ?? '')}</p>
         <Input.TextArea
           placeholder="请填写作废原因（必填）"
           value={voidReason}
@@ -539,7 +536,7 @@ export default function InvoiceManagement() {
         onOk={handleRefundSubmit}
         okText="确认退款"
       >
-        <p>发票号：{currentRecord?.invoice_no}</p>
+        <p>发票号：{String(currentRecord?.invoice_no ?? '')}</p>
         <Form form={refundForm} layout="vertical">
           <Form.Item name="amount" label="退款金额" rules={[{ required: true, message: '请输入退款金额' }]}>
             <InputNumber placeholder="请输入退款金额" style={{ width: '100%' }} min={0} step={0.01} />
@@ -558,7 +555,7 @@ export default function InvoiceManagement() {
         onOk={handleAdjustSubmit}
         okText="确认调账"
       >
-        <p>发票号：{currentRecord?.invoice_no}</p>
+        <p>发票号：{String(currentRecord?.invoice_no ?? '')}</p>
         <Form form={adjustForm} layout="vertical">
           <Form.Item name="reason" label="调账原因" rules={[{ required: true, message: '请输入调账原因' }]}>
             <Input.TextArea placeholder="请输入调账原因" rows={3} />

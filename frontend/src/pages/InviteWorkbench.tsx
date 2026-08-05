@@ -144,13 +144,13 @@ export default function InviteWorkbench() {
   // 获取状态显示文本和颜色
   const getStatusTag = (status: InviteTaskStatus) => {
     const statusMap: Record<InviteTaskStatus, { text: string; color: string }> = {
-      [InviteTaskStatus.PENDING]: { text: '待跟进', color: 'orange' },
-      [InviteTaskStatus.INVITED]: { text: '已邀约', color: 'blue' },
-      [InviteTaskStatus.ARRIVED]: { text: '已到所', color: 'green' },
-      [InviteTaskStatus.NOT_ARRIVED]: { text: '未到所', color: 'red' },
+      [InviteTaskStatus.PENDING]: { text: '待跟进', color: 'warning' },
+      [InviteTaskStatus.INVITED]: { text: '已邀约', color: 'primary' },
+      [InviteTaskStatus.ARRIVED]: { text: '已到所', color: 'success' },
+      [InviteTaskStatus.NOT_ARRIVED]: { text: '未到所', color: 'error' },
     }
     const config = statusMap[status]
-    return <Tag color={config.color}>{config.text}</Tag>
+    return <Tag className={`stitch-tag stitch-tag-${config.color}`}>{config.text}</Tag>
   }
 
   // 待跟进列表列定义
@@ -212,7 +212,7 @@ export default function InviteWorkbench() {
       title: '提醒状态',
       key: 'remind',
       render: () => (
-        <Tag color="green">
+        <Tag className="stitch-tag stitch-tag-success">
           <CheckCircleOutlined /> 已提醒
         </Tag>
       ),
@@ -221,7 +221,7 @@ export default function InviteWorkbench() {
       title: '操作',
       key: 'action',
       render: (_: any, record: InviteTask) => (
-        <Space>
+        <Space className="stitch-btn-group">
           <Button size="small" onClick={() => handleUpdateStatus(record.id, InviteTaskStatus.ARRIVED)}>
             已到所
           </Button>
@@ -309,13 +309,15 @@ export default function InviteWorkbench() {
             }
             key="pending"
           >
-            <Table
-              columns={pendingColumns}
-              dataSource={pendingLeads}
-              rowKey="id"
-              loading={loading}
-              pagination={{ pageSize: 10 }}
-            />
+            <div className="stitch-table">
+              <Table
+                columns={pendingColumns}
+                dataSource={pendingLeads}
+                rowKey="id"
+                loading={loading}
+                pagination={{ pageSize: 10 }}
+              />
+            </div>
           </TabPane>
 
           <TabPane
@@ -326,13 +328,15 @@ export default function InviteWorkbench() {
             }
             key="today"
           >
-            <Table
-              columns={todayColumns}
-              dataSource={todayTasks}
-              rowKey="id"
-              loading={loading}
-              pagination={false}
-            />
+            <div className="stitch-table">
+              <Table
+                columns={todayColumns}
+                dataSource={todayTasks}
+                rowKey="id"
+                loading={loading}
+                pagination={false}
+              />
+            </div>
           </TabPane>
 
           <TabPane
@@ -343,23 +347,27 @@ export default function InviteWorkbench() {
             }
             key="invited"
           >
-            <Table
-              columns={invitedColumns}
-              dataSource={invitedTasks}
-              rowKey="id"
-              loading={loading}
-              pagination={{ pageSize: 10 }}
-            />
+            <div className="stitch-table">
+              <Table
+                columns={invitedColumns}
+                dataSource={invitedTasks}
+                rowKey="id"
+                loading={loading}
+                pagination={{ pageSize: 10 }}
+              />
+            </div>
           </TabPane>
 
           <TabPane tab="历史记录" key="history">
-            <Table
-              columns={historyColumns}
-              dataSource={historyTasks}
-              rowKey="id"
-              loading={loading}
-              pagination={{ pageSize: 10 }}
-            />
+            <div className="stitch-table">
+              <Table
+                columns={historyColumns}
+                dataSource={historyTasks}
+                rowKey="id"
+                loading={loading}
+                pagination={{ pageSize: 10 }}
+              />
+            </div>
           </TabPane>
         </Tabs>
       </Card>

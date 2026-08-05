@@ -5,6 +5,21 @@ import { message } from 'antd'
  * 从 axios 错误中提取用户友好的报错信息，并自动展示提示
  */
 
+// 错误对象接口定义（兼容 axios 错误与原生 JS 错误）
+interface AppError {
+  code?: string
+  message?: string
+  response?: {
+    status: number
+    data?: {
+      message?: string | string[] | Record<string, string>
+      error?: string
+      msg?: string
+    }
+  }
+  _handled?: boolean
+}
+
 // HTTP 状态码到友好提示的映射
 const STATUS_MESSAGE_MAP: Record<number, string> = {
   400: '请求参数有误，请检查后重试',
@@ -25,24 +40,26 @@ const STATUS_MESSAGE_MAP: Record<number, string> = {
  * 从 axios 错误对象中提取用户友好的错误信息
  * 优先级：后端业务 message > HTTP 状态码映射 > 网络异常提示 > 兜底文案
  */
-export function getErrorMessage(error: any, fallback = '操作失败，请稍后重试'): string {
+export function getErrorMessage(error: unknown, fallback = '操作失败，请稍后重试'): string {
   // 非 axios 错误（如原生 JS 错误）
   if (!error) return fallback
 
+  const err = error as AppError
+
   // 网络中断 / 请求未发出
-  if (error.code === 'ERR_NETWORK') {
+  if (err.code === 'ERR_NETWORK') {
     return '网络连接异常，请检查网络后重试'
   }
 
   // 请求超时
-  if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+  if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
     return '请求超时，请检查网络后重试'
   }
 
-  const response = error.response
+  const response = err.response
   if (!response) {
     // 无响应但非超时/网络错误
-    return error.message || '网络异常，请稍后重试'
+    return err.message || '网络异常，请稍后重试'
   }
 
   const status = response.status
@@ -83,24 +100,27 @@ export function getErrorMessage(error: any, fallback = '操作失败，请稍后
 /**
  * 判断是否为 401 未授权错误
  */
-export function isUnauthorized(error: any): boolean {
-  return error?.response?.status === 401
+export function isUnauthorized(error: unknown): boolean {
+  const err = error as AppError
+  return err?.response?.status === 401
 }
 
 /**
  * 判断是否为 403 无权限错误
  */
-export function isForbidden(error: any): boolean {
-  return error?.response?.status === 403
+export function isForbidden(error: unknown): boolean {
+  const err = error as AppError
+  return err?.response?.status === 403
 }
 
 /**
  * 展示用户友好的错误提示（通过 antd message）
  * 如果错误已被拦截器标记为已处理，则不再重复展示
  */
-export function showError(error: any, fallback = '操作失败，请稍后重试'): void {
+export function showError(error: unknown, fallback = '操作失败，请稍后重试'): void {
+  const err = error as AppError
   // 拦截器已处理过的错误不再重复提示
-  if (error?._handled) return
+  if (err?._handled) return
   const msg = getErrorMessage(error, fallback)
   message.error(msg)
 }
@@ -108,9 +128,9 @@ export function showError(error: any, fallback = '操作失败，请稍后重试
 /**
  * 标记错误为已处理（供拦截器调用，避免页面层重复提示）
  */
-export function markHandled(error: any): any {
+export function markHandled(error: unknown): unknown {
   if (error && typeof error === 'object') {
-    error._handled = true
+    (error as AppError)._handled = true
   }
   return error
 }

@@ -1,5 +1,5 @@
 import { Component, ReactNode } from 'react';
-
+import { theme } from '../constants/theme'
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
@@ -41,7 +41,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               padding: '8px 24px',
               borderRadius: 10,
               border: 'none',
-              background: '#0071e3',
+              background: theme.primary,
               color: '#fff',
               cursor: 'pointer',
               fontSize: 14,

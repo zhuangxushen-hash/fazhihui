@@ -50,7 +50,6 @@ import {
   channelLabels,
   rankMetricOptions,
   complianceStatusLabels,
-  complianceStatusColors,
   caseTypeLabels,
   type AdMaterial,
   type AdMaterialWithPerformance,
@@ -61,7 +60,7 @@ import {
   type CompliancePrecheckResult,
 } from '../api/marketing'
 import { formatDateTime } from '../utils/format'
-
+import { theme } from '../constants/theme'
 export default function MaterialManagement() {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const [activeTab, setActiveTab] = useState('list')
@@ -128,7 +127,6 @@ export default function MaterialManagement() {
       const res = await getAdMaterials(params)
       setMaterials(res || [])
     } catch (err) {
-      console.error('Fetch materials error:', err)
       message.error('素材列表加载失败')
     } finally {
       setLoading(false)
@@ -140,7 +138,7 @@ export default function MaterialManagement() {
       const res = await getAllTags(user.organization_id)
       setAllTags(res || [])
     } catch (err) {
-      console.error('Fetch tags error:', err)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -159,7 +157,6 @@ export default function MaterialManagement() {
       const res = await getMaterialRanking(params)
       setRanking(res || [])
     } catch (err) {
-      console.error('Fetch ranking error:', err)
       message.error('排行榜加载失败')
     } finally {
       setRankingLoading(false)
@@ -219,7 +216,6 @@ export default function MaterialManagement() {
       fetchMaterials()
       fetchAllTags()
     } catch (err) {
-      console.error('Submit material error:', err)
       message.error(editingMaterial ? '更新失败' : '创建失败')
     }
   }
@@ -331,7 +327,6 @@ export default function MaterialManagement() {
       })
       fetchMaterials()
     } catch (err: any) {
-      console.error('Precheck error:', err)
       message.error(err?.response?.data?.message || '合规预审失败')
     } finally {
       setComplianceLoading(false)
@@ -361,7 +356,7 @@ export default function MaterialManagement() {
         tags && tags.length > 0 ? (
           <Space size={[4, 4]} wrap>
             {tags.map((t) => (
-              <Tag key={t} style={{ borderRadius: 10, padding: '0 8px', fontSize: 11, background: '#f5f5f7', border: 'none', color: '#6e6e73' }}>
+              <Tag key={t} className="stitch-tag">
                 {t}
               </Tag>
             ))}
@@ -389,7 +384,7 @@ export default function MaterialManagement() {
       dataIndex: 'conversions',
       key: 'conversions',
       sorter: (a: AdMaterial, b: AdMaterial) => a.conversions - b.conversions,
-      render: (v: number) => <span style={{ color: '#0071e3', fontWeight: 600 }}>{v || 0}</span>,
+      render: (v: number) => <span style={{ color: theme.primary, fontWeight: 600 }}>{v || 0}</span>,
     },
     {
       title: '消耗',
@@ -407,9 +402,14 @@ export default function MaterialManagement() {
       sorter: (a: AdMaterial, b: AdMaterial) => Number(a.roi) - Number(b.roi),
       render: (v: number) => {
         const roi = Number(v) || 0
-        const color = roi >= 200 ? '#34c759' : roi >= 100 ? '#ff9500' : roi > 0 ? '#ff3b30' : '#86868b'
+        // 根据 ROI 区间映射 stitch-tag 类名
+        const tagClass =
+          roi >= 200 ? 'stitch-tag stitch-tag-success' :
+          roi >= 100 ? 'stitch-tag stitch-tag-warning' :
+          roi > 0 ? 'stitch-tag stitch-tag-error' :
+          'stitch-tag'
         return (
-          <Tag style={{ background: `${color}15`, color, borderRadius: 12, padding: '2px 12px', fontWeight: 600 }}>
+          <Tag className={tagClass}>
             {roi > 0 ? `${roi.toFixed(1)}%` : '-'}
           </Tag>
         )
@@ -420,15 +420,14 @@ export default function MaterialManagement() {
       dataIndex: 'status',
       key: 'status',
       render: (v: AdMaterialStatus) => {
-        const colorMap: Record<AdMaterialStatus, string> = {
-          draft: '#86868b',
-          active: '#34c759',
-          paused: '#ff9500',
-          archived: '#6e6e73',
-        }
-        const color = colorMap[v] || '#86868b'
+        // 根据素材状态映射 stitch-tag 类名
+        const tagClass =
+          v === 'active' ? 'stitch-tag stitch-tag-info' :
+          v === 'paused' ? 'stitch-tag stitch-tag-warning' :
+          v === 'archived' ? 'stitch-tag stitch-tag-primary' :
+          'stitch-tag'
         return (
-          <Tag style={{ background: `${color}15`, color, borderRadius: 12, padding: '2px 10px', fontSize: 11 }}>
+          <Tag className={tagClass}>
             {materialStatusLabels[v] || v}
           </Tag>
         )
@@ -440,17 +439,23 @@ export default function MaterialManagement() {
       key: 'compliance_status',
       render: (v?: MaterialComplianceStatus) => {
         if (!v) v = 'pending'
-        const color = complianceStatusColors[v]
         const label = complianceStatusLabels[v]
         let icon = <CheckCircleOutlined />
         if (v === 'need_modification') icon = <WarningOutlined />
         else if (v === 'forbidden') icon = <StopOutlined />
         else if (v === 'pending') icon = <SafetyCertificateOutlined />
+        // 根据合规状态映射 stitch-tag 类名
+        const tagClass =
+          v === 'passed' ? 'stitch-tag stitch-tag-success' :
+          v === 'need_modification' ? 'stitch-tag stitch-tag-warning' :
+          v === 'forbidden' ? 'stitch-tag stitch-tag-error' :
+          v === 'pending' ? 'stitch-tag stitch-tag-warning' :
+          'stitch-tag'
         return (
           <Tooltip title={label}>
             <Tag
               icon={icon}
-              style={{ background: `${color}15`, color, borderRadius: 12, padding: '2px 10px', fontSize: 11, border: `1px solid ${color}30` }}
+              className={tagClass}
             >
               {label}
             </Tag>
@@ -474,7 +479,7 @@ export default function MaterialManagement() {
       key: 'action',
       width: 340,
       render: (_: any, record: AdMaterial) => (
-        <Space size={4}>
+        <Space className="stitch-btn-group" size={4}>
           <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)} style={{ borderRadius: 8 }}>
             编辑
           </Button>
@@ -490,9 +495,9 @@ export default function MaterialManagement() {
             onClick={() => handleCompliance(record)}
             style={{
               borderRadius: 8,
-              background: record.compliance_status === 'passed' ? '#34c75915' : '#0071e310',
+              background: record.compliance_status === 'passed' ? '#34c75915' : `${theme.primary}10`,
               border: 'none',
-              color: record.compliance_status === 'passed' ? '#34c759' : '#0071e3',
+              color: record.compliance_status === 'passed' ? '#34c759' : theme.primary,
             }}
           >
             预审
@@ -547,7 +552,7 @@ export default function MaterialManagement() {
         if (record.performance === 'high') {
           return (
             <Tooltip title={`高转化素材 (ROI ${Number(record.roi).toFixed(1)}% ≥ 200%)`}>
-              <Tag style={{ background: '#34c75915', color: '#34c759', borderRadius: 12, padding: '2px 10px', fontWeight: 600, border: `1px solid #34c75940` }}>
+              <Tag className="stitch-tag stitch-tag-success">
                 高转化
               </Tag>
             </Tooltip>
@@ -556,7 +561,7 @@ export default function MaterialManagement() {
         if (record.performance === 'low') {
           return (
             <Tooltip title={`低效素材 (ROI ${Number(record.roi).toFixed(1)}% < 100%)`}>
-              <Tag style={{ background: '#ff3b3015', color: '#ff3b30', borderRadius: 12, padding: '2px 10px', fontWeight: 600, border: `1px solid #ff3b3040` }}>
+              <Tag className="stitch-tag stitch-tag-error">
                 低效
               </Tag>
             </Tooltip>
@@ -581,7 +586,7 @@ export default function MaterialManagement() {
           style={{
             borderRadius: 10,
             padding: '8px 20px',
-            background: '#0071e3',
+            background: theme.primary,
             border: 'none',
             color: '#fff',
             boxShadow: '0 2px 8px rgba(0, 113, 227, 0.25)',
@@ -592,6 +597,7 @@ export default function MaterialManagement() {
       </div>
 
       <Card
+        className="stitch-filter-bar"
         style={{
           borderRadius: 16,
           marginBottom: 24,
@@ -643,7 +649,7 @@ export default function MaterialManagement() {
           <Button
             icon={<SearchOutlined />}
             onClick={handleSearch}
-            style={{ borderRadius: 10, background: '#0071e3', border: 'none', color: '#fff' }}
+            style={{ borderRadius: 10, background: theme.primary, border: 'none', color: '#fff' }}
           >
             搜索
           </Button>
@@ -671,6 +677,7 @@ export default function MaterialManagement() {
               label: '素材列表',
               children: (
                 <Table
+                  className="stitch-table"
                   dataSource={materials}
                   columns={listColumns}
                   loading={loading}
@@ -702,11 +709,12 @@ export default function MaterialManagement() {
                       />
                     </Space>
                     <Space>
-                      <Tag style={{ background: '#34c75915', color: '#34c759', borderRadius: 12, padding: '2px 10px' }}>高转化 ROI≥200%</Tag>
-                      <Tag style={{ background: '#ff3b3015', color: '#ff3b30', borderRadius: 12, padding: '2px 10px' }}>{'低效 ROI<100%'}</Tag>
+                      <Tag className="stitch-tag stitch-tag-success">高转化 ROI≥200%</Tag>
+                      <Tag className="stitch-tag stitch-tag-error">{'低效 ROI<100%'}</Tag>
                     </Space>
                   </div>
                   <Table
+                    className="stitch-table"
                     dataSource={ranking}
                     columns={rankingColumns}
                     loading={rankingLoading}
@@ -779,7 +787,7 @@ export default function MaterialManagement() {
               <Button
                 type="primary"
                 htmlType="submit"
-                style={{ borderRadius: 10, padding: '10px 32px', background: '#0071e3', border: 'none', color: '#fff' }}
+                style={{ borderRadius: 10, padding: '10px 32px', background: theme.primary, border: 'none', color: '#fff' }}
               >
                 {editingMaterial ? '保存' : '创建'}
               </Button>
@@ -810,7 +818,7 @@ export default function MaterialManagement() {
                       key={t}
                       closable
                       onClose={() => handleRemoveTag(t)}
-                      style={{ borderRadius: 10, padding: '4px 10px', background: '#0071e310', color: '#0071e3', border: 'none' }}
+                      className="stitch-tag stitch-tag-primary"
                     >
                       {t}
                     </Tag>
@@ -833,7 +841,7 @@ export default function MaterialManagement() {
                 <Button
                   type="primary"
                   onClick={handleAddTag}
-                  style={{ borderRadius: '0 10px 10px 0', background: '#0071e3', border: 'none' }}
+                  style={{ borderRadius: '0 10px 10px 0', background: theme.primary, border: 'none' }}
                 >
                   添加
                 </Button>
@@ -847,7 +855,8 @@ export default function MaterialManagement() {
                       .map((t) => (
                         <Tag
                           key={t}
-                          style={{ cursor: 'pointer', borderRadius: 10, padding: '2px 10px', background: '#f5f5f7', border: '1px solid rgba(0,0,0,0.06)', color: '#6e6e73' }}
+                          className="stitch-tag"
+                          style={{ cursor: 'pointer' }}
                           onClick={async () => {
                             try {
                               const updated = await addAdMaterialTag(tagMaterial.id, t)
@@ -906,7 +915,7 @@ export default function MaterialManagement() {
                 <Button
                   type="primary"
                   htmlType="submit"
-                  style={{ borderRadius: 10, padding: '10px 32px', background: '#0071e3', border: 'none', color: '#fff' }}
+                  style={{ borderRadius: 10, padding: '10px 32px', background: theme.primary, border: 'none', color: '#fff' }}
                 >
                   确认更新
                 </Button>
@@ -920,7 +929,7 @@ export default function MaterialManagement() {
       <Modal
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <SafetyCertificateOutlined style={{ color: '#0071e3' }} />
+            <SafetyCertificateOutlined style={{ color: theme.primary }} />
             <span>营销内容合规预审</span>
           </div>
         }
@@ -945,10 +954,16 @@ export default function MaterialManagement() {
                   <div style={{ marginTop: 2 }}>
                     {(() => {
                       const status = complianceMaterial.compliance_status || 'pending'
-                      const color = complianceStatusColors[status]
                       const label = complianceStatusLabels[status]
+                      // 根据合规状态映射 stitch-tag 类名
+                      const tagClass =
+                        status === 'passed' ? 'stitch-tag stitch-tag-success' :
+                        status === 'need_modification' ? 'stitch-tag stitch-tag-warning' :
+                        status === 'forbidden' ? 'stitch-tag stitch-tag-error' :
+                        status === 'pending' ? 'stitch-tag stitch-tag-warning' :
+                        'stitch-tag'
                       return (
-                        <Tag style={{ background: `${color}15`, color, borderRadius: 10, padding: '2px 10px', border: `1px solid ${color}30` }}>
+                        <Tag className={tagClass}>
                           {label}
                         </Tag>
                       )
@@ -1049,14 +1064,14 @@ export default function MaterialManagement() {
                           >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                               <Space size={6}>
-                                <Tag style={{ background: `${sevColor}15`, color: sevColor, borderRadius: 8, border: 'none', fontWeight: 600 }}>
+                                <Tag className={v.severity === 'serious' ? 'stitch-tag stitch-tag-error' : 'stitch-tag stitch-tag-warning'}>
                                   {v.label}
                                 </Tag>
                                 <span style={{ fontWeight: 600, color: '#1d1d1f', fontSize: 13 }}>
                                   "{v.keyword}"
                                 </span>
                               </Space>
-                              <Tag style={{ background: `${sevColor}15`, color: sevColor, borderRadius: 8, border: 'none', fontSize: 11 }}>
+                              <Tag className={v.severity === 'serious' ? 'stitch-tag stitch-tag-error' : 'stitch-tag stitch-tag-warning'}>
                                 {v.severity === 'serious' ? '严重' : '轻微'}
                               </Tag>
                             </div>

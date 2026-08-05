@@ -225,7 +225,7 @@ const CaseSOPConfig = () => {
   ) => {
     const newStages = [...stages]
     const task = newStages[stageIndex].tasks[taskIndex]
-    ;(task as any)[field] = value
+    ;(task as unknown as Record<string, unknown>)[field] = value
     setStages(newStages)
   }
 
@@ -265,7 +265,9 @@ const CaseSOPConfig = () => {
       key: 'enabled',
       width: 100,
       render: (enabled: boolean) => (
-        <Tag color={enabled ? 'green' : 'default'}>{enabled ? '启用' : '禁用'}</Tag>
+        <Tag className={enabled ? 'stitch-tag stitch-tag-success' : 'stitch-tag stitch-tag-primary'}>
+          {enabled ? '启用' : '禁用'}
+        </Tag>
       ),
     },
     {
@@ -274,7 +276,7 @@ const CaseSOPConfig = () => {
       key: 'is_default',
       width: 100,
       render: (isDefault: boolean) =>
-        isDefault ? <Tag color="blue">默认</Tag> : null,
+        isDefault ? <Tag className="stitch-tag stitch-tag-primary">默认</Tag> : null,
     },
     {
       title: '创建时间',
@@ -288,7 +290,7 @@ const CaseSOPConfig = () => {
       key: 'action',
       width: 240,
       render: (record: CaseSOPTemplate) => (
-        <Space>
+        <Space className="stitch-btn-group">
           <Button
             type="link"
             size="small"
@@ -345,16 +347,18 @@ const CaseSOPConfig = () => {
         </Button>
       </div>
 
-      <Table
-        columns={columns}
-        dataSource={templates}
-        rowKey="id"
-        loading={loading}
-        pagination={{
-          pageSize: 10,
-          showTotal: (total) => `共 ${total} 条`,
-        }}
-      />
+      <div className="stitch-table">
+        <Table
+          columns={columns}
+          dataSource={templates}
+          rowKey="id"
+          loading={loading}
+          pagination={{
+            pageSize: 10,
+            showTotal: (total) => `共 ${total} 条`,
+          }}
+        />
+      </div>
 
       <Modal
         title={editingTemplate ? '编辑SOP模板' : '新建SOP模板'}

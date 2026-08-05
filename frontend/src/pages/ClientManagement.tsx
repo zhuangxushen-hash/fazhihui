@@ -8,7 +8,7 @@ import {
   deleteClientProfile,
   getRelatedCases,
   getRelatedLeads,
-} from '../api/clientProfile'
+} from '../api/client-profile'
 import { formatDateTime } from '../utils/format'
 
 // 客户类型映射：individual个人/enterprise企业
@@ -49,7 +49,7 @@ const valueLevelOptions = [
 ]
 
 export default function ClientManagement() {
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [keyword, setKeyword] = useState('')
   // 智能筛选：超过X天未联系
@@ -60,9 +60,9 @@ export default function ClientManagement() {
 
   // 详情弹窗相关状态
   const [detailVisible, setDetailVisible] = useState(false)
-  const [currentClient, setCurrentClient] = useState<any>(null)
-  const [relatedCases, setRelatedCases] = useState<any[]>([])
-  const [relatedLeads, setRelatedLeads] = useState<any[]>([])
+  const [currentClient, setCurrentClient] = useState<Record<string, unknown> | null>(null)
+  const [relatedCases, setRelatedCases] = useState<Record<string, unknown>[]>([])
+  const [relatedLeads, setRelatedLeads] = useState<Record<string, unknown>[]>([])
   const [detailLoading, setDetailLoading] = useState(false)
 
   useEffect(() => {
@@ -73,13 +73,13 @@ export default function ClientManagement() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const params: any = {}
+      const params: Record<string, unknown> = {}
       if (keyword) params.keyword = keyword
       if (daysNoContact) params.days_no_contact = daysNoContact
-      const res: any = await getClientProfiles(params)
+      const res = (await getClientProfiles(params)) as Record<string, unknown>[]
       setData(res || [])
     } catch (error) {
-      console.error('Fetch client profiles error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -108,8 +108,8 @@ export default function ClientManagement() {
   }
 
   // 打开编辑弹窗
-  const handleEdit = (record: any) => {
-    setEditingId(record.id)
+  const handleEdit = (record: Record<string, unknown>) => {
+    setEditingId(record.id as string)
     form.setFieldsValue({
       name: record.name,
       type: record.type,
@@ -126,7 +126,7 @@ export default function ClientManagement() {
   }
 
   // 提交新增/编辑
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: Record<string, unknown>) => {
     try {
       if (editingId) {
         await updateClientProfile(editingId, values)
@@ -139,24 +139,22 @@ export default function ClientManagement() {
       fetchData()
     } catch (error) {
       message.error(editingId ? '客户更新失败' : '客户创建失败')
-      console.error('Submit client profile error:', error)
     }
   }
 
   // 删除客户
-  const handleDelete = async (record: any) => {
+  const handleDelete = async (record: Record<string, unknown>) => {
     try {
-      await deleteClientProfile(record.id)
+      await deleteClientProfile(record.id as string)
       message.success('客户删除成功')
       fetchData()
     } catch (error) {
       message.error('客户删除失败')
-      console.error('Delete client profile error:', error)
     }
   }
 
   // 查看详情（同时拉取关联案件与线索）
-  const handleViewDetail = async (record: any) => {
+  const handleViewDetail = async (record: Record<string, unknown>) => {
     setCurrentClient(record)
     setRelatedCases([])
     setRelatedLeads([])
@@ -164,13 +162,13 @@ export default function ClientManagement() {
     setDetailLoading(true)
     try {
       const [cases, leads] = await Promise.all([
-        getRelatedCases(record.id),
-        getRelatedLeads(record.id),
+        getRelatedCases(record.id as string),
+        getRelatedLeads(record.id as string),
       ])
-      setRelatedCases((cases as any) || [])
-      setRelatedLeads((leads as any) || [])
+      setRelatedCases((cases as Record<string, unknown>[]) || [])
+      setRelatedLeads((leads as Record<string, unknown>[]) || [])
     } catch (error) {
-      console.error('Fetch related data error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setDetailLoading(false)
     }
@@ -201,7 +199,7 @@ export default function ClientManagement() {
       title: '客户类型',
       dataIndex: 'type',
       key: 'type',
-      render: (type: string) => <Tag color={typeColorMap[type] || 'default'}>{typeLabelMap[type] || type}</Tag>,
+      render: (type: string) => <Tag className={typeColorMap[type] || 'stitch-tag'}>{typeLabelMap[type] || type}</Tag>,
     },
     { title: '联系人', dataIndex: 'contact_name', key: 'contact_name', render: (v: string) => v || '-' },
     { title: '电话', dataIndex: 'phone', key: 'phone', render: (v: string) => v || '-' },
@@ -223,8 +221,8 @@ export default function ClientManagement() {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: any) => (
-        <Space>
+      render: (_: unknown, record: Record<string, unknown>) => (
+        <Space className="stitch-btn-group">
           <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
           <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
           <Popconfirm
@@ -271,7 +269,9 @@ export default function ClientManagement() {
         <Button onClick={handleReset}>重置</Button>
       </div>
 
-      <Table dataSource={data} columns={columns} loading={loading} rowKey="id" />
+      <div className="stitch-table">
+        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" />
+      </div>
 
       {/* 新增/编辑弹窗 */}
       <Modal
@@ -317,7 +317,7 @@ export default function ClientManagement() {
             <Input.TextArea placeholder="请输入备注" rows={3} />
           </Form.Item>
           <Form.Item>
-            <Space>
+            <Space className="stitch-btn-group">
               <Button type="primary" htmlType="submit">{editingId ? '保存' : '创建'}</Button>
               <Button onClick={() => setModalVisible(false)}>取消</Button>
             </Space>
@@ -333,31 +333,33 @@ export default function ClientManagement() {
         footer={null}
         width={820}
       >
-        {currentClient && (
+        {currentClient && (() => {
+          const cli = currentClient as Record<string, unknown>
+          return (
           <div>
             <Descriptions column={2} bordered size="small">
-              <Descriptions.Item label="客户名称">{currentClient.name}</Descriptions.Item>
+              <Descriptions.Item label="客户名称">{String(cli.name ?? '')}</Descriptions.Item>
               <Descriptions.Item label="客户类型">
-                <Tag color={typeColorMap[currentClient.type] || 'default'}>
-                  {typeLabelMap[currentClient.type] || currentClient.type}
+                <Tag className={typeColorMap[cli.type as string] || 'stitch-tag'}>
+                  {typeLabelMap[cli.type as string] || (cli.type as string)}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="联系人">{currentClient.contact_name || '-'}</Descriptions.Item>
-              <Descriptions.Item label="电话">{currentClient.phone || '-'}</Descriptions.Item>
-              <Descriptions.Item label="邮箱">{currentClient.email || '-'}</Descriptions.Item>
-              <Descriptions.Item label="地址">{currentClient.address || '-'}</Descriptions.Item>
-              <Descriptions.Item label="客户来源">{currentClient.source || '-'}</Descriptions.Item>
+              <Descriptions.Item label="联系人">{String(cli.contact_name || '-')}</Descriptions.Item>
+              <Descriptions.Item label="电话">{String(cli.phone || '-')}</Descriptions.Item>
+              <Descriptions.Item label="邮箱">{String(cli.email || '-')}</Descriptions.Item>
+              <Descriptions.Item label="地址">{String(cli.address || '-')}</Descriptions.Item>
+              <Descriptions.Item label="客户来源">{String(cli.source || '-')}</Descriptions.Item>
               <Descriptions.Item label="价值等级">
-                <Tag color={valueLevelColorMap[currentClient.value_level] || 'default'}>
-                  {valueLevelLabelMap[currentClient.value_level] || currentClient.value_level}
+                <Tag className={valueLevelColorMap[cli.value_level as string] || 'stitch-tag'}>
+                  {valueLevelLabelMap[cli.value_level as string] || (cli.value_level as string)}
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="满意度">
-                <Rate disabled count={5} value={Number(currentClient.satisfaction) || 0} />
+                <Rate disabled count={5} value={Number(cli.satisfaction) || 0} />
               </Descriptions.Item>
-              <Descriptions.Item label="备注" span={2}>{currentClient.remarks || '-'}</Descriptions.Item>
-              <Descriptions.Item label="创建时间">{formatDateTime(currentClient.created_at)}</Descriptions.Item>
-              <Descriptions.Item label="更新时间">{formatDateTime(currentClient.updated_at)}</Descriptions.Item>
+              <Descriptions.Item label="备注" span={2}>{String(cli.remarks || '-')}</Descriptions.Item>
+              <Descriptions.Item label="创建时间">{formatDateTime(cli.created_at as string)}</Descriptions.Item>
+              <Descriptions.Item label="更新时间">{formatDateTime(cli.updated_at as string)}</Descriptions.Item>
             </Descriptions>
 
             <Tabs
@@ -382,20 +384,23 @@ export default function ClientManagement() {
                   key: 'leads',
                   label: `关联线索 (${relatedLeads.length})`,
                   children: (
-                    <Table
-                      dataSource={relatedLeads}
-                      columns={leadColumns}
-                      loading={detailLoading}
-                      rowKey="id"
-                      size="small"
-                      pagination={{ pageSize: 5 }}
-                    />
+                    <div className="stitch-table">
+                      <Table
+                        dataSource={relatedLeads}
+                        columns={leadColumns}
+                        loading={detailLoading}
+                        rowKey="id"
+                        size="small"
+                        pagination={{ pageSize: 5 }}
+                      />
+                    </div>
                   ),
                 },
               ]}
             />
           </div>
-        )}
+          )
+        })()}
       </Modal>
     </div>
   )

@@ -10,12 +10,12 @@ import {
 } from '@ant-design/icons'
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
-
+import { theme } from '../constants/theme'
 const pageH2Style: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
   fontSize: 22,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
   margin: 0,
   letterSpacing: '0.01em',
 }
@@ -26,7 +26,7 @@ const tableCardStyle: React.CSSProperties = {
 }
 
 const cardHeadStyle: React.CSSProperties = {
-  borderBottom: '1px solid #c1c6d6',
+  borderBottom: `1px solid ${theme.border}`,
   padding: '0 20px',
   minHeight: 56,
 }
@@ -35,18 +35,18 @@ const cardTitleStyle: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
   fontSize: 16,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
 }
 
 type PillKind = 'neutral' | 'blue' | 'gold' | 'green' | 'red' | 'orange'
 
 const pillColorMap: Record<PillKind, { bg: string; color: string }> = {
   neutral: { bg: 'rgba(113, 119, 133, 0.12)', color: '#5f6672' },
-  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: '#0071e3' },
+  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: theme.primary },
   gold: { bg: 'rgba(201, 169, 97, 0.15)', color: '#8c702e' },
-  green: { bg: 'rgba(46, 125, 50, 0.1)', color: '#2e7d32' },
-  red: { bg: 'rgba(186, 26, 26, 0.1)', color: '#ba1a1a' },
-  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: '#ed6c02' },
+  green: { bg: 'rgba(46, 125, 50, 0.1)', color: theme.success },
+  red: { bg: 'rgba(186, 26, 26, 0.1)', color: theme.error },
+  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: theme.warning },
 }
 
 const StatusPill = ({ text, kind }: { text: string; kind: PillKind }) => {
@@ -136,12 +136,12 @@ export default function SalesComplianceReview() {
       if (activeTab === 'pending') {
         const res = await axios.get('/compliance/sales-reviews', {
           params: { org_id: user.organization_id, status: 'pending' },
-        })
+        }) as Record<string, unknown>[]
         setPendingList(res || [])
       } else if (activeTab === 'reviewed') {
         const res = await axios.get('/compliance/sales-reviews', {
           params: { org_id: user.organization_id, status: 'approved' },
-        })
+        }) as Record<string, unknown>[]
         setReviewedList(res || [])
       } else if (activeTab === 'stats') {
         const res = await axios.get('/compliance/sales-reviews/stats', {
@@ -150,7 +150,6 @@ export default function SalesComplianceReview() {
         setStats(res || { total: 0, pending: 0, approved: 0, rejected: 0, pass: 0, warning: 0, violation: 0, risk_distribution: { low: 0, medium: 0, high: 0 } })
       }
     } catch (error) {
-      console.error('Fetch sales reviews error:', error)
       message.error('获取审查数据失败')
     } finally {
       setLoading(false)
@@ -296,28 +295,28 @@ export default function SalesComplianceReview() {
       value: stats.total,
       icon: <FileTextOutlined />,
       iconBg: 'rgba(0, 113, 227, 0.1)',
-      iconColor: '#0071e3',
+      iconColor: theme.primary,
     },
     {
       title: '待审查',
       value: stats.pending,
       icon: <WarningOutlined />,
       iconBg: 'rgba(237, 108, 2, 0.1)',
-      iconColor: '#ed6c02',
+      iconColor: theme.warning,
     },
     {
       title: '已通过',
       value: stats.approved,
       icon: <CheckCircleOutlined />,
       iconBg: 'rgba(46, 125, 50, 0.1)',
-      iconColor: '#2e7d32',
+      iconColor: theme.success,
     },
     {
       title: '已驳回',
       value: stats.rejected,
       icon: <CloseCircleOutlined />,
       iconBg: 'rgba(186, 26, 26, 0.1)',
-      iconColor: '#ba1a1a',
+      iconColor: theme.error,
     },
   ]
 
@@ -352,7 +351,7 @@ export default function SalesComplianceReview() {
                         padding: '0 6px',
                         lineHeight: '20px',
                         textAlign: 'center',
-                        background: '#ba1a1a',
+                        background: theme.error,
                         color: '#fff',
                         borderRadius: 10,
                         fontSize: 11,
@@ -365,7 +364,7 @@ export default function SalesComplianceReview() {
                 </span>
               ),
               children: (
-                <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+                <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
                   <Table
                     dataSource={pendingList}
                     columns={columns}
@@ -386,7 +385,7 @@ export default function SalesComplianceReview() {
                 </span>
               ),
               children: (
-                <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+                <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
                   <Table
                     dataSource={reviewedList}
                     columns={columns}
@@ -414,10 +413,10 @@ export default function SalesComplianceReview() {
                         <Card style={{ height: '100%', borderRadius: 12 }} styles={{ body: { padding: 20 } }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 12, color: '#414753', marginBottom: 12, letterSpacing: '0.02em', fontWeight: 500 }}>
+                              <div style={{ fontSize: 12, color: theme.textSecondary, marginBottom: 12, letterSpacing: '0.02em', fontWeight: 500 }}>
                                 {card.title}
                               </div>
-                              <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 30, fontWeight: 700, color: '#1a1c1d', lineHeight: 1.2, letterSpacing: '0.01em' }}>
+                              <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 30, fontWeight: 700, color: theme.textBase, lineHeight: 1.2, letterSpacing: '0.01em' }}>
                                 {card.value}
                               </div>
                             </div>
@@ -451,34 +450,34 @@ export default function SalesComplianceReview() {
                       >
                         <div style={{ marginBottom: 16 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <span style={{ fontSize: 13, color: '#414753' }}>整体通过率</span>
-                            <span style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 700, color: '#0059b5', fontSize: 15 }}>{passRate}%</span>
+                            <span style={{ fontSize: 13, color: theme.textSecondary }}>整体通过率</span>
+                            <span style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 700, color: theme.primaryDark, fontSize: 15 }}>{passRate}%</span>
                           </div>
                           <Progress
                             percent={passRate}
-                            strokeColor={{ from: '#0071e3', to: '#c9a961' }}
+                            strokeColor={{ from: theme.primary, to: theme.brandGold }}
                             size="small"
                             strokeWidth={6}
                           />
                         </div>
                         <div style={{ display: 'flex', gap: 24, marginTop: 16 }}>
                           <div style={{ textAlign: 'center', flex: 1 }}>
-                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 24, fontWeight: 700, color: '#2e7d32' }}>
+                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 24, fontWeight: 700, color: theme.success }}>
                               {stats.approved}
                             </div>
-                            <div style={{ fontSize: 12, color: '#717785' }}>已通过</div>
+                            <div style={{ fontSize: 12, color: theme.textTertiary }}>已通过</div>
                           </div>
                           <div style={{ textAlign: 'center', flex: 1 }}>
-                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 24, fontWeight: 700, color: '#ba1a1a' }}>
+                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 24, fontWeight: 700, color: theme.error }}>
                               {stats.rejected}
                             </div>
-                            <div style={{ fontSize: 12, color: '#717785' }}>已驳回</div>
+                            <div style={{ fontSize: 12, color: theme.textTertiary }}>已驳回</div>
                           </div>
                           <div style={{ textAlign: 'center', flex: 1 }}>
-                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 24, fontWeight: 700, color: '#ed6c02' }}>
+                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 24, fontWeight: 700, color: theme.warning }}>
                               {stats.pending}
                             </div>
-                            <div style={{ fontSize: 12, color: '#717785' }}>待审查</div>
+                            <div style={{ fontSize: 12, color: theme.textTertiary }}>待审查</div>
                           </div>
                         </div>
                       </Card>
@@ -492,59 +491,59 @@ export default function SalesComplianceReview() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                           <div
                             style={{
-                              background: '#f9f9fb',
+                              background: theme.bgLayout,
                               padding: 16,
                               borderRadius: 10,
-                              border: '1px solid #e2e2e4',
+                              border: `1px solid ${theme.borderSecondary}`,
                               textAlign: 'center',
                             }}
                           >
-                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 26, fontWeight: 700, color: '#2e7d32', lineHeight: 1.2 }}>
+                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 26, fontWeight: 700, color: theme.success, lineHeight: 1.2 }}>
                               {stats.risk_distribution?.low || 0}
                             </div>
-                            <div style={{ fontSize: 12, color: '#414753', marginTop: 4 }}>低风险</div>
+                            <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 4 }}>低风险</div>
                           </div>
                           <div
                             style={{
-                              background: '#f9f9fb',
+                              background: theme.bgLayout,
                               padding: 16,
                               borderRadius: 10,
-                              border: '1px solid #e2e2e4',
+                              border: `1px solid ${theme.borderSecondary}`,
                               textAlign: 'center',
                             }}
                           >
-                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 26, fontWeight: 700, color: '#ed6c02', lineHeight: 1.2 }}>
+                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 26, fontWeight: 700, color: theme.warning, lineHeight: 1.2 }}>
                               {stats.risk_distribution?.medium || 0}
                             </div>
-                            <div style={{ fontSize: 12, color: '#414753', marginTop: 4 }}>中风险</div>
+                            <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 4 }}>中风险</div>
                           </div>
                           <div
                             style={{
-                              background: '#f9f9fb',
+                              background: theme.bgLayout,
                               padding: 16,
                               borderRadius: 10,
-                              border: '1px solid #e2e2e4',
+                              border: `1px solid ${theme.borderSecondary}`,
                               textAlign: 'center',
                             }}
                           >
-                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 26, fontWeight: 700, color: '#ba1a1a', lineHeight: 1.2 }}>
+                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 26, fontWeight: 700, color: theme.error, lineHeight: 1.2 }}>
                               {stats.risk_distribution?.high || 0}
                             </div>
-                            <div style={{ fontSize: 12, color: '#414753', marginTop: 4 }}>高风险</div>
+                            <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 4 }}>高风险</div>
                           </div>
                           <div
                             style={{
-                              background: '#f9f9fb',
+                              background: theme.bgLayout,
                               padding: 16,
                               borderRadius: 10,
-                              border: '1px solid #e2e2e4',
+                              border: `1px solid ${theme.borderSecondary}`,
                               textAlign: 'center',
                             }}
                           >
-                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 26, fontWeight: 700, color: '#0071e3', lineHeight: 1.2 }}>
+                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 26, fontWeight: 700, color: theme.primary, lineHeight: 1.2 }}>
                               {stats.total}
                             </div>
-                            <div style={{ fontSize: 12, color: '#414753', marginTop: 4 }}>总计</div>
+                            <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 4 }}>总计</div>
                           </div>
                         </div>
                       </Card>
@@ -561,45 +560,45 @@ export default function SalesComplianceReview() {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
                           <div
                             style={{
-                              background: '#f9f9fb',
+                              background: theme.bgLayout,
                               padding: 20,
                               borderRadius: 12,
-                              border: '1px solid #e2e2e4',
+                              border: `1px solid ${theme.borderSecondary}`,
                               textAlign: 'center',
                             }}
                           >
-                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 30, fontWeight: 700, color: '#2e7d32', lineHeight: 1.2 }}>
+                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 30, fontWeight: 700, color: theme.success, lineHeight: 1.2 }}>
                               {stats.pass}
                             </div>
-                            <div style={{ fontSize: 13, color: '#414753', marginTop: 4 }}>通过</div>
+                            <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 4 }}>通过</div>
                           </div>
                           <div
                             style={{
-                              background: '#f9f9fb',
+                              background: theme.bgLayout,
                               padding: 20,
                               borderRadius: 12,
-                              border: '1px solid #e2e2e4',
+                              border: `1px solid ${theme.borderSecondary}`,
                               textAlign: 'center',
                             }}
                           >
-                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 30, fontWeight: 700, color: '#ed6c02', lineHeight: 1.2 }}>
+                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 30, fontWeight: 700, color: theme.warning, lineHeight: 1.2 }}>
                               {stats.warning}
                             </div>
-                            <div style={{ fontSize: 13, color: '#414753', marginTop: 4 }}>警告</div>
+                            <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 4 }}>警告</div>
                           </div>
                           <div
                             style={{
-                              background: '#f9f9fb',
+                              background: theme.bgLayout,
                               padding: 20,
                               borderRadius: 12,
-                              border: '1px solid #e2e2e4',
+                              border: `1px solid ${theme.borderSecondary}`,
                               textAlign: 'center',
                             }}
                           >
-                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 30, fontWeight: 700, color: '#ba1a1a', lineHeight: 1.2 }}>
+                            <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 30, fontWeight: 700, color: theme.error, lineHeight: 1.2 }}>
                               {stats.violation}
                             </div>
-                            <div style={{ fontSize: 13, color: '#414753', marginTop: 4 }}>违规</div>
+                            <div style={{ fontSize: 13, color: theme.textSecondary, marginTop: 4 }}>违规</div>
                           </div>
                         </div>
                       </Card>
@@ -627,19 +626,19 @@ export default function SalesComplianceReview() {
             <Card size="small" style={{ marginBottom: 16, borderRadius: 8 }}>
               <Space direction="vertical" size={8} style={{ width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#717785', fontSize: 13 }}>客户线索：</span>
+                  <span style={{ color: theme.textTertiary, fontSize: 13 }}>客户线索：</span>
                   <span style={{ fontWeight: 500 }}>{currentRecord.lead_id}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#717785', fontSize: 13 }}>销售：</span>
+                  <span style={{ color: theme.textTertiary, fontSize: 13 }}>销售：</span>
                   <span>{currentRecord.sales_id}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#717785', fontSize: 13 }}>渠道：</span>
+                  <span style={{ color: theme.textTertiary, fontSize: 13 }}>渠道：</span>
                   <StatusPill text={channelLabelMap[currentRecord.channel] || currentRecord.channel} kind="blue" />
                 </div>
                 <div>
-                  <span style={{ color: '#717785', fontSize: 13 }}>AI检测结果：</span>
+                  <span style={{ color: theme.textTertiary, fontSize: 13 }}>AI检测结果：</span>
                   <StatusPill
                     text={checkResultLabelMap[currentRecord.check_result] || currentRecord.check_result}
                     kind={checkResultKindMap[currentRecord.check_result] || 'neutral'}
@@ -647,19 +646,19 @@ export default function SalesComplianceReview() {
                 </div>
                 {currentRecord.violation_details && (
                   <div>
-                    <span style={{ color: '#717785', fontSize: 13 }}>违规详情：</span>
-                    <span style={{ color: '#ba1a1a' }}>{currentRecord.violation_details}</span>
+                    <span style={{ color: theme.textTertiary, fontSize: 13 }}>违规详情：</span>
+                    <span style={{ color: theme.error }}>{currentRecord.violation_details}</span>
                   </div>
                 )}
                 {currentRecord.content && (
                   <div>
-                    <span style={{ color: '#717785', fontSize: 13 }}>内容摘要：</span>
+                    <span style={{ color: theme.textTertiary, fontSize: 13 }}>内容摘要：</span>
                     <span>{currentRecord.content.length > 100 ? currentRecord.content.substring(0, 100) + '...' : currentRecord.content}</span>
                   </div>
                 )}
                 {currentRecord.review_note && (
                   <div>
-                    <span style={{ color: '#717785', fontSize: 13 }}>之前审查意见：</span>
+                    <span style={{ color: theme.textTertiary, fontSize: 13 }}>之前审查意见：</span>
                     <span>{currentRecord.review_note}</span>
                   </div>
                 )}
@@ -674,10 +673,10 @@ export default function SalesComplianceReview() {
               >
                 <Radio.Group>
                   <Radio value="approved">
-                    <span style={{ color: '#2e7d32' }}>通过</span>
+                    <span style={{ color: theme.success }}>通过</span>
                   </Radio>
                   <Radio value="rejected">
-                    <span style={{ color: '#ba1a1a' }}>驳回</span>
+                    <span style={{ color: theme.error }}>驳回</span>
                   </Radio>
                 </Radio.Group>
               </Form.Item>

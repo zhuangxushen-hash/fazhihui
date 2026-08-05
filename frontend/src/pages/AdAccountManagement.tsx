@@ -38,9 +38,9 @@ import {
   getAdAccountWarnings,
   manualCheckAdAccountWarnings,
   markAdAccountWarningResolved,
-} from '../api/adAccount'
+} from '../api/ad-account'
 import { formatDateTime } from '../utils/format'
-
+import { theme } from '../constants/theme'
 // 平台选项
 const platformOptions: { value: AdPlatform; label: string; color: string }[] = [
   { value: 'douyin', label: '抖音', color: '#000000' },
@@ -116,7 +116,7 @@ export default function AdAccountManagement() {
       const res = await getAdAccounts(params)
       setData(res || [])
     } catch (error) {
-      console.error('Fetch ad accounts error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -127,7 +127,7 @@ export default function AdAccountManagement() {
       const res = await getAdAccountGroups(user.organization_id)
       setGroups(res || [])
     } catch (error) {
-      console.error('Fetch groups error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -137,7 +137,7 @@ export default function AdAccountManagement() {
       const res = await getAdAccountWarnings({ org_id: user.organization_id })
       setWarnings(res || [])
     } catch (error) {
-      console.error('Fetch warnings error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -191,7 +191,6 @@ export default function AdAccountManagement() {
       fetchAccounts()
     } catch (error) {
       message.error('删除失败')
-      console.error('Delete ad account error:', error)
     }
   }
 
@@ -222,9 +221,8 @@ export default function AdAccountManagement() {
       setModalVisible(false)
       fetchAccounts()
       fetchGroups()
-    } catch (error: any) {
+    } catch (error: unknown) {
       message.error(editingAccount ? '更新失败' : '创建失败')
-      console.error('Submit ad account error:', error)
     }
   }
 
@@ -247,7 +245,6 @@ export default function AdAccountManagement() {
       fetchGroups()
     } catch (error) {
       message.error('分组创建失败')
-      console.error('Create group error:', error)
     }
   }
 
@@ -258,7 +255,6 @@ export default function AdAccountManagement() {
       fetchWarnings()
     } catch (error) {
       message.error('手动检查失败')
-      console.error('Manual check error:', error)
     }
   }
 
@@ -269,7 +265,6 @@ export default function AdAccountManagement() {
       fetchWarnings()
     } catch (error) {
       message.error('操作失败')
-      console.error('Resolve warning error:', error)
     }
   }
 
@@ -304,17 +299,7 @@ export default function AdAccountManagement() {
       render: (val: string) => {
         const p = platformMap[val] || { label: val, color: '#86868b' }
         return (
-          <Tag
-            style={{
-              background: `${p.color}10`,
-              color: p.color,
-              borderRadius: 12,
-              padding: '2px 10px',
-              fontSize: 11,
-              fontWeight: 500,
-              border: 'none',
-            }}
-          >
+          <Tag className="stitch-tag">
             {p.label}
           </Tag>
         )
@@ -334,7 +319,7 @@ export default function AdAccountManagement() {
       width: 120,
       render: (val: string) =>
         val ? (
-          <Tag style={{ background: '#f5f5f7', color: '#6e6e73', borderRadius: 10, border: 'none' }}>{val}</Tag>
+          <Tag className="stitch-tag">{val}</Tag>
         ) : (
           <span style={{ color: '#c7c7cc' }}>未分组</span>
         ),
@@ -348,7 +333,7 @@ export default function AdAccountManagement() {
         const balance = Number(val)
         const low = isLowBalance(record)
         return (
-          <span style={{ fontWeight: 600, color: low ? '#ff3b30' : '#0071e3' }}>
+          <span style={{ fontWeight: 600, color: low ? '#ff3b30' : theme.primary }}>
             ¥{balance.toFixed(2)}
           </span>
         )
@@ -370,18 +355,14 @@ export default function AdAccountManagement() {
       width: 100,
       render: (val: string) => {
         const s = statusMap[val] || { label: val, color: '#86868b' }
+        // 根据状态映射 stitch-tag 类名
+        const tagClass =
+          val === 'active' ? 'stitch-tag stitch-tag-info' :
+          val === 'disabled' ? 'stitch-tag stitch-tag-error' :
+          val === 'unauthorized' ? 'stitch-tag stitch-tag-warning' :
+          'stitch-tag'
         return (
-          <Tag
-            style={{
-              background: `${s.color}10`,
-              color: s.color,
-              borderRadius: 12,
-              padding: '2px 10px',
-              fontSize: 11,
-              fontWeight: 500,
-              border: 'none',
-            }}
-          >
+          <Tag className={tagClass}>
             {s.label}
           </Tag>
         )
@@ -443,17 +424,7 @@ export default function AdAccountManagement() {
       render: (val: string) => {
         const p = platformMap[val] || { label: val, color: '#86868b' }
         return (
-          <Tag
-            style={{
-              background: `${p.color}10`,
-              color: p.color,
-              borderRadius: 12,
-              padding: '2px 10px',
-              fontSize: 11,
-              fontWeight: 500,
-              border: 'none',
-            }}
-          >
+          <Tag className="stitch-tag">
             {p.label}
           </Tag>
         )
@@ -484,18 +455,14 @@ export default function AdAccountManagement() {
       width: 110,
       render: (val: string) => {
         const s = warningStatusMap[val] || { label: val, color: '#86868b' }
+        // 根据预警状态映射 stitch-tag 类名
+        const tagClass =
+          val === 'pending' ? 'stitch-tag stitch-tag-warning' :
+          val === 'notified' ? 'stitch-tag stitch-tag-warning' :
+          val === 'resolved' ? 'stitch-tag stitch-tag-success' :
+          'stitch-tag'
         return (
-          <Tag
-            style={{
-              background: `${s.color}10`,
-              color: s.color,
-              borderRadius: 12,
-              padding: '2px 10px',
-              fontSize: 11,
-              fontWeight: 500,
-              border: 'none',
-            }}
-          >
+          <Tag className={tagClass}>
             {s.label}
           </Tag>
         )
@@ -539,7 +506,7 @@ export default function AdAccountManagement() {
           </p>
         </div>
         {canEdit && activeTab === 'accounts' && (
-          <Space>
+          <Space className="stitch-btn-group">
             <Button
               onClick={() => {
                 if (!selectedRowKeys.length) {
@@ -563,7 +530,7 @@ export default function AdAccountManagement() {
               style={{
                 borderRadius: 10,
                 padding: '8px 20px',
-                background: '#0071e3',
+                background: theme.primary,
                 border: 'none',
                 color: '#fff',
                 boxShadow: '0 2px 8px rgba(0, 113, 227, 0.25)',
@@ -581,7 +548,7 @@ export default function AdAccountManagement() {
             style={{
               borderRadius: 10,
               padding: '8px 20px',
-              background: '#0071e3',
+              background: theme.primary,
               border: 'none',
               color: '#fff',
               boxShadow: '0 2px 8px rgba(0, 113, 227, 0.25)',
@@ -605,6 +572,7 @@ export default function AdAccountManagement() {
       {activeTab === 'accounts' && (
         <>
           <div
+            className="stitch-filter-bar"
             style={{
               background: '#fff',
               borderRadius: 16,
@@ -654,7 +622,7 @@ export default function AdAccountManagement() {
                 style={{
                   borderRadius: 10,
                   padding: '8px 20px',
-                  background: '#0071e3',
+                  background: theme.primary,
                   border: 'none',
                   color: '#fff',
                 }}
@@ -671,6 +639,7 @@ export default function AdAccountManagement() {
           </div>
 
           <div
+            className="stitch-table"
             style={{
               background: '#fff',
               borderRadius: 16,
@@ -696,6 +665,7 @@ export default function AdAccountManagement() {
 
       {activeTab === 'warnings' && (
         <div
+          className="stitch-table"
           style={{
             background: '#fff',
             borderRadius: 16,
@@ -785,7 +755,7 @@ export default function AdAccountManagement() {
                 style={{
                   borderRadius: 10,
                   padding: '10px 32px',
-                  background: '#0071e3',
+                  background: theme.primary,
                   border: 'none',
                   color: '#fff',
                 }}
@@ -821,7 +791,7 @@ export default function AdAccountManagement() {
                 style={{
                   borderRadius: 10,
                   padding: '10px 32px',
-                  background: '#0071e3',
+                  background: theme.primary,
                   border: 'none',
                   color: '#fff',
                 }}

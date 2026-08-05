@@ -3,7 +3,7 @@ import { Card, Avatar, Modal, message } from 'antd'
 import { UserOutlined, PhoneOutlined, MailOutlined, LogoutOutlined, FileTextOutlined, CreditCardOutlined, BellOutlined, StarOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../../components/BottomNav'
-
+import { theme } from '../../constants/theme'
 export default function ClientProfile() {
   const navigate = useNavigate()
   const user = JSON.parse(localStorage.getItem('user') || '{}')
@@ -17,7 +17,7 @@ export default function ClientProfile() {
   }
 
   const menuItems = [
-    { label: '我的案件', icon: FileTextOutlined, color: '#0071e3', bg: 'rgba(0, 113, 227, 0.1)', path: '/client/cases' },
+    { label: '我的案件', icon: FileTextOutlined, color: theme.primary, bg: 'rgba(0, 113, 227, 0.1)', path: '/client/cases' },
     { label: '签约付款', icon: CreditCardOutlined, color: '#715818', bg: 'rgba(201, 169, 97, 0.14)', path: '/client/payment' },
     { label: '投诉反馈', icon: BellOutlined, color: '#ba1a1a', bg: 'rgba(186, 26, 26, 0.1)', path: '/client/complaint' },
     { label: '服务评价', icon: StarOutlined, color: '#2e7d32', bg: 'rgba(46, 125, 50, 0.1)', path: '/client/service-rating' },
@@ -52,8 +52,8 @@ export default function ClientProfile() {
         <Card
           style={{
             borderRadius: 16,
-            border: '1px solid #1a2332',
-            background: 'linear-gradient(135deg, #1a2332 0%, #131c2a 100%)',
+            border: `1px solid ${theme.brandDark}`,
+            background: `linear-gradient(135deg, ${theme.brandDark} 0%, #131c2a 100%)`,
             boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)',
             marginBottom: 16,
           }}
@@ -66,7 +66,7 @@ export default function ClientProfile() {
                 width: 64,
                 height: 64,
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #c9a961 0%, #8c702e 100%)',
+                background: `linear-gradient(135deg, ${theme.brandGold} 0%, #8c702e 100%)`,
                 color: '#ffffff',
                 fontSize: 28,
               }}
@@ -103,7 +103,7 @@ export default function ClientProfile() {
               }}
             >
               <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                <item.icon style={{ fontSize: 18, color: '#0071e3' }} />
+                <item.icon style={{ fontSize: 18, color: theme.primary }} />
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, color: '#717785' }}>{item.label}</div>

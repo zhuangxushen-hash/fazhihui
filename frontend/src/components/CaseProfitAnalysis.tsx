@@ -61,9 +61,9 @@ export default function CaseProfitAnalysis({ caseId }: CaseProfitAnalysisProps) 
       const [costsRes, profitRes] = await Promise.all([
         axios.get(`/finance/case-cost/${caseId}`),
         axios.get(`/finance/profit-analysis/${caseId}`),
-      ])
-      setCosts(costsRes.data || [])
-      setProfitAnalysis(profitRes.data)
+      ]) as [Record<string, unknown>, Record<string, unknown>]
+      setCosts((costsRes.data || []) as CostRecord[])
+      setProfitAnalysis(profitRes.data as ProfitAnalysis | null)
     } catch (error) {
       console.error('Fetch data error:', error)
     } finally {

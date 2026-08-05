@@ -27,7 +27,7 @@ import {
   type ConversionEvent,
 } from '../api/marketing'
 import { formatDateTime } from '../utils/format'
-
+import { theme } from '../constants/theme'
 const { RangePicker } = DatePicker
 
 export default function ConversionReport() {
@@ -67,7 +67,6 @@ export default function ConversionReport() {
       const res = await getRoiStats(buildParams())
       setRoiData(res || [])
     } catch (err) {
-      console.error('Fetch ROI stats error:', err)
       message.error('ROI 数据加载失败')
     } finally {
       setLoading(false)
@@ -90,7 +89,7 @@ export default function ConversionReport() {
       const res = await getConversionEvents(params)
       setEvents(res || [])
     } catch (err) {
-      console.error('Fetch events error:', err)
+      // 错误已由拦截器统一处理
     } finally {
       setEventsLoading(false)
     }
@@ -165,7 +164,7 @@ export default function ConversionReport() {
       dataIndex: 'lead_count',
       key: 'lead_count',
       sorter: (a: RoiStatsRow, b: RoiStatsRow) => a.lead_count - b.lead_count,
-      render: (v: number) => <span style={{ color: '#0071e3', fontWeight: 600 }}>{v}</span>,
+      render: (v: number) => <span style={{ color: theme.primary, fontWeight: 600 }}>{v}</span>,
     },
     {
       title: '线索成本',
@@ -244,7 +243,7 @@ export default function ConversionReport() {
       width: 110,
       render: (v: string) => {
         const colorMap: Record<string, string> = {
-          lead: '#0071e3',
+          lead: theme.primary,
           wechat_add: '#5ac8fa',
           invite: '#ff9500',
           sign: '#34c759',
@@ -322,6 +321,7 @@ export default function ConversionReport() {
 
       {/* 筛选区 */}
       <Card
+        className="stitch-filter-bar"
         style={{
           borderRadius: 16,
           marginBottom: 24,
@@ -367,7 +367,7 @@ export default function ConversionReport() {
           <Button
             icon={<SearchOutlined />}
             onClick={handleSearch}
-            style={{ borderRadius: 10, background: '#0071e3', border: 'none', color: '#fff' }}
+            style={{ borderRadius: 10, background: theme.primary, border: 'none', color: '#fff' }}
           >
             查询
           </Button>
@@ -382,7 +382,8 @@ export default function ConversionReport() {
 
       {/* ROI 数据表 */}
       <Card
-        title={<span style={{ fontWeight: 700, color: '#1d1d1f' }}>多维度 ROI 统计</span>}
+        className="stitch-table"
+        title={<span className="stitch-chart-title" style={{ fontWeight: 700, color: '#1d1d1f' }}>多维度 ROI 统计</span>}
         style={{
           borderRadius: 16,
           marginBottom: 24,
@@ -403,7 +404,8 @@ export default function ConversionReport() {
 
       {/* 转化事件明细 */}
       <Card
-        title={<span style={{ fontWeight: 700, color: '#1d1d1f' }}>转化事件明细</span>}
+        className="stitch-table"
+        title={<span className="stitch-chart-title" style={{ fontWeight: 700, color: '#1d1d1f' }}>转化事件明细</span>}
         style={{
           borderRadius: 16,
           boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)',

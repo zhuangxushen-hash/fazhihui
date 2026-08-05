@@ -24,10 +24,10 @@ export default function DeploymentConfig() {
   const fetchConfigs = async () => {
     setLoading(true)
     try {
-      const res = await axios.get('/system/deployment-configs', { params: { org_id: user.organization_id } })
-      setConfigs(res.data || [])
+      const res = await axios.get('/system/deployment-configs', { params: { org_id: user.organization_id } }) as Record<string, unknown>
+      setConfigs((res.data || []) as Record<string, unknown>[])
     } catch (error) {
-      console.error('Fetch deployment configs error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -60,7 +60,6 @@ export default function DeploymentConfig() {
       fetchConfigs()
     } catch (error) {
       message.error(isEdit ? '配置更新失败' : '配置创建失败')
-      console.error('Submit config error:', error)
     }
   }
 
@@ -71,7 +70,6 @@ export default function DeploymentConfig() {
       fetchConfigs()
     } catch (error) {
       message.error('配置删除失败')
-      console.error('Delete config error:', error)
     }
   }
 
@@ -81,12 +79,12 @@ export default function DeploymentConfig() {
 
   const columns = [
     { title: '配置名称', dataIndex: 'config_name', key: 'config_name' },
-    { title: '服务器类型', dataIndex: 'server_type', key: 'server_type', render: (v: string) => <Tag color={v === 'cluster' ? 'blue' : 'green'}>{v === 'cluster' ? '集群' : '单机'}</Tag> },
+    { title: '服务器类型', dataIndex: 'server_type', key: 'server_type', render: (v: string) => <Tag className={v === 'cluster' ? 'stitch-tag stitch-tag-primary' : 'stitch-tag stitch-tag-success'}>{v === 'cluster' ? '集群' : '单机'}</Tag> },
     { title: '服务器地址', dataIndex: 'server_host', key: 'server_host', render: (v: string, r: any) => `${v || '-'}:${r.server_port || '-'}` },
     { title: '数据库类型', dataIndex: 'db_type', key: 'db_type', render: (v: string) => v?.toUpperCase() },
     { title: '数据库地址', dataIndex: 'db_host', key: 'db_host' },
     { title: '缓存类型', dataIndex: 'cache_type', key: 'cache_type', render: (v: string) => v?.toUpperCase() },
-    { title: '状态', dataIndex: 'config_status', key: 'config_status', render: (v: string) => <Tag color={v === 'active' ? 'green' : 'default'}>{v === 'active' ? '启用' : '停用'}</Tag> },
+    { title: '状态', dataIndex: 'config_status', key: 'config_status', render: (v: string) => <Tag className={v === 'active' ? 'stitch-tag stitch-tag-success' : 'stitch-tag stitch-tag-info'}>{v === 'active' ? '启用' : '停用'}</Tag> },
     { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (v: string) => formatDateTime(v) },
     { title: '操作', key: 'action', render: (_: any, record: any) => (
       <Space>
@@ -180,7 +178,9 @@ export default function DeploymentConfig() {
           </TabPane>
 
           <TabPane tab={<span><UnorderedListOutlined /> 配置列表</span>} key="list">
-            <Table columns={columns} dataSource={configs} loading={loading} rowKey="id" pagination={{ pageSize: 10 }} />
+            <div className="stitch-table">
+              <Table columns={columns} dataSource={configs} loading={loading} rowKey="id" pagination={{ pageSize: 10 }} />
+            </div>
           </TabPane>
         </Tabs>
       </Card>

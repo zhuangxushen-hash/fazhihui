@@ -3,6 +3,7 @@ import { Table, Tag, Button, Space, message, Tabs, Statistic, Card, Row, Col, Po
 import { ClockCircleOutlined, LogoutOutlined, DeleteOutlined } from '@ant-design/icons'
 import { getAttendances, clockIn, clockOut, deleteAttendance } from '../api/hr'
 import { formatDateTime, formatDate } from '../utils/format'
+import { theme } from '../constants/theme'
 
 // 考勤状态选项
 const attendanceStatusOptions = [
@@ -13,13 +14,13 @@ const attendanceStatusOptions = [
   { value: 'leave', label: '请假' },
 ]
 
-// 状态颜色映射
+// 状态样式映射（对齐 Stitch 设计规范，返回 className）
 const statusColorMap: Record<string, string> = {
-  normal: 'green',
-  late: 'orange',
-  early_leave: 'gold',
-  absent: 'red',
-  leave: 'blue',
+  normal: 'stitch-tag stitch-tag-success',
+  late: 'stitch-tag stitch-tag-warning',
+  early_leave: 'stitch-tag stitch-tag-gold',
+  absent: 'stitch-tag stitch-tag-error',
+  leave: 'stitch-tag stitch-tag-primary',
 }
 
 export default function AttendanceManagement() {
@@ -58,7 +59,7 @@ export default function AttendanceManagement() {
       const todayRec = (res || []).find((r: any) => r.attendance_date === today && r.user_id === user.id)
       setTodayRecord(todayRec || null)
     } catch (error) {
-      console.error('Fetch attendances error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -79,9 +80,8 @@ export default function AttendanceManagement() {
       await clockIn()
       message.success('上班打卡成功')
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '打卡失败')
-      console.error('Clock in error:', error)
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '打卡失败')
     } finally {
       setClockLoading(false)
     }
@@ -93,9 +93,8 @@ export default function AttendanceManagement() {
       await clockOut()
       message.success('下班打卡成功')
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '打卡失败')
-      console.error('Clock out error:', error)
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '打卡失败')
     } finally {
       setClockLoading(false)
     }
@@ -108,7 +107,6 @@ export default function AttendanceManagement() {
       fetchData()
     } catch (error) {
       message.error('删除失败')
-      console.error('Delete attendance error:', error)
     }
   }
 
@@ -120,7 +118,7 @@ export default function AttendanceManagement() {
     { title: '工作时长', dataIndex: 'work_hours', key: 'work_hours', width: 100, render: (val: number) => val ? `${val}小时` : '-' },
     { title: '状态', dataIndex: 'status', key: 'status', width: 100, render: (val: string) => {
       const item = attendanceStatusOptions.find(o => o.value === val)
-      return <Tag color={statusColorMap[val] || 'default'}>{item?.label || val}</Tag>
+      return <Tag className={statusColorMap[val] || 'stitch-tag stitch-tag-info'}>{item?.label || val}</Tag>
     }},
     { title: '备注', dataIndex: 'remarks', key: 'remarks', ellipsis: true, render: (val: string) => val || '-' },
     { title: '操作', key: 'action', width: 100, render: (_: any, record: any) => (
@@ -171,13 +169,13 @@ export default function AttendanceManagement() {
           <Card><Statistic title="总记录数" value={stats.total} /></Card>
         </Col>
         <Col span={6}>
-          <Card><Statistic title="正常" value={stats.normal} valueStyle={{ color: '#52c41a' }} /></Card>
+          <Card><Statistic title="正常" value={stats.normal} valueStyle={{ color: theme.success }} /></Card>
         </Col>
         <Col span={6}>
-          <Card><Statistic title="迟到" value={stats.late} valueStyle={{ color: '#faad14' }} /></Card>
+          <Card><Statistic title="迟到" value={stats.late} valueStyle={{ color: theme.warning }} /></Card>
         </Col>
         <Col span={6}>
-          <Card><Statistic title="早退" value={stats.earlyLeave} valueStyle={{ color: '#fa8c16' }} /></Card>
+          <Card><Statistic title="早退" value={stats.earlyLeave} valueStyle={{ color: theme.warning }} /></Card>
         </Col>
       </Row>
 
@@ -187,7 +185,7 @@ export default function AttendanceManagement() {
       ]} />
 
       {/* 筛选条件区域 */}
-      <Card style={{ marginBottom: 16 }}>
+      <Card className="stitch-filter-bar" style={{ marginBottom: 16 }}>
         <Space wrap>
           <Select
             placeholder="考勤状态"
@@ -211,12 +209,16 @@ export default function AttendanceManagement() {
             value={searchParams.end_date}
             onChange={(e) => setSearchParams({ ...searchParams, end_date: e.target.value })}
           />
-          <Button type="primary" onClick={handleSearch}>搜索</Button>
-          <Button onClick={handleReset}>重置</Button>
+          <div className="stitch-btn-group">
+            <Button type="primary" onClick={handleSearch}>搜索</Button>
+            <Button onClick={handleReset}>重置</Button>
+          </div>
         </Space>
       </Card>
 
-      <Table dataSource={data} columns={columns} loading={loading} rowKey="id" scroll={{ x: 1200 }} />
+      <div className="stitch-table">
+        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" scroll={{ x: 1200 }} />
+      </div>
     </div>
   )
 }

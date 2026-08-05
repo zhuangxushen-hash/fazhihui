@@ -27,6 +27,7 @@ import {
 } from '../api/seal'
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
+import { theme } from '../constants/theme'
 
 // 印章类型中文映射
 const sealTypeLabelMap: Record<string, string> = {
@@ -42,6 +43,14 @@ const sealTypeColorMap: Record<string, string> = {
   financial: 'gold',
   contract: 'blue',
   personal: 'purple',
+}
+
+// 印章类型 Stitch 变体映射
+const sealTypeStitchMap: Record<string, string> = {
+  official: 'stitch-tag stitch-tag-error',
+  financial: 'stitch-tag stitch-tag-gold',
+  contract: 'stitch-tag stitch-tag-info',
+  personal: 'stitch-tag stitch-tag-primary',
 }
 
 // 印章状态中文映射
@@ -68,6 +77,15 @@ const applicationStatusColorMap: Record<string, string> = {
   voided: 'warning',
 }
 
+// 用印申请状态 Stitch 变体映射
+const applicationStatusStitchMap: Record<string, string> = {
+  pending: 'stitch-tag stitch-tag-warning',
+  approved: 'stitch-tag stitch-tag-success',
+  rejected: 'stitch-tag stitch-tag-error',
+  used: 'stitch-tag stitch-tag-info',
+  voided: 'stitch-tag stitch-tag-warning',
+}
+
 // 盖章类型中文映射：normal普通 / watermark水印 / paging骑缝
 const sealTypeApplyLabelMap: Record<string, string> = {
   normal: '普通',
@@ -83,6 +101,12 @@ const sealMediumLabelMap: Record<string, string> = {
 const sealMediumColorMap: Record<string, string> = {
   paper: 'orange',
   electronic: 'blue',
+}
+
+// 用印介质 Stitch 变体映射
+const sealMediumStitchMap: Record<string, string> = {
+  paper: 'stitch-tag stitch-tag-warning',
+  electronic: 'stitch-tag stitch-tag-info',
 }
 
 // 文书类别：所函/出庭函/律所证明/律师函/其他
@@ -106,21 +130,31 @@ const voidStatusColorMap: Record<string, string> = {
   recovered: 'success',
 }
 
+// 作废状态 Stitch 变体映射
+const voidStatusStitchMap: Record<string, string> = {
+  not_voided: 'stitch-tag stitch-tag-primary',
+  voided: 'stitch-tag stitch-tag-warning',
+  recovered: 'stitch-tag stitch-tag-success',
+}
+
+// 颜色映射保留作为参考，实际渲染已使用 Stitch 变体映射
+void [sealTypeColorMap, applicationStatusColorMap, sealMediumColorMap, voidStatusColorMap]
+
 export default function SealManagement() {
   const [activeTab, setActiveTab] = useState('pending')
 
   // 印章数据
-  const [seals, setSeals] = useState<any[]>([])
+  const [seals, setSeals] = useState<Record<string, unknown>[]>([])
   const [sealLoading, setSealLoading] = useState(false)
   const [sealModalVisible, setSealModalVisible] = useState(false)
-  const [editingSeal, setEditingSeal] = useState<any>(null)
+  const [editingSeal, setEditingSeal] = useState<Record<string, unknown> | null>(null)
   const [sealForm] = Form.useForm()
   const [sealSearchForm] = Form.useForm()
   const [sealKeyword, setSealKeyword] = useState('')
   const [sealStatusFilter, setSealStatusFilter] = useState<string | undefined>(undefined)
 
   // 用印申请数据（3个TAB共用，区分筛选条件）
-  const [applications, setApplications] = useState<any[]>([])
+  const [applications, setApplications] = useState<Record<string, unknown>[]>([])
   const [appTotal, setAppTotal] = useState(0)
   const [appLoading, setAppLoading] = useState(false)
   const [appModalVisible, setAppModalVisible] = useState(false)
@@ -130,14 +164,14 @@ export default function SealManagement() {
   const [appMediumFilter, setAppMediumFilter] = useState<string | undefined>(undefined)
   const [appDocCategoryFilter, setAppDocCategoryFilter] = useState<string | undefined>(undefined)
   const [approveModalVisible, setApproveModalVisible] = useState(false)
-  const [approveTarget, setApproveTarget] = useState<any>(null)
+  const [approveTarget, setApproveTarget] = useState<Record<string, unknown> | null>(null)
   const [approveAction, setApproveAction] = useState<'approve' | 'reject'>('approve')
   const [approveForm] = Form.useForm()
   const [selectedAppIds, setSelectedAppIds] = useState<string[]>([])
   const [appPage, setAppPage] = useState(1)
 
   // 盖章记录数据
-  const [records, setRecords] = useState<any[]>([])
+  const [records, setRecords] = useState<Record<string, unknown>[]>([])
   const [recordTotal, setRecordTotal] = useState(0)
   const [recordLoading, setRecordLoading] = useState(false)
   const [recordSearchForm] = Form.useForm()
@@ -146,7 +180,7 @@ export default function SealManagement() {
   const [recordPage, setRecordPage] = useState(1)
 
   // 作废收回数据
-  const [voidList, setVoidList] = useState<any[]>([])
+  const [voidList, setVoidList] = useState<Record<string, unknown>[]>([])
   const [voidTotal, setVoidTotal] = useState(0)
   const [voidLoading, setVoidLoading] = useState(false)
   const [voidSearchForm] = Form.useForm()
@@ -156,14 +190,14 @@ export default function SealManagement() {
 
   // 单个作废原因弹窗
   const [singleVoidVisible, setSingleVoidVisible] = useState(false)
-  const [singleVoidTarget, setSingleVoidTarget] = useState<any>(null)
+  const [singleVoidTarget, setSingleVoidTarget] = useState<Record<string, unknown> | null>(null)
   const [singleVoidForm] = Form.useForm()
 
   // 印章ID到印章对象的映射，用于用印申请和盖章记录展示印章名称
   const sealMap = useMemo(() => {
-    const map: Record<string, any> = {}
+    const map: Record<string, Record<string, unknown>> = {}
     seals.forEach((s) => {
-      map[s.id] = s
+      map[s.id as string] = s
     })
     return map
   }, [seals])
@@ -173,7 +207,7 @@ export default function SealManagement() {
     setSealLoading(true)
     try {
       const res = await getSeals()
-      setSeals(res || [])
+      setSeals((res as Record<string, unknown>[]) || [])
     } catch (error) {
       message.error('获取印章列表失败')
     } finally {
@@ -185,7 +219,7 @@ export default function SealManagement() {
   const fetchApplications = async (page = appPage) => {
     setAppLoading(true)
     try {
-      const params: any = {
+      const params: Record<string, unknown> = {
         page,
         limit: 20,
       }
@@ -201,10 +235,10 @@ export default function SealManagement() {
       if (appDocCategoryFilter) params.document_category = appDocCategoryFilter
       const s = appSearchForm.getFieldsValue().status
       if (s) params.status = s
-      const res: any = await getSealApplications(params)
-      const list = res?.data || res || []
+      const res = (await getSealApplications(params)) as Record<string, unknown>
+      const list = (res?.data || res || []) as Record<string, unknown>[]
       setApplications(list)
-      setAppTotal(res?.total ?? list.length)
+      setAppTotal((res?.total as number) ?? list.length)
     } catch (error) {
       message.error('获取用印申请列表失败')
     } finally {
@@ -216,17 +250,17 @@ export default function SealManagement() {
   const fetchRecords = async (page = recordPage) => {
     setRecordLoading(true)
     try {
-      const params: any = {
+      const params: Record<string, unknown> = {
         page,
         limit: 20,
       }
       // 默认按纸质用印筛选
       params.seal_medium = recordMediumFilter || 'paper'
       if (recordKeyword) params.keyword = recordKeyword
-      const res: any = await getSealRecords(params)
-      const list = res?.data || res || []
+      const res = (await getSealRecords(params)) as Record<string, unknown>
+      const list = (res?.data || res || []) as Record<string, unknown>[]
       setRecords(list)
-      setRecordTotal(res?.total ?? list.length)
+      setRecordTotal((res?.total as number) ?? list.length)
     } catch (error) {
       message.error('获取盖章记录列表失败')
     } finally {
@@ -238,7 +272,7 @@ export default function SealManagement() {
   const fetchVoidRecords = async (page = voidPage) => {
     setVoidLoading(true)
     try {
-      const params: any = {
+      const params: Record<string, unknown> = {
         page,
         limit: 20,
         void_status: voidStatusFilter || undefined,
@@ -246,19 +280,19 @@ export default function SealManagement() {
       if (voidKeyword) params.keyword = voidKeyword
       // 仅返回有作废痕迹的记录：void_status != not_voided
       params.void_status = voidStatusFilter || 'voided'
-      const res: any = await getSealApplications(params)
-      const list = res?.data || res || []
+      const res = (await getSealApplications(params)) as Record<string, unknown>
+      const list = (res?.data || res || []) as Record<string, unknown>[]
       // 如果无过滤器，同时包含 recovered
       if (!voidStatusFilter) {
         params.void_status = 'recovered'
-        const res2: any = await getSealApplications(params)
-        const list2 = res2?.data || []
+        const res2 = (await getSealApplications(params)) as Record<string, unknown>
+        const list2 = (res2?.data || []) as Record<string, unknown>[]
         const merged = [...list, ...list2].filter((x, idx, arr) => arr.findIndex((y) => y.id === x.id) === idx)
         setVoidList(merged)
-        setVoidTotal((res?.total ?? 0) + (res2?.total ?? 0))
+        setVoidTotal(((res?.total as number) ?? 0) + ((res2?.total as number) ?? 0))
       } else {
         setVoidList(list)
-        setVoidTotal(res?.total ?? list.length)
+        setVoidTotal((res?.total as number) ?? list.length)
       }
     } catch (error) {
       message.error('获取作废收回记录失败')
@@ -292,16 +326,16 @@ export default function SealManagement() {
     setSealModalVisible(true)
   }
 
-  const handleEditSeal = (record: any) => {
+  const handleEditSeal = (record: Record<string, unknown>) => {
     setEditingSeal(record)
     sealForm.setFieldsValue(record)
     setSealModalVisible(true)
   }
 
-  const handleSealSubmit = async (values: any) => {
+  const handleSealSubmit = async (values: Record<string, unknown>) => {
     try {
       if (editingSeal) {
-        await updateSeal(editingSeal.id, values)
+        await updateSeal(editingSeal.id as string, values)
         message.success('印章更新成功')
       } else {
         await createSeal(values)
@@ -309,8 +343,8 @@ export default function SealManagement() {
       }
       setSealModalVisible(false)
       fetchSeals()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
     }
   }
 
@@ -341,19 +375,19 @@ export default function SealManagement() {
     setAppModalVisible(true)
   }
 
-  const handleApplicationSubmit = async (values: any) => {
+  const handleApplicationSubmit = async (values: Record<string, unknown>) => {
     try {
       await createSealApplication(values)
       message.success('用印申请提交成功')
       setAppModalVisible(false)
       fetchApplications()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
     }
   }
 
   // 打开审批弹窗
-  const openApproveModal = (record: any, action: 'approve' | 'reject') => {
+  const openApproveModal = (record: Record<string, unknown>, action: 'approve' | 'reject') => {
     setApproveTarget(record)
     setApproveAction(action)
     approveForm.resetFields()
@@ -361,19 +395,20 @@ export default function SealManagement() {
   }
 
   // 确认审批
-  const handleApproveSubmit = async (values: any) => {
+  const handleApproveSubmit = async (values: Record<string, unknown>) => {
+    if (!approveTarget) return
     try {
       if (approveAction === 'approve') {
-        await approveSealApplication(approveTarget.id, { approve_comment: values.approve_comment })
+        await approveSealApplication(approveTarget.id as string, { approve_comment: values.approve_comment })
         message.success('已同意该用印申请')
       } else {
-        await rejectSealApplication(approveTarget.id, { approve_comment: values.approve_comment })
+        await rejectSealApplication(approveTarget.id as string, { approve_comment: values.approve_comment })
         message.success('已驳回该用印申请')
       }
       setApproveModalVisible(false)
       fetchApplications()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
     }
   }
 
@@ -384,8 +419,8 @@ export default function SealManagement() {
       message.success('盖章成功')
       fetchApplications()
       fetchRecords()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '盖章失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '盖章失败')
     }
   }
 
@@ -396,8 +431,8 @@ export default function SealManagement() {
       return
     }
     const approvedIds = applications
-      .filter((a) => selectedAppIds.includes(a.id) && a.status === 'approved')
-      .map((a) => a.id)
+      .filter((a) => selectedAppIds.includes(a.id as string) && a.status === 'approved')
+      .map((a) => a.id as string)
     if (approvedIds.length === 0) {
       message.warning('所选申请中没有可盖章的记录（仅已通过状态可盖章）')
       return
@@ -408,20 +443,20 @@ export default function SealManagement() {
       setSelectedAppIds([])
       fetchApplications()
       fetchRecords()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '批量盖章失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '批量盖章失败')
     }
   }
 
   // 打开单个作废弹窗
-  const openSingleVoidModal = (record: any) => {
+  const openSingleVoidModal = (record: Record<string, unknown>) => {
     setSingleVoidTarget(record)
     singleVoidForm.resetFields()
     setSingleVoidVisible(true)
   }
 
   // 提交单个作废
-  const handleSingleVoidSubmit = async (values: any) => {
+  const handleSingleVoidSubmit = async (values: Record<string, unknown>) => {
     if (!singleVoidTarget) return
     try {
       await axios.put(`/seal-applications/${singleVoidTarget.id}/void`, {
@@ -444,14 +479,14 @@ export default function SealManagement() {
       return
     }
     try {
-      const res: any = await batchVoidSealApplications(selectedAppIds)
-      const affected = typeof res === 'number' ? res : res?.affected ?? 0
+      const res: unknown = await batchVoidSealApplications(selectedAppIds)
+      const affected = typeof res === 'number' ? res : (res as Record<string, unknown>)?.affected ?? 0
       message.success(`批量作废成功，共作废 ${affected} 条`)
       setSelectedAppIds([])
       fetchApplications()
       fetchVoidRecords()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '批量作废失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '批量作废失败')
     }
   }
 
@@ -474,7 +509,7 @@ export default function SealManagement() {
     if (sealKeyword) {
       const kw = sealKeyword.toLowerCase()
       result = result.filter(
-        (s) => s.name?.toLowerCase().includes(kw) || sealTypeLabelMap[s.type]?.includes(sealKeyword),
+        (s) => (s.name as string)?.toLowerCase().includes(kw) || sealTypeLabelMap[s.type as string]?.includes(sealKeyword),
       )
     }
     if (sealStatusFilter) {
@@ -493,22 +528,22 @@ export default function SealManagement() {
       dataIndex: 'type',
       key: 'type',
       render: (type: string) => (
-        <Tag color={sealTypeColorMap[type] || 'default'}>{sealTypeLabelMap[type] || type}</Tag>
+        <Tag className={sealTypeStitchMap[type] || 'stitch-tag stitch-tag-primary'}>{sealTypeLabelMap[type] || type}</Tag>
       ),
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string, record: any) => (
+      render: (status: string, record: Record<string, unknown>) => (
         <Space>
-          <Tag color={status === 'active' ? 'green' : 'default'}>
+          <Tag className={status === 'active' ? 'stitch-tag stitch-tag-success' : 'stitch-tag stitch-tag-primary'}>
             {sealStatusLabelMap[status] || status}
           </Tag>
           <Button
             type="link"
             size="small"
-            onClick={() => handleToggleSealStatus(record.id)}
+            onClick={() => handleToggleSealStatus(record.id as string)}
           >
             {status === 'active' ? '停用' : '启用'}
           </Button>
@@ -524,23 +559,23 @@ export default function SealManagement() {
     {
       title: '印章特性',
       key: 'features',
-      render: (_: any, record: any) => {
-        const tags: { label: string; color: string; show: boolean }[] = [
-          { label: '电子', color: 'blue', show: !!record.is_electronic },
-          { label: '水印', color: 'cyan', show: !!record.support_watermark },
-          { label: '骑缝', color: 'geekblue', show: !!record.support_paging_seal },
+      render: (_: unknown, record: Record<string, unknown>) => {
+        const tags: { label: string; color: string; stitch: string; show: boolean }[] = [
+          { label: '电子', color: 'blue', stitch: 'stitch-tag stitch-tag-info', show: !!record.is_electronic },
+          { label: '水印', color: 'cyan', stitch: 'stitch-tag stitch-tag-info', show: !!record.support_watermark },
+          { label: '骑缝', color: 'geekblue', stitch: 'stitch-tag stitch-tag-primary', show: !!record.support_paging_seal },
         ]
-        const visible = tags.filter((t) => t.show)
-        return visible.length > 0 ? (
+        const visibleTags = tags.filter((t) => t.show)
+        return visibleTags.length > 0 ? (
           <Space size={4} wrap>
-            {visible.map((t) => (
-              <Tag key={t.label} color={t.color}>
+            {visibleTags.map((t) => (
+              <Tag key={t.label} className={t.stitch}>
                 {t.label}
               </Tag>
             ))}
           </Space>
         ) : (
-          <span style={{ color: '#999' }}>-</span>
+          <span style={{ color: theme.textTertiary }}>-</span>
         )
       },
     },
@@ -553,7 +588,7 @@ export default function SealManagement() {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: Record<string, unknown>) => (
         <Space>
           <Button type="link" icon={<EditOutlined />} onClick={() => handleEditSeal(record)}>
             编辑
@@ -563,7 +598,7 @@ export default function SealManagement() {
             description="确定要删除这个印章吗？"
             okText="确定"
             cancelText="取消"
-            onConfirm={() => handleDeleteSeal(record.id)}
+            onConfirm={() => handleDeleteSeal(record.id as string)}
           >
             <Button type="link" danger icon={<DeleteOutlined />}>
               删除
@@ -602,8 +637,8 @@ export default function SealManagement() {
       render: (sealId: string) => {
         const seal = sealMap[sealId]
         return seal ? (
-          <Tag color={sealTypeColorMap[seal.type] || 'default'}>
-            {seal.name}（{sealTypeLabelMap[seal.type] || seal.type}）
+          <Tag className={sealTypeStitchMap[seal.type as string] || 'stitch-tag stitch-tag-primary'}>
+            {seal.name as React.ReactNode}（{sealTypeLabelMap[seal.type as string] || seal.type as string}）
           </Tag>
         ) : (
           '-'
@@ -615,7 +650,7 @@ export default function SealManagement() {
       dataIndex: 'seal_medium',
       key: 'seal_medium',
       width: 90,
-      render: (v: string) => <Tag color={sealMediumColorMap[v] || 'default'}>{sealMediumLabelMap[v] || v || '纸质'}</Tag>,
+      render: (v: string) => <Tag className={sealMediumStitchMap[v] || 'stitch-tag stitch-tag-primary'}>{sealMediumLabelMap[v] || v || '纸质'}</Tag>,
     },
     {
       title: '用印次数',
@@ -629,7 +664,7 @@ export default function SealManagement() {
       key: 'is_confidential',
       width: 80,
       render: (val: boolean) =>
-        val ? <Tag color="red">是</Tag> : <Tag color="default">否</Tag>,
+        val ? <Tag className="stitch-tag stitch-tag-error">是</Tag> : <Tag className="stitch-tag stitch-tag-primary">否</Tag>,
     },
     {
       title: '盖章类型',
@@ -644,7 +679,7 @@ export default function SealManagement() {
       key: 'status',
       width: 100,
       render: (status: string) => (
-        <Tag color={applicationStatusColorMap[status] || 'default'}>
+        <Tag className={applicationStatusStitchMap[status] || 'stitch-tag stitch-tag-primary'}>
           {applicationStatusLabelMap[status] || status}
         </Tag>
       ),
@@ -667,14 +702,14 @@ export default function SealManagement() {
       title: '操作',
       key: 'action',
       width: 300,
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: Record<string, unknown>) => (
         <Space size="small" wrap>
           {record.status === 'pending' && (
             <>
               <Button
                 type="link"
                 icon={<CheckOutlined />}
-                style={{ color: '#2e7d32' }}
+                style={{ color: theme.success }}
                 onClick={() => openApproveModal(record, 'approve')}
               >
                 同意
@@ -694,7 +729,7 @@ export default function SealManagement() {
               <Button
               type="link"
               icon={<SafetyCertificateOutlined />}
-              onClick={() => handleUseSeal(record.id)}
+              onClick={() => handleUseSeal(record.id as string)}
             >
               盖章
             </Button>
@@ -702,13 +737,13 @@ export default function SealManagement() {
           )}
           {/* 单个作废：待审批/已批准可作废
           */}
-          {['pending', 'approved'].includes(record.status) && (
+          {['pending', 'approved'].includes(record.status as string) && (
             <Button type="link" danger onClick={() => openSingleVoidModal(record)}>
               作废
             </Button>
           )}
           {record.status !== 'pending' && record.status !== 'approved' && record.status !== 'used' && record.status !== 'voided' && (
-            <span style={{ color: '#999' }}>无可用操作</span>
+            <span style={{ color: theme.textTertiary }}>无可用操作</span>
           )}
         </Space>
       ),
@@ -735,14 +770,14 @@ export default function SealManagement() {
       dataIndex: 'seal_medium',
       key: 'seal_medium',
       width: 90,
-      render: (v: string) => <Tag color={sealMediumColorMap[v] || 'default'}>{sealMediumLabelMap[v] || v || '纸质'}</Tag>,
+      render: (v: string) => <Tag className={sealMediumStitchMap[v] || 'stitch-tag stitch-tag-primary'}>{sealMediumLabelMap[v] || v || '纸质'}</Tag>,
     },
     {
       title: '作废状态',
       dataIndex: 'void_status',
       key: 'void_status',
       width: 100,
-      render: (v: string) => <Tag color={voidStatusColorMap[v] || 'default'}>{voidStatusLabelMap[v] || v || '-'}</Tag>,
+      render: (v: string) => <Tag className={voidStatusStitchMap[v] || 'stitch-tag stitch-tag-primary'}>{voidStatusLabelMap[v] || v || '-'}</Tag>,
     },
     {
       title: '作废原因',
@@ -771,7 +806,7 @@ export default function SealManagement() {
       key: 'status',
       width: 100,
       render: (status: string) => (
-        <Tag color={applicationStatusColorMap[status] || 'default'}>
+        <Tag className={applicationStatusStitchMap[status] || 'stitch-tag stitch-tag-primary'}>
           {applicationStatusLabelMap[status] || status}
         </Tag>
       ),
@@ -780,14 +815,14 @@ export default function SealManagement() {
       title: '操作',
       key: 'action',
       width: 150,
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: Record<string, unknown>) => (
         <Space size="small">
           {record.void_status === 'voided' && (
-          <Button type="link" onClick={() => handleRecover(record.id)}>
+          <Button type="link" onClick={() => handleRecover(record.id as string)}>
             收回
           </Button>
         )}
-          {record.void_status === 'recovered' && <span style={{color: '#999'}}>已收回</span>}
+          {record.void_status === 'recovered' && <span style={{color: theme.textTertiary}}>已收回</span>}
         </Space>
       ),
     },
@@ -808,8 +843,8 @@ export default function SealManagement() {
       render: (sealId: string) => {
         const seal = sealMap[sealId]
         return seal ? (
-          <Tag color={sealTypeColorMap[seal.type] || 'default'}>
-            {seal.name}（{sealTypeLabelMap[seal.type] || seal.type}）
+          <Tag className={sealTypeStitchMap[seal.type as string] || 'stitch-tag stitch-tag-primary'}>
+            {seal.name as React.ReactNode}（{sealTypeLabelMap[seal.type as string] || seal.type as string}）
           </Tag>
         ) : (
           '-'
@@ -821,9 +856,9 @@ export default function SealManagement() {
       dataIndex: 'seal_medium',
       key: 'seal_medium',
       width: 90,
-      render: (_: any, record: any) => {
+      render: (_: unknown, record: Record<string, unknown>) => {
         // 通过application_id去applications对应记录里的seal_medium，这里直接显示记录上的字段；若无字段则默认纸质
-        return <Tag color={sealMediumColorMap[record.seal_medium] || sealMediumColorMap.paper}>{sealMediumLabelMap[record.seal_medium] || '纸质'}</Tag>
+        return <Tag className={sealMediumStitchMap[record.seal_medium as string] || sealMediumStitchMap.paper}>{sealMediumLabelMap[record.seal_medium as string] || '纸质'}</Tag>
       },
     },
     {
@@ -849,7 +884,7 @@ export default function SealManagement() {
   // 印章管理Tab内容
   const renderSealsTab = () => (
     <div>
-      <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+      <div className="stitch-filter-bar" style={{ background: theme.white, padding: 16, borderRadius: 8, marginBottom: 16 }}>
         <Form form={sealSearchForm} layout="inline" style={{ gap: 8 }}>
           <Form.Item name="keyword" label="关键词">
             <Input
@@ -875,7 +910,7 @@ export default function SealManagement() {
             />
           </Form.Item>
           <Form.Item>
-            <Space>
+            <Space className="stitch-btn-group">
               <Button
                 type="primary"
                 icon={<SearchOutlined />}
@@ -909,20 +944,22 @@ export default function SealManagement() {
         </Button>
       </div>
 
-      <Table
-        dataSource={filteredSeals}
-        columns={sealColumns}
-        loading={sealLoading}
-        rowKey="id"
-        pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
-      />
+      <div className="stitch-table">
+        <Table
+          dataSource={filteredSeals}
+          columns={sealColumns}
+          loading={sealLoading}
+          rowKey="id"
+          pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+        />
+      </div>
     </div>
   )
 
   // 用印申请Tab内容（待用印文档：待审批/已批准 + 未作废）
   const renderApplicationsTab = () => (
     <div>
-      <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+      <div className="stitch-filter-bar" style={{ background: theme.white, padding: 16, borderRadius: 8, marginBottom: 16 }}>
         <Form form={appSearchForm} layout="inline" style={{ gap: 8, flexWrap: 'wrap' }}>
           <Form.Item name="keyword" label="关键词">
             <Input
@@ -972,7 +1009,7 @@ export default function SealManagement() {
             />
           </Form.Item>
           <Form.Item>
-            <Space>
+            <Space className="stitch-btn-group">
               <Button
                 type="primary"
                 icon={<SearchOutlined />}
@@ -1005,7 +1042,7 @@ export default function SealManagement() {
 
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
         <h3 style={{ margin: 0 }}>待用印文档</h3>
-        <Space>
+        <Space className="stitch-btn-group">
           {selectedAppIds.length > 0 && (
             <>
               <Button icon={<SafetyCertificateOutlined />} onClick={handleBatchUseSeal}>
@@ -1030,34 +1067,36 @@ export default function SealManagement() {
         </Space>
       </div>
 
-      <Table
-        dataSource={applications}
-        columns={applicationColumns}
-        loading={appLoading}
-        rowKey="id"
-        scroll={{ x: 2000 }}
-        rowSelection={{
-          selectedRowKeys: selectedAppIds,
-          onChange: (keys) => setSelectedAppIds(keys as string[]),
-          getCheckboxProps: (record: any) => ({
-            disabled: record.status !== 'pending' && record.status !== 'approved',
-          }),
-        }}
-        pagination={{
-          current: appPage,
-          pageSize: 20,
-          total: appTotal,
-          showTotal: (t) => `共 ${t} 条`,
-          onChange: (p) => { setAppPage(p); fetchApplications(p) },
-        }}
-      />
+      <div className="stitch-table">
+        <Table
+          dataSource={applications}
+          columns={applicationColumns}
+          loading={appLoading}
+          rowKey="id"
+          scroll={{ x: 2000 }}
+          rowSelection={{
+            selectedRowKeys: selectedAppIds,
+            onChange: (keys) => setSelectedAppIds(keys as string[]),
+            getCheckboxProps: (record: Record<string, unknown>) => ({
+              disabled: record.status !== 'pending' && record.status !== 'approved',
+            }),
+          }}
+          pagination={{
+            current: appPage,
+            pageSize: 20,
+            total: appTotal,
+            showTotal: (t) => `共 ${t} 条`,
+            onChange: (p) => { setAppPage(p); fetchApplications(p) },
+          }}
+        />
+      </div>
     </div>
   )
 
   // 盖章记录Tab内容（纸质用印记录）
   const renderRecordsTab = () => (
     <div>
-      <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+      <div className="stitch-filter-bar" style={{ background: theme.white, padding: 16, borderRadius: 8, marginBottom: 16 }}>
         <Form form={recordSearchForm} layout="inline" style={{ gap: 8, flexWrap: 'wrap' }}>
           <Form.Item name="keyword" label="关键词">
             <Input
@@ -1084,7 +1123,7 @@ export default function SealManagement() {
             />
           </Form.Item>
           <Form.Item>
-            <Space>
+            <Space className="stitch-btn-group">
               <Button
                 type="primary"
                 icon={<SearchOutlined />}
@@ -1117,27 +1156,29 @@ export default function SealManagement() {
         <h3 style={{ margin: 0 }}>纸质用印记录</h3>
       </div>
 
-      <Table
-        dataSource={records}
-        columns={recordColumns}
-        loading={recordLoading}
-        rowKey="id"
-        scroll={{ x: 1600 }}
-        pagination={{
-          current: recordPage,
-          pageSize: 20,
-          total: recordTotal,
-          showTotal: (t) => `共 ${t} 条`,
-          onChange: (p) => { setRecordPage(p); fetchRecords(p) },
-        }}
-      />
+      <div className="stitch-table">
+        <Table
+          dataSource={records}
+          columns={recordColumns}
+          loading={recordLoading}
+          rowKey="id"
+          scroll={{ x: 1600 }}
+          pagination={{
+            current: recordPage,
+            pageSize: 20,
+            total: recordTotal,
+            showTotal: (t) => `共 ${t} 条`,
+            onChange: (p) => { setRecordPage(p); fetchRecords(p) },
+          }}
+        />
+      </div>
     </div>
   )
 
   // 作废收回记录Tab内容
   const renderVoidTab = () => (
     <div>
-      <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+      <div className="stitch-filter-bar" style={{ background: theme.white, padding: 16, borderRadius: 8, marginBottom: 16 }}>
         <Form form={voidSearchForm} layout="inline" style={{ gap: 8, flexWrap: 'wrap' }}>
           <Form.Item name="keyword" label="关键词">
             <Input
@@ -1164,7 +1205,7 @@ export default function SealManagement() {
             />
           </Form.Item>
           <Form.Item>
-            <Space>
+            <Space className="stitch-btn-group">
               <Button
                 type="primary"
                 icon={<SearchOutlined />}
@@ -1197,20 +1238,22 @@ export default function SealManagement() {
         <h3 style={{ margin: 0 }}>作废收回记录</h3>
       </div>
 
-      <Table
-        dataSource={voidList}
-        columns={voidColumns}
-        loading={voidLoading}
-        rowKey="id"
-        scroll={{ x: 1800 }}
-        pagination={{
-          current: voidPage,
-          pageSize: 20,
-          total: voidTotal,
-          showTotal: (t) => `共 ${t} 条`,
-          onChange: (p) => { setVoidPage(p); fetchVoidRecords(p) },
-        }}
-      />
+      <div className="stitch-table">
+        <Table
+          dataSource={voidList}
+          columns={voidColumns}
+          loading={voidLoading}
+          rowKey="id"
+          scroll={{ x: 1800 }}
+          pagination={{
+            current: voidPage,
+            pageSize: 20,
+            total: voidTotal,
+            showTotal: (t) => `共 ${t} 条`,
+            onChange: (p) => { setVoidPage(p); fetchVoidRecords(p) },
+          }}
+        />
+      </div>
     </div>
   )
 
@@ -1324,8 +1367,8 @@ export default function SealManagement() {
               options={seals
                 .filter((s) => s.status === 'active')
                 .map((s) => ({
-                  value: s.id,
-                  label: `${s.name}（${sealTypeLabelMap[s.type] || s.type}）`,
+                  value: s.id as string,
+                  label: `${s.name as string}（${sealTypeLabelMap[s.type as string] || s.type as string}）`,
                 }))}
             />
           </Form.Item>

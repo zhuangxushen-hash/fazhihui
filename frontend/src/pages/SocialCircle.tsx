@@ -31,7 +31,7 @@ import {
   unlikePost,
 } from '../api/social'
 import { formatDateTime } from '../utils/format'
-
+import { theme } from '../constants/theme'
 const { TextArea } = Input
 
 // 动态类型选项
@@ -50,22 +50,14 @@ const postTypeLabelMap: Record<string, string> = {
   knowledge: '知识',
 }
 
-// 动态类型标签颜色映射
-const postTypeColorMap: Record<string, string> = {
-  normal: 'blue',
-  case_share: 'green',
-  experience: 'orange',
-  knowledge: 'purple',
-}
-
 export default function SocialCircle() {
-  const [posts, setPosts] = useState<any[]>([])
+  const [posts, setPosts] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('all')
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [commentModalOpen, setCommentModalOpen] = useState(false)
-  const [currentPost, setCurrentPost] = useState<any>(null)
-  const [comments, setComments] = useState<any[]>([])
+  const [currentPost, setCurrentPost] = useState<Record<string, unknown> | null>(null)
+  const [comments, setComments] = useState<Record<string, unknown>[]>([])
   const [commentText, setCommentText] = useState('')
   // 新动态表单
   const [newPost, setNewPost] = useState({
@@ -85,11 +77,11 @@ export default function SocialCircle() {
       const type = tab || activeTab
       setLoading(true)
       try {
-        const params: any = { page: 1, limit: 50 }
+        const params: Record<string, unknown> = { page: 1, limit: 50 }
         if (type && type !== 'all') params.post_type = type
-        const res: any = await getPosts(params)
+        const res = (await getPosts(params as Parameters<typeof getPosts>[0])) as Record<string, unknown>
         const data = res?.data || res || []
-        setPosts(Array.isArray(data) ? data : data.data || [])
+        setPosts((Array.isArray(data) ? data : (data as Record<string, unknown>).data || []) as Record<string, unknown>[])
       } catch {
         message.error('加载动态失败')
       } finally {
@@ -149,17 +141,17 @@ export default function SocialCircle() {
   }
 
   // 点赞/取消点赞
-  const handleLike = async (post: any) => {
+  const handleLike = async (post: Record<string, unknown>) => {
     try {
       // 简单处理：调用点赞接口，如果已点赞则取消
       // 由于后端会校验是否已点赞，这里用try-catch处理
-      await likePost(post.id)
+      await likePost(post.id as string)
       message.success('已点赞')
       loadPosts()
     } catch {
       // 如果已点赞，尝试取消
       try {
-        await unlikePost(post.id)
+        await unlikePost(post.id as string)
         message.success('已取消点赞')
         loadPosts()
       } catch {
@@ -169,14 +161,14 @@ export default function SocialCircle() {
   }
 
   // 打开评论弹窗
-  const openCommentModal = async (post: any) => {
+  const openCommentModal = async (post: Record<string, unknown>) => {
     setCurrentPost(post)
     setCommentModalOpen(true)
     setCommentText('')
     try {
-      const res: any = await getComments(post.id)
+      const res = (await getComments(post.id as string)) as Record<string, unknown>
       const data = res?.data || res || []
-      setComments(Array.isArray(data) ? data : [])
+      setComments((Array.isArray(data) ? data : []) as Record<string, unknown>[])
     } catch {
       setComments([])
     }
@@ -186,13 +178,13 @@ export default function SocialCircle() {
   const handleAddComment = async () => {
     if (!commentText.trim() || !currentPost) return
     try {
-      await addComment(currentPost.id, { content: commentText })
+      await addComment(currentPost.id as string, { content: commentText })
       message.success('评论成功')
       setCommentText('')
       // 刷新评论列表
-      const res: any = await getComments(currentPost.id)
+      const res = (await getComments(currentPost.id as string)) as Record<string, unknown>
       const data = res?.data || res || []
-      setComments(Array.isArray(data) ? data : [])
+      setComments((Array.isArray(data) ? data : []) as Record<string, unknown>[])
       // 刷新动态列表（评论数更新）
       loadPosts()
     } catch {
@@ -229,33 +221,40 @@ export default function SocialCircle() {
         <Empty description="暂无动态" />
       ) : (
         <Space direction="vertical" size={16} style={{ width: '100%' }}>
-          {posts.map((post: any) => (
-            <Card key={post.id} style={{ borderRadius: 16 }} loading={loading}>
+          {posts.map((post: Record<string, unknown>) => (
+            <Card key={post.id as string} style={{ borderRadius: 16 }} loading={loading}>
               {/* 头部：用户信息 */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#0071e3' }} />
+                  <Avatar icon={<UserOutlined />} style={{ backgroundColor: theme.primary }} />
                   <div>
                     <div style={{ fontWeight: 600, color: '#1d1d1f' }}>
-                      {post.user_name || post.user_id?.slice(0, 8)}
+                      {(post.user_name as string) || (post.user_id as string | undefined)?.slice(0, 8)}
                     </div>
-                    <div style={{ fontSize: 12, color: '#86868b' }}>{formatDateTime(post.created_at)}</div>
+                    <div style={{ fontSize: 12, color: '#86868b' }}>{formatDateTime(post.created_at as string)}</div>
                   </div>
                 </div>
-                <Tag color={postTypeColorMap[post.post_type] || 'default'}>
-                  {postTypeLabelMap[post.post_type] || post.post_type}
+                <Tag
+                  className={
+                    post.post_type === 'normal' ? 'stitch-tag stitch-tag-primary' :
+                    post.post_type === 'case_share' ? 'stitch-tag stitch-tag-success' :
+                    post.post_type === 'experience' ? 'stitch-tag stitch-tag-warning' :
+                    post.post_type === 'knowledge' ? 'stitch-tag stitch-tag-info' :
+                    'stitch-tag'
+                  }
+                >
+                  {postTypeLabelMap[post.post_type as string] || (post.post_type as string)}
                 </Tag>
               </div>
 
-              {/* 内容 */}
               <div style={{ fontSize: 15, color: '#1d1d1f', lineHeight: 1.7, marginBottom: 12, whiteSpace: 'pre-wrap' }}>
-                {post.content}
+                {String(post.content ?? '')}
               </div>
 
               {/* 图片 */}
-              {post.images && post.images.length > 0 && (
+              {Array.isArray(post.images) && (post.images as string[]).length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-                  {post.images.map((img: string, idx: number) => (
+                  {(post.images as string[]).map((img: string, idx: number) => (
                     <img
                       key={idx}
                       src={img}
@@ -274,7 +273,7 @@ export default function SocialCircle() {
                   onClick={() => handleLike(post)}
                   style={{ color: '#6e6e73' }}
                 >
-                  {post.like_count || 0}
+                  {(post.like_count as number) || 0}
                 </Button>
                 <Button
                   type="text"
@@ -282,11 +281,11 @@ export default function SocialCircle() {
                   onClick={() => openCommentModal(post)}
                   style={{ color: '#6e6e73' }}
                 >
-                  {post.comment_count || 0}
+                  {(post.comment_count as number) || 0}
                 </Button>
-                <span style={{ lineHeight: '32px' }}>阅读 {post.view_count || 0}</span>
+                <span style={{ lineHeight: '32px' }}>阅读 {(post.view_count as number) || 0}</span>
                 {post.user_id === currentUser.id && (
-                  <Popconfirm title="确定删除这条动态吗？" onConfirm={() => handleDelete(post.id)}>
+                  <Popconfirm title="确定删除这条动态吗？" onConfirm={() => handleDelete(post.id as string)}>
                     <Button type="text" icon={<DeleteOutlined />} danger style={{ marginLeft: 'auto' }}>
                       删除
                     </Button>
@@ -354,25 +353,25 @@ export default function SocialCircle() {
             {/* 原动态内容 */}
             <div style={{ background: '#f5f5f7', borderRadius: 8, padding: 12, marginBottom: 16 }}>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                {currentPost.user_name || currentPost.user_id?.slice(0, 8)}
+                {(currentPost.user_name as string) || (currentPost.user_id as string | undefined)?.slice(0, 8)}
               </div>
-              <div style={{ color: '#1d1d1f', whiteSpace: 'pre-wrap' }}>{currentPost.content}</div>
+              <div style={{ color: '#1d1d1f', whiteSpace: 'pre-wrap' }}>{currentPost.content as string}</div>
             </div>
 
             {/* 评论列表 */}
             <List
               dataSource={comments}
               locale={{ emptyText: '暂无评论' }}
-              renderItem={(item: any) => (
+              renderItem={(item: Record<string, unknown>) => (
                 <List.Item>
                   <div style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 600, color: '#0071e3' }}>
-                        {item.user_name || item.user_id?.slice(0, 8)}
+                      <span style={{ fontWeight: 600, color: theme.primary }}>
+                        {(item.user_name as string) || (item.user_id as string | undefined)?.slice(0, 8)}
                       </span>
-                      <span style={{ fontSize: 12, color: '#86868b' }}>{formatDateTime(item.created_at)}</span>
+                      <span style={{ fontSize: 12, color: '#86868b' }}>{formatDateTime(item.created_at as string)}</span>
                     </div>
-                    <div style={{ color: '#1d1d1f', marginTop: 4 }}>{item.content}</div>
+                    <div style={{ color: '#1d1d1f', marginTop: 4 }}>{item.content as string}</div>
                   </div>
                 </List.Item>
               )}

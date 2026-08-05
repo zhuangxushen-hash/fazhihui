@@ -80,7 +80,7 @@ export default function EvidenceManager({ caseId }: EvidenceManagerProps) {
     setLoading(true)
     try {
       const data = await getEvidenceList(caseId, filters)
-      setEvidences(data || [])
+      setEvidences((data || []) as Evidence[])
     } catch (error) {
       message.error('获取证据列表失败')
     } finally {
@@ -190,7 +190,7 @@ export default function EvidenceManager({ caseId }: EvidenceManagerProps) {
   const handleViewDetail = async (id: string) => {
     try {
       const data = await getEvidenceDetail(id)
-      setDetail(data)
+      setDetail(data as Evidence | null)
       setDetailDrawerVisible(true)
     } catch (error) {
       message.error('获取证据详情失败')

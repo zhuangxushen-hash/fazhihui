@@ -56,9 +56,9 @@ export default function CaseTaskManager({ caseId }: Props) {
       const [tasksRes, statsRes] = await Promise.all([
         axios.get(`/case-tasks/case/${caseId}`),
         axios.get(`/case-tasks/case/${caseId}/statistics`)
-      ])
-      setTasks(tasksRes.data || [])
-      setStats(statsRes.data || {})
+      ]) as [Record<string, unknown>, Record<string, unknown>]
+      setTasks((tasksRes.data || []) as Task[])
+      setStats((statsRes.data || {}) as any)
     } catch (error) {
       console.error('Fetch tasks error:', error)
     } finally {
@@ -68,8 +68,8 @@ export default function CaseTaskManager({ caseId }: Props) {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get('/users', { params: { org_id: user.organization_id } })
-      setUsers(res.data || [])
+      const res = await axios.get('/users', { params: { org_id: user.organization_id } }) as Record<string, unknown>
+      setUsers((res.data || []) as any[])
     } catch (error) {
       console.error('Fetch users error:', error)
     }
@@ -79,8 +79,8 @@ export default function CaseTaskManager({ caseId }: Props) {
     setCurrentTask(task)
     setDetailVisible(true)
     try {
-      const res = await axios.get(`/case-tasks/${task.id}/comments`)
-      setComments(res.data || [])
+      const res = await axios.get(`/case-tasks/${task.id}/comments`) as Record<string, unknown>
+      setComments((res.data || []) as Comment[])
     } catch (error) {
       setComments([])
     }
@@ -137,8 +137,8 @@ export default function CaseTaskManager({ caseId }: Props) {
   const handleAddComment = async (taskId: string, content: string) => {
     try {
       await axios.post(`/case-tasks/${taskId}/comments`, { content })
-      const res = await axios.get(`/case-tasks/${taskId}/comments`)
-      setComments(res.data || [])
+      const res = await axios.get(`/case-tasks/${taskId}/comments`) as Record<string, unknown>
+      setComments((res.data || []) as Comment[])
       message.success('评论添加成功')
     } catch (error) {
       message.error('评论添加失败')
@@ -151,7 +151,7 @@ export default function CaseTaskManager({ caseId }: Props) {
       formData.append('file', file)
       const uploadRes = await axios.post('/documents/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
-      })
+      }) as Record<string, unknown>
 
       await axios.post(`/case-tasks/${taskId}/results`, {
         file_url: uploadRes.url,
@@ -160,8 +160,8 @@ export default function CaseTaskManager({ caseId }: Props) {
         content: `上传成果: ${file.name}`
       })
 
-      const res = await axios.get(`/case-tasks/${taskId}/comments`)
-      setComments(res.data || [])
+      const res = await axios.get(`/case-tasks/${taskId}/comments`) as Record<string, unknown>
+      setComments((res.data || []) as Comment[])
       message.success('成果上传成功')
     } catch (error) {
       message.error('成果上传失败')

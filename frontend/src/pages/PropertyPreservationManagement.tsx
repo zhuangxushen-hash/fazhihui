@@ -39,24 +39,24 @@ import {
   rejectPropertyPreservation,
   implementPropertyPreservation,
   releasePropertyPreservation,
-} from '../api/propertyPreservation'
+} from '../api/property-preservation'
 import { formatDateTime, formatDate } from '../utils/format'
-
+import { theme } from '../constants/theme'
 // Material Design 3 风格
 const pageH2Style: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
   fontSize: 22,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
   margin: 0,
   letterSpacing: '0.01em',
 }
 
 const searchCardStyle: React.CSSProperties = {
-  background: '#ffffff',
+  background: theme.white,
   padding: 20,
   borderRadius: 16,
-  border: '1px solid #c1c6d6',
+  border: `1px solid ${theme.border}`,
   marginBottom: 16,
 }
 
@@ -70,11 +70,11 @@ type PillKind = 'neutral' | 'blue' | 'gold' | 'green' | 'red' | 'orange' | 'purp
 
 const pillColorMap: Record<PillKind, { bg: string; color: string }> = {
   neutral: { bg: 'rgba(113, 119, 133, 0.12)', color: '#5f6672' },
-  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: '#0071e3' },
+  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: theme.primary },
   gold: { bg: 'rgba(201, 169, 97, 0.15)', color: '#8c702e' },
-  green: { bg: 'rgba(46, 125, 50, 0.1)', color: '#2e7d32' },
-  red: { bg: 'rgba(186, 26, 26, 0.1)', color: '#ba1a1a' },
-  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: '#ed6c02' },
+  green: { bg: 'rgba(46, 125, 50, 0.1)', color: theme.success },
+  red: { bg: 'rgba(186, 26, 26, 0.1)', color: theme.error },
+  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: theme.warning },
   purple: { bg: 'rgba(114, 46, 209, 0.1)', color: '#722ed1' },
 }
 
@@ -493,7 +493,7 @@ export default function PropertyPreservationManagement() {
       width: 260,
       fixed: 'right' as const,
       render: (_: any, record: any) => (
-        <Space size="small" wrap>
+        <Space size="small" wrap className="stitch-btn-group">
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(record.id)}>
             详情
           </Button>
@@ -545,7 +545,7 @@ export default function PropertyPreservationManagement() {
     <div style={{ padding: 20 }}>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={pageH2Style}>财产保全管理</h2>
-        <Space>
+        <Space className="stitch-btn-group">
           <Button icon={<ReloadOutlined />} onClick={handleReset}>
             重置
           </Button>
@@ -556,7 +556,7 @@ export default function PropertyPreservationManagement() {
       </div>
 
       {/* 搜索条件（10个查询条件对齐后端） */}
-      <Card style={searchCardStyle} bordered={false}>
+      <Card className="stitch-filter-bar" style={searchCardStyle} bordered={false}>
         <Form form={searchForm} layout="horizontal" onFinish={handleSearch} onValuesChange={() => {}}>
           <Row gutter={16}>
             <Col span={6}>
@@ -596,7 +596,7 @@ export default function PropertyPreservationManagement() {
             </Col>
             <Col span={6} style={{ textAlign: 'right' }}>
               <Form.Item>
-                <Space>
+                <Space className="stitch-btn-group">
                   <Button onClick={handleReset}>重置</Button>
                   <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>
                     查询
@@ -609,7 +609,7 @@ export default function PropertyPreservationManagement() {
       </Card>
 
       {/* 列表 */}
-      <Card style={tableCardStyle} bordered={false}>
+      <Card className="stitch-table" style={tableCardStyle} bordered={false}>
         <Table
           rowKey="id"
           loading={loading}

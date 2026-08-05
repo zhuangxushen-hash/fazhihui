@@ -3,7 +3,7 @@ import { Table, Button, Modal, Form, Input, Select, message, Tag, Space, Card } 
 import { PlusOutlined, EditOutlined, DeleteOutlined, TagOutlined, ThunderboltOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
-
+import { theme } from '../constants/theme'
 const { TextArea } = Input
 
 const tagTypeOptions = [
@@ -27,8 +27,8 @@ const triggerOptions = [
 ]
 
 const tagTypeColor: Record<string, string> = {
-  manual: 'blue',
-  auto: 'orange',
+  manual: 'primary',
+  auto: 'warning',
 }
 
 const categoryLabel: Record<string, string> = {
@@ -56,7 +56,7 @@ export default function ClientTagManagement() {
       const res: any = await axios.get('/scrm/client-tags', { params: { org_id: user.organization_id } })
       setData(res || [])
     } catch (error) {
-      console.error('Fetch tags error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -114,7 +114,7 @@ export default function ClientTagManagement() {
       setModalVisible(false)
       fetchData()
     } catch (error) {
-      console.error('Submit error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -145,17 +145,17 @@ export default function ClientTagManagement() {
       setBatchModalVisible(false)
       batchForm.resetFields()
     } catch (error) {
-      console.error('Batch tag error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
   const columns = [
-    { title: '标签名称', dataIndex: 'tag_name', key: 'tag_name', render: (v: string) => <Tag icon={<TagOutlined />} color="blue">{v}</Tag> },
+    { title: '标签名称', dataIndex: 'tag_name', key: 'tag_name', render: (v: string) => <Tag icon={<TagOutlined />} className="stitch-tag stitch-tag-primary">{v}</Tag> },
     {
       title: '类型',
       dataIndex: 'tag_type',
       key: 'tag_type',
-      render: (v: string) => <Tag color={tagTypeColor[v] || 'default'}>{v === 'auto' ? '自动' : '手动'}</Tag>,
+      render: (v: string) => <Tag className={tagTypeColor[v] ? `stitch-tag stitch-tag-${tagTypeColor[v]}` : 'stitch-tag'}>{v === 'auto' ? '自动' : '手动'}</Tag>,
     },
     {
       title: '分类',
@@ -183,7 +183,7 @@ export default function ClientTagManagement() {
       key: 'action',
       width: 200,
       render: (_: any, record: any) => (
-        <Space>
+        <Space className="stitch-btn-group">
           <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
           <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} />
         </Space>
@@ -200,7 +200,7 @@ export default function ClientTagManagement() {
           <h2 style={{ fontSize: 24, fontWeight: 700, color: '#1d1d1f', margin: 0 }}>客户标签体系</h2>
           <p style={{ fontSize: 14, color: '#86868b', marginTop: 4 }}>自动打标规则 / 手动标签 / 批量打标</p>
         </div>
-        <Space>
+        <Space className="stitch-btn-group">
           <Button
             icon={<ThunderboltOutlined />}
             onClick={() => setBatchModalVisible(true)}
@@ -212,7 +212,7 @@ export default function ClientTagManagement() {
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleAdd}
-            style={{ borderRadius: 10, padding: '8px 20px', background: '#0071e3', border: 'none' }}
+            style={{ borderRadius: 10, padding: '8px 20px', background: theme.primary, border: 'none' }}
           >
             新建标签
           </Button>
@@ -226,7 +226,7 @@ export default function ClientTagManagement() {
         </div>
       </Card>
 
-      <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)', overflow: 'hidden' }}>
+      <div className="stitch-table" style={{ background: '#fff', borderRadius: 16, boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)', overflow: 'hidden' }}>
         <Table
           dataSource={data}
           columns={columns}

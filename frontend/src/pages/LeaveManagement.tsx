@@ -24,12 +24,12 @@ const leaveStatusOptions = [
   { value: 'cancelled', label: '已撤销' },
 ]
 
-// 状态颜色映射
+// 状态样式映射（对齐 Stitch 设计规范，返回 className）
 const statusColorMap: Record<string, string> = {
-  pending: 'orange',
-  approved: 'green',
-  rejected: 'red',
-  cancelled: 'default',
+  pending: 'stitch-tag stitch-tag-warning',
+  approved: 'stitch-tag stitch-tag-success',
+  rejected: 'stitch-tag stitch-tag-error',
+  cancelled: 'stitch-tag stitch-tag-info',
 }
 
 // 类型中文映射
@@ -78,7 +78,7 @@ export default function LeaveManagement() {
       const res: any = await getLeaves(params)
       setData(res || [])
     } catch (error) {
-      console.error('Fetch leaves error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -131,7 +131,6 @@ export default function LeaveManagement() {
       fetchData()
     } catch (error) {
       message.error(editingId ? '请假更新失败' : '请假申请失败')
-      console.error('Leave submit error:', error)
     }
   }
 
@@ -142,7 +141,6 @@ export default function LeaveManagement() {
       fetchData()
     } catch (error) {
       message.error('删除失败')
-      console.error('Delete leave error:', error)
     }
   }
 
@@ -151,9 +149,8 @@ export default function LeaveManagement() {
       await cancelLeave(id)
       message.success('撤销成功')
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '撤销失败')
-      console.error('Cancel leave error:', error)
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '撤销失败')
     }
   }
 
@@ -175,9 +172,8 @@ export default function LeaveManagement() {
       }
       setApproveVisible(false)
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '操作失败')
-      console.error('Approve leave error:', error)
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
     }
   }
 
@@ -190,7 +186,7 @@ export default function LeaveManagement() {
     { title: '原因', dataIndex: 'reason', key: 'reason', ellipsis: true },
     { title: '状态', dataIndex: 'status', key: 'status', width: 100, render: (val: string) => {
       const item = leaveStatusOptions.find(o => o.value === val)
-      return <Tag color={statusColorMap[val] || 'default'}>{item?.label || val}</Tag>
+      return <Tag className={statusColorMap[val] || 'stitch-tag stitch-tag-info'}>{item?.label || val}</Tag>
     }},
     { title: '审批意见', dataIndex: 'approve_comment', key: 'approve_comment', ellipsis: true, render: (val: string) => val || '-' },
     { title: '审批时间', dataIndex: 'approve_time', key: 'approve_time', width: 160, render: (val: string) => val ? formatDateTime(val) : '-' },
@@ -223,7 +219,7 @@ export default function LeaveManagement() {
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>发起请假</Button>
       </div>
 
-      <div className="search-bar">
+      <div className="search-bar stitch-filter-bar">
         <Select
           placeholder="状态筛选"
           style={{ width: 150 }}
@@ -233,8 +229,10 @@ export default function LeaveManagement() {
         >
           {leaveStatusOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
         </Select>
-        <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>搜索</Button>
-        <Button onClick={handleReset}>重置</Button>
+        <div className="stitch-btn-group">
+          <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>搜索</Button>
+          <Button onClick={handleReset}>重置</Button>
+        </div>
       </div>
 
       <Tabs activeKey={activeTab} onChange={setActiveTab} items={[
@@ -243,7 +241,9 @@ export default function LeaveManagement() {
         { key: 'pending', label: '待我审批' },
       ]} />
 
-      <Table dataSource={data} columns={columns} loading={loading} rowKey="id" scroll={{ x: 1400 }} />
+      <div className="stitch-table">
+        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" scroll={{ x: 1400 }} />
+      </div>
 
       <Modal
         title={editingId ? '编辑请假' : '发起请假'}

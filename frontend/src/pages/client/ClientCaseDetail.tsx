@@ -6,7 +6,7 @@ import { formatDateTime, formatFileSize } from '../../utils/format'
 import { useNavigate, useParams } from 'react-router-dom'
 import BottomNav from '../../components/BottomNav'
 import ClientButton from '../../components/ClientButton'
-
+import { theme as appTheme } from '../../constants/theme'
 export default function ClientCaseDetail() {
   const [caseDetail, setCaseDetail] = useState<any>(null)
   const [loading, setLoading] = useState(false)
@@ -37,7 +37,7 @@ export default function ClientCaseDetail() {
       const res = await axios.post(`/client/cases/${caseId}`, { client_id: user.id })
       setCaseDetail(res)
     } catch (error) {
-      console.error('Fetch case detail error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -47,10 +47,10 @@ export default function ClientCaseDetail() {
   const fetchPushNotifications = async (caseId: string) => {
     setLoadingPush(true)
     try {
-      const res = await axios.post(`/client/cases/${caseId}/push-notifications`, { client_id: user.id })
+      const res = await axios.post(`/client/cases/${caseId}/push-notifications`, { client_id: user.id }) as Record<string, unknown>[]
       setPushNotifications(res || [])
     } catch (error) {
-      console.error('Fetch push notifications error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoadingPush(false)
     }
@@ -60,10 +60,10 @@ export default function ClientCaseDetail() {
   const fetchDocuments = async (caseId: string) => {
     setLoadingDocs(true)
     try {
-      const res = await axios.post(`/client/cases/${caseId}/documents/list`, { client_id: user.id })
+      const res = await axios.post(`/client/cases/${caseId}/documents/list`, { client_id: user.id }) as Record<string, unknown>[]
       setDocuments(res || [])
     } catch (error) {
-      console.error('Fetch documents error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoadingDocs(false)
     }
@@ -202,7 +202,7 @@ export default function ClientCaseDetail() {
             <Avatar
               icon={<UserOutlined />}
               style={{
-                background: 'linear-gradient(135deg, #1a2332 0%, #131c2a 100%)',
+                background: `linear-gradient(135deg, ${appTheme.brandDark} 0%, #131c2a 100%)`,
                 width: 56,
                 height: 56,
                 border: '3px solid rgba(6,182,212,0.2)',

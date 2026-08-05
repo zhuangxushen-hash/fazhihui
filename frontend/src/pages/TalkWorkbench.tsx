@@ -130,15 +130,15 @@ export default function TalkWorkbench() {
   // 获取阶段显示文本和颜色
   const getStageTag = (stage: OpportunityStage) => {
     const stageMap: Record<OpportunityStage, { text: string; color: string }> = {
-      [OpportunityStage.FIRST_CONTACT]: { text: '初次沟通', color: 'orange' },
-      [OpportunityStage.REQUIREMENT_CONFIRM]: { text: '需求确认', color: 'blue' },
-      [OpportunityStage.QUOTE_SENT]: { text: '方案报价', color: 'purple' },
-      [OpportunityStage.FOLLOWING_UP]: { text: '跟进中', color: 'cyan' },
-      [OpportunityStage.SIGNED]: { text: '已签约', color: 'green' },
-      [OpportunityStage.LOST]: { text: '已流失', color: 'red' },
+      [OpportunityStage.FIRST_CONTACT]: { text: '初次沟通', color: 'warning' },
+      [OpportunityStage.REQUIREMENT_CONFIRM]: { text: '需求确认', color: 'primary' },
+      [OpportunityStage.QUOTE_SENT]: { text: '方案报价', color: 'gold' },
+      [OpportunityStage.FOLLOWING_UP]: { text: '跟进中', color: 'info' },
+      [OpportunityStage.SIGNED]: { text: '已签约', color: 'success' },
+      [OpportunityStage.LOST]: { text: '已流失', color: 'error' },
     }
     const config = stageMap[stage]
-    return <Tag color={config.color}>{config.text}</Tag>
+    return <Tag className={`stitch-tag stitch-tag-${config.color}`}>{config.text}</Tag>
   }
 
   // 打开创建商机弹窗
@@ -182,7 +182,6 @@ export default function TalkWorkbench() {
       const progress = await getOpportunitySOPProgress(opportunityId)
       setSopProgress(progress)
     } catch (error) {
-      console.error('加载SOP进度失败', error)
       setSopProgress(null)
     } finally {
       setSopLoading(false)
@@ -196,8 +195,8 @@ export default function TalkWorkbench() {
       const progress = await completeNode(currentOpp.id, nodeId)
       setSopProgress(progress)
       message.success('节点已完成')
-    } catch (error: any) {
-      message.error(error.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } }).response?.data?.message || '操作失败')
     }
   }
 
@@ -208,8 +207,8 @@ export default function TalkWorkbench() {
       const progress = await uncompleteNode(currentOpp.id, nodeId)
       setSopProgress(progress)
       message.success('已取消完成')
-    } catch (error: any) {
-      message.error(error.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } }).response?.data?.message || '操作失败')
     }
   }
 
@@ -456,13 +455,15 @@ export default function TalkWorkbench() {
             }
             key="today"
           >
-            <Table
-              columns={todayColumns}
-              dataSource={todayArrivals}
-              rowKey="id"
-              loading={loading}
-              pagination={{ pageSize: 10 }}
-            />
+            <div className="stitch-table">
+              <Table
+                columns={todayColumns}
+                dataSource={todayArrivals}
+                rowKey="id"
+                loading={loading}
+                pagination={{ pageSize: 10 }}
+              />
+            </div>
           </TabPane>
 
           <TabPane
@@ -473,39 +474,45 @@ export default function TalkWorkbench() {
             }
             key="pending"
           >
-            <Table
-              columns={pendingColumns}
-              dataSource={pendingOpps}
-              rowKey="id"
-              loading={loading}
-              pagination={{ pageSize: 10 }}
-            />
+            <div className="stitch-table">
+              <Table
+                columns={pendingColumns}
+                dataSource={pendingOpps}
+                rowKey="id"
+                loading={loading}
+                pagination={{ pageSize: 10 }}
+              />
+            </div>
           </TabPane>
 
           <TabPane
             tab={<span>已签约</span>}
             key="signed"
           >
-            <Table
-              columns={completedColumns}
-              dataSource={signedOpps}
-              rowKey="id"
-              loading={loading}
-              pagination={{ pageSize: 10 }}
-            />
+            <div className="stitch-table">
+              <Table
+                columns={completedColumns}
+                dataSource={signedOpps}
+                rowKey="id"
+                loading={loading}
+                pagination={{ pageSize: 10 }}
+              />
+            </div>
           </TabPane>
 
           <TabPane
             tab={<span>已流失</span>}
             key="lost"
           >
-            <Table
-              columns={completedColumns}
-              dataSource={lostOpps}
-              rowKey="id"
-              loading={loading}
-              pagination={{ pageSize: 10 }}
-            />
+            <div className="stitch-table">
+              <Table
+                columns={completedColumns}
+                dataSource={lostOpps}
+                rowKey="id"
+                loading={loading}
+                pagination={{ pageSize: 10 }}
+              />
+            </div>
           </TabPane>
         </Tabs>
       </Card>
@@ -563,7 +570,7 @@ export default function TalkWorkbench() {
 
             {/* 阶段更新 */}
             <Card title="阶段管理" size="small" style={{ marginBottom: 16 }}>
-              <Space wrap>
+              <Space wrap className="stitch-btn-group">
                 {Object.values(OpportunityStage).map(stage => (
                   <Button
                     key={stage}
@@ -669,9 +676,9 @@ export default function TalkWorkbench() {
                   {currentOpp.stage_logs.map(log => (
                     <Timeline.Item key={log.id} color="blue">
                       <div>
-                        <Tag>{getStageTag(log.from_stage)}</Tag>
+                        <Tag className="stitch-tag">{getStageTag(log.from_stage)}</Tag>
                         →
-                        <Tag color="green">{getStageTag(log.to_stage)}</Tag>
+                        <Tag className="stitch-tag stitch-tag-success">{getStageTag(log.to_stage)}</Tag>
                       </div>
                       <div style={{ fontSize: 12, color: '#999' }}>
                         {log.operator?.real_name} · {dayjs(log.created_at).format('MM-DD HH:mm')}
@@ -735,9 +742,9 @@ export default function TalkWorkbench() {
                             <span style={{ fontWeight: 500 }}>
                               {index + 1}. {node.node_name}
                             </span>
-                            <Tag color="blue" style={{ marginLeft: 8 }}>{getNodeTypeName(node.node_type)}</Tag>
+                            <Tag className="stitch-tag stitch-tag-info" style={{ marginLeft: 8 }}>{getNodeTypeName(node.node_type)}</Tag>
                             {node.is_required && (
-                              <Tag color="red">强制</Tag>
+                              <Tag className="stitch-tag stitch-tag-error">强制</Tag>
                             )}
                           </div>
                           {node.description && (
@@ -773,7 +780,7 @@ export default function TalkWorkbench() {
 
             {/* 操作按钮 */}
             <Divider />
-            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+            <Space className="stitch-btn-group" style={{ width: '100%', justifyContent: 'flex-end' }}>
               <Popconfirm
                 title="确定标记为流失？"
                 onConfirm={handleMarkLost}

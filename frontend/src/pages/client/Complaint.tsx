@@ -4,7 +4,7 @@ import { MessageOutlined, BellOutlined, WarningOutlined, CheckCircleOutlined, Cl
 import axios from '../../api/axios'
 import BottomNav from '../../components/BottomNav'
 import ClientButton from '../../components/ClientButton'
-
+import { theme as appTheme } from '../../constants/theme'
 export default function Complaint() {
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
@@ -57,7 +57,7 @@ export default function Complaint() {
           zIndex: 50,
         }}
       >
-        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #1a2332 0%, #131c2a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ width: 40, height: 40, borderRadius: '50%', background: `linear-gradient(135deg, ${appTheme.brandDark} 0%, #131c2a 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <BellOutlined style={{ fontSize: 22, color: '#e4c278' }} />
         </div>
         <div>

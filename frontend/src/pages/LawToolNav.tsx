@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { Menu, Input, Card, Row, Col, Button, Space, Spin, message } from 'antd'
 import { SearchOutlined, LinkOutlined, StarOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
+import { theme } from '../constants/theme'
 
 // 法律工具类型
 interface LawTool {
@@ -240,7 +241,7 @@ export default function LawToolNav() {
   return (
     <div>
       {/* 顶部搜索框 */}
-      <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+      <div className="stitch-filter-bar" style={{ background: theme.bgContainer, padding: 16, borderRadius: 8, marginBottom: 16 }}>
         <Input
           placeholder="搜索法律工具"
           prefix={<SearchOutlined />}
@@ -252,8 +253,8 @@ export default function LawToolNav() {
       </div>
 
       {/* 顶部快捷工具栏（12个） */}
-      <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
-        <Space size={[12, 12]} wrap>
+      <div style={{ background: theme.bgContainer, padding: 16, borderRadius: 8, marginBottom: 16 }}>
+        <Space size={[12, 12]} wrap className="stitch-btn-group">
           {quickTools.map((t) => (
             <Button key={t.id} icon={<StarOutlined />} onClick={() => handleAccess(t)}>
               {t.name}
@@ -264,7 +265,7 @@ export default function LawToolNav() {
 
       {/* 左侧分类菜单 + 右侧工具卡片网格 */}
       <div style={{ display: 'flex', gap: 16 }}>
-        <div style={{ width: 220, background: '#fff', borderRadius: 8, flexShrink: 0 }}>
+        <div style={{ width: 220, background: theme.bgContainer, borderRadius: 8, flexShrink: 0 }}>
           <Menu
             mode="inline"
             selectedKeys={[activeCategory]}
@@ -276,7 +277,7 @@ export default function LawToolNav() {
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <Spin spinning={loading}>
-            <div style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
+            <div style={{ background: theme.bgContainer, padding: 16, borderRadius: 8 }}>
               <h3 style={{ marginTop: 0, marginBottom: 16 }}>
                 {keyword ? `搜索结果：${keyword}` : categoryLabels[activeCategory] || '工具列表'}
               </h3>
@@ -291,13 +292,13 @@ export default function LawToolNav() {
                         <Button key="visit" type="link" onClick={() => handleAccess(tool)}>访问</Button>,
                       ]}
                     >
-                      <p style={{ minHeight: 40, color: '#666', marginBottom: 0 }}>{tool.description}</p>
+                      <p style={{ minHeight: 40, color: theme.textTertiary, marginBottom: 0 }}>{tool.description}</p>
                     </Card>
                   </Col>
                 ))}
               </Row>
               {displayTools.length === 0 && (
-                <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>暂无工具</div>
+                <div style={{ textAlign: 'center', padding: 40, color: theme.textTertiary }}>暂无工具</div>
               )}
             </div>
           </Spin>

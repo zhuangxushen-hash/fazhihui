@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons'
 import { getDiagrams, createDiagram, updateDiagram, deleteDiagram } from '../api/diagram'
 import dayjs from 'dayjs'
+import { theme } from '../constants/theme'
 
 // 图表类型中文映射
 const DIAGRAM_TYPE_MAP: Record<string, string> = {
@@ -169,7 +170,7 @@ const DiagramTool = () => {
   }
 
   // 画布鼠标抬起：结束拖拽
-  const onCanvasMouseUp = () => {
+  const handleCanvasMouseUp = () => {
     setDragging(null)
   }
 
@@ -309,10 +310,10 @@ const DiagramTool = () => {
                   onClick={() => openDiagram(d)}
                 >
                   <p style={{ margin: '8px 0' }}>
-                    <Tag color="blue">{DIAGRAM_TYPE_MAP[d.type] || d.type}</Tag>
-                    {d.case_id && <Tag>关联案件</Tag>}
+                    <Tag className="stitch-tag stitch-tag-info">{DIAGRAM_TYPE_MAP[d.type] || d.type}</Tag>
+                    {d.case_id && <Tag className="stitch-tag stitch-tag-primary">关联案件</Tag>}
                   </p>
-                  <p style={{ margin: 0, color: '#999', fontSize: 12 }}>
+                  <p style={{ margin: 0, color: theme.textTertiary, fontSize: 12 }}>
                     更新时间：{dayjs(d.updated_at).format('YYYY-MM-DD HH:mm')}
                   </p>
                 </Card>
@@ -368,7 +369,7 @@ const DiagramTool = () => {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
         <Button icon={<ArrowLeftOutlined />} onClick={backToList}>返回列表</Button>
         <span style={{ fontWeight: 600, fontSize: 16 }}>{current.title}</span>
-        <Tag color="blue">{DIAGRAM_TYPE_MAP[current.type] || current.type}</Tag>
+        <Tag className="stitch-tag stitch-tag-info">{DIAGRAM_TYPE_MAP[current.type] || current.type}</Tag>
         <span style={{ flex: 1 }} />
         <Button icon={<PlusCircleOutlined />} onClick={addNode}>添加节点</Button>
         <Button
@@ -386,13 +387,13 @@ const DiagramTool = () => {
         ref={canvasRef}
         onClick={onCanvasClick}
         onMouseMove={onCanvasMouseMove}
-        onMouseUp={onCanvasMouseUp}
-        onMouseLeave={onCanvasMouseUp}
+        onMouseUp={handleCanvasMouseUp}
+        onMouseLeave={handleCanvasMouseUp}
         style={{
           flex: 1,
           position: 'relative',
           background: '#fafafa',
-          border: '1px solid #e8e8e8',
+          border: `1px solid ${theme.borderSecondary}`,
           borderRadius: 8,
           overflow: 'hidden',
           cursor: dragging ? 'move' : linkMode ? 'crosshair' : 'default',
@@ -414,9 +415,9 @@ const DiagramTool = () => {
             const midY = (from.y + to.y) / 2
             return (
               <g key={`edge_${idx}`} style={{ pointerEvents: 'auto', cursor: 'pointer' }} onClick={() => onEdgeClick(ed)}>
-                <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke="#888" strokeWidth={2} />
+                <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke={theme.gray} strokeWidth={2} />
                 {ed.label && (
-                  <text x={midX} y={midY} fill="#555" fontSize={12} textAnchor="middle" style={{ pointerEvents: 'none' }}>
+                  <text x={midX} y={midY} fill={theme.textSecondary} fontSize={12} textAnchor="middle" style={{ pointerEvents: 'none' }}>
                     {ed.label}
                   </text>
                 )}
@@ -441,7 +442,7 @@ const DiagramTool = () => {
                 width: NODE_W,
                 minHeight: NODE_H,
                 background: node.color,
-                color: '#fff',
+                color: theme.white,
                 borderRadius: 8,
                 display: 'flex',
                 alignItems: 'center',
@@ -484,7 +485,7 @@ const DiagramTool = () => {
       </div>
 
       {/* 底部节点属性面板 */}
-      <div style={{ marginTop: 12, padding: 12, background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div style={{ marginTop: 12, padding: 12, background: theme.white, border: `1px solid ${theme.borderSecondary}`, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
         {selectedNode ? (
           <>
             <span style={{ fontWeight: 600 }}>节点属性</span>
@@ -499,12 +500,12 @@ const DiagramTool = () => {
               type="color"
               value={selectedNode.color}
               onChange={e => updateNodeColor(selectedNode.id, e.target.value)}
-              style={{ width: 40, height: 32, border: '1px solid #d9d9d9', borderRadius: 6, cursor: 'pointer', padding: 2, background: '#fff' }}
+              style={{ width: 40, height: 32, border: `1px solid ${theme.border}`, borderRadius: 6, cursor: 'pointer', padding: 2, background: theme.white }}
             />
             <Button danger icon={<DeleteOutlined />} onClick={deleteSelectedNode}>删除节点</Button>
           </>
         ) : (
-          <span style={{ color: '#999' }}>
+          <span style={{ color: theme.textTertiary }}>
             {linkMode ? '连线模式：依次点击两个节点创建连线，点击连线可删除' : '请选择节点编辑属性，双击节点编辑文字，点击连线可删除'}
           </span>
         )}

@@ -4,7 +4,7 @@ import { MobileOutlined, LockOutlined, KeyOutlined, WechatOutlined } from '@ant-
 import { login } from '../../api/auth'
 import { showError } from '../../utils/error'
 import logo from '../../assets/fazhihui-logo.svg'
-
+import { theme } from '../../constants/theme'
 /**
  * C端客户移动端登录页 - Material Design 3 风格
  * 参考设计：stitch_multi_platform_frontend_generator/_10/code.html
@@ -113,7 +113,7 @@ export default function ClientLogin() {
             margin: '0 auto 20px',
             borderRadius: 24,
             background:
-              'linear-gradient(135deg, #131c2a 0%, #1a2332 50%, #2a3548 100%)',
+              `linear-gradient(135deg, #131c2a 0%, ${theme.brandDark} 50%, #2a3548 100%)`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -320,7 +320,7 @@ export default function ClientLogin() {
                 fontSize: 16,
                 fontWeight: 600,
                 borderRadius: 10,
-                background: '#0071e3',
+                background: theme.primary,
                 border: 'none',
                 boxShadow: '0 2px 8px rgba(0, 113, 227, 0.2)',
               }}

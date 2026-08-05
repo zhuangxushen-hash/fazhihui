@@ -3,12 +3,12 @@ import { Card, Tabs, Form, Input, Select, Button, Table, Tag, Space, Modal, mess
 import { PlusOutlined, EditOutlined, DeleteOutlined, ApiOutlined, ThunderboltOutlined, WechatOutlined, AlipayCircleOutlined, SettingOutlined, CloudOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
-
+import { theme } from '../constants/theme'
 const { TabPane } = Tabs
 
 const typeIcons: Record<string, React.ReactNode> = {
   wechat: <WechatOutlined style={{ color: '#07C160' }} />,
-  wework: <CloudOutlined style={{ color: '#0071e3' }} />,
+  wework: <CloudOutlined style={{ color: theme.primary }} />,
   alipay: <AlipayCircleOutlined style={{ color: '#1677FF' }} />,
   third_party: <ApiOutlined style={{ color: '#722ED1' }} />,
   api: <ApiOutlined style={{ color: '#FA8C16' }} />,
@@ -22,10 +22,11 @@ const typeLabels: Record<string, string> = {
   api: '自定义API',
 }
 
-const statusLabels: Record<string, { color: string; text: string }> = {
-  active: { color: 'green', text: '已启用' },
-  inactive: { color: 'default', text: '已停用' },
-  pending: { color: 'orange', text: '待配置' },
+// 状态标签样式映射（对齐 Stitch 设计规范，返回 className）
+const statusLabels: Record<string, { className: string; text: string }> = {
+  active: { className: 'stitch-tag stitch-tag-success', text: '已启用' },
+  inactive: { className: 'stitch-tag stitch-tag-info', text: '已停用' },
+  pending: { className: 'stitch-tag stitch-tag-warning', text: '待配置' },
 }
 
 export default function IntegrationManagement() {
@@ -48,10 +49,10 @@ export default function IntegrationManagement() {
   const fetchIntegrations = async () => {
     setLoading(true)
     try {
-      const res = await axios.get('/system/integrations', { params: { org_id: user.organization_id } })
-      setIntegrations(res.data || [])
+      const res = await axios.get('/system/integrations', { params: { org_id: user.organization_id } }) as Record<string, unknown>
+      setIntegrations((res.data || []) as Record<string, unknown>[])
     } catch (error) {
-      console.error('Fetch integrations error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -89,7 +90,6 @@ export default function IntegrationManagement() {
       fetchIntegrations()
     } catch (error) {
       message.error(isEdit ? '更新失败' : '创建失败')
-      console.error('Submit integration error:', error)
     }
   }
 
@@ -100,7 +100,6 @@ export default function IntegrationManagement() {
       fetchIntegrations()
     } catch (error) {
       message.error('删除失败')
-      console.error('Delete integration error:', error)
     }
   }
 
@@ -112,7 +111,6 @@ export default function IntegrationManagement() {
       setTestResult(res)
     } catch (error) {
       setTestResult({ success: false, message: '连接测试请求失败' })
-      console.error('Test connection error:', error)
     } finally {
       setTestingId(null)
     }
@@ -126,7 +124,6 @@ export default function IntegrationManagement() {
       fetchIntegrations()
     } catch (error) {
       message.error('状态更新失败')
-      console.error('Toggle status error:', error)
     }
   }
 
@@ -141,12 +138,12 @@ export default function IntegrationManagement() {
         <span>{v}</span>
       </Space>
     )},
-    { title: '对接类型', dataIndex: 'integration_type', key: 'integration_type', render: (v: string) => <Tag color="blue">{typeLabels[v] || v}</Tag> },
+    { title: '对接类型', dataIndex: 'integration_type', key: 'integration_type', render: (v: string) => <Tag className="stitch-tag stitch-tag-primary">{typeLabels[v] || v}</Tag> },
     { title: 'App ID', dataIndex: 'app_id', key: 'app_id', render: (v: string) => v || '-' },
-    { title: 'API地址', dataIndex: 'api_url', key: 'api_url', render: (v: string) => v ? <span style={{ color: '#0071e3' }}>{v}</span> : '-' },
+    { title: 'API地址', dataIndex: 'api_url', key: 'api_url', render: (v: string) => v ? <span style={{ color: theme.primary }}>{v}</span> : '-' },
     { title: '状态', dataIndex: 'status', key: 'status', render: (v: string) => {
-      const info = statusLabels[v] || { color: 'default', text: v }
-      return <Tag color={info.color}>{info.text}</Tag>
+      const info = statusLabels[v] || { className: 'stitch-tag stitch-tag-info', text: v }
+      return <Tag className={info.className}>{info.text}</Tag>
     }},
     { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (v: string) => formatDateTime(v) },
     { title: '操作', key: 'action', render: (_: any, record: any) => (
@@ -187,7 +184,9 @@ export default function IntegrationManagement() {
       <Card style={{ borderRadius: 12 }}>
         <Tabs activeKey={activeTab} onChange={handleTabChange}>
           <TabPane tab={<span><SettingOutlined /> 对接列表</span>} key="list">
-            <Table columns={columns} dataSource={integrations} loading={loading} rowKey="id" pagination={{ pageSize: 10 }} />
+            <div className="stitch-table">
+              <Table columns={columns} dataSource={integrations} loading={loading} rowKey="id" pagination={{ pageSize: 10 }} />
+            </div>
           </TabPane>
 
           <TabPane tab={<span><PlusOutlined /> 新建对接</span>} key="create">
@@ -206,7 +205,7 @@ export default function IntegrationManagement() {
                     <Space><WechatOutlined style={{ color: '#07C160' }} /> 微信</Space>
                   </Select.Option>
                   <Select.Option value="wework">
-                    <Space><CloudOutlined style={{ color: '#0071e3' }} /> 企业微信</Space>
+                    <Space><CloudOutlined style={{ color: theme.primary }} /> 企业微信</Space>
                   </Select.Option>
                   <Select.Option value="alipay">
                     <Space><AlipayCircleOutlined style={{ color: '#1677FF' }} /> 支付宝</Space>
@@ -282,7 +281,7 @@ export default function IntegrationManagement() {
                     <Space>
                       {typeIcons[item.integration_type]}
                       <span>{item.integration_name}</span>
-                      <Tag color={statusLabels[item.status]?.color} style={{ marginLeft: 'auto' }}>
+                      <Tag className={statusLabels[item.status]?.className} style={{ marginLeft: 'auto' }}>
                         {statusLabels[item.status]?.text}
                       </Tag>
                     </Space>
@@ -305,7 +304,7 @@ export default function IntegrationManagement() {
                     <Descriptions.Item label="App ID">{item.app_id || '-'}</Descriptions.Item>
                   </Descriptions>
                   {testingId === item.id && (
-                    <div style={{ marginTop: 12, textAlign: 'center', color: '#717785' }}>
+                    <div style={{ marginTop: 12, textAlign: 'center', color: theme.textTertiary }}>
                       正在测试连接...
                     </div>
                   )}
@@ -315,7 +314,7 @@ export default function IntegrationManagement() {
                       padding: '8px 12px',
                       borderRadius: 8,
                       background: testResult.success ? 'rgba(46, 125, 50, 0.08)' : 'rgba(186, 26, 26, 0.08)',
-                      color: testResult.success ? '#2e7d32' : '#ba1a1a',
+                      color: testResult.success ? theme.success : theme.error,
                     }}>
                       {testResult.success ? '✓ ' : '✗ '}{testResult.message}
                     </div>

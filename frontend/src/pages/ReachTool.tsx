@@ -4,7 +4,7 @@ import { PlusOutlined, EditOutlined, DeleteOutlined, SendOutlined, ScheduleOutli
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
 import dayjs from 'dayjs'
-
+import { theme } from '../constants/theme'
 const { TextArea } = Input
 
 const taskTypeOptions = [
@@ -27,26 +27,12 @@ const taskTypeLabel: Record<string, string> = {
   group_sop: '社群SOP',
 }
 
-const taskTypeColor: Record<string, string> = {
-  '1v1': 'blue',
-  moments: 'orange',
-  group_sop: 'green',
-}
-
 const statusLabel: Record<string, string> = {
   draft: '草稿',
   pending: '待发送',
   sending: '发送中',
   sent: '已发送',
   failed: '失败',
-}
-
-const statusColor: Record<string, string> = {
-  draft: 'default',
-  pending: 'processing',
-  sending: 'blue',
-  sent: 'success',
-  failed: 'error',
 }
 
 export default function ReachTool() {
@@ -72,7 +58,7 @@ export default function ReachTool() {
       setData(tasksRes || [])
       setTags(tagsRes || [])
     } catch (error) {
-      console.error('Fetch reach tasks error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -113,7 +99,7 @@ export default function ReachTool() {
       })
       setTargetCount(res)
     } catch (error) {
-      console.error('Calc target error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -147,7 +133,7 @@ export default function ReachTool() {
       setModalVisible(false)
       fetchData()
     } catch (error) {
-      console.error('Submit error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -183,12 +169,19 @@ export default function ReachTool() {
       setMomentsSchedule(res || [])
       setScheduleVisible(true)
     } catch (error) {
-      console.error('Fetch schedule error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
   const columns = [
-    { title: '任务类型', dataIndex: 'task_type', key: 'task_type', render: (v: string) => <Tag color={taskTypeColor[v] || 'default'}>{taskTypeLabel[v] || v}</Tag> },
+    { title: '任务类型', dataIndex: 'task_type', key: 'task_type', render: (v: string) => {
+      // 根据任务类型映射 stitch-tag 类名
+      const tagClass = v === '1v1' ? 'stitch-tag stitch-tag-primary' :
+        v === 'moments' ? 'stitch-tag stitch-tag-warning' :
+        v === 'group_sop' ? 'stitch-tag stitch-tag-success' :
+        'stitch-tag'
+      return <Tag className={tagClass}>{taskTypeLabel[v] || v}</Tag>
+    } },
     {
       title: '内容预览',
       dataIndex: 'content',
@@ -203,7 +196,7 @@ export default function ReachTool() {
         try {
           const tagIds = record.target_tags ? JSON.parse(record.target_tags) : []
           return tagIds.length > 0
-            ? <Tag color="orange">{tagIds.length} 个标签</Tag>
+            ? <Tag className="stitch-tag stitch-tag-warning">{tagIds.length} 个标签</Tag>
             : <span style={{ color: '#86868b' }}>全部</span>
         } catch {
           return '-'
@@ -217,14 +210,23 @@ export default function ReachTool() {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      render: (v: string) => <Tag color={statusColor[v] || 'default'}>{statusLabel[v] || v}</Tag>,
+      render: (v: string) => {
+        // 根据触达状态映射 stitch-tag 类名
+        const tagClass = v === 'draft' ? 'stitch-tag stitch-tag-primary' :
+          v === 'pending' ? 'stitch-tag stitch-tag-warning' :
+          v === 'sending' ? 'stitch-tag stitch-tag-info' :
+          v === 'sent' ? 'stitch-tag stitch-tag-success' :
+          v === 'failed' ? 'stitch-tag stitch-tag-error' :
+          'stitch-tag'
+        return <Tag className={tagClass}>{statusLabel[v] || v}</Tag>
+      },
     },
     {
       title: '操作',
       key: 'action',
       width: 240,
       render: (_: any, record: any) => (
-        <Space>
+        <Space className="stitch-btn-group">
           {record.status !== 'sent' && (
             <Button size="small" type="primary" icon={<SendOutlined />} onClick={() => handleSend(record)}>发送</Button>
           )}
@@ -244,7 +246,16 @@ export default function ReachTool() {
         return acc.length
       } catch { return 0 }
     } },
-    { title: '状态', dataIndex: 'status', key: 'status', render: (v: string) => <Tag color={statusColor[v] || 'default'}>{statusLabel[v] || v}</Tag> },
+    { title: '状态', dataIndex: 'status', key: 'status', render: (v: string) => {
+      // 根据触达状态映射 stitch-tag 类名
+      const tagClass = v === 'draft' ? 'stitch-tag stitch-tag-primary' :
+        v === 'pending' ? 'stitch-tag stitch-tag-warning' :
+        v === 'sending' ? 'stitch-tag stitch-tag-info' :
+        v === 'sent' ? 'stitch-tag stitch-tag-success' :
+        v === 'failed' ? 'stitch-tag stitch-tag-error' :
+        'stitch-tag'
+      return <Tag className={tagClass}>{statusLabel[v] || v}</Tag>
+    } },
   ]
 
   return (
@@ -254,7 +265,7 @@ export default function ReachTool() {
           <h2 style={{ fontSize: 24, fontWeight: 700, color: '#1d1d1f', margin: 0 }}>私域触达工具</h2>
           <p style={{ fontSize: 14, color: '#86868b', marginTop: 4 }}>1v1 / 朋友圈 / 社群SOP, 按标签筛选发送, 多账号同步发布</p>
         </div>
-        <Space>
+        <Space className="stitch-btn-group">
           <Button
             icon={<ScheduleOutlined />}
             onClick={handleViewSchedule}
@@ -266,14 +277,14 @@ export default function ReachTool() {
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleAdd}
-            style={{ borderRadius: 10, padding: '8px 20px', background: '#0071e3', border: 'none' }}
+            style={{ borderRadius: 10, padding: '8px 20px', background: theme.primary, border: 'none' }}
           >
             新建触达任务
           </Button>
         </Space>
       </div>
 
-      <div style={{ background: '#fff', borderRadius: 16, boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)', overflow: 'hidden' }}>
+      <div className="stitch-table" style={{ background: '#fff', borderRadius: 16, boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)', overflow: 'hidden' }}>
         <Table
           dataSource={data}
           columns={columns}
@@ -312,7 +323,7 @@ export default function ReachTool() {
             <Space>
               <Button onClick={handleCalcTarget} style={{ borderRadius: 10 }}>计算目标数</Button>
               {targetCount !== null && (
-                <Tag color="blue" style={{ fontSize: 14, padding: '4px 12px' }}>目标客户: {targetCount}</Tag>
+                <Tag className="stitch-tag stitch-tag-info" style={{ fontSize: 14, padding: '4px 12px' }}>目标客户: {targetCount}</Tag>
               )}
             </Space>
           </Form.Item>
@@ -347,6 +358,7 @@ export default function ReachTool() {
         style={{ borderRadius: 20 }}
       >
         <Table
+          className="stitch-table"
           dataSource={momentsSchedule}
           columns={scheduleColumns}
           rowKey="id"

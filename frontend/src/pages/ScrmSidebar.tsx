@@ -3,7 +3,7 @@ import { Card, Tabs, Input, Button, Tag, List, Avatar, Empty, Form, Select, mess
 import { UserOutlined, SendOutlined, FileTextOutlined, MessageOutlined, TagOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
-
+import { theme } from '../constants/theme'
 const { TextArea } = Input
 
 const categoryOptions = [
@@ -51,7 +51,6 @@ export default function ScrmSidebar() {
       })
       setProfile(res)
     } catch (error) {
-      console.error('Fetch profile error:', error)
       message.error('获取客户档案失败')
     } finally {
       setLoading(false)
@@ -64,7 +63,7 @@ export default function ScrmSidebar() {
       const res: any = await axios.get('/scrm/scripts', { params: { org_id: user.organization_id } })
       setScripts(res || [])
     } catch (error) {
-      console.error('Fetch scripts error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setScriptsLoading(false)
     }
@@ -117,7 +116,7 @@ export default function ScrmSidebar() {
       setScriptModalVisible(false)
       fetchScripts()
     } catch (error) {
-      console.error('Submit script error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -150,7 +149,7 @@ export default function ScrmSidebar() {
       followUpForm.resetFields()
       fetchProfile()
     } catch (error) {
-      console.error('Create follow-up error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -160,7 +159,7 @@ export default function ScrmSidebar() {
       label: <span><UserOutlined /> 客户档案</span>,
       children: (
         <div>
-          <Space style={{ marginBottom: 16 }} wrap>
+          <Space className="stitch-filter-bar" style={{ marginBottom: 16 }} wrap>
             <Input
               placeholder="客户ID"
               style={{ width: 220, borderRadius: 10 }}
@@ -177,7 +176,7 @@ export default function ScrmSidebar() {
               type="primary"
               onClick={fetchProfile}
               loading={loading}
-              style={{ borderRadius: 10, background: '#0071e3', border: 'none' }}
+              style={{ borderRadius: 10, background: theme.primary, border: 'none' }}
             >
               查询档案
             </Button>
@@ -223,7 +222,7 @@ export default function ScrmSidebar() {
                 {profile.tags?.length > 0 ? (
                   <Space wrap>
                     {profile.tags.map((t: any) => (
-                      <Tag key={t.id} color={t.tag_type === 'auto' ? 'orange' : 'blue'}>{t.tag_name}</Tag>
+                      <Tag key={t.id} className={t.tag_type === 'auto' ? 'stitch-tag stitch-tag-warning' : 'stitch-tag stitch-tag-primary'}>{t.tag_name}</Tag>
                     ))}
                   </Space>
                 ) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无标签" />}
@@ -290,7 +289,7 @@ export default function ScrmSidebar() {
                 <Button
                   type="primary"
                   onClick={handleCreateFollowUp}
-                  style={{ borderRadius: 10, background: '#0071e3', border: 'none' }}
+                  style={{ borderRadius: 10, background: theme.primary, border: 'none' }}
                 >
                   创建跟进任务
                 </Button>
@@ -309,7 +308,7 @@ export default function ScrmSidebar() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <span style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>话术库</span>
-            <Button type="primary" onClick={handleAddScript} style={{ borderRadius: 10, background: '#0071e3', border: 'none' }}>
+            <Button type="primary" onClick={handleAddScript} style={{ borderRadius: 10, background: theme.primary, border: 'none' }}>
               新建话术
             </Button>
           </div>
@@ -322,12 +321,12 @@ export default function ScrmSidebar() {
                 style={{ marginBottom: 12, borderRadius: 12 }}
                 title={
                   <Space>
-                    <Tag color="blue">{categoryLabel[item.category] || item.category}</Tag>
+                    <Tag className="stitch-tag stitch-tag-primary">{categoryLabel[item.category] || item.category}</Tag>
                     <span style={{ fontSize: 14, fontWeight: 600 }}>{item.title}</span>
                   </Space>
                 }
                 extra={
-                  <Space size="small">
+                  <Space className="stitch-btn-group" size="small">
                     <Button size="small" type="primary" icon={<SendOutlined />} onClick={() => handleSendScript(item)}>
                       发送
                     </Button>
@@ -379,8 +378,8 @@ export default function ScrmSidebar() {
             <Form.Item name="content" label="话术内容" rules={[{ required: true }]}>
               <TextArea rows={6} style={{ borderRadius: 10 }} />
             </Form.Item>
-            <Space>
-              <Button type="primary" onClick={handleSubmitScript} style={{ borderRadius: 10, background: '#0071e3', border: 'none' }}>
+            <Space className="stitch-btn-group">
+              <Button type="primary" onClick={handleSubmitScript} style={{ borderRadius: 10, background: theme.primary, border: 'none' }}>
                 保存
               </Button>
               <Button onClick={() => setScriptModalVisible(false)} style={{ borderRadius: 10 }}>

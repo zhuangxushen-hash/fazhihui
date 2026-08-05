@@ -17,6 +17,7 @@ import {
 } from '../api/contract'
 import axios from '../api/axios'
 import { formatDate, formatDateTime } from '../utils/format'
+import { theme } from '../constants/theme'
 
 // 合同类型中文映射
 const typeLabelMap: Record<string, string> = {
@@ -54,6 +55,17 @@ const stageColorMap: Record<string, string> = {
   voided: 'warning',
 }
 
+// 合同阶段 Stitch 变体映射
+const stageStitchMap: Record<string, string> = {
+  drafting: 'stitch-tag stitch-tag-primary',
+  reviewing: 'stitch-tag stitch-tag-info',
+  signed: 'stitch-tag stitch-tag-success',
+  performing: 'stitch-tag stitch-tag-gold',
+  completed: 'stitch-tag stitch-tag-success',
+  terminated: 'stitch-tag stitch-tag-error',
+  voided: 'stitch-tag stitch-tag-warning',
+}
+
 // 状态中文映射
 const statusLabelMap: Record<string, string> = {
   active: '有效',
@@ -74,6 +86,13 @@ const originalStatusColorMap: Record<string, string> = {
   na: 'default',
 }
 
+// 原件回收状态 Stitch 变体映射
+const originalStatusStitchMap: Record<string, string> = {
+  not_received: 'stitch-tag stitch-tag-warning',
+  received: 'stitch-tag stitch-tag-success',
+  na: 'stitch-tag stitch-tag-primary',
+}
+
 // 电子章/纸质章状态映射
 const sealStatusLabelMap: Record<string, string> = {
   none: '未用',
@@ -85,6 +104,13 @@ const sealStatusColorMap: Record<string, string> = {
   none: 'default',
   pending: 'processing',
   used: 'success',
+}
+
+// 电子章/纸质章状态 Stitch 变体映射
+const sealStatusStitchMap: Record<string, string> = {
+  none: 'stitch-tag stitch-tag-primary',
+  pending: 'stitch-tag stitch-tag-info',
+  used: 'stitch-tag stitch-tag-success',
 }
 
 // 用印状态映射
@@ -104,6 +130,15 @@ const sealUsageStatusColorMap: Record<string, string> = {
   voided: 'warning',
 }
 
+// 用印状态 Stitch 变体映射
+const sealUsageStatusStitchMap: Record<string, string> = {
+  unused: 'stitch-tag stitch-tag-primary',
+  pending: 'stitch-tag stitch-tag-info',
+  approved: 'stitch-tag stitch-tag-success',
+  used: 'stitch-tag stitch-tag-success',
+  voided: 'stitch-tag stitch-tag-warning',
+}
+
 // 合同审批状态映射
 const approvalStatusLabelMap: Record<string, string> = {
   draft: '草稿',
@@ -121,6 +156,15 @@ const approvalStatusColorMap: Record<string, string> = {
   archived: 'default',
 }
 
+// 合同审批状态 Stitch 变体映射
+const approvalStatusStitchMap: Record<string, string> = {
+  draft: 'stitch-tag stitch-tag-primary',
+  pending: 'stitch-tag stitch-tag-info',
+  approved: 'stitch-tag stitch-tag-success',
+  rejected: 'stitch-tag stitch-tag-error',
+  archived: 'stitch-tag stitch-tag-primary',
+}
+
 // 合同交回状态映射
 const returnStatusLabelMap: Record<string, string> = {
   not_returned: '待交回',
@@ -132,6 +176,13 @@ const returnStatusColorMap: Record<string, string> = {
   not_returned: 'orange',
   returned: 'green',
   na: 'default',
+}
+
+// 合同交回状态 Stitch 变体映射
+const returnStatusStitchMap: Record<string, string> = {
+  not_returned: 'stitch-tag stitch-tag-warning',
+  returned: 'stitch-tag stitch-tag-success',
+  na: 'stitch-tag stitch-tag-primary',
 }
 
 // 申请用章方式映射
@@ -229,14 +280,17 @@ const sealApplyMethodOptions = [
   { value: 'both', label: '双章' },
 ]
 
+// 颜色映射保留作为参考，实际渲染已使用 Stitch 变体映射
+void [stageColorMap, originalStatusColorMap, sealStatusColorMap, sealUsageStatusColorMap, approvalStatusColorMap, returnStatusColorMap]
+
 export default function ContractManagement() {
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<Record<string, unknown>[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
-  const [editingContract, setEditingContract] = useState<any>(null)
+  const [editingContract, setEditingContract] = useState<Record<string, unknown> | null>(null)
   const [detailVisible, setDetailVisible] = useState(false)
-  const [currentContract, setCurrentContract] = useState<any>(null)
+  const [currentContract, setCurrentContract] = useState<Record<string, unknown> | null>(null)
   const [activeStage, setActiveStage] = useState('')
   const [activeMainTab, setActiveMainTab] = useState('contract')
   const [activeReturnTab, setActiveReturnTab] = useState('')
@@ -271,7 +325,7 @@ export default function ContractManagement() {
     setLoading(true)
     try {
       const values = searchForm.getFieldsValue()
-      const params: any = { org_id: user.organization_id }
+      const params: Record<string, unknown> = { org_id: user.organization_id }
       if (values.type) params.type = values.type
       if (values.status) params.status = values.status
       if (values.keyword) params.keyword = values.keyword
@@ -291,9 +345,9 @@ export default function ContractManagement() {
         params.return_status = values.return_status
       }
       if (stage) params.stage = stage
-      const res: any = await getContracts(params)
-      setData(res?.data || [])
-      setTotal(res?.total || 0)
+      const res = (await getContracts(params)) as Record<string, unknown>
+      setData((res?.data || []) as Record<string, unknown>[])
+      setTotal((res?.total || 0) as number)
     } catch (error) {
       message.error('获取合同列表失败')
     } finally {
@@ -341,8 +395,8 @@ export default function ContractManagement() {
   }
 
   // 打开合同交回弹窗
-  const handleOpenReturn = (record: any) => {
-    setReturnContractId(record.id)
+  const handleOpenReturn = (record: Record<string, unknown>) => {
+    setReturnContractId(record.id as string)
     returnForm.resetFields()
     returnForm.setFieldsValue({
       return_time: dayjs(),
@@ -351,23 +405,23 @@ export default function ContractManagement() {
   }
 
   // 提交合同交回
-  const handleReturnSubmit = async (values: any) => {
+  const handleReturnSubmit = async (values: Record<string, unknown>) => {
     if (!returnContractId) return
     try {
       await axios.put(`/contracts/${returnContractId}/return`, {
         returner_id: user.user_id || user.id,
-        return_time: values.return_time ? dayjs(values.return_time).format('YYYY-MM-DD HH:mm:ss') : undefined,
+        return_time: values.return_time ? dayjs(values.return_time as string).format('YYYY-MM-DD HH:mm:ss') : undefined,
       })
       message.success('合同交回登记成功')
       setReturnVisible(false)
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '合同交回失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '合同交回失败')
     }
   }
 
   // 撤销合同交回
-  const handleUnreturn = (record: any) => {
+  const handleUnreturn = (record: Record<string, unknown>) => {
     Modal.confirm({
       title: '撤销交回',
       content: '确认撤销该合同的交回登记？',
@@ -378,23 +432,24 @@ export default function ContractManagement() {
           await axios.put(`/contracts/${record.id}/unreturn`)
           message.success('已撤销合同交回')
           fetchData()
-        } catch (e: any) {
-          message.error(e?.response?.data?.message || '撤销失败')
+        } catch (e: unknown) {
+          const err = e as { response?: { data?: { message?: string } } }
+          message.error(err?.response?.data?.message || '撤销失败')
         }
       },
     })
   }
 
   // 打开合同审批弹窗
-  const handleOpenApproval = (record: any, action: 'submit' | 'approve' | 'reject') => {
-    setApprovalContractId(record.id)
+  const handleOpenApproval = (record: Record<string, unknown>, action: 'submit' | 'approve' | 'reject') => {
+    setApprovalContractId(record.id as string)
     setApprovalAction(action)
     approvalForm.resetFields()
     setApprovalVisible(true)
   }
 
   // 提交合同审批
-  const handleApprovalSubmit = async (values: any) => {
+  const handleApprovalSubmit = async (values: Record<string, unknown>) => {
     if (!approvalContractId) return
     try {
       if (approvalAction === 'submit') {
@@ -415,14 +470,15 @@ export default function ContractManagement() {
       }
       setApprovalVisible(false)
       fetchData()
-    } catch (e: any) {
-      message.error(e?.response?.data?.message || '审批操作失败')
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } }
+      message.error(err?.response?.data?.message || '审批操作失败')
     }
   }
 
   // 打开用印管理弹窗
-  const handleOpenSeal = (record: any) => {
-    setSealContractId(record.id)
+  const handleOpenSeal = (record: Record<string, unknown>) => {
+    setSealContractId(record.id as string)
     sealForm.resetFields()
     sealForm.setFieldsValue({
       seal_usage_status: record.seal_usage_status,
@@ -434,10 +490,10 @@ export default function ContractManagement() {
   }
 
   // 提交用印状态更新
-  const handleSealSubmit = async (values: any) => {
+  const handleSealSubmit = async (values: Record<string, unknown>) => {
     if (!sealContractId) return
     try {
-      const tasks: Promise<any>[] = []
+      const tasks: Promise<unknown>[] = []
       // 更新电子章状态
       if (values.electronic_seal_status) {
         tasks.push(axios.put(`/contracts/${sealContractId}/update-electronic-seal`, {
@@ -464,8 +520,9 @@ export default function ContractManagement() {
       message.success('用印状态更新成功')
       setSealVisible(false)
       fetchData()
-    } catch (e: any) {
-      message.error(e?.response?.data?.message || '用印状态更新失败')
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } }
+      message.error(err?.response?.data?.message || '用印状态更新失败')
     }
   }
 
@@ -477,30 +534,30 @@ export default function ContractManagement() {
   }
 
   // 编辑
-  const handleEdit = (record: any) => {
+  const handleEdit = (record: Record<string, unknown>) => {
     setEditingContract(record)
     form.setFieldsValue({
       ...record,
-      sign_date: record.sign_date ? dayjs(record.sign_date) : undefined,
-      start_date: record.start_date ? dayjs(record.start_date) : undefined,
-      end_date: record.end_date ? dayjs(record.end_date) : undefined,
+      sign_date: record.sign_date ? dayjs(record.sign_date as string) : undefined,
+      start_date: record.start_date ? dayjs(record.start_date as string) : undefined,
+      end_date: record.end_date ? dayjs(record.end_date as string) : undefined,
     })
     setModalVisible(true)
   }
 
   // 提交新增/编辑
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: Record<string, unknown>) => {
     try {
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         title: values.title,
         type: values.type,
         case_id: values.case_id,
         client_name: values.client_name,
         client_phone: values.client_phone,
         amount: values.amount,
-        sign_date: values.sign_date ? dayjs(values.sign_date).format('YYYY-MM-DD') : undefined,
-        start_date: values.start_date ? dayjs(values.start_date).format('YYYY-MM-DD') : undefined,
-        end_date: values.end_date ? dayjs(values.end_date).format('YYYY-MM-DD') : undefined,
+        sign_date: values.sign_date ? dayjs(values.sign_date as string).format('YYYY-MM-DD') : undefined,
+        start_date: values.start_date ? dayjs(values.start_date as string).format('YYYY-MM-DD') : undefined,
+        end_date: values.end_date ? dayjs(values.end_date as string).format('YYYY-MM-DD') : undefined,
         remarks: values.remarks,
         organization_id: user.organization_id,
         // 新增字段
@@ -510,7 +567,7 @@ export default function ContractManagement() {
         original_status: values.original_status,
       }
       if (editingContract) {
-        await updateContract(editingContract.id, payload)
+        await updateContract(editingContract.id as string, payload)
         message.success('合同更新成功')
       } else {
         await createContract(payload)
@@ -518,8 +575,8 @@ export default function ContractManagement() {
       }
       setModalVisible(false)
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
     }
   }
 
@@ -544,9 +601,9 @@ export default function ContractManagement() {
   }
 
   // 查看详情
-  const handleViewDetail = async (record: any) => {
+  const handleViewDetail = async (record: Record<string, unknown>) => {
     try {
-      const detail: any = await axios.get(`/contracts/${record.id}`)
+      const detail = (await axios.get(`/contracts/${record.id}`)) as Record<string, unknown>
       setCurrentContract(detail)
     } catch (error) {
       setCurrentContract(record)
@@ -555,7 +612,7 @@ export default function ContractManagement() {
   }
 
   // 审查
-  const handleReview = (record: any) => {
+  const handleReview = (record: Record<string, unknown>) => {
     Modal.confirm({
       title: '合同审查',
       content: '确认将该合同提交审查？合同阶段将从"起草中"变更为"审查中"。',
@@ -563,7 +620,7 @@ export default function ContractManagement() {
       cancelText: '取消',
       onOk: async () => {
         try {
-          await reviewContract(record.id)
+          await reviewContract(record.id as string)
           message.success('已提交审查')
           fetchData()
         } catch (error) {
@@ -574,7 +631,7 @@ export default function ContractManagement() {
   }
 
   // 签订
-  const handleSign = (record: any) => {
+  const handleSign = (record: Record<string, unknown>) => {
     Modal.confirm({
       title: '合同签订',
       content: '确认签订该合同？签订后合同阶段将变更为"已签订"。',
@@ -582,7 +639,7 @@ export default function ContractManagement() {
       cancelText: '取消',
       onOk: async () => {
         try {
-          await signContract(record.id)
+          await signContract(record.id as string)
           message.success('签订成功')
           fetchData()
         } catch (error) {
@@ -593,7 +650,7 @@ export default function ContractManagement() {
   }
 
   // 解约
-  const handleTerminate = (record: any) => {
+  const handleTerminate = (record: Record<string, unknown>) => {
     Modal.confirm({
       title: '合同解约',
       content: '确认解除该合同？解约后合同将无法继续履行。',
@@ -602,7 +659,7 @@ export default function ContractManagement() {
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
-          await terminateContract(record.id)
+          await terminateContract(record.id as string)
           message.success('已解约')
           fetchData()
         } catch (error) {
@@ -613,7 +670,7 @@ export default function ContractManagement() {
   }
 
   // 作废
-  const handleVoid = (record: any) => {
+  const handleVoid = (record: Record<string, unknown>) => {
     Modal.confirm({
       title: '合同作废',
       content: '确认作废该合同？作废后合同将视为无效。',
@@ -622,7 +679,7 @@ export default function ContractManagement() {
       okButtonProps: { danger: true },
       onOk: async () => {
         try {
-          await voidContract(record.id)
+          await voidContract(record.id as string)
           message.success('已作废')
           fetchData()
         } catch (error) {
@@ -633,53 +690,53 @@ export default function ContractManagement() {
   }
 
   // 打开更正弹窗
-  const handleOpenCorrect = (record: any) => {
-    setCorrectContractId(record.id)
+  const handleOpenCorrect = (record: Record<string, unknown>) => {
+    setCorrectContractId(record.id as string)
     correctForm.resetFields()
     setCorrectVisible(true)
   }
 
   // 提交更正
-  const handleCorrectSubmit = async (values: any) => {
+  const handleCorrectSubmit = async (values: Record<string, unknown>) => {
     if (!correctContractId) return
     try {
       await correctContract(correctContractId, {
-        reason: values.reason,
-        content: values.content,
+        reason: values.reason as string,
+        content: values.content as string,
         operator_id: user.user_id || user.id || '',
       })
       message.success('更正成功')
       setCorrectVisible(false)
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '更正失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '更正失败')
     }
   }
 
   // 原件回收确认
-  const handleReceiveOriginal = async (record: any) => {
+  const handleReceiveOriginal = async (record: Record<string, unknown>) => {
     try {
-      await receiveOriginal(record.id)
+      await receiveOriginal(record.id as string)
       message.success('原件回收登记成功')
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '原件回收登记失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '原件回收登记失败')
     }
   }
 
   // 打开分配确认弹窗
-  const handleOpenAllocation = (record: any) => {
-    setAllocationContractId(record.id)
+  const handleOpenAllocation = (record: Record<string, unknown>) => {
+    setAllocationContractId(record.id as string)
     allocationForm.resetFields()
     setAllocationVisible(true)
   }
 
   // 提交分配确认
-  const handleAllocationSubmit = async (values: any) => {
+  const handleAllocationSubmit = async (values: Record<string, unknown>) => {
     if (!allocationContractId) return
-    let ratioArr: any[] = []
+    let ratioArr: unknown[] = []
     try {
-      ratioArr = JSON.parse(values.ratio)
+      ratioArr = JSON.parse(values.ratio as string)
       if (!Array.isArray(ratioArr)) {
         message.error('分配比例必须为JSON数组')
         return
@@ -689,21 +746,21 @@ export default function ContractManagement() {
       return
     }
     try {
-      await confirmAllocation(allocationContractId, ratioArr)
+      await confirmAllocation(allocationContractId, ratioArr as Array<{ role: string; ratio: number }>)
       message.success('分配比例确认成功')
       setAllocationVisible(false)
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '分配比例确认失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '分配比例确认失败')
     }
   }
 
   // 根据当前阶段渲染操作按钮
-  const renderActions = (_: any, record: any) => {
-    const stage = record.stage
+  const renderActions = (_: unknown, record: Record<string, unknown>) => {
+    const stage = record.stage as string
     const isTerminal = ['completed', 'terminated', 'voided'].includes(stage)
     return (
-      <Space size="small" wrap>
+      <Space size="small" wrap className="stitch-btn-group">
         <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
         <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
         {stage === 'drafting' && (
@@ -755,7 +812,7 @@ export default function ContractManagement() {
         {!record.allocation_ratio && (
           <Button type="link" size="small" onClick={() => handleOpenAllocation(record)}>分配确认</Button>
         )}
-        <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} />
+        <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id as string)} />
       </Space>
     )
   }
@@ -778,7 +835,7 @@ export default function ContractManagement() {
       dataIndex: 'approval_status',
       key: 'approval_status',
       width: 100,
-      render: (s: string) => <Tag color={approvalStatusColorMap[s] || 'default'}>{approvalStatusLabelMap[s] || s || '草稿'}</Tag>,
+      render: (s: string) => <Tag className={approvalStatusStitchMap[s] || 'stitch-tag stitch-tag-primary'}>{approvalStatusLabelMap[s] || s || '草稿'}</Tag>,
     },
     {
       title: '用印方式',
@@ -792,35 +849,35 @@ export default function ContractManagement() {
       dataIndex: 'seal_usage_status',
       key: 'seal_usage_status',
       width: 100,
-      render: (s: string) => <Tag color={sealUsageStatusColorMap[s] || 'default'}>{sealUsageStatusLabelMap[s] || s || '未用印'}</Tag>,
+      render: (s: string) => <Tag className={sealUsageStatusStitchMap[s] || 'stitch-tag stitch-tag-primary'}>{sealUsageStatusLabelMap[s] || s || '未用印'}</Tag>,
     },
     {
       title: '电子章',
       dataIndex: 'electronic_seal_status',
       key: 'electronic_seal_status',
       width: 90,
-      render: (s: string) => <Tag color={sealStatusColorMap[s] || 'default'}>{sealStatusLabelMap[s] || s || '未用'}</Tag>,
+      render: (s: string) => <Tag className={sealStatusStitchMap[s] || 'stitch-tag stitch-tag-primary'}>{sealStatusLabelMap[s] || s || '未用'}</Tag>,
     },
     {
       title: '纸质章',
       dataIndex: 'paper_seal_status',
       key: 'paper_seal_status',
       width: 90,
-      render: (s: string) => <Tag color={sealStatusColorMap[s] || 'default'}>{sealStatusLabelMap[s] || s || '未用'}</Tag>,
+      render: (s: string) => <Tag className={sealStatusStitchMap[s] || 'stitch-tag stitch-tag-primary'}>{sealStatusLabelMap[s] || s || '未用'}</Tag>,
     },
     {
       title: '原件状态',
       dataIndex: 'original_status',
       key: 'original_status',
       width: 100,
-      render: (status: string) => <Tag color={originalStatusColorMap[status] || 'default'}>{originalStatusLabelMap[status] || status || '-'}</Tag>,
+      render: (status: string) => <Tag className={originalStatusStitchMap[status] || 'stitch-tag stitch-tag-primary'}>{originalStatusLabelMap[status] || status || '-'}</Tag>,
     },
     {
       title: '合同交回',
       dataIndex: 'return_status',
       key: 'return_status',
       width: 100,
-      render: (status: string) => <Tag color={returnStatusColorMap[status] || 'default'}>{returnStatusLabelMap[status] || status || '-'}</Tag>,
+      render: (status: string) => <Tag className={returnStatusStitchMap[status] || 'stitch-tag stitch-tag-primary'}>{returnStatusLabelMap[status] || status || '-'}</Tag>,
     },
     {
       title: '金额',
@@ -828,7 +885,7 @@ export default function ContractManagement() {
       key: 'amount',
       width: 120,
       align: 'right' as const,
-      render: (val: any) => val != null ? `¥${Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-',
+      render: (val: unknown) => val != null ? `¥${Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-',
     },
     { title: '签订日期', dataIndex: 'sign_date', key: 'sign_date', width: 120, render: (v: string) => formatDate(v) },
     {
@@ -836,14 +893,14 @@ export default function ContractManagement() {
       dataIndex: 'stage',
       key: 'stage',
       width: 100,
-      render: (stage: string) => <Tag color={stageColorMap[stage] || 'default'}>{stageLabelMap[stage] || stage}</Tag>,
+      render: (stage: string) => <Tag className={stageStitchMap[stage] || 'stitch-tag stitch-tag-primary'}>{stageLabelMap[stage] || stage}</Tag>,
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
       width: 80,
-      render: (status: string) => <Tag color={status === 'active' ? 'green' : 'default'}>{statusLabelMap[status] || status}</Tag>,
+      render: (status: string) => <Tag className={status === 'active' ? 'stitch-tag stitch-tag-success' : 'stitch-tag stitch-tag-primary'}>{statusLabelMap[status] || status}</Tag>,
     },
     { title: '操作', key: 'action', width: 720, render: renderActions },
   ]
@@ -865,7 +922,7 @@ export default function ContractManagement() {
         />
       </Card>
 
-      <div style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
+      <div className="stitch-filter-bar" style={{ background: theme.white, padding: 16, borderRadius: 8 }}>
         <Form form={searchForm} layout="inline" style={{ gap: 8, flexWrap: 'wrap' }}>
           <Form.Item name="type" label="类型">
             <Select placeholder="全部类型" allowClear style={{ width: 140 }} options={typeOptions} />
@@ -910,7 +967,7 @@ export default function ContractManagement() {
             <DatePicker placeholder="截止日期" allowClear style={{ width: 160 }} onChange={() => {}} />
           </Form.Item>
           <Form.Item>
-            <Space>
+            <Space className="stitch-btn-group">
               <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>查询</Button>
               <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
             </Space>
@@ -934,15 +991,17 @@ export default function ContractManagement() {
           }
           style={{ padding: '0 16px' }}
         />
-        <Table
-          dataSource={data}
-          columns={columns}
-          loading={loading}
-          rowKey="id"
-          size="small"
-          scroll={{ x: 2600 }}
-          pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条`, total }}
-        />
+        <div className="stitch-table">
+          <Table
+            dataSource={data}
+            columns={columns}
+            loading={loading}
+            rowKey="id"
+            size="small"
+            scroll={{ x: 2600 }}
+            pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条`, total }}
+          />
+        </div>
       </Card>
 
       <Modal
@@ -1014,56 +1073,60 @@ export default function ContractManagement() {
         footer={null}
         width={780}
       >
-        {currentContract && (
+        {currentContract && (() => {
+          const c = currentContract as Record<string, unknown>
+          const stages = (c.stages as Record<string, unknown>[]) || []
+          return (
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 24px', fontSize: 13 }}>
-              <div><span style={{ color: '#717785' }}>合同编号：</span>{currentContract.contract_no}</div>
-              <div><span style={{ color: '#717785' }}>合同标题：</span>{currentContract.title}</div>
-              <div><span style={{ color: '#717785' }}>类型：</span><Tag color={typeColorMap[currentContract.type]}>{typeLabelMap[currentContract.type]}</Tag></div>
-              <div><span style={{ color: '#717785' }}>阶段：</span><Tag color={stageColorMap[currentContract.stage]}>{stageLabelMap[currentContract.stage]}</Tag></div>
-              <div><span style={{ color: '#717785' }}>客户名称：</span>{currentContract.client_name}</div>
-              <div><span style={{ color: '#717785' }}>客户电话：</span>{currentContract.client_phone || '-'}</div>
-              <div><span style={{ color: '#717785' }}>合同金额：</span>¥{Number(currentContract.amount || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-              <div><span style={{ color: '#717785' }}>关联案件：</span>{currentContract.case_id || '-'}</div>
-              <div><span style={{ color: '#717785' }}>签订日期：</span>{formatDate(currentContract.sign_date)}</div>
-              <div><span style={{ color: '#717785' }}>开始日期：</span>{formatDate(currentContract.start_date)}</div>
-              <div><span style={{ color: '#717785' }}>结束日期：</span>{formatDate(currentContract.end_date)}</div>
-              <div><span style={{ color: '#717785' }}>状态：</span><Tag color={currentContract.status === 'active' ? 'green' : 'default'}>{statusLabelMap[currentContract.status]}</Tag></div>
-              <div><span style={{ color: '#717785' }}>审批状态：</span><Tag color={approvalStatusColorMap[currentContract.approval_status] || 'default'}>{approvalStatusLabelMap[currentContract.approval_status] || '草稿'}</Tag></div>
-              <div><span style={{ color: '#717785' }}>用印方式：</span>{currentContract.seal_apply_method ? (sealApplyMethodLabelMap[currentContract.seal_apply_method] || currentContract.seal_apply_method) : '-'}</div>
-              <div><span style={{ color: '#717785' }}>用印状态：</span><Tag color={sealUsageStatusColorMap[currentContract.seal_usage_status] || 'default'}>{sealUsageStatusLabelMap[currentContract.seal_usage_status] || '未用印'}</Tag></div>
-              <div><span style={{ color: '#717785' }}>电子章状态：</span><Tag color={sealStatusColorMap[currentContract.electronic_seal_status] || 'default'}>{sealStatusLabelMap[currentContract.electronic_seal_status] || '未用'}</Tag></div>
-              <div><span style={{ color: '#717785' }}>纸质章状态：</span><Tag color={sealStatusColorMap[currentContract.paper_seal_status] || 'default'}>{sealStatusLabelMap[currentContract.paper_seal_status] || '未用'}</Tag></div>
-              <div><span style={{ color: '#717785' }}>原件状态：</span><Tag color={originalStatusColorMap[currentContract.original_status] || 'default'}>{originalStatusLabelMap[currentContract.original_status] || '-'}</Tag></div>
-              <div><span style={{ color: '#717785' }}>合同交回：</span><Tag color={returnStatusColorMap[currentContract.return_status] || 'default'}>{returnStatusLabelMap[currentContract.return_status] || '-'}</Tag></div>
-              <div><span style={{ color: '#717785' }}>对方当事人：</span>{currentContract.opposing_party || '-'}</div>
-              <div><span style={{ color: '#717785' }}>质保金：</span>{currentContract.quality_deposit != null ? `¥${Number(currentContract.quality_deposit).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}</div>
-              <div><span style={{ color: '#717785' }}>创建时间：</span>{formatDateTime(currentContract.created_at)}</div>
-              <div><span style={{ color: '#717785' }}>更新时间：</span>{formatDateTime(currentContract.updated_at)}</div>
-              {currentContract.returner_id && <div><span style={{ color: '#717785' }}>交回人ID：</span>{currentContract.returner_id}</div>}
-              {currentContract.return_time && <div><span style={{ color: '#717785' }}>交回时间：</span>{formatDateTime(currentContract.return_time)}</div>}
+              <div><span style={{ color: theme.textTertiary }}>合同编号：</span>{String(c.contract_no || '')}</div>
+              <div><span style={{ color: theme.textTertiary }}>合同标题：</span>{String(c.title || '')}</div>
+              <div><span style={{ color: theme.textTertiary }}>类型：</span><Tag color={typeColorMap[c.type as string]}>{typeLabelMap[c.type as string]}</Tag></div>
+              <div><span style={{ color: theme.textTertiary }}>阶段：</span><Tag className={stageStitchMap[c.stage as string] || 'stitch-tag stitch-tag-primary'}>{stageLabelMap[c.stage as string]}</Tag></div>
+              <div><span style={{ color: theme.textTertiary }}>客户名称：</span>{String(c.client_name || '')}</div>
+              <div><span style={{ color: theme.textTertiary }}>客户电话：</span>{String(c.client_phone || '-')}</div>
+              <div><span style={{ color: theme.textTertiary }}>合同金额：</span>¥{Number(c.amount || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              <div><span style={{ color: theme.textTertiary }}>关联案件：</span>{String(c.case_id || '-')}</div>
+              <div><span style={{ color: theme.textTertiary }}>签订日期：</span>{formatDate(c.sign_date as string)}</div>
+              <div><span style={{ color: theme.textTertiary }}>开始日期：</span>{formatDate(c.start_date as string)}</div>
+              <div><span style={{ color: theme.textTertiary }}>结束日期：</span>{formatDate(c.end_date as string)}</div>
+              <div><span style={{ color: theme.textTertiary }}>状态：</span><Tag className={c.status === 'active' ? 'stitch-tag stitch-tag-success' : 'stitch-tag stitch-tag-primary'}>{statusLabelMap[c.status as string]}</Tag></div>
+              <div><span style={{ color: theme.textTertiary }}>审批状态：</span><Tag className={approvalStatusStitchMap[c.approval_status as string] || 'stitch-tag stitch-tag-primary'}>{approvalStatusLabelMap[c.approval_status as string] || '草稿'}</Tag></div>
+              <div><span style={{ color: theme.textTertiary }}>用印方式：</span>{c.seal_apply_method ? (sealApplyMethodLabelMap[c.seal_apply_method as string] || String(c.seal_apply_method)) : '-'}</div>
+              <div><span style={{ color: theme.textTertiary }}>用印状态：</span><Tag className={sealUsageStatusStitchMap[c.seal_usage_status as string] || 'stitch-tag stitch-tag-primary'}>{sealUsageStatusLabelMap[c.seal_usage_status as string] || '未用印'}</Tag></div>
+              <div><span style={{ color: theme.textTertiary }}>电子章状态：</span><Tag className={sealStatusStitchMap[c.electronic_seal_status as string] || 'stitch-tag stitch-tag-primary'}>{sealStatusLabelMap[c.electronic_seal_status as string] || '未用'}</Tag></div>
+              <div><span style={{ color: theme.textTertiary }}>纸质章状态：</span><Tag className={sealStatusStitchMap[c.paper_seal_status as string] || 'stitch-tag stitch-tag-primary'}>{sealStatusLabelMap[c.paper_seal_status as string] || '未用'}</Tag></div>
+              <div><span style={{ color: theme.textTertiary }}>原件状态：</span><Tag className={originalStatusStitchMap[c.original_status as string] || 'stitch-tag stitch-tag-primary'}>{originalStatusLabelMap[c.original_status as string] || '-'}</Tag></div>
+              <div><span style={{ color: theme.textTertiary }}>合同交回：</span><Tag className={returnStatusStitchMap[c.return_status as string] || 'stitch-tag stitch-tag-primary'}>{returnStatusLabelMap[c.return_status as string] || '-'}</Tag></div>
+              <div><span style={{ color: theme.textTertiary }}>对方当事人：</span>{String(c.opposing_party || '-')}</div>
+              <div><span style={{ color: theme.textTertiary }}>质保金：</span>{c.quality_deposit != null ? `¥${Number(c.quality_deposit).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}</div>
+              <div><span style={{ color: theme.textTertiary }}>创建时间：</span>{formatDateTime(c.created_at as string)}</div>
+              <div><span style={{ color: theme.textTertiary }}>更新时间：</span>{formatDateTime(c.updated_at as string)}</div>
+              {c.returner_id ? <div><span style={{ color: theme.textTertiary }}>交回人ID：</span>{String(c.returner_id)}</div> : null}
+              {c.return_time ? <div><span style={{ color: theme.textTertiary }}>交回时间：</span>{formatDateTime(c.return_time as string)}</div> : null}
             </div>
             <div style={{ marginTop: 16 }}>
               <div style={{ fontWeight: 600, marginBottom: 8 }}>备注</div>
-              <div style={{ background: '#f3f3f5', padding: 12, borderRadius: 8, color: '#414753', lineHeight: 1.7 }}>
-                {currentContract.remarks || '-'}
+              <div style={{ background: '#f3f3f5', padding: 12, borderRadius: 8, color: theme.textSecondary, lineHeight: 1.7 }}>
+                {String(c.remarks || '-')}
               </div>
             </div>
-            {currentContract.stages && currentContract.stages.length > 0 && (
+            {stages.length > 0 && (
               <div style={{ marginTop: 16 }}>
                 <div style={{ fontWeight: 600, marginBottom: 8 }}>阶段历史</div>
                 <div style={{ background: '#f3f3f5', padding: 12, borderRadius: 8 }}>
-                  {currentContract.stages.map((s: any) => (
-                    <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #e2e2e4', fontSize: 13 }}>
-                      <span><Tag color={stageColorMap[s.stage_name] || 'default'}>{stageLabelMap[s.stage_name] || s.stage_name}</Tag>{s.remarks || ''}</span>
-                      <span style={{ color: '#717785' }}>{formatDateTime(s.created_at)}</span>
+                  {stages.map((s) => (
+                    <div key={s.id as React.Key} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #e2e2e4', fontSize: 13 }}>
+                      <span><Tag className={stageStitchMap[s.stage_name as string] || 'stitch-tag stitch-tag-primary'}>{stageLabelMap[s.stage_name as string] || String(s.stage_name)}</Tag>{String(s.remarks || '')}</span>
+                      <span style={{ color: theme.textTertiary }}>{formatDateTime(s.created_at as string)}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
           </div>
-        )}
+          )
+        })()}
       </Modal>
 
       {/* 合同交回弹窗 */}

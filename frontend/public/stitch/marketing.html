@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Campaigns - LegalSaaS Marketing Pro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed": "#131c2a",
+                    "on-error": "#ffffff",
+                    "inverse-primary": "#abc7ff",
+                    "secondary-fixed-dim": "#bec7db",
+                    "outline": "#717785",
+                    "on-surface": "#1a1c1d",
+                    "on-secondary-fixed-variant": "#3e4758",
+                    "inverse-on-surface": "#f0f0f2",
+                    "surface-container-high": "#e8e8ea",
+                    "primary-container": "#0071e3",
+                    "on-surface-variant": "#414753",
+                    "primary": "#0059b5",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-highest": "#e2e2e4",
+                    "on-error-container": "#93000a",
+                    "surface-container": "#eeeef0",
+                    "on-secondary-container": "#5a6374",
+                    "secondary-fixed": "#dae3f7",
+                    "tertiary-container": "#8c702e",
+                    "outline-variant": "#c1c6d6",
+                    "on-tertiary": "#ffffff",
+                    "surface-dim": "#d9dadc",
+                    "error": "#ba1a1a",
+                    "surface-container-low": "#f3f3f5",
+                    "surface-variant": "#e2e2e4",
+                    "surface-tint": "#005cbb",
+                    "primary-fixed-dim": "#abc7ff",
+                    "on-primary-container": "#fcfbff",
+                    "secondary": "#565f70",
+                    "on-tertiary-container": "#fffaf9",
+                    "tertiary-fixed-dim": "#e4c278",
+                    "on-primary-fixed-variant": "#00458f",
+                    "on-tertiary-fixed-variant": "#5a4302",
+                    "surface": "#f9f9fb",
+                    "background": "#f9f9fb",
+                    "inverse-surface": "#2f3132",
+                    "primary-fixed": "#d7e2ff",
+                    "on-tertiary-fixed": "#251a00",
+                    "on-secondary": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed": "#ffdf9b",
+                    "secondary-container": "#d7e0f4",
+                    "error-container": "#ffdad6",
+                    "on-primary-fixed": "#001b3f",
+                    "on-background": "#1a1c1d",
+                    "tertiary": "#715818",
+                    "surface-bright": "#f9f9fb"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "data_density_md": "12px",
+                    "header_height": "64px",
+                    "container_gap": "20px",
+                    "data_density_sm": "8px",
+                    "sidebar_width": "260px",
+                    "page_padding": "24px",
+                    "grid_gutter": "16px"
+            },
+            "fontFamily": {
+                    "body-md": [
+                            "Noto Sans SC"
+                    ],
+                    "label-md": [
+                            "Noto Sans SC"
+                    ],
+                    "title-lg": [
+                            "Noto Serif SC"
+                    ],
+                    "display-md": [
+                            "Noto Serif SC"
+                    ],
+                    "display-lg": [
+                            "Noto Serif SC"
+                    ],
+                    "body-lg": [
+                            "Noto Sans SC"
+                    ],
+                    "mono-label": [
+                            "notoSans"
+                    ]
+            },
+            "fontSize": {
+                    "body-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "22px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-md": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.02em",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "title-lg": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "44px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "mono-label": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "fontWeight": "600"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Noto Sans SC', sans-serif; background-color: #F5F5F7; }
+        .font-serif { font-family: 'Noto Serif SC', serif; }
+        
+        /* Specialized Status Tags based on Brand Guidelines */
+        .status-badge { display: inline-flex; items: center; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+        .status-processing { background-color: #e6f4ff; color: #1677ff; border: 1px solid #91caff; }
+        .status-completed { background-color: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+        .status-terminated { background-color: #f5f5f5; color: #00000040; border: 1px solid #d9d9d9; }
+        
+        .gold-accent { border: 1px solid #C9A961; background-color: rgba(201, 169, 97, 0.05); }
+        .table-row-hover:hover { background-color: #F0F7FF; }
+        
+        /* Hide scrollbar for clean look in side nav */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="text-on-surface bg-background flex">
+<!-- SideNavBar (Shared Component) -->
+<nav class="bg-on-secondary-fixed w-sidebar_width h-screen fixed left-0 top-0 flex flex-col py-page_padding z-50">
+<!-- Brand Header -->
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-tertiary-fixed flex items-center justify-center font-bold text-on-tertiary-fixed text-lg">
+                LS
+            </div>
+<div>
+<h1 class="font-display-md text-display-md text-tertiary-fixed m-0 leading-tight">LegalSaaS</h1>
+<span class="text-secondary-fixed-dim font-label-md text-label-md">Marketing Pro</span>
+</div>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 overflow-y-auto no-scrollbar px-3 space-y-1">
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant hover:text-tertiary-fixed transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-tertiary-fixed border-l-4 border-tertiary-fixed bg-on-secondary-fixed-variant transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="campaign">campaign</span>
+<span class="font-body-md text-body-md font-medium">Campaigns</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant hover:text-tertiary-fixed transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="person_search">person_search</span>
+<span class="font-body-md text-body-md">Leads</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant hover:text-tertiary-fixed transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="gavel">gavel</span>
+<span class="font-body-md text-body-md">Litigation</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant hover:text-tertiary-fixed transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-body-md text-body-md">Financials</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant hover:text-tertiary-fixed transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-body-md text-body-md">Analytics</span>
+</a>
+</div>
+<!-- CTA & Footer -->
+<div class="px-6 mt-auto flex flex-col gap-4">
+<button class="w-full bg-primary-container text-on-primary-container hover:bg-surface-tint hover:text-white py-3 rounded font-body-md text-body-md font-medium transition-colors shadow-sm">
+                Create Campaign
+            </button>
+<div class="border-t border-on-secondary-fixed-variant pt-4 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant hover:text-tertiary-fixed transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="settings">settings</span>
+<span class="font-body-md text-sm">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary-fixed-dim hover:bg-on-secondary-fixed-variant hover:text-tertiary-fixed transition-colors duration-200" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="help">help</span>
+<span class="font-body-md text-sm">Support</span>
+</a>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="ml-sidebar_width flex-1 flex flex-col min-h-screen">
+<!-- TopNavBar (Shared Component) -->
+<header class="bg-surface sticky top-0 h-header_height w-full z-40 border-b border-outline-variant flex justify-between items-center px-page_padding shadow-sm">
+<div class="flex items-center gap-6">
+<h2 class="font-display-md text-display-md text-on-surface">Campaign Manager</h2>
+<nav class="hidden md:flex gap-6 h-full items-center ml-8">
+<a class="text-primary font-title-lg text-title-lg font-bold border-b-2 border-primary pb-1 h-full flex items-center" href="#">Overview</a>
+<a class="text-on-surface-variant font-title-lg text-title-lg hover:text-primary transition-all h-full flex items-center" href="#">Global Search</a>
+<a class="text-on-surface-variant font-title-lg text-title-lg hover:text-primary transition-all h-full flex items-center" href="#">Reports</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="pl-10 pr-4 py-2 border border-outline-variant rounded bg-surface-container-low text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none w-64" placeholder="Search campaigns..." type="text"/>
+</div>
+<button class="text-primary font-body-md font-medium hover:bg-primary-fixed rounded px-3 py-2 transition-colors">Sync Data</button>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<button class="p-2 hover:bg-surface-variant rounded-full transition-colors"><span class="material-symbols-outlined" data-icon="notifications">notifications</span></button>
+<button class="p-2 hover:bg-surface-variant rounded-full transition-colors"><span class="material-symbols-outlined" data-icon="history">history</span></button>
+<button class="p-1 rounded-full border border-outline-variant hover:border-primary transition-colors ml-2">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="Professional corporate headshot of a lawyer or marketing manager, clean background, modern lighting, high quality." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAvbScU4SElZ4qG6QrpM8609GQACqhpmzHznrf0Oix80GOJcQqDTfcvVl_PX1npls5E0Z0NuOe_utLRJX_eJ7Upz19eAflayRrzJOLOx0M8KG0Tyodye50ixF2uT-jTwxKFiL8PN2YVAWN3Fk692MgTjuFDocL8ZxKkuFi2Kipj_bPNN9fwJm2Rj924LI-CKdObrtNFCxwOpK_9eLBOWU5qRhJmmkGK-trMROoip-Y1cNZCt6eGJ4PpC3dtdoQ08yLKkPsPoXW8BK28"/>
+</button>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<div class="p-page_padding space-y-6 flex-1 overflow-auto bg-background">
+<!-- Header Row -->
+<div class="flex justify-between items-end mb-2">
+<div>
+<h3 class="font-display-lg text-display-lg text-on-surface mb-1">Marketing Campaigns</h3>
+<p class="font-body-md text-on-surface-variant">Manage and track performance across all acquisition channels.</p>
+</div>
+<button class="bg-[#0071E3] text-white px-5 py-2.5 rounded shadow-sm hover:bg-primary transition-colors font-body-md font-medium flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">add</span> New Campaign
+                </button>
+</div>
+<!-- KPI Row (7 Cards) -->
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+<div class="bg-surface-container-lowest border border-outline-variant rounded p-4 shadow-sm">
+<p class="font-label-md text-on-surface-variant mb-1">Active Campaigns</p>
+<p class="font-title-lg text-on-surface">12</p>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded p-4 shadow-sm">
+<p class="font-label-md text-on-surface-variant mb-1">Total Impressions</p>
+<p class="font-title-lg text-on-surface">458K</p>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded p-4 shadow-sm">
+<p class="font-label-md text-on-surface-variant mb-1">Total Clicks</p>
+<p class="font-title-lg text-on-surface">23.5K</p>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded p-4 shadow-sm">
+<p class="font-label-md text-on-surface-variant mb-1">CTR</p>
+<p class="font-title-lg text-on-surface">5.1%</p>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded p-4 shadow-sm">
+<p class="font-label-md text-on-surface-variant mb-1">Conversions</p>
+<p class="font-title-lg text-on-surface">320</p>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded p-4 shadow-sm">
+<p class="font-label-md text-on-surface-variant mb-1">Total Cost</p>
+<p class="font-title-lg text-on-surface">¥45,600</p>
+</div>
+<div class="bg-surface-container-lowest border border-[#C9A961] rounded p-4 shadow-sm gold-accent">
+<p class="font-label-md text-[#8c702e] mb-1 font-bold">ROI</p>
+<p class="font-title-lg text-[#715818]">3.2x</p>
+</div>
+</div>
+<!-- Main Table Section -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded shadow-sm overflow-hidden flex flex-col h-[600px]">
+<!-- Table Toolbar -->
+<div class="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-bright">
+<div class="flex gap-2">
+<button class="px-3 py-1.5 border border-outline-variant rounded text-body-md flex items-center gap-1 hover:bg-surface-variant">
+<span class="material-symbols-outlined text-sm">filter_list</span> Filter
+                        </button>
+<button class="px-3 py-1.5 border border-outline-variant rounded text-body-md flex items-center gap-1 hover:bg-surface-variant">
+<span class="material-symbols-outlined text-sm">date_range</span> Last 30 Days
+                        </button>
+</div>
+<div class="flex gap-2">
+<button class="p-1.5 text-on-surface-variant hover:text-primary rounded"><span class="material-symbols-outlined">download</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-primary rounded"><span class="material-symbols-outlined">view_column</span></button>
+</div>
+</div>
+<!-- Table Content -->
+<div class="overflow-x-auto flex-1">
+<table class="w-full text-left border-collapse min-w-[1200px]">
+<thead class="bg-surface-container sticky top-0 z-10 border-b border-outline-variant">
+<tr>
+<th class="font-label-md text-on-surface-variant py-3 px-4 font-semibold w-12 text-center">
+<input class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+</th>
+<th class="font-label-md text-on-surface-variant py-3 px-4 font-semibold">Campaign Name</th>
+<th class="font-label-md text-on-surface-variant py-3 px-4 font-semibold">Platform</th>
+<th class="font-label-md text-on-surface-variant py-3 px-4 font-semibold text-right">Daily Budget</th>
+<th class="font-label-md text-on-surface-variant py-3 px-4 font-semibold text-right">Spent</th>
+<th class="font-label-md text-on-surface-variant py-3 px-4 font-semibold text-right">Impr.</th>
+<th class="font-label-md text-on-surface-variant py-3 px-4 font-semibold text-right">Clicks</th>
+<th class="font-label-md text-on-surface-variant py-3 px-4 font-semibold text-right">Leads</th>
+<th class="font-label-md text-on-surface-variant py-3 px-4 font-semibold text-right">CPA</th>
+<th class="font-label-md text-on-surface-variant py-3 px-4 font-semibold text-center">Status</th>
+<th class="font-label-md text-on-surface-variant py-3 px-4 font-semibold">Timeline</th>
+<th class="font-label-md text-on-surface-variant py-3 px-4 font-semibold text-center">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant bg-surface-container-lowest">
+<!-- Row 1 -->
+<tr class="table-row-hover h-12 transition-colors">
+<td class="py-2 px-4 text-center">
+<input class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+</td>
+<td class="py-2 px-4">
+<div class="font-body-md text-on-surface font-medium truncate w-48">Q3 Personal Injury Push</div>
+<div class="text-xs text-on-surface-variant">ID: CMP-2023-089</div>
+</td>
+<td class="py-2 px-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded bg-[#1a1a1a] text-white flex items-center justify-center text-[10px] font-bold">DY</div>
+<span class="font-body-md text-sm">Douyin</span>
+</div>
+</td>
+<td class="py-2 px-4 text-right font-mono-label text-on-surface">¥1,500</td>
+<td class="py-2 px-4 text-right font-mono-label text-on-surface">¥12,450</td>
+<td class="py-2 px-4 text-right font-body-md text-sm">125K</td>
+<td class="py-2 px-4 text-right font-body-md text-sm">4.2K</td>
+<td class="py-2 px-4 text-right font-body-md text-sm">45</td>
+<td class="py-2 px-4 text-right font-mono-label text-on-surface">¥276</td>
+<td class="py-2 px-4 text-center">
+<span class="status-badge status-processing">Active</span>
+</td>
+<td class="py-2 px-4 font-body-md text-sm text-on-surface-variant">
+                                    09/01 - 10/31
+                                </td>
+<td class="py-2 px-4">
+<div class="flex justify-center gap-2">
+<button class="text-primary hover:bg-primary-fixed p-1 rounded transition-colors" title="Edit"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="text-on-secondary-container hover:bg-surface-variant p-1 rounded transition-colors" title="Analytics"><span class="material-symbols-outlined text-[20px]">insights</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="table-row-hover h-12 transition-colors">
+<td class="py-2 px-4 text-center">
+<input class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+</td>
+<td class="py-2 px-4">
+<div class="font-body-md text-on-surface font-medium truncate w-48">Corporate Retainer Search</div>
+<div class="text-xs text-on-surface-variant">ID: CMP-2023-090</div>
+</td>
+<td class="py-2 px-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded bg-[#2932e1] text-white flex items-center justify-center text-[10px] font-bold">BD</div>
+<span class="font-body-md text-sm">Baidu</span>
+</div>
+</td>
+<td class="py-2 px-4 text-right font-mono-label text-on-surface">¥2,000</td>
+<td class="py-2 px-4 text-right font-mono-label text-on-surface">¥8,900</td>
+<td class="py-2 px-4 text-right font-body-md text-sm">85K</td>
+<td class="py-2 px-4 text-right font-body-md text-sm">1.8K</td>
+<td class="py-2 px-4 text-right font-body-md text-sm">12</td>
+<td class="py-2 px-4 text-right font-mono-label text-on-surface">¥741</td>
+<td class="py-2 px-4 text-center">
+<span class="status-badge status-processing">Active</span>
+</td>
+<td class="py-2 px-4 font-body-md text-sm text-on-surface-variant">
+                                    09/15 - 11/15
+                                </td>
+<td class="py-2 px-4">
+<div class="flex justify-center gap-2">
+<button class="text-primary hover:bg-primary-fixed p-1 rounded transition-colors" title="Edit"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="text-on-secondary-container hover:bg-surface-variant p-1 rounded transition-colors" title="Analytics"><span class="material-symbols-outlined text-[20px]">insights</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="table-row-hover h-12 transition-colors">
+<td class="py-2 px-4 text-center">
+<input class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+</td>
+<td class="py-2 px-4">
+<div class="font-body-md text-on-surface font-medium truncate w-48">IP Protection Awareness</div>
+<div class="text-xs text-on-surface-variant">ID: CMP-2023-085</div>
+</td>
+<td class="py-2 px-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded bg-[#07c160] text-white flex items-center justify-center text-[10px] font-bold">WC</div>
+<span class="font-body-md text-sm">WeChat</span>
+</div>
+</td>
+<td class="py-2 px-4 text-right font-mono-label text-on-surface">¥800</td>
+<td class="py-2 px-4 text-right font-mono-label text-on-surface">¥16,000</td>
+<td class="py-2 px-4 text-right font-body-md text-sm">210K</td>
+<td class="py-2 px-4 text-right font-body-md text-sm">8.5K</td>
+<td class="py-2 px-4 text-right font-body-md text-sm">110</td>
+<td class="py-2 px-4 text-right font-mono-label text-on-surface">¥145</td>
+<td class="py-2 px-4 text-center">
+<span class="status-badge status-terminated">Ended</span>
+</td>
+<td class="py-2 px-4 font-body-md text-sm text-on-surface-variant">
+                                    08/01 - 08/31
+                                </td>
+<td class="py-2 px-4">
+<div class="flex justify-center gap-2">
+<button class="text-primary hover:bg-primary-fixed p-1 rounded transition-colors" title="Edit"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="text-on-secondary-container hover:bg-surface-variant p-1 rounded transition-colors" title="Analytics"><span class="material-symbols-outlined text-[20px]">insights</span></button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="table-row-hover h-12 transition-colors">
+<td class="py-2 px-4 text-center">
+<input class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+</td>
+<td class="py-2 px-4">
+<div class="font-body-md text-on-surface font-medium truncate w-48">Family Law Consults</div>
+<div class="text-xs text-on-surface-variant">ID: CMP-2023-092</div>
+</td>
+<td class="py-2 px-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded bg-[#ff6a00] text-white flex items-center justify-center text-[10px] font-bold">KS</div>
+<span class="font-body-md text-sm">Kuaishou</span>
+</div>
+</td>
+<td class="py-2 px-4 text-right font-mono-label text-on-surface">¥1,200</td>
+<td class="py-2 px-4 text-right font-mono-label text-on-surface">¥3,600</td>
+<td class="py-2 px-4 text-right font-body-md text-sm">45K</td>
+<td class="py-2 px-4 text-right font-body-md text-sm">2.1K</td>
+<td class="py-2 px-4 text-right font-body-md text-sm">28</td>
+<td class="py-2 px-4 text-right font-mono-label text-on-surface">¥128</td>
+<td class="py-2 px-4 text-center">
+<span class="status-badge" style="background-color: #fff1f0; color: #f5222d; border: 1px solid #ffa39e;">Paused</span>
+</td>
+<td class="py-2 px-4 font-body-md text-sm text-on-surface-variant">
+                                    10/01 - 10/15
+                                </td>
+<td class="py-2 px-4">
+<div class="flex justify-center gap-2">
+<button class="text-primary hover:bg-primary-fixed p-1 rounded transition-colors" title="Edit"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+<button class="text-on-secondary-container hover:bg-surface-variant p-1 rounded transition-colors" title="Analytics"><span class="material-symbols-outlined text-[20px]">insights</span></button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="p-3 border-t border-outline-variant bg-surface flex justify-between items-center">
+<span class="font-body-md text-sm text-on-surface-variant">Showing 1 to 4 of 12 entries</span>
+<div class="flex gap-1">
+<button class="px-2 py-1 border border-outline-variant rounded bg-surface-container-lowest text-on-surface-variant disabled:opacity-50" disabled="">Prev</button>
+<button class="px-2 py-1 border border-primary rounded bg-primary-fixed text-primary font-medium">1</button>
+<button class="px-2 py-1 border border-outline-variant rounded bg-surface-container-lowest text-on-surface hover:bg-surface-variant">2</button>
+<button class="px-2 py-1 border border-outline-variant rounded bg-surface-container-lowest text-on-surface hover:bg-surface-variant">3</button>
+<button class="px-2 py-1 border border-outline-variant rounded bg-surface-container-lowest text-on-surface hover:bg-surface-variant">Next</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

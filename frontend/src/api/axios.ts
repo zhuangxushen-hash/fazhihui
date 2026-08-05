@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from 'axios'
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosHeaders } from 'axios'
 import { message } from 'antd'
 import { getErrorMessage, markHandled } from '../utils/error'
 
@@ -12,7 +12,7 @@ instance.interceptors.request.use(
     const token = localStorage.getItem('token')
     if (token) {
       if (!config.headers) {
-        config.headers = {} as any
+        config.headers = new AxiosHeaders()
       }
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -60,11 +60,12 @@ instance.interceptors.response.use(
   }
 )
 
+// 封装 API 客户端类型，支持泛型返回值
 type ApiClient = Omit<AxiosInstance, 'get' | 'post' | 'put' | 'delete'> & {
-  get: <T = any>(url: string, config?: any) => Promise<T>
-  post: <T = any>(url: string, data?: any, config?: any) => Promise<T>
-  put: <T = any>(url: string, data?: any, config?: any) => Promise<T>
-  delete: <T = any>(url: string, config?: any) => Promise<T>
+  get: <T = unknown>(url: string, config?: AxiosRequestConfig) => Promise<T>
+  post: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig) => Promise<T>
+  put: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig) => Promise<T>
+  delete: <T = unknown>(url: string, config?: AxiosRequestConfig) => Promise<T>
 }
 
 export default instance as ApiClient

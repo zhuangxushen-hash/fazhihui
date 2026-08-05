@@ -27,6 +27,7 @@ import {
 import type { UploadProps } from 'antd'
 import axios from '../api/axios'
 import dayjs from 'dayjs'
+import { theme } from '../constants/theme'
 
 const { RangePicker } = DatePicker
 
@@ -99,7 +100,7 @@ const menuItems = [
 ]
 
 // 导出Excel：将数据转为CSV并下载
-const handleExportExcel = (data: any[], filename: string) => {
+const handleExportExcel = (data: Record<string, unknown>[], filename: string) => {
   if (!data.length) {
     message.warning('没有可导出的数据')
     return
@@ -121,32 +122,32 @@ const handleExportExcel = (data: any[], filename: string) => {
 export default function ArchiveVolumeManagement() {
   const [activeMenu, setActiveMenu] = useState('my_archive')
   const [activeTab, setActiveTab] = useState('unarchived')
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [form] = Form.useForm()
   // 详情弹窗
   const [detailVisible, setDetailVisible] = useState(false)
-  const [detailRecord, setDetailRecord] = useState<any>(null)
+  const [detailRecord, setDetailRecord] = useState<Record<string, unknown> | null>(null)
   // 借阅弹窗
   const [borrowVisible, setBorrowVisible] = useState(false)
   const [borrowForm] = Form.useForm()
-  const [borrowRecord, setBorrowRecord] = useState<any>(null)
+  const [borrowRecord, setBorrowRecord] = useState<Record<string, unknown> | null>(null)
   // 上传相关
   const [uploadTarget, setUploadTarget] = useState<{ id: string; type: 'electronic' | 'paper' } | null>(null)
 
   const fetchData = async () => {
     setLoading(true)
     try {
-      const res: any = await axios.get('/archive-volumes', {
+      const res = (await axios.get('/archive-volumes', {
         params: {
           tab: activeTab,
           menu: activeMenu,
           ...form.getFieldsValue(),
         },
-      })
+      })) as Record<string, unknown>
       const list = Array.isArray(res) ? res : res?.data || []
-      setData(list)
+      setData(list as Record<string, unknown>[])
     } catch (error) {
       setData([])
     } finally {
@@ -179,7 +180,7 @@ export default function ArchiveVolumeManagement() {
     } catch (error) {
       // 本地标记
       setData((prev) =>
-        prev.map((item) => (selectedIds.includes(item.id) ? { ...item, closed: true, project_status: 'completed' } : item))
+        prev.map((item) => (selectedIds.includes(item.id as string) ? { ...item, closed: true, project_status: 'completed' } : item))
       )
       message.success(`已标记 ${selectedIds.length} 条项目为已办结`)
       setSelectedIds([])
@@ -187,22 +188,22 @@ export default function ArchiveVolumeManagement() {
   }
 
   // 查看卷宗
-  const handleViewArchive = (record: any) => {
+  const handleViewArchive = (record: Record<string, unknown>) => {
     setDetailRecord(record)
     setDetailVisible(true)
   }
 
   // 打开借阅弹窗
-  const handleOpenBorrow = (record: any) => {
+  const handleOpenBorrow = (record: Record<string, unknown>) => {
     setBorrowRecord(record)
     borrowForm.resetFields()
     setBorrowVisible(true)
   }
 
   // 提交借阅
-  const handleSubmitBorrow = async (values: any) => {
+  const handleSubmitBorrow = async (values: Record<string, unknown>) => {
     try {
-      await axios.post(`/archive-volumes/${borrowRecord.id}/borrow`, values)
+      await axios.post(`/archive-volumes/${borrowRecord!.id}/borrow`, values)
       message.success('借阅申请已提交')
       setBorrowVisible(false)
     } catch (error) {
@@ -240,58 +241,70 @@ export default function ArchiveVolumeManagement() {
 
   // 项目状态渲染
   const renderProjectStatus = (status: string) => {
-    const map: Record<string, { label: string; color: string }> = {
-      in_progress: { label: '进行中', color: 'processing' },
-      completed: { label: '已办结', color: 'success' },
-      suspended: { label: '已暂停', color: 'warning' },
-      terminated: { label: '已终止', color: 'default' },
+    const map: Record<string, { label: string; color: string; stitch: string }> = {
+      in_progress: { label: '进行中', color: 'processing', stitch: 'stitch-tag stitch-tag-info' },
+      completed: { label: '已办结', color: 'success', stitch: 'stitch-tag stitch-tag-success' },
+      suspended: { label: '已暂停', color: 'warning', stitch: 'stitch-tag stitch-tag-warning' },
+      terminated: { label: '已终止', color: 'default', stitch: 'stitch-tag stitch-tag-primary' },
     }
-    const cfg = map[status] || { label: status, color: 'default' }
-    return <Tag color={cfg.color}>{cfg.label}</Tag>
+    const cfg = map[status] || { label: status, color: 'default', stitch: 'stitch-tag stitch-tag-primary' }
+    return <Tag className={cfg.stitch}>{cfg.label}</Tag>
   }
 
   // 办结状态渲染
   const renderClosed = (closed: boolean) =>
-    closed ? <Tag color="success">已办结</Tag> : <Tag color="default">未办结</Tag>
+    closed ? (
+      <Tag className="stitch-tag stitch-tag-success">已办结</Tag>
+    ) : (
+      <Tag className="stitch-tag stitch-tag-primary">未办结</Tag>
+    )
 
   // 归档状态渲染
   const renderArchiveStatus = (status: string) => {
-    const map: Record<string, { label: string; color: string }> = {
-      unarchived: { label: '未归档', color: 'warning' },
-      archiving: { label: '归档中', color: 'processing' },
-      archived: { label: '已归档', color: 'success' },
+    const map: Record<string, { label: string; color: string; stitch: string }> = {
+      unarchived: { label: '未归档', color: 'warning', stitch: 'stitch-tag stitch-tag-warning' },
+      archiving: { label: '归档中', color: 'processing', stitch: 'stitch-tag stitch-tag-info' },
+      archived: { label: '已归档', color: 'success', stitch: 'stitch-tag stitch-tag-success' },
     }
-    const cfg = map[status] || { label: status, color: 'default' }
-    return <Tag color={cfg.color}>{cfg.label}</Tag>
+    const cfg = map[status] || { label: status, color: 'default', stitch: 'stitch-tag stitch-tag-primary' }
+    return <Tag className={cfg.stitch}>{cfg.label}</Tag>
   }
 
   // 卷宗状态渲染
   const renderArchiveFlag = (flag: boolean) =>
-    flag ? <Tag color="success">有</Tag> : <Tag color="default">无</Tag>
+    flag ? (
+      <Tag className="stitch-tag stitch-tag-success">有</Tag>
+    ) : (
+      <Tag className="stitch-tag stitch-tag-primary">无</Tag>
+    )
 
   // 合同交回渲染
   const renderContractReturn = (status: string) => {
-    const map: Record<string, { label: string; color: string }> = {
-      returned: { label: '已交回', color: 'success' },
-      not_returned: { label: '未交回', color: 'warning' },
+    const map: Record<string, { label: string; color: string; stitch: string }> = {
+      returned: { label: '已交回', color: 'success', stitch: 'stitch-tag stitch-tag-success' },
+      not_returned: { label: '未交回', color: 'warning', stitch: 'stitch-tag stitch-tag-warning' },
     }
-    const cfg = map[status] || { label: status, color: 'default' }
-    return <Tag color={cfg.color}>{cfg.label}</Tag>
+    const cfg = map[status] || { label: status, color: 'default', stitch: 'stitch-tag stitch-tag-primary' }
+    return <Tag className={cfg.stitch}>{cfg.label}</Tag>
   }
 
   // 原件上传渲染
   const renderOriginalUpload = (flag: boolean) =>
-    flag ? <Tag color="success">已上传</Tag> : <Tag color="default">未上传</Tag>
+    flag ? (
+      <Tag className="stitch-tag stitch-tag-success">已上传</Tag>
+    ) : (
+      <Tag className="stitch-tag stitch-tag-primary">未上传</Tag>
+    )
 
   // 借阅状态渲染
   const renderBorrowStatus = (status: string) => {
-    const map: Record<string, { label: string; color: string }> = {
-      borrowing: { label: '借阅中', color: 'processing' },
-      returned: { label: '已归还', color: 'success' },
-      overdue: { label: '已逾期', color: 'error' },
+    const map: Record<string, { label: string; color: string; stitch: string }> = {
+      borrowing: { label: '借阅中', color: 'processing', stitch: 'stitch-tag stitch-tag-info' },
+      returned: { label: '已归还', color: 'success', stitch: 'stitch-tag stitch-tag-success' },
+      overdue: { label: '已逾期', color: 'error', stitch: 'stitch-tag stitch-tag-error' },
     }
-    const cfg = map[status] || { label: status, color: 'default' }
-    return <Tag color={cfg.color}>{cfg.label}</Tag>
+    const cfg = map[status] || { label: status, color: 'default', stitch: 'stitch-tag stitch-tag-primary' }
+    return <Tag className={cfg.stitch}>{cfg.label}</Tag>
   }
 
   // 项目卷宗列表列定义（11列）
@@ -311,14 +324,14 @@ export default function ArchiveVolumeManagement() {
       key: 'action',
       width: 320,
       fixed: 'right' as const,
-      render: (_: any, record: any) => (
-        <Space size="small">
+      render: (_: unknown, record: Record<string, unknown>) => (
+        <Space size="small" className="stitch-btn-group">
           <Button type="link" size="small" icon={<FolderViewOutlined />} onClick={() => handleViewArchive(record)}>查看卷宗</Button>
           <Upload {...uploadProps} disabled={!uploadTarget || uploadTarget.id !== record.id || uploadTarget.type !== 'electronic'}>
-            <Button type="link" size="small" icon={<UploadOutlined />} onClick={() => handleOpenUpload(record.id, 'electronic')}>电子卷宗</Button>
+            <Button type="link" size="small" icon={<UploadOutlined />} onClick={() => handleOpenUpload(record.id as string, 'electronic')}>电子卷宗</Button>
           </Upload>
           <Upload {...uploadProps} disabled={!uploadTarget || uploadTarget.id !== record.id || uploadTarget.type !== 'paper'}>
-            <Button type="link" size="small" icon={<UploadOutlined />} onClick={() => handleOpenUpload(record.id, 'paper')}>纸质卷宗</Button>
+            <Button type="link" size="small" icon={<UploadOutlined />} onClick={() => handleOpenUpload(record.id as string, 'paper')}>纸质卷宗</Button>
           </Upload>
           <Button type="link" size="small" onClick={() => handleOpenBorrow(record)}>借阅</Button>
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewArchive(record)}>详情</Button>
@@ -359,7 +372,7 @@ export default function ArchiveVolumeManagement() {
       {/* 右侧内容区 */}
       <div style={{ flex: 1, padding: 16, overflow: 'auto' }}>
         {/* 顶部Tabs */}
-        <div style={{ background: '#fff', padding: '8px 16px', borderRadius: 8, marginBottom: 16 }}>
+        <div style={{ background: theme.white, padding: '8px 16px', borderRadius: 8, marginBottom: 16 }}>
           <Tabs
             activeKey={activeTab}
             onChange={(key) => setActiveTab(key)}
@@ -370,7 +383,7 @@ export default function ArchiveVolumeManagement() {
 
         {/* 查询条件区域（借阅记录Tab不显示查询条件） */}
         {activeTab !== 'borrow' && (
-          <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+          <div className="stitch-filter-bar" style={{ background: theme.white, padding: 16, borderRadius: 8, marginBottom: 16 }}>
             <Form form={form} layout="inline" style={{ gap: 8 }}>
               <Form.Item label="项目类型" name="project_type">
                 <Select placeholder="全部" allowClear style={{ width: 120 }} options={projectTypeOptions} />
@@ -403,7 +416,7 @@ export default function ArchiveVolumeManagement() {
                 <Select placeholder="全部" allowClear style={{ width: 100 }} options={closedOptions} />
               </Form.Item>
               <Form.Item>
-                <Space>
+                <Space className="stitch-btn-group">
                   <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>查询</Button>
                   <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
                 </Space>
@@ -413,7 +426,7 @@ export default function ArchiveVolumeManagement() {
         )}
 
         {/* 表格区域 */}
-        <div style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
+        <div className="stitch-table" style={{ background: theme.white, padding: 16, borderRadius: 8 }}>
           {/* 操作按钮区 */}
           <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
             <Space>
@@ -463,16 +476,16 @@ export default function ArchiveVolumeManagement() {
       >
         {detailRecord && (
           <div style={{ lineHeight: 2 }}>
-            <p><strong>项目名称：</strong>{detailRecord.name}</p>
-            <p><strong>立案时间：</strong>{renderDate(detailRecord.filing_date)}</p>
-            <p><strong>主办：</strong>{detailRecord.leader}</p>
-            <p><strong>项目状态：</strong>{renderProjectStatus(detailRecord.project_status)}</p>
-            <p><strong>办结状态：</strong>{renderClosed(detailRecord.closed)}</p>
-            <p><strong>归档状态：</strong>{renderArchiveStatus(detailRecord.archive_status)}</p>
-            <p><strong>电子卷宗：</strong>{renderArchiveFlag(detailRecord.electronic_archive)}</p>
-            <p><strong>纸质卷宗：</strong>{renderArchiveFlag(detailRecord.paper_archive)}</p>
-            <p><strong>合同原件交回：</strong>{renderContractReturn(detailRecord.contract_returned)}</p>
-            <p><strong>原件上传：</strong>{renderOriginalUpload(detailRecord.original_uploaded)}</p>
+            <p><strong>项目名称：</strong>{String(detailRecord.name ?? '')}</p>
+            <p><strong>立案时间：</strong>{renderDate(detailRecord.filing_date as string)}</p>
+            <p><strong>主办：</strong>{String(detailRecord.leader ?? '')}</p>
+            <p><strong>项目状态：</strong>{renderProjectStatus(detailRecord.project_status as string)}</p>
+            <p><strong>办结状态：</strong>{renderClosed(detailRecord.closed as boolean)}</p>
+            <p><strong>归档状态：</strong>{renderArchiveStatus(detailRecord.archive_status as string)}</p>
+            <p><strong>电子卷宗：</strong>{renderArchiveFlag(detailRecord.electronic_archive as boolean)}</p>
+            <p><strong>纸质卷宗：</strong>{renderArchiveFlag(detailRecord.paper_archive as boolean)}</p>
+            <p><strong>合同原件交回：</strong>{renderContractReturn(detailRecord.contract_returned as string)}</p>
+            <p><strong>原件上传：</strong>{renderOriginalUpload(detailRecord.original_uploaded as boolean)}</p>
           </div>
         )}
       </Modal>
@@ -489,7 +502,7 @@ export default function ArchiveVolumeManagement() {
       >
         <Form form={borrowForm} onFinish={handleSubmitBorrow} layout="vertical">
           <Form.Item label="项目名称">
-            <Input value={borrowRecord?.name || ''} disabled />
+            <Input value={(borrowRecord?.name as string) || ''} disabled />
           </Form.Item>
           <Form.Item name="borrow_days" label="借阅天数" rules={[{ required: true, message: '请输入借阅天数' }]}>
             <Input type="number" placeholder="请输入借阅天数" />

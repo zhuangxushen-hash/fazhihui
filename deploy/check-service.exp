@@ -1,0 +1,8 @@
+#!/usr/bin/expect -f
+set timeout 30
+set password "s\`3}2KG~n@D?N\$P"
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "pm2 list 2>/dev/null | grep -E 'test|status' && echo '---HEALTH---' && curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/health 2>/dev/null && echo '' && echo '---CLEANUP---' && rm -f /home/ubuntu/fazhihui-test/backend/verify-data.js /home/ubuntu/fazhihui-test/backend/verify-data-v2.js /home/ubuntu/fazhihui-test/backend/probe-schema.js /home/ubuntu/fazhihui-test/backend/fix-bid-data.js /home/ubuntu/fazhihui-test/backend/fix-relations.js && echo 'cleaned'"
+expect {
+    "password:" { send "$password\r"; expect eof }
+    eof
+}

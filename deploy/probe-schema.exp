@@ -1,0 +1,15 @@
+#!/usr/bin/expect -f
+set timeout 60
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ./deploy/probe-schema.js ubuntu@1.12.57.22:/home/ubuntu/fazhihui-test/backend/probe-schema.js
+expect {
+    "password:" { send "$password\r"; expect eof }
+    eof
+}
+
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "cd /home/ubuntu/fazhihui-test/backend && node probe-schema.js"
+expect {
+    "password:" { send "$password\r"; expect eof }
+    eof
+}

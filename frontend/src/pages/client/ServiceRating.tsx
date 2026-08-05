@@ -6,9 +6,9 @@ import axios from '../../api/axios'
 import { formatDateTime } from '../../utils/format'
 import BottomNav from '../../components/BottomNav'
 import ClientButton from '../../components/ClientButton'
-
+import { theme as appTheme } from '../../constants/theme'
 // 星级强调色
-const STAR_COLOR = '#0071e3'
+const STAR_COLOR = appTheme.primary
 
 export default function ServiceRating() {
   const [searchParams] = useSearchParams()
@@ -37,10 +37,10 @@ export default function ServiceRating() {
   const fetchHistory = async () => {
     setLoadingHistory(true)
     try {
-      const res = await axios.post('/client/service-ratings/list', { client_id: user.id })
+      const res = await axios.post('/client/service-ratings/list', { client_id: user.id }) as Record<string, unknown>[]
       setHistory(res || [])
     } catch (error) {
-      console.error('Fetch ratings error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoadingHistory(false)
     }
@@ -67,7 +67,6 @@ export default function ServiceRating() {
       setSubmitted(true)
       fetchHistory()
     } catch (error) {
-      console.error('Submit rating error:', error)
       message.error('评价提交失败，请重试')
     } finally {
       setSubmitting(false)

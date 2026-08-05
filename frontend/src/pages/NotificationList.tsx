@@ -34,11 +34,12 @@ const typeLabels: Record<string, string> = {
   chat: '聊天通知',
 }
 
+// 级别对应的 Stitch Tag 类名（原为 antd color 值，现替换为 Stitch 类名变体，保留按级别映射样式的逻辑）
 const levelColors: Record<string, string> = {
-  low: 'blue',
-  normal: 'default',
-  high: 'orange',
-  urgent: 'red',
+  low: 'stitch-tag stitch-tag-primary',
+  normal: 'stitch-tag stitch-tag-info',
+  high: 'stitch-tag stitch-tag-warning',
+  urgent: 'stitch-tag stitch-tag-error',
 }
 
 const levelLabels: Record<string, string> = {
@@ -49,17 +50,17 @@ const levelLabels: Record<string, string> = {
 }
 
 export default function NotificationList() {
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [searchForm] = Form.useForm()
   // 当前选中的左侧菜单分类（3大类6子项）
   const [activeCategory, setActiveCategory] = useState('latest')
 
-  const fetchData = useCallback(async (params?: any) => {
+  const fetchData = useCallback(async (params?: Record<string, unknown>) => {
     setLoading(true)
     try {
       const list = await getNotifications(params)
-      setData(list || [])
+      setData((list as Record<string, unknown>[]) || [])
     } catch (error) {
       message.error('获取通知列表失败')
     } finally {
@@ -73,7 +74,7 @@ export default function NotificationList() {
 
   const handleSearch = () => {
     const values = searchForm.getFieldsValue()
-    const params: any = { category: activeCategory }
+    const params: Record<string, unknown> = { category: activeCategory }
     if (values.keyword) params.keyword = values.keyword
     if (values.type) params.type = values.type
     if (values.level) params.level = values.level
@@ -127,10 +128,10 @@ export default function NotificationList() {
       dataIndex: 'title',
       key: 'title',
       width: 220,
-      render: (text: string, record: any) => (
+      render: (text: string, record: Record<string, unknown>) => (
         <Space>
-          <span style={{ fontWeight: record.is_read ? 400 : 600 }}>{text}</span>
-          {!record.is_read && <Tag color="blue">未读</Tag>}
+          <span style={{ fontWeight: (record.is_read as boolean) ? 400 : 600 }}>{text}</span>
+          {!(record.is_read as boolean) && <Tag className="stitch-tag stitch-tag-primary">未读</Tag>}
         </Space>
       ),
     },
@@ -145,7 +146,7 @@ export default function NotificationList() {
       dataIndex: 'type',
       key: 'type',
       width: 100,
-      render: (type: string) => <Tag>{typeLabels[type] || type}</Tag>,
+      render: (type: string) => <Tag className="stitch-tag stitch-tag-info">{typeLabels[type] || type}</Tag>,
     },
     {
       title: '级别',
@@ -153,7 +154,7 @@ export default function NotificationList() {
       key: 'level',
       width: 80,
       render: (level: string) => (
-        <Tag color={levelColors[level] || 'default'}>{levelLabels[level] || level}</Tag>
+        <Tag className={levelColors[level] || 'stitch-tag stitch-tag-info'}>{levelLabels[level] || level}</Tag>
       ),
     },
     {
@@ -174,14 +175,14 @@ export default function NotificationList() {
       title: '操作',
       key: 'action',
       width: 130,
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: Record<string, unknown>) => (
         <Space>
-          {!record.is_read && (
-            <Button type="link" size="small" icon={<ReadOutlined />} onClick={() => handleMarkAsRead(record.id)}>
+          {!(record.is_read as boolean) && (
+            <Button type="link" size="small" icon={<ReadOutlined />} onClick={() => handleMarkAsRead(record.id as string)}>
               标记已读
             </Button>
           )}
-          <Button type="link" size="small" danger onClick={() => handleDelete(record.id)}>
+          <Button type="link" size="small" danger onClick={() => handleDelete(record.id as string)}>
             删除
           </Button>
         </Space>
@@ -207,7 +208,7 @@ export default function NotificationList() {
         </div>
         {/* 右侧主区域：保留原有查询条件与表格 */}
         <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+      <div className="stitch-filter-bar" style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
         <Form form={searchForm} layout="inline" style={{ gap: 8 }}>
           <Form.Item name="keyword" label="关键词">
             <Input placeholder="搜索标题或内容" allowClear style={{ width: 200 }} onPressEnter={handleSearch} />
@@ -225,7 +226,7 @@ export default function NotificationList() {
             ]} />
           </Form.Item>
           <Form.Item>
-            <Space>
+            <Space className="stitch-btn-group">
               <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>查询</Button>
               <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
             </Space>
@@ -233,14 +234,16 @@ export default function NotificationList() {
         </Form>
       </div>
 
-      <Table
-        dataSource={data}
-        columns={columns}
-        loading={loading}
-        rowKey="id"
-        pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
-        scroll={{ x: 1000 }}
-      />
+      <div className="stitch-table">
+        <Table
+          dataSource={data}
+          columns={columns}
+          loading={loading}
+          rowKey="id"
+          pagination={{ pageSize: 15, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
+          scroll={{ x: 1000 }}
+        />
+      </div>
         </div>
       </div>
     </div>

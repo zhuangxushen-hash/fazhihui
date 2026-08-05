@@ -6,6 +6,7 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/zh-cn'
 import Layout from './components/Layout'
 import ErrorBoundary from './components/ErrorBoundary'
+import { theme } from './constants/theme'
 // 页面组件懒加载（按需打包，加快首屏加载速度）
 const Login = lazy(() => import('./pages/Login'))
 const ClientLogin = lazy(() => import('./pages/client/ClientLogin'))
@@ -186,8 +187,8 @@ function App() {
       theme={{
         token: {
           // === Material Design 3 Primary ===
-          colorPrimary: '#0071e3',
-          colorInfo: '#0071e3',
+          colorPrimary: theme.primary,
+          colorInfo: theme.primary,
           colorSuccess: '#2e7d32',
           colorWarning: '#ed6c02',
           colorError: '#ba1a1a',
@@ -278,7 +279,7 @@ function App() {
             borderRadius: 8,
             controlHeight: 36,
             controlHeightLG: 44,
-            activeBorderColor: '#0071e3',
+            activeBorderColor: theme.primary,
             hoverBorderColor: '#c1c6d6',
             activeShadow: '0 0 0 2px rgba(0, 113, 227, 0.1)',
           },
@@ -294,7 +295,7 @@ function App() {
             headerBg: '#ffffff',
           },
           Tabs: {
-            inkBarColor: '#c9a961',
+            inkBarColor: theme.brandGold,
             itemActiveColor: '#0059b5',
             itemSelectedColor: '#0059b5',
             itemColor: '#414753',
@@ -311,7 +312,7 @@ function App() {
           },
           Pagination: {
             itemBg: 'transparent',
-            itemActiveBg: '#0071e3',
+            itemActiveBg: theme.primary,
           },
           DatePicker: {
             borderRadius: 8,

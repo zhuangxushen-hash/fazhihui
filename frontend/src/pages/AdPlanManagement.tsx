@@ -31,6 +31,7 @@ import {
   AdPlanLog,
   AdPlanPayload,
   AdPlanStatus,
+  FetchAdPlansParams,
   getAdPlans,
   createAdPlan,
   updateAdPlan,
@@ -40,10 +41,10 @@ import {
   copyAdPlan,
   migrateAdPlan,
   getAdPlanLogs,
-} from '../api/adPlan'
-import { AdAccount, getAdAccounts } from '../api/adAccount'
+} from '../api/ad-plan'
+import { AdAccount, getAdAccounts } from '../api/ad-account'
 import { formatDateTime, formatDate } from '../utils/format'
-
+import { theme } from '../constants/theme'
 // 计划状态选项
 const statusOptions: { value: AdPlanStatus; label: string; color: string }[] = [
   { value: 'running', label: '投放中', color: '#34c759' },
@@ -84,8 +85,8 @@ const platformOptions = [
 
 // 操作类型标签
 const operationTypeMap: Record<string, { label: string; color: string }> = {
-  create: { label: '创建', color: '#0071e3' },
-  update: { label: '编辑', color: '#0071e3' },
+  create: { label: '创建', color: theme.primary },
+  update: { label: '编辑', color: theme.primary },
   start: { label: '启动', color: '#34c759' },
   pause: { label: '暂停', color: '#ff9500' },
   end: { label: '结束', color: '#86868b' },
@@ -132,16 +133,16 @@ export default function AdPlanManagement() {
   const fetchPlans = async () => {
     setLoading(true)
     try {
-      const params: any = { org_id: user.organization_id }
+      const params: FetchAdPlansParams = { org_id: user.organization_id }
       if (searchParams.platform) params.platform = searchParams.platform
       if (searchParams.account_id) params.account_id = searchParams.account_id
       if (searchParams.case_type) params.case_type = searchParams.case_type
-      if (searchParams.status) params.status = searchParams.status
+      if (searchParams.status) params.status = searchParams.status as AdPlanStatus
       if (searchParams.keyword) params.keyword = searchParams.keyword
       const res = await getAdPlans(params)
-      setData(res || [])
+      setData((res as AdPlan[]) || [])
     } catch (error) {
-      console.error('Fetch ad plans error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -152,7 +153,7 @@ export default function AdPlanManagement() {
       const res = await getAdAccounts({ org_id: user.organization_id })
       setAccounts(res || [])
     } catch (error) {
-      console.error('Fetch accounts error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -161,7 +162,6 @@ export default function AdPlanManagement() {
       const res = await getAdPlanLogs(planId)
       setLogs(res || [])
     } catch (error) {
-      console.error('Fetch logs error:', error)
       setLogs([])
     }
   }
@@ -210,22 +210,21 @@ export default function AdPlanManagement() {
       fetchPlans()
     } catch (error) {
       message.error('删除失败')
-      console.error('Delete ad plan error:', error)
     }
   }
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: Record<string, unknown>) => {
     try {
       const payload: AdPlanPayload = {
-        account_id: values.account_id,
-        plan_name: values.plan_name,
-        case_type: values.case_type,
+        account_id: values.account_id as string,
+        plan_name: values.plan_name as string,
+        case_type: values.case_type as string,
         budget: Number(values.budget) || 0,
         bid: Number(values.bid) || 0,
-        status: values.status,
-        platform_plan_id: values.platform_plan_id,
-        start_date: values.start_date ? values.start_date.format('YYYY-MM-DD') : undefined,
-        end_date: values.end_date ? values.end_date.format('YYYY-MM-DD') : undefined,
+        status: values.status as AdPlanStatus,
+        platform_plan_id: values.platform_plan_id as string | undefined,
+        start_date: values.start_date ? (values.start_date as dayjs.Dayjs).format('YYYY-MM-DD') : undefined,
+        end_date: values.end_date ? (values.end_date as dayjs.Dayjs).format('YYYY-MM-DD') : undefined,
       }
       if (editingPlan) {
         await updateAdPlan(editingPlan.id, payload)
@@ -236,9 +235,8 @@ export default function AdPlanManagement() {
       }
       setModalVisible(false)
       fetchPlans()
-    } catch (error: any) {
+    } catch (error: unknown) {
       message.error(editingPlan ? '更新失败' : '创建失败')
-      console.error('Submit ad plan error:', error)
     }
   }
 
@@ -255,7 +253,6 @@ export default function AdPlanManagement() {
       fetchPlans()
     } catch (error) {
       message.error('批量操作失败')
-      console.error('Batch status error:', error)
     }
   }
 
@@ -269,7 +266,7 @@ export default function AdPlanManagement() {
     setBudgetModalVisible(true)
   }
 
-  const handleBatchBudget = async (values: any) => {
+  const handleBatchBudget = async (values: Record<string, unknown>) => {
     try {
       await batchAdjustAdPlanBudget(selectedRowKeys, Number(values.budget))
       message.success('批量预算调整成功')
@@ -278,7 +275,6 @@ export default function AdPlanManagement() {
       fetchPlans()
     } catch (error) {
       message.error('批量预算调整失败')
-      console.error('Batch budget error:', error)
     }
   }
 
@@ -291,7 +287,6 @@ export default function AdPlanManagement() {
       fetchPlans()
     } catch (error) {
       message.error('操作失败')
-      console.error('Toggle status error:', error)
     }
   }
 
@@ -303,15 +298,14 @@ export default function AdPlanManagement() {
     setCopyModalVisible(true)
   }
 
-  const handleCopy = async (values: any) => {
+  const handleCopy = async (values: Record<string, unknown>) => {
     try {
-      await copyAdPlan(currentPlan!.id, values.new_plan_name)
+      await copyAdPlan(currentPlan!.id, values.new_plan_name as string | undefined)
       message.success('计划复制成功')
       setCopyModalVisible(false)
       fetchPlans()
     } catch (error) {
       message.error('复制失败')
-      console.error('Copy plan error:', error)
     }
   }
 
@@ -322,15 +316,14 @@ export default function AdPlanManagement() {
     setMigrateModalVisible(true)
   }
 
-  const handleMigrate = async (values: any) => {
+  const handleMigrate = async (values: Record<string, unknown>) => {
     try {
-      await migrateAdPlan(currentPlan!.id, values.target_account_id)
+      await migrateAdPlan(currentPlan!.id, values.target_account_id as string)
       message.success('计划迁移成功')
       setMigrateModalVisible(false)
       fetchPlans()
     } catch (error) {
       message.error('迁移失败')
-      console.error('Migrate plan error:', error)
     }
   }
 
@@ -396,7 +389,7 @@ export default function AdPlanManagement() {
       title: '平台',
       key: 'platform',
       width: 90,
-      render: (_: any, record: AdPlan) => {
+      render: (_: unknown, record: AdPlan) => {
         const acc = accountMap[record.account_id]
         const platform = acc?.platform
         const labels: Record<string, string> = {
@@ -406,7 +399,7 @@ export default function AdPlanManagement() {
           kuaishou: '快手',
         }
         return platform ? (
-          <Tag style={{ background: '#f5f5f7', color: '#6e6e73', borderRadius: 10, border: 'none' }}>
+          <Tag className="stitch-tag">
             {labels[platform] || platform}
           </Tag>
         ) : (
@@ -429,7 +422,7 @@ export default function AdPlanManagement() {
       key: 'budget',
       width: 120,
       render: (val: number | string) => (
-        <span style={{ fontWeight: 600, color: '#0071e3' }}>¥{Number(val).toFixed(2)}</span>
+        <span style={{ fontWeight: 600, color: theme.primary }}>¥{Number(val).toFixed(2)}</span>
       ),
     },
     {
@@ -448,18 +441,14 @@ export default function AdPlanManagement() {
       width: 100,
       render: (val: string) => {
         const s = statusMap[val] || { label: val, color: '#86868b' }
+        // 根据状态映射 stitch-tag 类名
+        const tagClass =
+          val === 'running' ? 'stitch-tag stitch-tag-info' :
+          val === 'paused' ? 'stitch-tag stitch-tag-warning' :
+          val === 'ended' ? 'stitch-tag stitch-tag-primary' :
+          'stitch-tag'
         return (
-          <Tag
-            style={{
-              background: `${s.color}10`,
-              color: s.color,
-              borderRadius: 12,
-              padding: '2px 10px',
-              fontSize: 11,
-              fontWeight: 500,
-              border: 'none',
-            }}
-          >
+          <Tag className={tagClass}>
             {s.label}
           </Tag>
         )
@@ -469,7 +458,7 @@ export default function AdPlanManagement() {
       title: '投放区间',
       key: 'date_range',
       width: 200,
-      render: (_: any, record: AdPlan) => (
+      render: (_: unknown, record: AdPlan) => (
         <span style={{ color: '#86868b', fontSize: 13 }}>
           {record.start_date ? formatDate(record.start_date) : '-'} ~ {record.end_date ? formatDate(record.end_date) : '-'}
         </span>
@@ -479,7 +468,7 @@ export default function AdPlanManagement() {
       title: '操作',
       key: 'action',
       width: 280,
-      render: (_: any, record: AdPlan) => (
+      render: (_: unknown, record: AdPlan) => (
         <Space size={4} wrap>
           {canEdit && (
             <Tooltip title={record.status === 'running' ? '暂停' : '启动'}>
@@ -560,7 +549,7 @@ export default function AdPlanManagement() {
             style={{
               borderRadius: 10,
               padding: '8px 20px',
-              background: '#0071e3',
+              background: theme.primary,
               border: 'none',
               color: '#fff',
               boxShadow: '0 2px 8px rgba(0, 113, 227, 0.25)',
@@ -586,10 +575,10 @@ export default function AdPlanManagement() {
             border: '1px solid rgba(0, 113, 227, 0.12)',
           }}
         >
-          <span style={{ color: '#0071e3', fontSize: 13, fontWeight: 500 }}>
+          <span style={{ color: theme.primary, fontSize: 13, fontWeight: 500 }}>
             已选择 {selectedRowKeys.length} 个计划
           </span>
-          <Space>
+          <Space className="stitch-btn-group">
             <Button
               size="small"
               icon={<PlayCircleOutlined />}
@@ -610,7 +599,7 @@ export default function AdPlanManagement() {
               size="small"
               icon={<DollarOutlined />}
               onClick={handleOpenBatchBudget}
-              style={{ borderRadius: 8, border: '1px solid rgba(0, 113, 227, 0.3)', color: '#0071e3' }}
+              style={{ borderRadius: 8, border: '1px solid rgba(0, 113, 227, 0.3)', color: theme.primary }}
             >
               批量调预算
             </Button>
@@ -619,6 +608,7 @@ export default function AdPlanManagement() {
       )}
 
       <div
+        className="stitch-filter-bar"
         style={{
           background: '#fff',
           borderRadius: 16,
@@ -676,7 +666,7 @@ export default function AdPlanManagement() {
             style={{
               borderRadius: 10,
               padding: '8px 20px',
-              background: '#0071e3',
+              background: theme.primary,
               border: 'none',
               color: '#fff',
             }}
@@ -693,6 +683,7 @@ export default function AdPlanManagement() {
       </div>
 
       <div
+        className="stitch-table"
         style={{
           background: '#fff',
           borderRadius: 16,
@@ -793,7 +784,7 @@ export default function AdPlanManagement() {
                 style={{
                   borderRadius: 10,
                   padding: '10px 32px',
-                  background: '#0071e3',
+                  background: theme.primary,
                   border: 'none',
                   color: '#fff',
                 }}
@@ -834,7 +825,7 @@ export default function AdPlanManagement() {
                 style={{
                   borderRadius: 10,
                   padding: '10px 32px',
-                  background: '#0071e3',
+                  background: theme.primary,
                   border: 'none',
                   color: '#fff',
                 }}
@@ -870,7 +861,7 @@ export default function AdPlanManagement() {
                 style={{
                   borderRadius: 10,
                   padding: '10px 32px',
-                  background: '#0071e3',
+                  background: theme.primary,
                   border: 'none',
                   color: '#fff',
                 }}
@@ -914,7 +905,7 @@ export default function AdPlanManagement() {
                 style={{
                   borderRadius: 10,
                   padding: '10px 32px',
-                  background: '#0071e3',
+                  background: theme.primary,
                   border: 'none',
                   color: '#fff',
                 }}
@@ -941,6 +932,15 @@ export default function AdPlanManagement() {
           ) : (
             logs.map((log) => {
               const op = operationTypeMap[log.operation_type] || { label: log.operation_type, color: '#86868b' }
+              // 根据操作类型映射 stitch-tag 类名
+              const opTagClass =
+                log.operation_type === 'create' || log.operation_type === 'update' ? 'stitch-tag stitch-tag-primary' :
+                log.operation_type === 'start' ? 'stitch-tag stitch-tag-info' :
+                log.operation_type === 'pause' ? 'stitch-tag stitch-tag-warning' :
+                log.operation_type === 'end' ? 'stitch-tag stitch-tag-primary' :
+                log.operation_type === 'delete' || log.operation_type === 'migrate' ? 'stitch-tag stitch-tag-error' :
+                log.operation_type === 'copy' ? 'stitch-tag stitch-tag-gold' :
+                'stitch-tag stitch-tag-info'
               return (
                 <div
                   key={log.id}
@@ -952,17 +952,7 @@ export default function AdPlanManagement() {
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <Tag
-                      style={{
-                        background: `${op.color}10`,
-                        color: op.color,
-                        borderRadius: 12,
-                        padding: '2px 10px',
-                        fontSize: 11,
-                        fontWeight: 500,
-                        border: 'none',
-                      }}
-                    >
+                    <Tag className={opTagClass}>
                       {op.label}
                     </Tag>
                     <span style={{ fontSize: 12, color: '#86868b' }}>{formatDateTime(log.created_at)}</span>

@@ -13,13 +13,13 @@ import {
 import { useNavigate } from 'react-router-dom'
 import axios from '../api/axios'
 import { formatDateTime, formatDate } from '../utils/format'
-
+import { theme } from '../constants/theme'
 // === Material Design 3 Style Tokens ===
 const pageH2Style: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
   fontSize: 22,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
   margin: 0,
   letterSpacing: '0.01em',
 }
@@ -30,7 +30,7 @@ const tableCardStyle: React.CSSProperties = {
 }
 
 const cardHeadStyle: React.CSSProperties = {
-  borderBottom: '1px solid #c1c6d6',
+  borderBottom: `1px solid ${theme.border}`,
   padding: '0 20px',
   minHeight: 56,
 }
@@ -39,7 +39,7 @@ const cardTitleStyle: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
   fontSize: 16,
   fontWeight: 600,
-  color: '#1a1c1d',
+  color: theme.textBase,
 }
 
 // === MD3 Status Pill (Soft Background Style) ===
@@ -47,32 +47,36 @@ type PillKind = 'neutral' | 'blue' | 'gold' | 'green' | 'red' | 'orange' | 'purp
 
 const pillColorMap: Record<PillKind, { bg: string; color: string }> = {
   neutral: { bg: 'rgba(113, 119, 133, 0.12)', color: '#5f6672' },
-  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: '#0071e3' },
+  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: theme.primary },
   gold: { bg: 'rgba(201, 169, 97, 0.15)', color: '#8c702e' },
-  green: { bg: 'rgba(46, 125, 50, 0.1)', color: '#2e7d32' },
-  red: { bg: 'rgba(186, 26, 26, 0.1)', color: '#ba1a1a' },
-  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: '#ed6c02' },
+  green: { bg: 'rgba(46, 125, 50, 0.1)', color: theme.success },
+  red: { bg: 'rgba(186, 26, 26, 0.1)', color: theme.error },
+  orange: { bg: 'rgba(237, 108, 2, 0.1)', color: theme.warning },
   purple: { bg: 'rgba(114, 46, 209, 0.1)', color: '#722ed1' },
   cyan: { bg: 'rgba(0, 166, 167, 0.1)', color: '#00a6a7' },
   geekblue: { bg: 'rgba(47, 84, 235, 0.1)', color: '#2f54eb' },
 }
 
+// kind 到 stitch-tag 变体 className 的映射（对齐 Stitch 设计规范）
+const pillKindToClassName: Record<PillKind, string> = {
+  neutral: 'stitch-tag',
+  blue: 'stitch-tag stitch-tag-info',
+  gold: 'stitch-tag stitch-tag-gold',
+  green: 'stitch-tag stitch-tag-success',
+  red: 'stitch-tag stitch-tag-error',
+  orange: 'stitch-tag stitch-tag-warning',
+  purple: 'stitch-tag stitch-tag-info',
+  cyan: 'stitch-tag stitch-tag-info',
+  geekblue: 'stitch-tag stitch-tag-info',
+}
+
 const StatusPill = ({ text, kind }: { text: string; kind: PillKind }) => {
+  // 保留原 pillColorMap 颜色逻辑作为参考（已迁移至 stitch-tag className 变体）
   const c = pillColorMap[kind] || pillColorMap.neutral
+  // 使用 stitch-tag 变体 className 渲染（对齐 Stitch 设计规范，颜色由 className 控制）
+  const className = pillKindToClassName[kind] || 'stitch-tag'
   return (
-    <span
-      style={{
-        display: 'inline-block',
-        padding: '2px 10px',
-        borderRadius: 999,
-        background: c.bg,
-        color: c.color,
-        fontSize: 12,
-        fontWeight: 500,
-        lineHeight: '20px',
-        whiteSpace: 'nowrap',
-      }}
-    >
+    <span className={className} style={{ whiteSpace: 'nowrap' }} title={c.color}>
       {text}
     </span>
   )
@@ -157,14 +161,16 @@ export default function ComplianceCenter() {
         axios.get('/compliance/case-sop/stats', { params: { org_id: user.organization_id } }),
         axios.get('/compliance/sales-compliance', { params: { org_id: user.organization_id } }),
       ])
+      const sop = sopStats as Record<string, unknown>
+      const sales = (salesRes as Record<string, unknown>[]) || []
       setStats({
-        pending: sopStats.pending || 0,
-        completed: sopStats.completed || 0,
-        overdue: sopStats.overdue || 0,
-        violation: salesRes.filter((s: any) => s.check_result === 'violation').length || 0,
+        pending: (sop.pending as number) || 0,
+        completed: (sop.completed as number) || 0,
+        overdue: (sop.overdue as number) || 0,
+        violation: sales.filter((s: Record<string, unknown>) => s.check_result === 'violation').length || 0,
       })
     } catch (error) {
-      console.error('Fetch stats error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -172,9 +178,9 @@ export default function ComplianceCenter() {
     setLoading(true)
     try {
       const res = await axios.get('/compliance/marketing-content', { params: { org_id: user.organization_id } })
-      setMarketingContents(res || [])
+      setMarketingContents((res as Record<string, unknown>[]) || [])
     } catch (error) {
-      console.error('Fetch marketing contents error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -184,9 +190,9 @@ export default function ComplianceCenter() {
     setLoading(true)
     try {
       const res = await axios.get('/compliance/sales-compliance', { params: { org_id: user.organization_id } })
-      setSalesCompliance(res || [])
+      setSalesCompliance((res as Record<string, unknown>[]) || [])
     } catch (error) {
-      console.error('Fetch sales compliance error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -196,9 +202,9 @@ export default function ComplianceCenter() {
     setLoading(true)
     try {
       const res = await axios.get('/compliance/signing-compliance', { params: { org_id: user.organization_id } })
-      setSigningCompliance(res || [])
+      setSigningCompliance((res as Record<string, unknown>[]) || [])
     } catch (error) {
-      console.error('Fetch signing compliance error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -208,15 +214,15 @@ export default function ComplianceCenter() {
     setLoading(true)
     try {
       const res = await axios.get('/compliance/case-sop')
-      setCaseSOP(res || [])
+      setCaseSOP((res as Record<string, unknown>[]) || [])
     } catch (error) {
-      console.error('Fetch case SOP error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
   }
 
-  const handleReview = async (record: any, status: string) => {
+  const handleReview = async (record: Record<string, unknown>, status: string) => {
     try {
       await axios.put(`/compliance/marketing-content/${record.id}/review`, {
         reviewer_id: user.id,
@@ -229,7 +235,7 @@ export default function ComplianceCenter() {
     }
   }
 
-  const handleCompleteSOP = async (record: any) => {
+  const handleCompleteSOP = async (record: Record<string, unknown>) => {
     try {
       await axios.put(`/compliance/case-sop/${record.id}/complete`, {
         operator_id: user.id,
@@ -255,8 +261,8 @@ export default function ComplianceCenter() {
     )},
     { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
     { title: '审核时间', dataIndex: 'review_time', key: 'review_time', render: (val: string) => formatDateTime(val) },
-    { title: '操作', key: 'action', render: (_: any, record: any) => (
-      <Space>
+    { title: '操作', key: 'action', render: (_: unknown, record: Record<string, unknown>) => (
+      <Space className="stitch-btn-group">
         {record.status === 'pending_review' && (
           <>
             <Button size="small" type="primary" onClick={() => handleReview(record, 'approved')}>通过</Button>
@@ -320,7 +326,7 @@ export default function ComplianceCenter() {
     { title: '证据验证', dataIndex: 'evidence_verified', key: 'evidence_verified', render: (v: boolean) => (
       <StatusPill text={v ? '已验证' : '待验证'} kind={v ? 'green' : 'orange'} />
     )},
-    { title: '操作', key: 'action', render: (_: any, record: any) => (
+    { title: '操作', key: 'action', render: (_: unknown, record: Record<string, unknown>) => (
       <Space>
         {record.status === 'pending' && (
           <Button size="small" type="primary" onClick={() => handleCompleteSOP(record)}>完成</Button>
@@ -336,21 +342,21 @@ export default function ComplianceCenter() {
       value: stats.pending,
       icon: <AlertOutlined />,
       iconBg: 'rgba(237, 108, 2, 0.1)',
-      iconColor: '#ed6c02',
+      iconColor: theme.warning,
     },
     {
       title: '已完成节点',
       value: stats.completed,
       icon: <CheckCircleOutlined />,
       iconBg: 'rgba(46, 125, 50, 0.1)',
-      iconColor: '#2e7d32',
+      iconColor: theme.success,
     },
     {
       title: '已超时节点',
       value: stats.overdue,
       icon: <WarningOutlined />,
       iconBg: 'rgba(186, 26, 26, 0.1)',
-      iconColor: '#ba1a1a',
+      iconColor: theme.error,
     },
     {
       title: '违规记录',
@@ -364,10 +370,10 @@ export default function ComplianceCenter() {
   const completionRate = Math.round((stats.completed / (stats.completed + stats.pending + stats.overdue)) * 100) || 0
 
   const riskDistribution = [
-    { label: '待完成', value: stats.pending, color: '#ed6c02' },
-    { label: '已完成', value: stats.completed, color: '#2e7d32' },
-    { label: '已超时', value: stats.overdue, color: '#ba1a1a' },
-    { label: '违规记录', value: stats.violation, color: '#c9a961' },
+    { label: '待完成', value: stats.pending, color: theme.warning },
+    { label: '已完成', value: stats.completed, color: theme.success },
+    { label: '已超时', value: stats.overdue, color: theme.error },
+    { label: '违规记录', value: stats.violation, color: theme.brandGold },
   ]
 
   return (
@@ -397,10 +403,10 @@ export default function ComplianceCenter() {
                         <Card style={{ height: '100%', borderRadius: 12 }} styles={{ body: { padding: 20 } }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 12, color: '#414753', marginBottom: 12, letterSpacing: '0.02em', fontWeight: 500 }}>
+                              <div style={{ fontSize: 12, color: theme.textSecondary, marginBottom: 12, letterSpacing: '0.02em', fontWeight: 500 }}>
                                 {card.title}
                               </div>
-                              <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 30, fontWeight: 700, color: '#1a1c1d', lineHeight: 1.2, letterSpacing: '0.01em' }}>
+                              <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 30, fontWeight: 700, color: theme.textBase, lineHeight: 1.2, letterSpacing: '0.01em' }}>
                                 {card.value}
                               </div>
                             </div>
@@ -434,12 +440,12 @@ export default function ComplianceCenter() {
                       >
                         <div style={{ marginBottom: 16 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <span style={{ fontSize: 13, color: '#414753' }}>办案SOP完成率</span>
-                            <span style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 700, color: '#0059b5', fontSize: 15 }}>{completionRate}%</span>
+                            <span style={{ fontSize: 13, color: theme.textSecondary }}>办案SOP完成率</span>
+                            <span style={{ fontFamily: "'Noto Serif SC', serif", fontWeight: 700, color: theme.primaryDark, fontSize: 15 }}>{completionRate}%</span>
                           </div>
                           <Progress
                             percent={completionRate}
-                            strokeColor={{ from: '#0071e3', to: '#c9a961' }}
+                            strokeColor={{ from: theme.primary, to: theme.brandGold }}
                             size="small"
                             strokeWidth={6}
                           />
@@ -467,7 +473,7 @@ export default function ComplianceCenter() {
                               <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 26, fontWeight: 700, color: item.color, lineHeight: 1.2 }}>
                                 {item.value}
                               </div>
-                              <div style={{ fontSize: 12, color: '#414753', marginTop: 4 }}>{item.label}</div>
+                              <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 4 }}>{item.label}</div>
                             </div>
                           ))}
                         </div>
@@ -486,7 +492,7 @@ export default function ComplianceCenter() {
                 </span>
               ),
               children: (
-                <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+                <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
                   <Table
                     dataSource={marketingContents}
                     columns={marketingColumns}
@@ -506,7 +512,7 @@ export default function ComplianceCenter() {
                 </span>
               ),
               children: (
-                <Card style={tableCardStyle}>
+                <Card className="stitch-table" style={tableCardStyle}>
                   <Row gutter={[24, 24]} style={{ marginBottom: 16 }}>
                     <Col xs={12} md={6}>
                       <Statistic
@@ -568,7 +574,7 @@ export default function ComplianceCenter() {
                 </span>
               ),
               children: (
-                <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+                <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
                   <Table
                     dataSource={signingCompliance}
                     columns={signingColumns}
@@ -588,7 +594,7 @@ export default function ComplianceCenter() {
                 </span>
               ),
               children: (
-                <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+                <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
                   <Table
                     dataSource={caseSOP}
                     columns={sopColumns}

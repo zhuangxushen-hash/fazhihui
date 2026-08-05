@@ -11,7 +11,7 @@ import {
   CheckCircleOutlined,
 } from '@ant-design/icons'
 import axios from '../api/axios'
-
+import { theme } from '../constants/theme'
 /**
  * 经营总览 - Material Design 3 风格
  * Bento Grid 布局 + 深藏青表格头 + 暗金强调
@@ -49,64 +49,69 @@ export default function Dashboard() {
         axios.get('/dashboard/compliance-stats', { params: { org_id: user.organization_id } }),
         axios.get('/dashboard/revenue-stats', { params: { org_id: user.organization_id } }),
       ])
+      const lead = leadRes as Record<string, unknown>
+      const caseR = caseRes as Record<string, unknown>
+      const comp = complianceRes as Record<string, unknown>
+      const rev = revenueRes as Record<string, unknown>
       setStats({
-        totalLeads: leadRes.total || 0,
-        totalCases: caseRes.total || 0,
-        complianceRate: complianceRes.rate || 0,
-        totalRevenue: revenueRes.total_revenue || 0,
+        totalLeads: (lead?.total as number) || 0,
+        totalCases: (caseR?.total as number) || 0,
+        complianceRate: (comp?.rate as number) || 0,
+        totalRevenue: (rev?.total_revenue as number) || 0,
       })
     } catch (error) {
-      console.error('Fetch stats error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
   const fetchConversionData = async () => {
     try {
-      const res = await axios.get('/dashboard/conversion-funnel', { params: { org_id: user.organization_id } })
+      const res = (await axios.get('/dashboard/conversion-funnel', { params: { org_id: user.organization_id } })) as Record<string, unknown>
+      const rates = (res?.rates || {}) as Record<string, number>
       setConversionData([
-        { stage: '总线索', value: res.total_leads, rate: '-', color: '#0059b5' },
-        { stage: '邀约中', value: res.invited, rate: `${res.rates.invite_rate.toFixed(1)}%`, color: '#0071e3' },
-        { stage: '谈判中', value: res.negotiated, rate: `${res.rates.negotiate_rate.toFixed(1)}%`, color: '#c9a961' },
-        { stage: '待签约', value: res.signed, rate: `${res.rates.sign_rate.toFixed(1)}%`, color: '#2e7d32' },
+        { stage: '总线索', value: res.total_leads as number, rate: '-', color: theme.primaryDark },
+        { stage: '邀约中', value: res.invited as number, rate: `${(rates.invite_rate || 0).toFixed(1)}%`, color: theme.primary },
+        { stage: '谈判中', value: res.negotiated as number, rate: `${(rates.negotiate_rate || 0).toFixed(1)}%`, color: theme.brandGold },
+        { stage: '待签约', value: res.signed as number, rate: `${(rates.sign_rate || 0).toFixed(1)}%`, color: theme.success },
       ])
     } catch (error) {
-      console.error('Fetch conversion data error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
   const fetchCaseStats = async () => {
     try {
       const res = await axios.get('/dashboard/case-stats', { params: { org_id: user.organization_id } })
-      setCaseStats(res)
+      setCaseStats(res as Record<string, unknown>)
     } catch (error) {
-      console.error('Fetch case stats error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
   const fetchLawyerStats = async () => {
     try {
       const res = await axios.get('/dashboard/lawyer-performance', { params: { org_id: user.organization_id } })
-      setLawyerStats(res || [])
+      setLawyerStats((res as Record<string, unknown>[]) || [])
     } catch (error) {
-      console.error('Fetch lawyer stats error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
   const fetchCaseTypeProfit = async () => {
     try {
       const res = await axios.get('/dashboard/case-type-profit', { params: { org_id: user.organization_id } })
-      setCaseTypeProfit(res || [])
+      setCaseTypeProfit((res as Record<string, unknown>[]) || [])
     } catch (error) {
-      console.error('Fetch case type profit error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
   const fetchRiskStats = async () => {
     try {
       const res = await axios.get('/dashboard/risk-stats', { params: { org_id: user.organization_id } })
-      setRiskStats(res || {})
+      setRiskStats((res as Record<string, unknown>) || {})
     } catch (error) {
-      console.error('Fetch risk stats error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -115,9 +120,9 @@ export default function Dashboard() {
       title: '阶段',
       dataIndex: 'stage',
       key: 'stage',
-      render: (_: string, record: any) => (
+      render: (_: string, record: Record<string, unknown>) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: record.color }} />
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: record.color as string }} />
           <span>{_}</span>
         </div>
       ),
@@ -165,7 +170,7 @@ export default function Dashboard() {
       dataIndex: 'closed_cases',
       key: 'closed_cases',
       render: (count: number) => (
-        <span style={{ fontWeight: 600, color: '#2e7d32' }}>{count}</span>
+        <span style={{ fontWeight: 600, color: theme.success }}>{count}</span>
       ),
     },
     {
@@ -173,7 +178,7 @@ export default function Dashboard() {
       dataIndex: 'revenue_rate',
       key: 'revenue_rate',
       render: (rate: number) => (
-        <span style={{ fontWeight: 600, color: rate > 70 ? '#2e7d32' : rate > 40 ? '#ed6c02' : '#ba1a1a' }}>
+        <span style={{ fontWeight: 600, color: rate > 70 ? theme.success : rate > 40 ? theme.warning : theme.error }}>
           {rate.toFixed(1)}%
         </span>
       ),
@@ -183,7 +188,7 @@ export default function Dashboard() {
       dataIndex: 'total_revenue',
       key: 'total_revenue',
       render: (rev: number) => (
-        <span style={{ fontWeight: 600, color: '#0059b5', fontFamily: "'Noto Serif SC', serif" }}>
+        <span style={{ fontWeight: 600, color: theme.primaryDark, fontFamily: "'Noto Serif SC', serif" }}>
           ¥{rev.toFixed(2)}
         </span>
       ),
@@ -210,7 +215,7 @@ export default function Dashboard() {
       dataIndex: 'total_revenue',
       key: 'total_revenue',
       render: (rev: number) => (
-        <span style={{ fontWeight: 600, color: '#0059b5' }}>¥{rev.toFixed(2)}</span>
+        <span style={{ fontWeight: 600, color: theme.primaryDark }}>¥{rev.toFixed(2)}</span>
       ),
     },
     {
@@ -224,50 +229,52 @@ export default function Dashboard() {
       dataIndex: 'profit_margin',
       key: 'profit_margin',
       render: (rate: number) => (
-        <span style={{ fontWeight: 600, color: rate > 30 ? '#2e7d32' : rate > 15 ? '#ed6c02' : '#ba1a1a' }}>
+        <span style={{ fontWeight: 600, color: rate > 30 ? theme.success : rate > 15 ? theme.warning : theme.error }}>
           {rate.toFixed(1)}%
         </span>
       ),
     },
   ]
 
-  // === Bento Stat Cards ===
+  // === Bento Stat Cards（Stitch 设计规范：渐变背景 KPI 卡片） ===
+  // cardClass：通过 index.css 的 .kpi-card-* 类实现渐变背景（带 !important 覆盖 Antd Card 白底）
+  // textMode: 'light' 深色背景卡片用纯白文字（深蓝/藏青/绿），'dark' 浅色背景卡片用深藏青文字（暗金）
   const statCards = [
     {
       title: '总线索数',
       value: stats.totalLeads,
       icon: <FileSearchOutlined />,
-      iconBg: 'rgba(0, 113, 227, 0.1)',
-      iconColor: '#0071e3',
       trend: '+12%',
       trendUp: true,
+      cardClass: 'kpi-card-blue',
+      textMode: 'light',
     },
     {
       title: '总案件数',
       value: stats.totalCases,
       icon: <FileTextOutlined />,
-      iconBg: 'rgba(201, 169, 97, 0.12)',
-      iconColor: '#8c702e',
       trend: '+8%',
       trendUp: true,
+      cardClass: 'kpi-card-gold',
+      textMode: 'dark',
     },
     {
       title: '合规率',
       value: `${stats.complianceRate.toFixed(1)}%`,
       icon: <SecurityScanOutlined />,
-      iconBg: 'rgba(26, 35, 50, 0.08)',
-      iconColor: '#1a2332',
       trend: '+3%',
       trendUp: true,
+      cardClass: 'kpi-card-navy',
+      textMode: 'light',
     },
     {
       title: '总收入',
       value: `¥${stats.totalRevenue.toFixed(2)}`,
       icon: <DollarOutlined />,
-      iconBg: 'rgba(46, 125, 50, 0.1)',
-      iconColor: '#2e7d32',
       trend: '+15%',
       trendUp: true,
+      cardClass: 'kpi-card-green',
+      textMode: 'light',
     },
   ]
 
@@ -277,7 +284,7 @@ export default function Dashboard() {
       label: '待分配',
       count: caseStats.pending_assign || 0,
       total: caseStats.total || 1,
-      color: '#ed6c02',
+      color: theme.warning,
       bgColor: 'rgba(237, 108, 2, 0.08)',
       borderColor: 'rgba(237, 108, 2, 0.2)',
     },
@@ -285,7 +292,7 @@ export default function Dashboard() {
       label: '处理中',
       count: caseStats.processing || 0,
       total: caseStats.total || 1,
-      color: '#0071e3',
+      color: theme.primary,
       bgColor: 'rgba(0, 113, 227, 0.08)',
       borderColor: 'rgba(0, 113, 227, 0.2)',
     },
@@ -293,7 +300,7 @@ export default function Dashboard() {
       label: '已结案',
       count: caseStats.closed || 0,
       total: caseStats.total || 1,
-      color: '#2e7d32',
+      color: theme.success,
       bgColor: 'rgba(46, 125, 50, 0.08)',
       borderColor: 'rgba(46, 125, 50, 0.2)',
     },
@@ -301,14 +308,14 @@ export default function Dashboard() {
       label: '超期案件',
       count: caseStats.overdue || 0,
       total: caseStats.total || 1,
-      color: '#ba1a1a',
+      color: theme.error,
       bgColor: 'rgba(186, 26, 26, 0.08)',
       borderColor: 'rgba(186, 26, 26, 0.2)',
     },
   ]
 
   const cardHeadStyle: React.CSSProperties = {
-    borderBottom: '1px solid #c1c6d6',
+    borderBottom: `1px solid ${theme.border}`,
     padding: '0 20px',
     minHeight: 56,
   }
@@ -317,74 +324,121 @@ export default function Dashboard() {
     fontFamily: "'Noto Serif SC', serif",
     fontSize: 16,
     fontWeight: 600,
-    color: '#1a1c1d',
+    color: theme.textBase,
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* === 统计卡片区 (Bento Grid) === */}
+      {/* === 统计卡片区 (Bento Grid) - Stitch 渐变 KPI 卡片 ===
+         渐变背景通过 .kpi-card-* 类（index.css，带 !important）覆盖 Antd Card 白底样式 */}
       <Row gutter={[16, 16]}>
-        {statCards.map((card, index) => (
-          <Col xs={24} sm={12} lg={6} key={index}>
-            <Card style={{ height: '100%' }} bodyStyle={{ padding: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: '#414753',
-                      marginBottom: 12,
-                      letterSpacing: '0.02em',
-                      fontWeight: 500,
-                    }}
-                  >
-                    {card.title}
+        {statCards.map((card, index) => {
+          // 根据背景亮度选择文字颜色，确保可读性：
+          // light：深色背景用纯白100%不透明（深蓝/藏青/绿渐变）
+          // dark：浅色背景用深藏青100%不透明（暗金渐变，原白字对比度不够）
+          const isLight = card.textMode === 'light'
+          const titleColor = isLight ? theme.white : theme.brandDark
+          const valueColor = isLight ? theme.white : theme.brandDark
+          const trendIconColor = isLight ? theme.white : theme.brandDark
+          // 辅助文字也用不透明色，避免半透明导致看不清
+          const trendTextColor = isLight ? 'rgba(255, 255, 255, 0.95)' : 'rgba(26, 35, 50, 0.9)'
+          const trendValueColor = isLight ? theme.white : theme.brandDark
+          const iconBgColor = isLight ? 'rgba(255, 255, 255, 0.22)' : 'rgba(26, 35, 50, 0.15)'
+          const iconColor = isLight ? theme.white : theme.brandDark
+          const haloBg = isLight
+            ? 'radial-gradient(circle, rgba(255,255,255,0.18) 0%, transparent 70%)'
+            : 'radial-gradient(circle, rgba(26,35,50,0.10) 0%, transparent 70%)'
+          return (
+            <Col xs={24} sm={12} lg={6} key={index}>
+              <Card
+                className={`${card.cardClass} stitch-kpi-card`}
+                // styles.body 替代已废弃的 bodyStyle，符合 Antd 6.x 规范
+                styles={{
+                  body: {
+                    padding: 20,
+                    position: 'relative',
+                    zIndex: 1,
+                    background: 'transparent',
+                  },
+                }}
+                style={{
+                  height: '100%',
+                  position: 'relative',
+                }}
+              >
+                {/* 装饰性光晕：右上角高光（按背景亮度调整） */}
+                <div style={{
+                  position: 'absolute',
+                  top: -20,
+                  right: -20,
+                  width: 120,
+                  height: 120,
+                  borderRadius: '50%',
+                  background: haloBg,
+                  pointerEvents: 'none',
+                }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        color: titleColor,
+                        marginBottom: 12,
+                        letterSpacing: '0.02em',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {card.title}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "'Noto Serif SC', serif",
+                        fontSize: 32,
+                        fontWeight: 700,
+                        color: valueColor,
+                        lineHeight: 1.2,
+                        letterSpacing: '0.01em',
+                        // 深色背景加深文字阴影，让白字更清晰
+                        textShadow: isLight ? '0 2px 10px rgba(0, 0, 0, 0.25)' : 'none',
+                      }}
+                    >
+                      {card.value}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 12 }}>
+                      {card.trendUp ? (
+                        <ArrowUpOutlined style={{ fontSize: 12, color: trendIconColor }} />
+                      ) : (
+                        <ArrowDownOutlined style={{ fontSize: 12, color: trendIconColor }} />
+                      )}
+                      <span style={{ fontSize: 12, color: trendTextColor }}>
+                        <span style={{ color: trendValueColor, fontWeight: 700 }}>
+                          {card.trend}
+                        </span>{' '}
+                        较上月
+                      </span>
+                    </div>
                   </div>
                   <div
                     style={{
-                      fontFamily: "'Noto Serif SC', serif",
-                      fontSize: 30,
-                      fontWeight: 700,
-                      color: '#1a1c1d',
-                      lineHeight: 1.2,
-                      letterSpacing: '0.01em',
+                      width: 48,
+                      height: 48,
+                      borderRadius: 12,
+                      background: iconBgColor,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: iconColor,
+                      fontSize: 22,
+                      backdropFilter: 'blur(4px)',
                     }}
                   >
-                    {card.value}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 12 }}>
-                    {card.trendUp ? (
-                      <ArrowUpOutlined style={{ fontSize: 12, color: '#2e7d32' }} />
-                    ) : (
-                      <ArrowDownOutlined style={{ fontSize: 12, color: '#ba1a1a' }} />
-                    )}
-                    <span style={{ fontSize: 12, color: '#717785' }}>
-                      <span style={{ color: card.trendUp ? '#2e7d32' : '#ba1a1a', fontWeight: 600 }}>
-                        {card.trend}
-                      </span>{' '}
-                      较上月
-                    </span>
+                    {card.icon}
                   </div>
                 </div>
-                <div
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 12,
-                    background: card.iconBg,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: card.iconColor,
-                    fontSize: 22,
-                  }}
-                >
-                  {card.icon}
-                </div>
-              </div>
-            </Card>
-          </Col>
-        ))}
+              </Card>
+            </Col>
+          )
+        })}
       </Row>
 
       {/* === 转化漏斗 + 案件状态 === */}
@@ -405,17 +459,18 @@ export default function Dashboard() {
                       padding: '14px 8px',
                       borderRadius: 10,
                       background: item.color,
-                      color: '#fff',
+                      color: theme.white,
                       fontSize: 18,
                       fontWeight: 700,
                       marginBottom: 8,
                       opacity: 1 - index * 0.15,
                       fontFamily: "'Noto Serif SC', serif",
+                      boxShadow: `0 4px 12px ${item.color}40`,
                     }}
                   >
                     {item.value}
                   </div>
-                  <div style={{ fontSize: 12, color: '#414753', marginBottom: 4 }}>{item.stage}</div>
+                  <div style={{ fontSize: 12, color: theme.textSecondary, marginBottom: 4 }}>{item.stage}</div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: item.color }}>{item.rate}</div>
                 </div>
               ))}
@@ -508,19 +563,19 @@ export default function Dashboard() {
               {
                 label: '高风险案件',
                 count: riskStats.high_risk || 0,
-                color: '#ba1a1a',
+                color: theme.error,
                 icon: <WarningOutlined />,
               },
               {
                 label: '中风险案件',
                 count: riskStats.medium_risk || 0,
-                color: '#ed6c02',
+                color: theme.warning,
                 icon: <WarningOutlined />,
               },
               {
                 label: '低风险案件',
                 count: riskStats.low_risk || 0,
-                color: '#2e7d32',
+                color: theme.success,
                 icon: <CheckCircleOutlined />,
               },
             ].map(item => (
@@ -528,10 +583,10 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: item.color }}>
                     {item.icon}
-                    <span style={{ fontSize: 13, color: '#1a1c1d' }}>{item.label}</span>
+                    <span style={{ fontSize: 13, color: theme.textBase }}>{item.label}</span>
                   </span>
                   <Tag
-                    color={item.color === '#ba1a1a' ? 'red' : item.color === '#ed6c02' ? 'orange' : 'green'}
+                    color={item.color === theme.error ? 'red' : item.color === theme.warning ? 'orange' : 'green'}
                     style={{ fontWeight: 600, borderRadius: 999 }}
                   >
                     {item.count}
@@ -555,19 +610,19 @@ export default function Dashboard() {
           >
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               {[
-                { label: '总风险案件', value: riskStats.total || 0, color: '#0059b5' },
-                { label: '高风险案件', value: riskStats.high_risk || 0, color: '#ba1a1a' },
-                { label: '中风险案件', value: riskStats.medium_risk || 0, color: '#ed6c02' },
-                { label: '低风险案件', value: riskStats.low_risk || 0, color: '#2e7d32' },
+                { label: '总风险案件', value: riskStats.total || 0, color: theme.primaryDark },
+                { label: '高风险案件', value: riskStats.high_risk || 0, color: theme.error },
+                { label: '中风险案件', value: riskStats.medium_risk || 0, color: theme.warning },
+                { label: '低风险案件', value: riskStats.low_risk || 0, color: theme.success },
               ].map(item => (
                 <div
                   key={item.label}
                   style={{
-                    background: '#f9f9fb',
+                    background: theme.bgLayout,
                     padding: 20,
                     borderRadius: 12,
                     textAlign: 'center',
-                    border: '1px solid #e2e2e4',
+                    border: `1px solid ${theme.bgSurfaceHighest}`,
                   }}
                 >
                   <div
@@ -581,7 +636,7 @@ export default function Dashboard() {
                   >
                     {item.value}
                   </div>
-                  <div style={{ fontSize: 12, color: '#414753', marginTop: 6 }}>{item.label}</div>
+                  <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 6 }}>{item.label}</div>
                 </div>
               ))}
             </div>

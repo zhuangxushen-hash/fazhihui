@@ -3,6 +3,7 @@ import { Card, Table, Button, Input, DatePicker, Row, Col, Statistic, Tag, Space
 import { SearchOutlined, BarChartOutlined, RiseOutlined, FallOutlined } from '@ant-design/icons';
 import { getCaseProfitAnalysis, getProfitStats } from '../api/finance';
 import { formatDate } from '../utils/format';
+import { theme } from '../constants/theme';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -28,7 +29,6 @@ export default function CaseProfitAnalysis() {
       const data = await getProfitStats(user.organization_id);
       setStats(data || {});
     } catch (error) {
-      console.error('Fetch profit stats error:', error);
       setStats(getMockStats());
     } finally {
       setLoading(false);
@@ -46,7 +46,6 @@ export default function CaseProfitAnalysis() {
       setProfitAnalysis(data);
       message.success('利润分析完成');
     } catch (error) {
-      console.error('Get case profit analysis error:', error);
       setProfitAnalysis(getMockAnalysis(caseId.trim()));
       message.success('利润分析完成（模拟数据）');
     } finally {
@@ -79,32 +78,32 @@ export default function CaseProfitAnalysis() {
       title: '案由',
       dataIndex: 'case_type',
       key: 'case_type',
-      render: (val: string) => <Tag color="blue">{getCaseTypeLabel(val)}</Tag>,
+      render: (val: string) => <Tag className="stitch-tag stitch-tag-primary">{getCaseTypeLabel(val)}</Tag>,
     },
     {
       title: '律师费',
       dataIndex: 'fee',
       key: 'fee',
-      render: (val: number) => <span style={{ color: '#0059b5', fontWeight: 500 }}>¥{val.toLocaleString()}</span>,
+      render: (val: number) => <span style={{ color: theme.primaryDark, fontWeight: 500 }}>¥{val.toLocaleString()}</span>,
     },
     {
       title: '成本',
       dataIndex: 'cost',
       key: 'cost',
-      render: (val: number) => <span style={{ color: '#ed6c02' }}>¥{val.toLocaleString()}</span>,
+      render: (val: number) => <span style={{ color: theme.warning }}>¥{val.toLocaleString()}</span>,
     },
     {
       title: '分润',
       dataIndex: 'profit_share',
       key: 'profit_share',
-      render: (val: number) => <span style={{ color: '#717785' }}>¥{val.toLocaleString()}</span>,
+      render: (val: number) => <span style={{ color: theme.textTertiary }}>¥{val.toLocaleString()}</span>,
     },
     {
       title: '净利润',
       dataIndex: 'net_profit',
       key: 'net_profit',
       render: (val: number) => (
-        <span style={{ color: val >= 0 ? '#2e7d32' : '#ba1a1a', fontWeight: 600 }}>
+        <span style={{ color: val >= 0 ? theme.success : theme.error, fontWeight: 600 }}>
           {val >= 0 ? <RiseOutlined /> : <FallOutlined />} ¥{Math.abs(val).toLocaleString()}
         </span>
       ),
@@ -114,7 +113,7 @@ export default function CaseProfitAnalysis() {
       dataIndex: 'profit_margin',
       key: 'profit_margin',
       render: (val: number) => (
-        <Tag color={val >= 30 ? 'green' : val >= 10 ? 'orange' : 'red'}>
+        <Tag className={val >= 30 ? 'stitch-tag stitch-tag-success' : val >= 10 ? 'stitch-tag stitch-tag-warning' : 'stitch-tag stitch-tag-error'}>
           {val}%
         </Tag>
       ),
@@ -156,40 +155,40 @@ export default function CaseProfitAnalysis() {
           <Col xs={24} sm={12} md={6}>
             <Card bordered={false} style={{ background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)' }}>
               <Statistic
-                title={<span style={{ color: '#414753' }}>总收入</span>}
+                title={<span style={{ color: theme.textSecondary }}>总收入</span>}
                 value={stats.total_revenue}
                 precision={2}
                 prefix="¥"
-                valueStyle={{ color: '#0059b5', fontWeight: 600 }}
+                valueStyle={{ color: theme.primaryDark, fontWeight: 600 }}
               />
             </Card>
           </Col>
           <Col xs={24} sm={12} md={6}>
             <Card bordered={false} style={{ background: 'linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)' }}>
               <Statistic
-                title={<span style={{ color: '#414753' }}>总成本</span>}
+                title={<span style={{ color: theme.textSecondary }}>总成本</span>}
                 value={stats.total_cost}
                 precision={2}
                 prefix="¥"
-                valueStyle={{ color: '#ed6c02', fontWeight: 600 }}
+                valueStyle={{ color: theme.warning, fontWeight: 600 }}
               />
             </Card>
           </Col>
           <Col xs={24} sm={12} md={6}>
             <Card bordered={false} style={{ background: 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)' }}>
               <Statistic
-                title={<span style={{ color: '#414753' }}>总利润</span>}
+                title={<span style={{ color: theme.textSecondary }}>总利润</span>}
                 value={stats.total_profit}
                 precision={2}
                 prefix="¥"
-                valueStyle={{ color: '#2e7d32', fontWeight: 600 }}
+                valueStyle={{ color: theme.success, fontWeight: 600 }}
               />
             </Card>
           </Col>
           <Col xs={24} sm={12} md={6}>
             <Card bordered={false} style={{ background: 'linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%)' }}>
               <Statistic
-                title={<span style={{ color: '#414753' }}>利润率</span>}
+                title={<span style={{ color: theme.textSecondary }}>利润率</span>}
                 value={stats.average_profit_margin}
                 precision={2}
                 suffix="%"
@@ -201,7 +200,7 @@ export default function CaseProfitAnalysis() {
       )}
 
       {/* 搜索条件 */}
-      <Card title="利润分析查询" style={{ marginBottom: 24 }}>
+      <Card title="利润分析查询" className="stitch-filter-bar" style={{ marginBottom: 24 }}>
         <Space wrap>
           <Input
             placeholder="案件编号"
@@ -238,13 +237,15 @@ export default function CaseProfitAnalysis() {
 
       {/* 案件列表表格 */}
       <Card title="案件利润明细" style={{ marginBottom: 24 }}>
-        <Table
-          rowKey="case_id"
-          columns={columns}
-          dataSource={searchResults.length > 0 ? searchResults : getMockCaseList()}
-          loading={loading}
-          pagination={{ pageSize: 10, showSizeChanger: true }}
-        />
+        <div className="stitch-table">
+          <Table
+            rowKey="case_id"
+            columns={columns}
+            dataSource={searchResults.length > 0 ? searchResults : getMockCaseList()}
+            loading={loading}
+            pagination={{ pageSize: 10, showSizeChanger: true }}
+          />
+        </div>
       </Card>
 
       {/* 单案利润分析详情 */}
@@ -263,52 +264,58 @@ export default function CaseProfitAnalysis() {
           <Descriptions bordered column={3} style={{ marginBottom: 24 }}>
             <Descriptions.Item label="案件编号">{profitAnalysis.case_id}</Descriptions.Item>
             <Descriptions.Item label="总收入">
-              <span style={{ color: '#0059b5', fontWeight: 600 }}>¥{profitAnalysis.total_revenue?.toLocaleString()}</span>
+              <span style={{ color: theme.primaryDark, fontWeight: 600 }}>¥{profitAnalysis.total_revenue?.toLocaleString()}</span>
             </Descriptions.Item>
             <Descriptions.Item label="总成本">
-              <span style={{ color: '#ed6c02' }}>¥{profitAnalysis.total_cost?.toLocaleString()}</span>
+              <span style={{ color: theme.warning }}>¥{profitAnalysis.total_cost?.toLocaleString()}</span>
             </Descriptions.Item>
             <Descriptions.Item label="分润总额">
               ¥{profitAnalysis.total_profit_share?.toLocaleString()}
             </Descriptions.Item>
             <Descriptions.Item label="净利润">
-              <span style={{ color: profitAnalysis.net_profit >= 0 ? '#2e7d32' : '#ba1a1a', fontWeight: 700, fontSize: 16 }}>
+              <span style={{ color: profitAnalysis.net_profit >= 0 ? theme.success : theme.error, fontWeight: 700, fontSize: 16 }}>
                 ¥{profitAnalysis.net_profit?.toLocaleString()}
               </span>
             </Descriptions.Item>
             <Descriptions.Item label="利润率">
-              <Tag color={profitAnalysis.profit_margin >= 30 ? 'green' : profitAnalysis.profit_margin >= 10 ? 'orange' : 'red'}>
+              <Tag className={profitAnalysis.profit_margin >= 30 ? 'stitch-tag stitch-tag-success' : profitAnalysis.profit_margin >= 10 ? 'stitch-tag stitch-tag-warning' : 'stitch-tag stitch-tag-error'}>
                 {profitAnalysis.profit_margin}%
               </Tag>
             </Descriptions.Item>
           </Descriptions>
 
           <Divider plain>收入明细</Divider>
-          <Table
-            rowKey="id"
-            columns={feeDetailColumns}
-            dataSource={profitAnalysis.fee_details || []}
-            pagination={false}
-            size="small"
-          />
+          <div className="stitch-table">
+            <Table
+              rowKey="id"
+              columns={feeDetailColumns}
+              dataSource={profitAnalysis.fee_details || []}
+              pagination={false}
+              size="small"
+            />
+          </div>
 
           <Divider plain>成本明细</Divider>
-          <Table
-            rowKey="id"
-            columns={costDetailColumns}
-            dataSource={profitAnalysis.cost_details || []}
-            pagination={false}
-            size="small"
-          />
+          <div className="stitch-table">
+            <Table
+              rowKey="id"
+              columns={costDetailColumns}
+              dataSource={profitAnalysis.cost_details || []}
+              pagination={false}
+              size="small"
+            />
+          </div>
 
           <Divider plain>分润明细</Divider>
-          <Table
-            rowKey="id"
-            columns={profitShareColumns}
-            dataSource={profitAnalysis.profit_share_details || []}
-            pagination={false}
-            size="small"
-          />
+          <div className="stitch-table">
+            <Table
+              rowKey="id"
+              columns={profitShareColumns}
+              dataSource={profitAnalysis.profit_share_details || []}
+              pagination={false}
+              size="small"
+            />
+          </div>
         </Card>
       )}
     </div>

@@ -16,7 +16,7 @@ export const getEvidenceList = async (
   if (filters?.is_archived !== undefined) params.is_archived = filters.is_archived
 
   const res = await axios.get(`/evidences/case/${caseId}`, { params })
-  return res.data
+  return (res as Record<string, unknown>).data
 }
 
 // 上传单个证据
@@ -42,7 +42,7 @@ export const uploadEvidence = async (
   const res = await axios.post(`/evidences/upload/${caseId}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
-  return res.data
+  return (res as Record<string, unknown>).data
 }
 
 // 批量上传证据
@@ -64,7 +64,7 @@ export const batchUploadEvidence = async (
   const res = await axios.post(`/evidences/batch-upload/${caseId}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
-  return res.data
+  return (res as Record<string, unknown>).data
 }
 
 // 更新证据分类
@@ -78,13 +78,13 @@ export const updateEvidenceCategory = async (
   }
 ) => {
   const res = await axios.put(`/evidences/${id}/category`, data)
-  return res.data
+  return (res as Record<string, unknown>).data
 }
 
 // 获取证据详情
 export const getEvidenceDetail = async (id: string) => {
   const res = await axios.get(`/evidences/${id}`)
-  return res.data
+  return (res as Record<string, unknown>).data
 }
 
 // 上传新版本
@@ -96,37 +96,37 @@ export const uploadNewVersion = async (id: string, file: File, uploadById: strin
   const res = await axios.post(`/evidences/${id}/version`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
-  return res.data
+  return (res as Record<string, unknown>).data
 }
 
 // 归档证据
 export const archiveEvidence = async (id: string) => {
   const res = await axios.put(`/evidences/${id}/archive`)
-  return res.data
+  return (res as Record<string, unknown>).data
 }
 
 // 恢复证据
 export const restoreEvidence = async (id: string) => {
   const res = await axios.put(`/evidences/${id}/restore`)
-  return res.data
+  return (res as Record<string, unknown>).data
 }
 
 // 删除证据
 export const deleteEvidence = async (id: string) => {
   const res = await axios.delete(`/evidences/${id}`)
-  return res.data
+  return (res as Record<string, unknown>).data
 }
 
 // 获取证据目录
 export const getEvidenceCatalog = async (caseId: string) => {
   const res = await axios.get(`/evidences/catalog/${caseId}`)
-  return res.data
+  return (res as Record<string, unknown>).data
 }
 
 // 批量归档
 export const batchArchiveEvidence = async (ids: string[]) => {
   const res = await axios.put('/evidences/batch/archive', { ids })
-  return res.data
+  return (res as Record<string, unknown>).data
 }
 
 // 批量修改分类
@@ -138,7 +138,7 @@ export const batchUpdateCategory = async (
   }
 ) => {
   const res = await axios.put('/evidences/batch/category', { ids, ...data })
-  return res.data
+  return (res as Record<string, unknown>).data
 }
 
 // 获取预览URL

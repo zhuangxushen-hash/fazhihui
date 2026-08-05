@@ -16,7 +16,7 @@ import {
 } from '../api/bid'
 import { formatDate } from '../utils/format'
 import dayjs from 'dayjs'
-
+import { theme } from '../constants/theme'
 // === Material Design 3 Style Tokens ===
 const pageH2Style: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
@@ -49,7 +49,7 @@ type PillKind = 'neutral' | 'blue' | 'gold' | 'green' | 'red' | 'orange' | 'purp
 
 const pillColorMap: Record<PillKind, { bg: string; color: string }> = {
   neutral: { bg: 'rgba(113, 119, 133, 0.12)', color: '#5f6672' },
-  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: '#0071e3' },
+  blue: { bg: 'rgba(0, 113, 227, 0.1)', color: theme.primary },
   gold: { bg: 'rgba(201, 169, 97, 0.15)', color: '#8c702e' },
   green: { bg: 'rgba(46, 125, 50, 0.1)', color: '#2e7d32' },
   red: { bg: 'rgba(186, 26, 26, 0.1)', color: '#ba1a1a' },
@@ -127,10 +127,10 @@ export default function BidManagement() {
         org_id: user.organization_id,
         status: bidSearch.status || undefined,
         keyword: bidSearch.keyword || undefined,
-      })
+      }) as Record<string, unknown>[]
       setBids(res || [])
     } catch (error) {
-      console.error('Fetch bids error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setBidLoading(false)
     }
@@ -143,10 +143,10 @@ export default function BidManagement() {
       const res = await getBidRecords({
         org_id: user.organization_id,
         keyword: recordKeyword || undefined,
-      })
+      }) as Record<string, unknown>[]
       setRecords(res || [])
     } catch (error) {
-      console.error('Fetch records error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setRecordLoading(false)
     }
@@ -197,7 +197,6 @@ export default function BidManagement() {
       fetchBids()
     } catch (error) {
       message.error(editBidId ? '更新失败' : '创建失败')
-      console.error('Submit bid error:', error)
     }
   }
 
@@ -210,7 +209,6 @@ export default function BidManagement() {
       fetchBids()
     } catch (error) {
       message.error('操作失败')
-      console.error('Bid action error:', error)
     }
   }
 
@@ -221,7 +219,6 @@ export default function BidManagement() {
       fetchBids()
     } catch (error) {
       message.error('删除失败')
-      console.error('Delete bid error:', error)
     }
   }
 
@@ -262,7 +259,6 @@ export default function BidManagement() {
       fetchRecords()
     } catch (error) {
       message.error(editRecordId ? '更新失败' : '创建失败')
-      console.error('Submit record error:', error)
     }
   }
 
@@ -273,7 +269,6 @@ export default function BidManagement() {
       fetchRecords()
     } catch (error) {
       message.error('删除失败')
-      console.error('Delete record error:', error)
     }
   }
 
@@ -306,7 +301,7 @@ export default function BidManagement() {
       key: 'action',
       width: 280,
       render: (_: any, record: any) => (
-        <Space>
+        <Space className="stitch-btn-group">
           {record.status === 'preparing' && (
             <Button type="link" size="small" onClick={() => handleSubmitAction(record.id, 'submit')}>投标</Button>
           )}
@@ -354,7 +349,7 @@ export default function BidManagement() {
       key: 'action',
       width: 140,
       render: (_: any, record: any) => (
-        <Space>
+        <Space className="stitch-btn-group">
           <Button type="link" size="small" onClick={() => handleEditRecord(record)}>编辑</Button>
           <Popconfirm title="确认删除该业绩记录？" onConfirm={() => handleDeleteRecord(record)}>
             <Button type="link" size="small" danger>删除</Button>
@@ -370,7 +365,7 @@ export default function BidManagement() {
       label: '投标管理',
       children: (
         <>
-          <div className="search-bar" style={searchBarStyle}>
+          <div className="search-bar stitch-filter-bar" style={searchBarStyle}>
             <Select
               placeholder="状态筛选"
               style={{ width: 140 }}
@@ -397,7 +392,7 @@ export default function BidManagement() {
           <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'flex-end' }}>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleAddBid}>新增投标</Button>
           </div>
-          <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+          <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
             <Table dataSource={bids} columns={bidColumns} loading={bidLoading} rowKey="id" size="small" pagination={{ pageSize: 10 }} />
           </Card>
         </>
@@ -408,7 +403,7 @@ export default function BidManagement() {
       label: '业绩库',
       children: (
         <>
-          <div className="search-bar" style={searchBarStyle}>
+          <div className="search-bar stitch-filter-bar" style={searchBarStyle}>
             <Input
               placeholder="项目名称搜索"
               prefix={<SearchOutlined />}
@@ -422,7 +417,7 @@ export default function BidManagement() {
           <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'flex-end' }}>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleAddRecord}>新增业绩</Button>
           </div>
-          <Card style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+          <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
             <Table dataSource={records} columns={recordColumns} loading={recordLoading} rowKey="id" size="small" pagination={{ pageSize: 10 }} />
           </Card>
         </>

@@ -20,12 +20,12 @@ const materialStatusOptions = [
   { value: 'fulfilled', label: '已发放' },
 ]
 
-// 状态颜色映射
+// 状态样式映射（对齐 Stitch 设计规范，返回 className）
 const statusColorMap: Record<string, string> = {
-  pending: 'orange',
-  approved: 'blue',
-  rejected: 'red',
-  fulfilled: 'green',
+  pending: 'stitch-tag stitch-tag-warning',
+  approved: 'stitch-tag stitch-tag-primary',
+  rejected: 'stitch-tag stitch-tag-error',
+  fulfilled: 'stitch-tag stitch-tag-success',
 }
 
 export default function HRMaterialManagement() {
@@ -65,7 +65,7 @@ export default function HRMaterialManagement() {
       const res: any = await getMaterials(params)
       setData(res || [])
     } catch (error) {
-      console.error('Fetch materials error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -112,7 +112,6 @@ export default function HRMaterialManagement() {
       fetchData()
     } catch (error) {
       message.error(editingId ? '更新失败' : '申请失败')
-      console.error('Material submit error:', error)
     }
   }
 
@@ -123,7 +122,6 @@ export default function HRMaterialManagement() {
       fetchData()
     } catch (error) {
       message.error('删除失败')
-      console.error('Delete material error:', error)
     }
   }
 
@@ -145,9 +143,8 @@ export default function HRMaterialManagement() {
       }
       setApproveVisible(false)
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '操作失败')
-      console.error('Approve material error:', error)
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
     }
   }
 
@@ -156,9 +153,8 @@ export default function HRMaterialManagement() {
       await fulfillMaterial(id)
       message.success('物品已发放')
       fetchData()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '发放失败')
-      console.error('Fulfill material error:', error)
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '发放失败')
     }
   }
 
@@ -174,7 +170,7 @@ export default function HRMaterialManagement() {
     { title: '用途', dataIndex: 'purpose', key: 'purpose', ellipsis: true, render: (val: string) => val || '-' },
     { title: '状态', dataIndex: 'status', key: 'status', width: 100, render: (val: string) => {
       const item = materialStatusOptions.find(o => o.value === val)
-      return <Tag color={statusColorMap[val] || 'default'}>{item?.label || val}</Tag>
+      return <Tag className={statusColorMap[val] || 'stitch-tag stitch-tag-info'}>{item?.label || val}</Tag>
     }},
     { title: '审批意见', dataIndex: 'approve_comment', key: 'approve_comment', ellipsis: true, render: (val: string) => val || '-' },
     { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 160, render: (val: string) => formatDateTime(val) },
@@ -208,7 +204,7 @@ export default function HRMaterialManagement() {
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>发起申购</Button>
       </div>
 
-      <div className="search-bar">
+      <div className="search-bar stitch-filter-bar">
         <Input
           placeholder="物品名称搜索"
           prefix={<SearchOutlined />}
@@ -234,8 +230,10 @@ export default function HRMaterialManagement() {
         >
           {materialStatusOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
         </Select>
-        <Button type="primary" onClick={handleSearch}>搜索</Button>
-        <Button onClick={handleReset}>重置</Button>
+        <div className="stitch-btn-group">
+          <Button type="primary" onClick={handleSearch}>搜索</Button>
+          <Button onClick={handleReset}>重置</Button>
+        </div>
       </div>
 
       <Tabs activeKey={activeTab} onChange={setActiveTab} items={[
@@ -244,7 +242,9 @@ export default function HRMaterialManagement() {
         { key: 'pending', label: '待我审批' },
       ]} />
 
-      <Table dataSource={data} columns={columns} loading={loading} rowKey="id" scroll={{ x: 1200 }} />
+      <div className="stitch-table">
+        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" scroll={{ x: 1200 }} />
+      </div>
 
       <Modal
         title={editingId ? '编辑物品申购' : '发起物品申购'}

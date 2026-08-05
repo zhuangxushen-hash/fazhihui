@@ -24,10 +24,10 @@ export default function ClientCaseList() {
   const fetchCases = async () => {
     setLoading(true)
     try {
-      const res = await axios.post('/client/cases', { client_id: user.id })
+      const res = await axios.post('/client/cases', { client_id: user.id }) as Record<string, unknown>[]
       setCases(res || [])
     } catch (error) {
-      console.error('Fetch client cases error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }

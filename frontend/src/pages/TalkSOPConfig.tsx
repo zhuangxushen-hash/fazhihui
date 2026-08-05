@@ -15,7 +15,7 @@ interface SortableNodeItemProps {
   node: TalkSOPNode
   index: number
   onRemove: (index: number) => void
-  onUpdate: (index: number, field: string, value: any) => void
+  onUpdate: (index: number, field: string, value: unknown) => void
 }
 
 const SortableNodeItem = ({ node, index, onRemove, onUpdate }: SortableNodeItemProps) => {
@@ -181,8 +181,8 @@ export default function TalkSOPConfig() {
 
       setModalVisible(false)
       loadSOPList()
-    } catch (error: any) {
-      message.error(error.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } }).response?.data?.message || '操作失败')
     }
   }
 
@@ -191,8 +191,8 @@ export default function TalkSOPConfig() {
       await deleteSOP(sopId)
       message.success('删除成功')
       loadSOPList()
-    } catch (error: any) {
-      message.error(error.response?.data?.message || '删除失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } }).response?.data?.message || '删除失败')
     }
   }
 
@@ -201,8 +201,8 @@ export default function TalkSOPConfig() {
       await setDefaultSOP(sopId)
       message.success('设置默认成功')
       loadSOPList()
-    } catch (error: any) {
-      message.error(error.response?.data?.message || '设置失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } }).response?.data?.message || '设置失败')
     }
   }
 
@@ -211,8 +211,8 @@ export default function TalkSOPConfig() {
       await toggleSOPEnabled(sopId, enabled)
       message.success(enabled ? '已启用' : '已禁用')
       loadSOPList()
-    } catch (error: any) {
-      message.error(error.response?.data?.message || '操作失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } }).response?.data?.message || '操作失败')
     }
   }
 
@@ -245,9 +245,9 @@ export default function TalkSOPConfig() {
     setNodes(newNodes)
   }
 
-  const updateNode = (index: number, field: string, value: any) => {
+  const updateNode = (index: number, field: string, value: unknown) => {
     const newNodes = [...nodes]
-    ;(newNodes[index] as any)[field] = value
+    ;(newNodes[index] as unknown as Record<string, unknown>)[field] = value
     setNodes(newNodes)
   }
 

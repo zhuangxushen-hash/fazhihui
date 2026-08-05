@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import axios from '../../api/axios'
 import BottomNav from '../../components/BottomNav'
 import ClientButton from '../../components/ClientButton'
-
+import { theme as appTheme } from '../../constants/theme'
 export default function Payment() {
   const [currentStep, setCurrentStep] = useState(0)
   const [agreedRisk, setAgreedRisk] = useState(false)
@@ -40,12 +40,12 @@ export default function Payment() {
   const fetchServiceFee = async () => {
     setLoadingFee(true)
     try {
-      const res = await axios.post('/client/service-fee', { client_id: user.id })
+      const res = await axios.post('/client/service-fee', { client_id: user.id }) as Record<string, unknown>
       if (res && res.service_fee) {
-        setServiceFee(res.service_fee)
+        setServiceFee(res.service_fee as number)
       }
     } catch (error) {
-      console.error('Fetch service fee error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoadingFee(false)
     }
@@ -125,14 +125,13 @@ export default function Payment() {
         fee_amount: serviceFee || 0,
         amount: serviceFee || 0,
         description: formData.case_desc || `客户${formData.name}签约的${formData.case_type}案件`,
-      })
+      }) as Record<string, unknown>
       // 保存新创建的 case id 供后续付款使用
-      setCreatedCaseId(caseData.id)
+      setCreatedCaseId(caseData.id as string)
       setSigned(true)
       setShowSignModal(false)
       message.success('签约成功')
     } catch (error) {
-      console.error('Sign error:', error)
       message.error('签约失败，请重试')
     }
   }
@@ -161,7 +160,6 @@ export default function Payment() {
         setPaymentSuccess(false)
       }, 2000)
     } catch (error) {
-      console.error('Payment error:', error)
       message.error('支付失败，请重试')
     }
   }
@@ -178,7 +176,7 @@ export default function Payment() {
         return (
           <Card 
             title={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #0059b5 0%, #0071e3 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: `linear-gradient(135deg, #0059b5 0%, ${appTheme.primary} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <UserOutlined style={{ fontSize: 14, color: '#fff' }} />
               </div>
               <span style={{ fontSize: 15, fontWeight: 600 }}>签约信息填写</span>
@@ -284,7 +282,7 @@ export default function Payment() {
         return (
           <Card 
             title={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #0059b5 0%, #0071e3 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: `linear-gradient(135deg, #0059b5 0%, ${appTheme.primary} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <AlertOutlined style={{ fontSize: 14, color: '#fff' }} />
               </div>
               <span style={{ fontSize: 15, fontWeight: 600 }}>风险告知书</span>
@@ -293,7 +291,7 @@ export default function Payment() {
           >
             <div style={{ background: 'var(--bg-sunken)', border: '1px solid var(--border-default)', borderRadius: 8, padding: 16, marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 12 }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #0059b5 0%, #0071e3 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: `linear-gradient(135deg, #0059b5 0%, ${appTheme.primary} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
                   <AlertOutlined style={{ fontSize: 18, color: '#fff' }} />
                 </div>
                 <div>
@@ -319,7 +317,7 @@ export default function Payment() {
         return (
           <Card 
             title={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #0059b5 0%, #0071e3 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: `linear-gradient(135deg, #0059b5 0%, ${appTheme.primary} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <FileTextOutlined style={{ fontSize: 14, color: '#fff' }} />
               </div>
               <span style={{ fontSize: 15, fontWeight: 600 }}>在线签约</span>
@@ -372,7 +370,7 @@ export default function Payment() {
         return (
           <Card 
             title={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #0059b5 0%, #0071e3 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: `linear-gradient(135deg, #0059b5 0%, ${appTheme.primary} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <CreditCardOutlined style={{ fontSize: 14, color: '#fff' }} />
               </div>
               <span style={{ fontSize: 15, fontWeight: 600 }}>支付费用</span>

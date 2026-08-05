@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Button } from 'antd'
 import type { ButtonProps } from 'antd'
-
+import { theme } from '../constants/theme'
 interface ClientButtonProps extends Omit<ButtonProps, 'variant' | 'size'> {
   btnVariant?: 'primary' | 'secondary' | 'outline' | 'ghost'
   btnSize?: 'small' | 'medium' | 'large'
@@ -34,8 +34,8 @@ export default function ClientButton({
 
   const variantStyles = {
     primary: {
-      background: '#0071e3',
-      borderColor: '#0071e3',
+      background: theme.primary,
+      borderColor: theme.primary,
       color: '#ffffff',
       boxShadow: '0 2px 8px rgba(0, 113, 227, 0.2)',
     },
@@ -47,8 +47,8 @@ export default function ClientButton({
     },
     outline: {
       background: isPressed ? 'rgba(0, 113, 227, 0.06)' : '#ffffff',
-      borderColor: '#0071e3',
-      color: '#0071e3',
+      borderColor: theme.primary,
+      color: theme.primary,
       borderWidth: 1,
       boxShadow: 'none',
     },

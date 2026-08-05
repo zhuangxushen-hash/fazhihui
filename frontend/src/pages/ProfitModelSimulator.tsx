@@ -25,7 +25,7 @@ import {
   ExperimentOutlined,
 } from '@ant-design/icons'
 import axios from '../api/axios'
-
+import { theme } from '../constants/theme'
 const cardStyle: React.CSSProperties = {
   background: 'rgba(255, 255, 255, 0.72)',
   backdropFilter: 'saturate(180%) blur(20px)',
@@ -106,20 +106,19 @@ export default function ProfitModelSimulator() {
         marketingMargin: values.marketingMargin,
       }
 
-      const response = await axios.post('/dashboard/profit-model/simulate', params)
-      setResult(response.data)
-    } catch (error: any) {
-      if (error?.errorFields) {
+      const response = await axios.post('/dashboard/profit-model/simulate', params) as Record<string, unknown>
+      setResult(response.data as SimulationResult | null)
+    } catch (error: unknown) {
+      if ((error as { errorFields?: unknown })?.errorFields) {
         // 表单验证失败
       } else {
-        console.error('模拟计算失败:', error)
       }
     } finally {
       setLoading(false)
     }
   }
 
-  const onReset = () => {
+  const handleReset = () => {
     form.resetFields()
     setResult(null)
   }
@@ -143,7 +142,7 @@ export default function ProfitModelSimulator() {
       key: 'profit',
       width: 150,
       render: (val: number) => (
-        <span style={{ color: val >= 0 ? '#2e7d32' : '#ba1a1a', fontWeight: 600 }}>
+        <span style={{ color: val >= 0 ? theme.success : theme.error, fontWeight: 600 }}>
           {val >= 0 ? '+' : ''}{val.toLocaleString()}
         </span>
       ),
@@ -154,7 +153,7 @@ export default function ProfitModelSimulator() {
       render: (_: any, record: any) => (
         <Progress
           percent={Math.min(100, Math.max(0, record.profit / 500))}
-          strokeColor={record.profit >= 0 ? '#2e7d32' : '#ba1a1a'}
+          strokeColor={record.profit >= 0 ? theme.success : theme.error}
           showInfo={false}
           size="small"
         />
@@ -168,7 +167,7 @@ export default function ProfitModelSimulator() {
       dataIndex: 'fee_rate',
       key: 'fee_rate',
       width: 120,
-      render: (val: number) => <Tag color="blue">{val}%</Tag>,
+      render: (val: number) => <Tag className="stitch-tag stitch-tag-info">{val}%</Tag>,
     },
     {
       title: '平均律师费 (元)',
@@ -183,7 +182,7 @@ export default function ProfitModelSimulator() {
       key: 'profit',
       width: 150,
       render: (val: number) => (
-        <span style={{ color: val >= 0 ? '#2e7d32' : '#ba1a1a', fontWeight: 600 }}>
+        <span style={{ color: val >= 0 ? theme.success : theme.error, fontWeight: 600 }}>
           {val >= 0 ? '+' : ''}{val.toLocaleString()}
         </span>
       ),
@@ -194,7 +193,7 @@ export default function ProfitModelSimulator() {
       render: (_: any, record: any) => (
         <Progress
           percent={Math.min(100, Math.max(0, record.profit / 500))}
-          strokeColor={record.profit >= 0 ? '#2e7d32' : '#ba1a1a'}
+          strokeColor={record.profit >= 0 ? theme.success : theme.error}
           showInfo={false}
           size="small"
         />
@@ -214,7 +213,7 @@ export default function ProfitModelSimulator() {
         <h1 style={{
           fontSize: 24,
           fontWeight: 600,
-          color: '#1a1c1d',
+          color: theme.textBase,
           margin: 0,
         }}>
           盈利模型模拟器
@@ -227,7 +226,7 @@ export default function ProfitModelSimulator() {
           <Card
             title={
               <span style={{ fontWeight: 600 }}>
-                <CalculatorOutlined style={{ marginRight: 8, color: '#0071e3' }} />
+                <CalculatorOutlined style={{ marginRight: 8, color: theme.primary }} />
                 输入参数
               </span>
             }
@@ -255,7 +254,7 @@ export default function ProfitModelSimulator() {
                 <Select options={CASE_TYPE_OPTIONS} />
               </Form.Item>
 
-              <Divider plain style={{ fontSize: 12, color: '#717785' }}>
+              <Divider plain style={{ fontSize: 12, color: theme.textTertiary }}>
                 费用参数
               </Divider>
 
@@ -303,7 +302,7 @@ export default function ProfitModelSimulator() {
                 />
               </Form.Item>
 
-              <Divider plain style={{ fontSize: 12, color: '#717785' }}>
+              <Divider plain style={{ fontSize: 12, color: theme.textTertiary }}>
                 分润比例 (%)
               </Divider>
 
@@ -381,9 +380,9 @@ export default function ProfitModelSimulator() {
                   return (
                     <div style={{ marginBottom: 16 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span style={{ color: '#717785', fontSize: 13 }}>分润合计</span>
+                        <span style={{ color: theme.textTertiary, fontSize: 13 }}>分润合计</span>
                         <span style={{
-                          color: isOver ? '#ba1a1a' : total > 80 ? '#ed6c02' : '#2e7d32',
+                          color: isOver ? theme.error : total > 80 ? theme.warning : theme.success,
                           fontWeight: 600,
                         }}>
                           {total}% {isOver && '(超出100%!)'}
@@ -391,7 +390,7 @@ export default function ProfitModelSimulator() {
                       </div>
                       <Progress
                         percent={Math.min(100, total)}
-                        strokeColor={isOver ? '#ba1a1a' : total > 80 ? '#ed6c02' : '#2e7d32'}
+                        strokeColor={isOver ? theme.error : total > 80 ? theme.warning : theme.success}
                         showInfo={false}
                       />
                     </div>
@@ -399,7 +398,7 @@ export default function ProfitModelSimulator() {
                 }}
               </Form.Item>
 
-              <Space>
+              <Space className="stitch-btn-group">
                 <Button
                   type="primary"
                   icon={<ExperimentOutlined />}
@@ -408,7 +407,7 @@ export default function ProfitModelSimulator() {
                 >
                   开始模拟
                 </Button>
-                <Button onClick={onReset}>
+                <Button onClick={handleReset}>
                   重置
                 </Button>
               </Space>
@@ -423,7 +422,7 @@ export default function ProfitModelSimulator() {
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
                 description={
-                  <span style={{ color: '#717785' }}>
+                  <span style={{ color: theme.textTertiary }}>
                     请填写参数并点击"开始模拟"查看分析结果
                   </span>
                 }
@@ -436,25 +435,25 @@ export default function ProfitModelSimulator() {
                 <Col xs={24} sm={12} lg={8}>
                   <Card style={metricCardStyle} bodyStyle={{ padding: 20 }}>
                     <Statistic
-                      title={<span style={{ color: '#717785', fontSize: 13 }}>预计月收入</span>}
+                      title={<span style={{ color: theme.textTertiary, fontSize: 13 }}>预计月收入</span>}
                       value={result.monthly_projection.expected_revenue}
                       precision={2}
-                      prefix={<DollarOutlined style={{ color: '#0071e3' }} />}
+                      prefix={<DollarOutlined style={{ color: theme.primary }} />}
                       suffix="元"
-                      valueStyle={{ color: '#0071e3', fontSize: 24, fontWeight: 700 }}
+                      valueStyle={{ color: theme.primary, fontSize: 24, fontWeight: 700 }}
                     />
                   </Card>
                 </Col>
                 <Col xs={24} sm={12} lg={8}>
                   <Card style={metricCardStyle} bodyStyle={{ padding: 20 }}>
                     <Statistic
-                      title={<span style={{ color: '#717785', fontSize: 13 }}>预计月利润</span>}
+                      title={<span style={{ color: theme.textTertiary, fontSize: 13 }}>预计月利润</span>}
                       value={result.monthly_projection.expected_profit}
                       precision={2}
-                      prefix={result.monthly_projection.expected_profit >= 0 ? <RiseOutlined style={{ color: '#2e7d32' }} /> : <FallOutlined style={{ color: '#ba1a1a' }} />}
+                      prefix={result.monthly_projection.expected_profit >= 0 ? <RiseOutlined style={{ color: theme.success }} /> : <FallOutlined style={{ color: theme.error }} />}
                       suffix="元"
                       valueStyle={{
-                        color: result.monthly_projection.expected_profit >= 0 ? '#2e7d32' : '#ba1a1a',
+                        color: result.monthly_projection.expected_profit >= 0 ? theme.success : theme.error,
                         fontSize: 24,
                         fontWeight: 700,
                       }}
@@ -464,13 +463,13 @@ export default function ProfitModelSimulator() {
                 <Col xs={24} sm={12} lg={8}>
                   <Card style={metricCardStyle} bodyStyle={{ padding: 20 }}>
                     <Statistic
-                      title={<span style={{ color: '#717785', fontSize: 13 }}>利润率</span>}
+                      title={<span style={{ color: theme.textTertiary, fontSize: 13 }}>利润率</span>}
                       value={result.monthly_projection.profit_margin}
                       precision={1}
-                      prefix={<FundOutlined style={{ color: '#ff9f0a' }} />}
+                      prefix={<FundOutlined style={{ color: theme.warning }} />}
                       suffix="%"
                       valueStyle={{
-                        color: result.monthly_projection.profit_margin >= 20 ? '#2e7d32' : result.monthly_projection.profit_margin >= 0 ? '#ed6c02' : '#ba1a1a',
+                        color: result.monthly_projection.profit_margin >= 20 ? theme.success : result.monthly_projection.profit_margin >= 0 ? theme.warning : theme.error,
                         fontSize: 24,
                         fontWeight: 700,
                       }}
@@ -483,7 +482,7 @@ export default function ProfitModelSimulator() {
               <Card
                 title={
                   <span style={{ fontWeight: 600 }}>
-                    <WarningOutlined style={{ marginRight: 8, color: '#ed6c02' }} />
+                    <WarningOutlined style={{ marginRight: 8, color: theme.warning }} />
                     盈亏平衡分析
                   </span>
                 }
@@ -492,31 +491,31 @@ export default function ProfitModelSimulator() {
                 <Row gutter={[16, 16]}>
                   <Col xs={24} sm={8}>
                     <div style={{ textAlign: 'center', padding: 16 }}>
-                      <div style={{ color: '#717785', fontSize: 13, marginBottom: 8 }}>
+                      <div style={{ color: theme.textTertiary, fontSize: 13, marginBottom: 8 }}>
                         盈亏平衡所需签约
                       </div>
-                      <div style={{ color: '#ed6c02', fontSize: 32, fontWeight: 700 }}>
+                      <div style={{ color: theme.warning, fontSize: 32, fontWeight: 700 }}>
                         {result.break_even.cases} <span style={{ fontSize: 16 }}>件</span>
                       </div>
                     </div>
                   </Col>
                   <Col xs={24} sm={8}>
                     <div style={{ textAlign: 'center', padding: 16 }}>
-                      <div style={{ color: '#717785', fontSize: 13, marginBottom: 8 }}>
+                      <div style={{ color: theme.textTertiary, fontSize: 13, marginBottom: 8 }}>
                         所需线索量
                       </div>
-                      <div style={{ color: '#ed6c02', fontSize: 32, fontWeight: 700 }}>
+                      <div style={{ color: theme.warning, fontSize: 32, fontWeight: 700 }}>
                         {result.break_even.leads} <span style={{ fontSize: 16 }}>条</span>
                       </div>
                     </div>
                   </Col>
                   <Col xs={24} sm={8}>
                     <div style={{ textAlign: 'center', padding: 16 }}>
-                      <div style={{ color: '#717785', fontSize: 13, marginBottom: 8 }}>
+                      <div style={{ color: theme.textTertiary, fontSize: 13, marginBottom: 8 }}>
                         单案利润
                       </div>
                       <div style={{
-                        color: result.break_even.per_case_profit >= 0 ? '#2e7d32' : '#ba1a1a',
+                        color: result.break_even.per_case_profit >= 0 ? theme.success : theme.error,
                         fontSize: 32,
                         fontWeight: 700,
                       }}>
@@ -530,33 +529,33 @@ export default function ProfitModelSimulator() {
                 <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
                   <Col span={6}>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ color: '#717785', fontSize: 12 }}>月线索量</div>
-                      <div style={{ color: '#1a1c1d', fontSize: 18, fontWeight: 600 }}>
+                      <div style={{ color: theme.textTertiary, fontSize: 12 }}>月线索量</div>
+                      <div style={{ color: theme.textBase, fontSize: 18, fontWeight: 600 }}>
                         {result.monthly_projection.leads}
                       </div>
                     </div>
                   </Col>
                   <Col span={6}>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ color: '#717785', fontSize: 12 }}>签约数</div>
-                      <div style={{ color: '#1a1c1d', fontSize: 18, fontWeight: 600 }}>
+                      <div style={{ color: theme.textTertiary, fontSize: 12 }}>签约数</div>
+                      <div style={{ color: theme.textBase, fontSize: 18, fontWeight: 600 }}>
                         {result.monthly_projection.signed_cases}
                       </div>
                     </div>
                   </Col>
                   <Col span={6}>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ color: '#717785', fontSize: 12 }}>总成本</div>
-                      <div style={{ color: '#ba1a1a', fontSize: 18, fontWeight: 600 }}>
+                      <div style={{ color: theme.textTertiary, fontSize: 12 }}>总成本</div>
+                      <div style={{ color: theme.error, fontSize: 18, fontWeight: 600 }}>
                         {result.monthly_projection.expected_cost.toLocaleString()}
                       </div>
                     </div>
                   </Col>
                   <Col span={6}>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ color: '#717785', fontSize: 12 }}>利润率</div>
+                      <div style={{ color: theme.textTertiary, fontSize: 12 }}>利润率</div>
                       <div style={{
-                        color: result.monthly_projection.profit_margin >= 0 ? '#2e7d32' : '#ba1a1a',
+                        color: result.monthly_projection.profit_margin >= 0 ? theme.success : theme.error,
                         fontSize: 18,
                         fontWeight: 600,
                       }}>
@@ -571,7 +570,7 @@ export default function ProfitModelSimulator() {
               <Card
                 title={
                   <span style={{ fontWeight: 600 }}>
-                    <DollarOutlined style={{ marginRight: 8, color: '#0071e3' }} />
+                    <DollarOutlined style={{ marginRight: 8, color: theme.primary }} />
                     分润分布
                   </span>
                 }
@@ -579,33 +578,33 @@ export default function ProfitModelSimulator() {
               >
                 <Row gutter={[16, 16]}>
                   <Col xs={12} sm={6}>
-                    <div style={{ textAlign: 'center', padding: 12, background: '#f3f3f5', borderRadius: 12 }}>
-                      <div style={{ color: '#717785', fontSize: 12, marginBottom: 4 }}>律所</div>
-                      <div style={{ color: '#0071e3', fontSize: 20, fontWeight: 700 }}>
+                    <div style={{ textAlign: 'center', padding: 12, background: theme.bgSurfaceLow, borderRadius: 12 }}>
+                      <div style={{ color: theme.textTertiary, fontSize: 12, marginBottom: 4 }}>律所</div>
+                      <div style={{ color: theme.primary, fontSize: 20, fontWeight: 700 }}>
                         {result.distribution.org_revenue.toLocaleString()}
                       </div>
                     </div>
                   </Col>
                   <Col xs={12} sm={6}>
-                    <div style={{ textAlign: 'center', padding: 12, background: '#f3f3f5', borderRadius: 12 }}>
-                      <div style={{ color: '#717785', fontSize: 12, marginBottom: 4 }}>律师</div>
-                      <div style={{ color: '#5856d6', fontSize: 20, fontWeight: 700 }}>
+                    <div style={{ textAlign: 'center', padding: 12, background: theme.bgSurfaceLow, borderRadius: 12 }}>
+                      <div style={{ color: theme.textTertiary, fontSize: 12, marginBottom: 4 }}>律师</div>
+                      <div style={{ color: theme.brandGold, fontSize: 20, fontWeight: 700 }}>
                         {result.distribution.lawyer_revenue.toLocaleString()}
                       </div>
                     </div>
                   </Col>
                   <Col xs={12} sm={6}>
-                    <div style={{ textAlign: 'center', padding: 12, background: '#f3f3f5', borderRadius: 12 }}>
-                      <div style={{ color: '#717785', fontSize: 12, marginBottom: 4 }}>销售</div>
-                      <div style={{ color: '#34c759', fontSize: 20, fontWeight: 700 }}>
+                    <div style={{ textAlign: 'center', padding: 12, background: theme.bgSurfaceLow, borderRadius: 12 }}>
+                      <div style={{ color: theme.textTertiary, fontSize: 12, marginBottom: 4 }}>销售</div>
+                      <div style={{ color: theme.success, fontSize: 20, fontWeight: 700 }}>
                         {result.distribution.sales_revenue.toLocaleString()}
                       </div>
                     </div>
                   </Col>
                   <Col xs={12} sm={6}>
-                    <div style={{ textAlign: 'center', padding: 12, background: '#f3f3f5', borderRadius: 12 }}>
-                      <div style={{ color: '#717785', fontSize: 12, marginBottom: 4 }}>营销</div>
-                      <div style={{ color: '#ff9f0a', fontSize: 20, fontWeight: 700 }}>
+                    <div style={{ textAlign: 'center', padding: 12, background: theme.bgSurfaceLow, borderRadius: 12 }}>
+                      <div style={{ color: theme.textTertiary, fontSize: 12, marginBottom: 4 }}>营销</div>
+                      <div style={{ color: theme.warning, fontSize: 20, fontWeight: 700 }}>
                         {result.distribution.marketing_revenue.toLocaleString()}
                       </div>
                     </div>
@@ -617,7 +616,7 @@ export default function ProfitModelSimulator() {
               <Card
                 title={
                   <span style={{ fontWeight: 600 }}>
-                    <ExperimentOutlined style={{ marginRight: 8, color: '#5856d6' }} />
+                    <ExperimentOutlined style={{ marginRight: 8, color: theme.brandGold }} />
                     敏感性分析
                   </span>
                 }
@@ -625,28 +624,32 @@ export default function ProfitModelSimulator() {
               >
                 <Row gutter={[16, 16]}>
                   <Col xs={24} lg={12}>
-                    <div style={{ marginBottom: 12, fontWeight: 500, color: '#414753' }}>
+                    <div style={{ marginBottom: 12, fontWeight: 500, color: theme.textSecondary }}>
                       转化率变化对利润的影响
                     </div>
-                    <Table
-                      columns={sensitivityColumns}
-                      dataSource={result.sensitivity.conversion_rate}
-                      rowKey="conversion_rate"
-                      pagination={false}
-                      size="small"
-                    />
+                    <div className="stitch-table">
+                      <Table
+                        columns={sensitivityColumns}
+                        dataSource={result.sensitivity.conversion_rate}
+                        rowKey="conversion_rate"
+                        pagination={false}
+                        size="small"
+                      />
+                    </div>
                   </Col>
                   <Col xs={24} lg={12}>
-                    <div style={{ marginBottom: 12, fontWeight: 500, color: '#414753' }}>
+                    <div style={{ marginBottom: 12, fontWeight: 500, color: theme.textSecondary }}>
                       费率变化对利润的影响
                     </div>
-                    <Table
-                      columns={feeSensitivityColumns}
-                      dataSource={result.sensitivity.fee_rate}
-                      rowKey="fee_rate"
-                      pagination={false}
-                      size="small"
-                    />
+                    <div className="stitch-table">
+                      <Table
+                        columns={feeSensitivityColumns}
+                        dataSource={result.sensitivity.fee_rate}
+                        rowKey="fee_rate"
+                        pagination={false}
+                        size="small"
+                      />
+                    </div>
                   </Col>
                 </Row>
               </Card>

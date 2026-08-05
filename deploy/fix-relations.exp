@@ -1,0 +1,15 @@
+#!/usr/bin/expect -f
+set timeout 60
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ./deploy/fix-relations.js ubuntu@1.12.57.22:/home/ubuntu/fazhihui-test/backend/fix-relations.js
+expect {
+    "password:" { send "$password\r"; expect eof }
+    eof
+}
+
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "cd /home/ubuntu/fazhihui-test/backend && node fix-relations.js"
+expect {
+    "password:" { send "$password\r"; expect eof }
+    eof
+}

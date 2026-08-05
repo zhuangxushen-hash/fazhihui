@@ -27,6 +27,7 @@ import {
 } from '../api/lead'
 import { formatDateTime } from '../utils/format'
 import { RecycleReason, LeadPoolStatus, CaseType } from '../types'
+import { theme } from '../constants/theme'
 
 const { RangePicker } = DatePicker
 
@@ -74,12 +75,11 @@ export default function LeadPoolPage() {
         limit,
         ...filters,
       }
-      const res = await getLeadPoolList(params)
-      setData(res.data || [])
-      setTotal(res.total || 0)
+      const res = await getLeadPoolList(params) as Record<string, unknown>
+      setData((res.data || []) as LeadPool[])
+      setTotal((res.total || 0) as number)
       setPagination({ current: page, pageSize: limit })
     } catch (error) {
-      console.error('Fetch lead pool error:', error)
       message.error('获取公海池数据失败')
     } finally {
       setLoading(false)
@@ -88,19 +88,19 @@ export default function LeadPoolPage() {
 
   const fetchStatistics = async () => {
     try {
-      const res = await getLeadPoolStatistics()
-      setStatistics(res)
+      const res = await getLeadPoolStatistics() as Record<string, unknown>
+      setStatistics(res as { total: number; available: number; taken: number; discarded: number })
     } catch (error) {
-      console.error('Fetch statistics error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
   const fetchUsers = async () => {
     try {
-      const res = await getAvailableUsers()
-      setUsers(res.data || [])
+      const res = (await getAvailableUsers()) as Record<string, unknown>
+      setUsers((res.data || []) as any[])
     } catch (error) {
-      console.error('Fetch users error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -125,8 +125,8 @@ export default function LeadPoolPage() {
       message.success('领取成功')
       fetchData(pagination.current, pagination.pageSize)
       fetchStatistics()
-    } catch (error: any) {
-      message.error(error.response?.data?.message || '领取失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } }).response?.data?.message || '领取失败')
     }
   }
 
@@ -137,7 +137,7 @@ export default function LeadPoolPage() {
     }
 
     try {
-      const res = await batchAssignLeadsFromPool(selectedRowKeys as string[], userId)
+      const res = await batchAssignLeadsFromPool(selectedRowKeys as string[], userId) as { success: number; failed: unknown[] }
       message.success(`成功分配 ${res.success} 条线索`)
       if (res.failed.length > 0) {
         message.warning(`${res.failed.length} 条线索分配失败`)
@@ -146,8 +146,8 @@ export default function LeadPoolPage() {
       setAssignModalVisible(false)
       fetchData(pagination.current, pagination.pageSize)
       fetchStatistics()
-    } catch (error: any) {
-      message.error(error.response?.data?.message || '分配失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } }).response?.data?.message || '分配失败')
     }
   }
 
@@ -158,7 +158,7 @@ export default function LeadPoolPage() {
     }
 
     try {
-      const res = await batchTakeLeadsFromPool(selectedRowKeys as string[])
+      const res = await batchTakeLeadsFromPool(selectedRowKeys as string[]) as { success: number; failed: unknown[] }
       message.success(`成功领取 ${res.success} 条线索`)
       if (res.failed.length > 0) {
         message.warning(`${res.failed.length} 条线索领取失败`)
@@ -166,29 +166,31 @@ export default function LeadPoolPage() {
       setSelectedRowKeys([])
       fetchData(pagination.current, pagination.pageSize)
       fetchStatistics()
-    } catch (error: any) {
-      message.error(error.response?.data?.message || '批量领取失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } }).response?.data?.message || '批量领取失败')
     }
   }
 
   const getStatusTag = (status: string) => {
+    // 保留原 statusMap 数据结构，color 字段值替换为 Stitch 类名变体
     const statusMap: Record<string, { color: string; text: string }> = {
-      [LeadPoolStatus.AVAILABLE]: { color: 'green', text: '可领取' },
-      [LeadPoolStatus.TAKEN]: { color: 'blue', text: '已领取' },
-      [LeadPoolStatus.DISCARDED]: { color: 'red', text: '已废弃' },
+      [LeadPoolStatus.AVAILABLE]: { color: 'stitch-tag stitch-tag-success', text: '可领取' },
+      [LeadPoolStatus.TAKEN]: { color: 'stitch-tag stitch-tag-primary', text: '已领取' },
+      [LeadPoolStatus.DISCARDED]: { color: 'stitch-tag stitch-tag-error', text: '已废弃' },
     }
-    const config = statusMap[status] || { color: 'default', text: status }
-    return <Tag color={config.color}>{config.text}</Tag>
+    const config = statusMap[status] || { color: 'stitch-tag stitch-tag-info', text: status }
+    return <Tag className={config.color}>{config.text}</Tag>
   }
 
   const getRecycleReasonTag = (reason: string) => {
+    // 保留原 reasonMap 数据结构，color 字段值替换为 Stitch 类名变体
     const reasonMap: Record<string, { color: string; text: string }> = {
-      [RecycleReason.TIMEOUT]: { color: 'orange', text: '超时未跟进' },
-      [RecycleReason.MANUAL]: { color: 'cyan', text: '手动释放' },
-      [RecycleReason.INVALID]: { color: 'red', text: '无效回收' },
+      [RecycleReason.TIMEOUT]: { color: 'stitch-tag stitch-tag-warning', text: '超时未跟进' },
+      [RecycleReason.MANUAL]: { color: 'stitch-tag stitch-tag-info', text: '手动释放' },
+      [RecycleReason.INVALID]: { color: 'stitch-tag stitch-tag-error', text: '无效回收' },
     }
-    const config = reasonMap[reason] || { color: 'default', text: reason }
-    return <Tag color={config.color}>{config.text}</Tag>
+    const config = reasonMap[reason] || { color: 'stitch-tag stitch-tag-info', text: reason }
+    return <Tag className={config.color}>{config.text}</Tag>
   }
 
   const getCaseTypeText = (caseType?: string) => {
@@ -300,7 +302,7 @@ export default function LeadPoolPage() {
             </>
           )}
           {record.status === LeadPoolStatus.TAKEN && (
-            <span style={{ color: '#999' }}>
+            <span style={{ color: theme.textTertiary }}>
               {record.taken_by_name ? `已分配给 ${record.taken_by_name}` : '已领取'}
             </span>
           )}
@@ -332,23 +334,23 @@ export default function LeadPoolPage() {
         </Col>
         <Col span={6}>
           <Card>
-            <Statistic title="可领取" value={statistics.available} valueStyle={{ color: '#3f8600' }} />
+            <Statistic title="可领取" value={statistics.available} valueStyle={{ color: theme.success }} />
           </Card>
         </Col>
         <Col span={6}>
           <Card>
-            <Statistic title="已领取" value={statistics.taken} valueStyle={{ color: '#1890ff' }} />
+            <Statistic title="已领取" value={statistics.taken} valueStyle={{ color: theme.primary }} />
           </Card>
         </Col>
         <Col span={6}>
           <Card>
-            <Statistic title="已废弃" value={statistics.discarded} valueStyle={{ color: '#cf1322' }} />
+            <Statistic title="已废弃" value={statistics.discarded} valueStyle={{ color: theme.error }} />
           </Card>
         </Col>
       </Row>
 
       {/* 筛选区 */}
-      <Card style={{ marginBottom: '20px' }}>
+      <Card className="stitch-filter-bar" style={{ marginBottom: '20px' }}>
         <Space wrap size="middle">
           <Select
             placeholder="状态"
@@ -402,19 +404,21 @@ export default function LeadPoolPage() {
             }}
           />
 
-          <Button type="primary" onClick={handleSearch}>
-            查询
-          </Button>
-          <Button onClick={handleReset}>重置</Button>
-          <Button icon={<ReloadOutlined />} onClick={() => fetchData(pagination.current, pagination.pageSize)}>
-            刷新
-          </Button>
+          <Space className="stitch-btn-group">
+            <Button type="primary" onClick={handleSearch}>
+              查询
+            </Button>
+            <Button onClick={handleReset}>重置</Button>
+            <Button icon={<ReloadOutlined />} onClick={() => fetchData(pagination.current, pagination.pageSize)}>
+              刷新
+            </Button>
+          </Space>
         </Space>
       </Card>
 
       {/* 批量操作 */}
       <Card style={{ marginBottom: '20px' }}>
-        <Space>
+        <Space className="stitch-btn-group">
           <Button
             type="primary"
             icon={<UserSwitchOutlined />}
@@ -442,7 +446,7 @@ export default function LeadPoolPage() {
       </Card>
 
       {/* 数据表格 */}
-      <Card>
+      <Card className="stitch-table">
         <Table
           columns={columns}
           dataSource={data}

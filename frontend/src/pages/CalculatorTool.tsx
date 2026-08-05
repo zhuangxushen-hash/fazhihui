@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Card, Button, Space, Typography, message } from 'antd'
 import { DeleteOutlined } from '@ant-design/icons'
+import { theme } from '../constants/theme'
 
 const { Text } = Typography
 
@@ -130,7 +131,7 @@ export default function CalculatorTool() {
         {/* 显示屏 */}
         <div
           style={{
-            background: '#f5f5f7',
+            background: theme.bgSurfaceLow,
             borderRadius: 12,
             padding: '16px 20px',
             marginBottom: 16,
@@ -138,10 +139,10 @@ export default function CalculatorTool() {
             minHeight: 100,
           }}
         >
-          <div style={{ fontSize: 14, color: '#86868b', minHeight: 20, wordBreak: 'break-all' }}>
+          <div style={{ fontSize: 14, color: theme.gray, minHeight: 20, wordBreak: 'break-all' }}>
             {expression || '\u00A0'}
           </div>
-          <div style={{ fontSize: 36, fontWeight: 600, color: '#1d1d1f', wordBreak: 'break-all' }}>
+          <div style={{ fontSize: 36, fontWeight: 600, color: theme.textBase, wordBreak: 'break-all' }}>
             {display}
           </div>
         </div>
@@ -196,10 +197,10 @@ export default function CalculatorTool() {
                 key={idx}
                 style={{
                   padding: '8px 12px',
-                  background: '#f5f5f7',
+                  background: theme.bgSurfaceLow,
                   borderRadius: 8,
                   fontSize: 14,
-                  color: '#1d1d1f',
+                  color: theme.textBase,
                   wordBreak: 'break-all',
                 }}
               >

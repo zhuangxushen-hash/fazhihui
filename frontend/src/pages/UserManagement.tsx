@@ -5,12 +5,12 @@ import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
 
 export default function UserManagement() {
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [detailVisible, setDetailVisible] = useState(false)
   const [form] = Form.useForm()
-  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [currentUser, setCurrentUser] = useState<Record<string, unknown> | null>(null)
   const [isEdit, setIsEdit] = useState(false)
   const [searchParams, setSearchParams] = useState({
     real_name: '',
@@ -27,15 +27,15 @@ export default function UserManagement() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const params: any = { org_id: user.organization_id }
+      const params: Record<string, unknown> = { org_id: user.organization_id }
       if (searchParams.real_name) params.name = searchParams.real_name
       if (searchParams.phone) params.phone = searchParams.phone
       if (searchParams.role) params.role = searchParams.role
 
-      const res = await axios.get('/users', { params })
-      setData(res.data || [])
+      const res = (await axios.get('/users', { params })) as Record<string, unknown>
+      setData((res?.data as Record<string, unknown>[]) || [])
     } catch (error) {
-      console.error('Fetch users error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -57,7 +57,7 @@ export default function UserManagement() {
     setModalVisible(true)
   }
 
-  const handleEditUser = (record: any) => {
+  const handleEditUser = (record: Record<string, unknown>) => {
     setCurrentUser(record)
     form.setFieldsValue({
       real_name: record.real_name,
@@ -69,10 +69,10 @@ export default function UserManagement() {
     setModalVisible(true)
   }
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: Record<string, unknown>) => {
     try {
       if (isEdit && currentUser) {
-        await axios.put(`/users/${currentUser.id}`, values)
+        await axios.put(`/users/${currentUser.id as string}`, values)
         message.success('用户更新成功')
       } else {
         await axios.post('/users', { ...values, organization_id: user.organization_id, password: '123456' })
@@ -82,33 +82,30 @@ export default function UserManagement() {
       fetchData()
     } catch (error) {
       message.error(isEdit ? '用户更新失败' : '用户创建失败')
-      console.error('User operation error:', error)
     }
   }
 
-  const handleDeleteUser = async (record: any) => {
+  const handleDeleteUser = async (record: Record<string, unknown>) => {
     try {
-      await axios.delete(`/users/${record.id}`)
+      await axios.delete(`/users/${record.id as string}`)
       message.success('用户删除成功')
       fetchData()
     } catch (error) {
       message.error('用户删除失败')
-      console.error('Delete user error:', error)
     }
   }
 
-  const handleViewDetail = (record: any) => {
+  const handleViewDetail = (record: Record<string, unknown>) => {
     setCurrentUser(record)
     setDetailVisible(true)
   }
 
-  const handleResetPassword = async (record: any) => {
+  const handleResetPassword = async (record: Record<string, unknown>) => {
     try {
-      await axios.put(`/users/${record.id}/reset-password`, { password: '123456' })
+      await axios.put(`/users/${record.id as string}/reset-password`, { password: '123456' })
       message.success('密码已重置为123456')
     } catch (error) {
       message.error('密码重置失败')
-      console.error('Reset password error:', error)
     }
   }
 
@@ -129,15 +126,16 @@ export default function UserManagement() {
     { title: '手机号', dataIndex: 'phone', key: 'phone' },
     { title: '邮箱', dataIndex: 'email', key: 'email' },
     { title: '角色', dataIndex: 'role', key: 'role', render: (role: string) => {
-      const colors: Record<string, string> = {
-        super_admin: 'red',
-        org_admin: 'orange',
-        marketing: 'cyan',
-        sales: 'blue',
-        lawyer: 'geekblue',
-        assistant: 'default',
-        finance: 'orange',
-        client: 'default',
+      // 角色 Tag 样式映射（对齐 Stitch 设计规范）
+      const tagClass: Record<string, string> = {
+        super_admin: 'stitch-tag stitch-tag-error',
+        org_admin: 'stitch-tag stitch-tag-warning',
+        marketing: 'stitch-tag stitch-tag-info',
+        sales: 'stitch-tag stitch-tag-primary',
+        lawyer: 'stitch-tag stitch-tag-primary',
+        assistant: 'stitch-tag stitch-tag-info',
+        finance: 'stitch-tag stitch-tag-warning',
+        client: 'stitch-tag stitch-tag-info',
       }
       const labels: Record<string, string> = {
         super_admin: '超级管理员',
@@ -149,12 +147,12 @@ export default function UserManagement() {
         finance: '财务人员',
         client: '客户',
       }
-      return <Tag color={colors[role] || 'default'}>{labels[role] || '-'}</Tag>
+      return <Tag className={tagClass[role] || 'stitch-tag stitch-tag-info'}>{labels[role] || '-'}</Tag>
     }},
     { title: '经验值', dataIndex: 'experience', key: 'experience', width: 90, render: (val: number) => val || 0 },
-    { title: '等级', dataIndex: 'level', key: 'level', width: 80, render: (val: number) => <Tag color="gold">Lv{val || 1}</Tag> },
+    { title: '等级', dataIndex: 'level', key: 'level', width: 80, render: (val: number) => <Tag className="stitch-tag stitch-tag-gold">Lv{val || 1}</Tag> },
     { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
-    { title: '操作', key: 'action', render: (_: any, record: any) => (
+    { title: '操作', key: 'action', render: (_: unknown, record: Record<string, unknown>) => (
       <Space>
         <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
         <Button size="small" icon={<EditOutlined />} onClick={() => handleEditUser(record)}>编辑</Button>
@@ -173,7 +171,7 @@ export default function UserManagement() {
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAddUser}>添加用户</Button>
       </div>
 
-      <div className="search-bar">
+      <div className="search-bar stitch-filter-bar">
         <Input
           placeholder="姓名搜索"
           prefix={<SearchOutlined />}
@@ -196,11 +194,15 @@ export default function UserManagement() {
         >
           {roleOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
         </Select>
-        <Button type="primary" onClick={handleSearch}>搜索</Button>
-        <Button onClick={handleReset}>重置</Button>
+        <div className="stitch-btn-group">
+          <Button type="primary" onClick={handleSearch}>搜索</Button>
+          <Button onClick={handleReset}>重置</Button>
+        </div>
       </div>
 
-      <Table dataSource={data} columns={columns} loading={loading} rowKey="id" />
+      <div className="stitch-table">
+        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" />
+      </div>
 
       <Modal
         title={isEdit ? '编辑用户' : '添加用户'}
@@ -244,21 +246,21 @@ export default function UserManagement() {
       >
         {currentUser && (
           <div className="detail-grid">
-            <div className="detail-item"><span className="detail-label">用户ID</span><span className="detail-value">{currentUser.id}</span></div>
-            <div className="detail-item"><span className="detail-label">姓名</span><span className="detail-value">{currentUser.real_name}</span></div>
-            <div className="detail-item"><span className="detail-label">手机号</span><span className="detail-value">{currentUser.phone}</span></div>
-            <div className="detail-item"><span className="detail-label">邮箱</span><span className="detail-value">{currentUser.email || '-'}</span></div>
+            <div className="detail-item"><span className="detail-label">用户ID</span><span className="detail-value">{currentUser.id as string}</span></div>
+            <div className="detail-item"><span className="detail-label">姓名</span><span className="detail-value">{currentUser.real_name as string}</span></div>
+            <div className="detail-item"><span className="detail-label">手机号</span><span className="detail-value">{currentUser.phone as string}</span></div>
+            <div className="detail-item"><span className="detail-label">邮箱</span><span className="detail-value">{(currentUser.email as string) || '-'}</span></div>
             <div className="detail-item"><span className="detail-label">角色</span><span className="detail-value">
-              <Tag color={{
-                super_admin: 'red',
-                org_admin: 'orange',
-                marketing: 'cyan',
-                sales: 'blue',
-                lawyer: 'geekblue',
-                assistant: 'default',
-                finance: 'orange',
-                client: 'default',
-              }[currentUser.role as string] || 'default'}>
+              <Tag className={{
+                super_admin: 'stitch-tag stitch-tag-error',
+                org_admin: 'stitch-tag stitch-tag-warning',
+                marketing: 'stitch-tag stitch-tag-info',
+                sales: 'stitch-tag stitch-tag-primary',
+                lawyer: 'stitch-tag stitch-tag-primary',
+                assistant: 'stitch-tag stitch-tag-info',
+                finance: 'stitch-tag stitch-tag-warning',
+                client: 'stitch-tag stitch-tag-info',
+              }[currentUser.role as string] || 'stitch-tag stitch-tag-info'}>
                 {{
                   super_admin: '超级管理员',
                   org_admin: '律所管理者',
@@ -271,9 +273,9 @@ export default function UserManagement() {
                 }[currentUser.role as string] || '-'}
               </Tag>
             </span></div>
-            <div className="detail-item"><span className="detail-label">组织ID</span><span className="detail-value">{currentUser.organization_id}</span></div>
-            <div className="detail-item"><span className="detail-label">创建时间</span><span className="detail-value">{formatDateTime(currentUser.created_at)}</span></div>
-            <div className="detail-item"><span className="detail-label">更新时间</span><span className="detail-value">{formatDateTime(currentUser.updated_at)}</span></div>
+            <div className="detail-item"><span className="detail-label">组织ID</span><span className="detail-value">{currentUser.organization_id as string}</span></div>
+            <div className="detail-item"><span className="detail-label">创建时间</span><span className="detail-value">{formatDateTime(currentUser.created_at as string)}</span></div>
+            <div className="detail-item"><span className="detail-label">更新时间</span><span className="detail-value">{formatDateTime(currentUser.updated_at as string)}</span></div>
           </div>
         )}
       </Modal>

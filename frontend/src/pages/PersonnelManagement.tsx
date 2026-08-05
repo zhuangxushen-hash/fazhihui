@@ -1,7 +1,7 @@
 // 人事管理页面：展示员工统计卡片、查询条件、员工档案列表与新增员工表单
 import { useState, useEffect } from 'react'
 import {
-  Menu, Card, Form, Input, Select, Button, Table, Space, Row, Col,
+  Menu, Card, Form, Input, Select, Button, Table, Row, Col,
   Statistic, DatePicker, Modal, Tabs, Tag, message,
 } from 'antd'
 import {
@@ -9,6 +9,7 @@ import {
   TeamOutlined, CheckCircleOutlined,
 } from '@ant-design/icons'
 import axios from '../api/axios'
+import { theme } from '../constants/theme'
 
 // 左侧菜单（3大类8子项）
 const menuItems = [
@@ -80,38 +81,38 @@ const hasProfileOptions = [
   { value: 'no', label: '否' },
 ]
 
-// 律师类别标签颜色
+// 律师类别标签样式（对齐 Stitch 设计规范，返回 className）
 const lawyerTypeColor: Record<string, string> = {
-  fulltime: 'blue',
-  parttime: 'cyan',
-  intern: 'gold',
-  assistant: 'default',
-  none: 'default',
+  fulltime: 'stitch-tag stitch-tag-primary',
+  parttime: 'stitch-tag stitch-tag-info',
+  intern: 'stitch-tag stitch-tag-gold',
+  assistant: 'stitch-tag stitch-tag-info',
+  none: 'stitch-tag stitch-tag-info',
 }
 
-// 员工状态标签颜色
+// 员工状态标签样式（对齐 Stitch 设计规范，返回 className）
 const employeeStatusColor: Record<string, string> = {
-  active: 'success',
-  probation: 'processing',
-  resigned: 'default',
+  active: 'stitch-tag stitch-tag-success',
+  probation: 'stitch-tag stitch-tag-primary',
+  resigned: 'stitch-tag stitch-tag-info',
 }
 
 // 统计卡片配置
 const statConfigs = [
-  { key: 'active', title: '在职员工', icon: <UserOutlined />, color: '#1677ff' },
-  { key: 'probation', title: '试用中', icon: <TeamOutlined />, color: '#faad14' },
-  { key: 'regular', title: '正式员工', icon: <CheckCircleOutlined />, color: '#52c41a' },
-  { key: 'fulltime', title: '专职律师', icon: <UserOutlined />, color: '#1677ff' },
+  { key: 'active', title: '在职员工', icon: <UserOutlined />, color: theme.primary },
+  { key: 'probation', title: '试用中', icon: <TeamOutlined />, color: theme.warning },
+  { key: 'regular', title: '正式员工', icon: <CheckCircleOutlined />, color: theme.success },
+  { key: 'fulltime', title: '专职律师', icon: <UserOutlined />, color: theme.primary },
   { key: 'parttime', title: '兼职律师', icon: <UserOutlined />, color: '#13c2c2' },
   { key: 'intern', title: '实习人员', icon: <UserOutlined />, color: '#fa8c16' },
-  { key: 'assistant', title: '其他辅助人员', icon: <UserOutlined />, color: '#8c8c8c' },
-  { key: 'none', title: '无人员类别', icon: <UserOutlined />, color: '#bfbfbf' },
+  { key: 'assistant', title: '其他辅助人员', icon: <UserOutlined />, color: theme.grayDark },
+  { key: 'none', title: '无人员类别', icon: <UserOutlined />, color: theme.grayLight },
 ]
 
 export default function PersonnelManagement() {
   const [activeMenu, setActiveMenu] = useState('employee')
   const [activeTab, setActiveTab] = useState('active')
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [searchForm] = Form.useForm()
   const [addForm] = Form.useForm()
@@ -123,10 +124,10 @@ export default function PersonnelManagement() {
   const fetchData = async (tab: string = activeTab) => {
     setLoading(true)
     try {
-      const res: any = await axios.get('/hr/personnel', { params: { status: tab } })
+      const res = (await axios.get('/hr/personnel', { params: { status: tab } })) as Record<string, unknown>
       const list = res?.data
       if (Array.isArray(list)) {
-        setData(list)
+        setData(list as Record<string, unknown>[])
       } else {
         setData([])
       }
@@ -181,15 +182,15 @@ export default function PersonnelManagement() {
   }
 
   // 提交新增员工
-  const handleAdd = async (values: any) => {
+  const handleAdd = async (values: Record<string, unknown>) => {
     try {
       await axios.post('/hr/personnel', values)
       message.success('员工档案新增成功')
       setAddModalVisible(false)
       fetchData()
       calcStats()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '新增失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '新增失败')
     }
   }
 
@@ -211,7 +212,7 @@ export default function PersonnelManagement() {
     {
       title: '律师类别', dataIndex: 'lawyerType', key: 'lawyerType',
       render: (t: string) => (
-        <Tag color={lawyerTypeColor[t] || 'default'}>
+        <Tag className={lawyerTypeColor[t] || 'stitch-tag stitch-tag-info'}>
           {lawyerTypeOptions.find((o) => o.value === t)?.label || t}
         </Tag>
       ),
@@ -222,7 +223,7 @@ export default function PersonnelManagement() {
     {
       title: '员工状态', dataIndex: 'status', key: 'status',
       render: (s: string) => (
-        <Tag color={employeeStatusColor[s] || 'default'}>
+        <Tag className={employeeStatusColor[s] || 'stitch-tag stitch-tag-info'}>
           {employeeStatusOptions.find((o) => o.value === s)?.label || s}
         </Tag>
       ),
@@ -260,8 +261,8 @@ export default function PersonnelManagement() {
           />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          {/* 查询条件区域 */}
-          <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+          {/* 查询条件区域：Stitch 规范 stitch-filter-bar 已统一样式（浅灰背景、12px圆角、16-20px内边距） */}
+          <div className="stitch-filter-bar">
             <Form form={searchForm} layout="inline" style={{ gap: 8 }}>
               <Form.Item label="律师姓名" name="name">
                 <Input placeholder="请输入" allowClear style={{ width: 120 }} />
@@ -297,10 +298,10 @@ export default function PersonnelManagement() {
                 <Select placeholder="请选择" allowClear style={{ width: 110 }} options={hasProfileOptions} />
               </Form.Item>
               <Form.Item>
-                <Space>
+                <div className="stitch-btn-group">
                   <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>搜索</Button>
                   <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
-                </Space>
+                </div>
               </Form.Item>
             </Form>
           </div>
@@ -318,14 +319,16 @@ export default function PersonnelManagement() {
               />
               <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenAdd}>新增员工档案</Button>
             </div>
-            <Table
-              dataSource={data}
-              columns={columns}
-              loading={loading}
-              rowKey="id"
-              scroll={{ x: 1200 }}
-              pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
-            />
+            <div className="stitch-table">
+              <Table
+                dataSource={data}
+                columns={columns}
+                loading={loading}
+                rowKey="id"
+                scroll={{ x: 1200 }}
+                pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -22,12 +22,13 @@ import {
   FallOutlined,
 } from '@ant-design/icons'
 import axios from '../api/axios'
-
+import type { Dayjs } from 'dayjs'
+import { theme } from '../constants/theme'
 const { RangePicker } = DatePicker
 
 // 漏斗级别配置
 const FUNNEL_STAGES = [
-  { key: 'impression', name: '曝光', color: '#0071e3' },
+  { key: 'impression', name: '曝光', color: theme.primary },
   { key: 'click', name: '点击', color: '#0a84ff' },
   { key: 'lead', name: '线索', color: '#34c759' },
   { key: 'wechat', name: '加微', color: '#5ac8fa' },
@@ -94,14 +95,14 @@ export default function ConversionFunnelDashboard() {
     try {
       const res = await axios.get('/dashboard/funnel-filter-options', {
         params: { org_id: user.organization_id },
-      })
+      }) as Record<string, unknown>
       setFilterOptions({
         channels: res.channels || ['抖音', '百度', '快手', '微信'],
         platforms: res.platforms || ['抖音广告', '百度SEM', '快手广告', '朋友圈广告'],
         caseTypes: res.case_types || ['婚姻', '交通事故', '劳动', '债务', '其他'],
       })
     } catch (error) {
-      console.error('Fetch filter options error:', error)
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -117,12 +118,12 @@ export default function ConversionFunnelDashboard() {
         start_date: filters.dateRange[0],
         end_date: filters.dateRange[1],
       }
-      const res = await axios.get('/dashboard/conversion-funnel-enhanced', { params })
+      const res = await axios.get('/dashboard/conversion-funnel-enhanced', { params }) as Record<string, unknown>
       setFunnelData(res || {})
       setMetrics(res?.metrics || {})
-      setDetails(res?.details || [])
+      setDetails((res?.details || []) as Record<string, unknown>[])
     } catch (error) {
-      console.error('Fetch funnel data error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -147,7 +148,7 @@ export default function ConversionFunnelDashboard() {
       title: '线索成本',
       value: `¥${Number(metrics.lead_cost || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       icon: <DollarOutlined />,
-      gradient: 'linear-gradient(135deg, #0071e3 0%, #00a8ff 100%)',
+      gradient: `linear-gradient(135deg, ${theme.primary} 0%, #00a8ff 100%)`,
       trend: metrics.lead_cost_trend,
     },
     {
@@ -213,7 +214,7 @@ export default function ConversionFunnelDashboard() {
       dataIndex: 'lead',
       key: 'lead',
       align: 'right' as const,
-      render: (v: number) => <span style={{ fontVariantNumeric: 'tabular-nums', color: '#0071e3', fontWeight: 600 }}>{(v || 0).toLocaleString()}</span>,
+      render: (v: number) => <span style={{ fontVariantNumeric: 'tabular-nums', color: theme.primary, fontWeight: 600 }}>{(v || 0).toLocaleString()}</span>,
     },
     {
       title: '加微',
@@ -251,7 +252,9 @@ export default function ConversionFunnelDashboard() {
       render: (v: number) => {
         const val = Number(v || 0)
         const color = val >= 1 ? '#34c759' : '#ff375f'
-        return <Tag color={val >= 1 ? 'green' : 'red'} style={{ fontWeight: 600, borderRadius: 8, color }}>{val.toFixed(2)}</Tag>
+        // 使用 stitch-tag 变体替代 color 属性
+        const tagClass = val >= 1 ? 'stitch-tag-success' : 'stitch-tag-error'
+        return <Tag className={`stitch-tag ${tagClass}`} style={{ fontWeight: 600, borderRadius: 8, color }}>{val.toFixed(2)}</Tag>
       },
     },
   ]
@@ -275,9 +278,9 @@ export default function ConversionFunnelDashboard() {
       </div>
 
       {/* 筛选区 */}
-      <Card style={{ ...cardStyle, marginBottom: 16 }} styles={{ body: { padding: 16 } }}>
+      <Card className="stitch-filter-bar" style={{ ...cardStyle, marginBottom: 16 }} styles={{ body: { padding: 16 } }}>
         <Space wrap size={[12, 12]}>
-          <FilterOutlined style={{ color: '#0071e3', fontSize: 16 }} />
+          <FilterOutlined style={{ color: theme.primary, fontSize: 16 }} />
           <Select
             placeholder="选择渠道"
             allowClear
@@ -304,7 +307,7 @@ export default function ConversionFunnelDashboard() {
           />
           <RangePicker
             style={{ width: 240 }}
-            value={filters.dateRange as any}
+            value={filters.dateRange as unknown as [Dayjs, Dayjs] | undefined}
             onChange={(_: any, dateStrings: [string, string]) => setFilters({ ...filters, dateRange: dateStrings })}
           />
           <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading}>
@@ -349,11 +352,12 @@ export default function ConversionFunnelDashboard() {
 
       {/* 漏斗图 */}
       <Card
+        className="stitch-chart-card"
         style={{ ...cardStyle, marginBottom: 16 }}
         title={
           <Space>
-            <EyeOutlined style={{ color: '#0071e3' }} />
-            <span style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>全链路八级转化漏斗</span>
+            <EyeOutlined style={{ color: theme.primary }} />
+            <span className="stitch-chart-title" style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>全链路八级转化漏斗</span>
           </Space>
         }
         styles={{ body: { padding: 24 } }}
@@ -399,7 +403,7 @@ export default function ConversionFunnelDashboard() {
                     </div>
                     <div style={{ width: 90, textAlign: 'right' }}>
                       <Tag
-                        color={stage.rate >= 50 ? 'green' : stage.rate >= 20 ? 'orange' : 'red'}
+                        className={`stitch-tag ${stage.rate >= 50 ? 'stitch-tag-success' : stage.rate >= 20 ? 'stitch-tag-warning' : 'stitch-tag-error'}`}
                         style={{ fontWeight: 600, borderRadius: 8 }}
                       >
                         {idx === 0 ? '起点' : `${stage.rate.toFixed(1)}%`}
@@ -415,11 +419,12 @@ export default function ConversionFunnelDashboard() {
 
       {/* 明细数据表 */}
       <Card
+        className="stitch-table"
         style={cardStyle}
         title={
           <Space>
-            <FilterOutlined style={{ color: '#0071e3' }} />
-            <span style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>渠道/计划明细</span>
+            <FilterOutlined style={{ color: theme.primary }} />
+            <span className="stitch-chart-title" style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>渠道/计划明细</span>
           </Space>
         }
         styles={{ body: { padding: 0 } }}

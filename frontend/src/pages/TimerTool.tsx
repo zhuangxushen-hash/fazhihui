@@ -8,6 +8,7 @@ import {
 } from '@ant-design/icons'
 import { createWorklog } from '../api/worklog'
 import axios from '../api/axios'
+import { theme } from '../constants/theme'
 
 // 计时器工具页面（正计时 + 倒计时，可选关联案件保存工时）
 export default function TimerTool() {
@@ -146,7 +147,7 @@ export default function TimerTool() {
               textAlign: 'center',
               fontSize: 64,
               fontWeight: 700,
-              color: '#1d1d1f',
+              color: theme.textBase,
               fontFamily: 'monospace',
               padding: '24px 0',
               letterSpacing: 2,
@@ -175,7 +176,7 @@ export default function TimerTool() {
 
           {/* 关联案件 */}
           <div style={{ marginBottom: 16 }}>
-            <span style={{ marginRight: 8, color: '#6e6e73' }}>关联案件（可选）:</span>
+            <span style={{ marginRight: 8, color: theme.grayDark }}>关联案件（可选）:</span>
             <Select
               style={{ width: 300 }}
               allowClear
@@ -196,10 +197,10 @@ export default function TimerTool() {
           {/* 记录列表 */}
           {records.length > 0 && (
             <div>
-              <div style={{ marginBottom: 8, color: '#6e6e73', fontSize: 13 }}>计时记录</div>
+              <div style={{ marginBottom: 8, color: theme.grayDark, fontSize: 13 }}>计时记录</div>
               <Space direction="vertical" style={{ width: '100%' }}>
                 {records.map((r, idx) => (
-                  <Tag key={idx} style={{ fontSize: 14, padding: '4px 12px' }}>
+                  <Tag key={idx} className="stitch-tag" style={{ fontSize: 14, padding: '4px 12px' }}>
                     {r}
                   </Tag>
                 ))}
@@ -216,7 +217,7 @@ export default function TimerTool() {
         <Card style={{ borderRadius: 16, maxWidth: 600 }}>
           {/* 设置目标时长 */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginBottom: 24 }}>
-            <span style={{ lineHeight: '32px', color: '#6e6e73' }}>目标时长（分钟）:</span>
+            <span style={{ lineHeight: '32px', color: theme.grayDark }}>目标时长（分钟）:</span>
             <InputNumber
               min={1}
               max={180}
@@ -232,7 +233,7 @@ export default function TimerTool() {
               textAlign: 'center',
               fontSize: 64,
               fontWeight: 700,
-              color: countdownRemaining === 0 ? '#ba1a1a' : '#1d1d1f',
+              color: countdownRemaining === 0 ? theme.error : theme.textBase,
               fontFamily: 'monospace',
               padding: '24px 0',
               letterSpacing: 2,

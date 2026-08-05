@@ -40,20 +40,20 @@ import {
 } from '../api/task'
 import { formatDate } from '../utils/format'
 
-// 优先级映射（中文标签 + Tag 颜色）
+// 优先级映射（中文标签 + Tag 样式，对齐 Stitch 设计规范，返回 className）
 const priorityMap: Record<string, { label: string; color: string }> = {
-  low: { label: '低', color: 'default' },
-  normal: { label: '普通', color: 'blue' },
-  high: { label: '高', color: 'orange' },
-  urgent: { label: '紧急', color: 'red' },
+  low: { label: '低', color: 'stitch-tag stitch-tag-info' },
+  normal: { label: '普通', color: 'stitch-tag stitch-tag-primary' },
+  high: { label: '高', color: 'stitch-tag stitch-tag-warning' },
+  urgent: { label: '紧急', color: 'stitch-tag stitch-tag-error' },
 }
 
-// 状态映射（中文标签 + Tag 颜色）
+// 状态映射（中文标签 + Tag 样式，对齐 Stitch 设计规范，返回 className）
 const statusMap: Record<string, { label: string; color: string }> = {
-  pending: { label: '待办', color: 'blue' },
-  processing: { label: '进行中', color: 'orange' },
-  completed: { label: '已完成', color: 'green' },
-  cancelled: { label: '已取消', color: 'default' },
+  pending: { label: '待办', color: 'stitch-tag stitch-tag-primary' },
+  processing: { label: '进行中', color: 'stitch-tag stitch-tag-warning' },
+  completed: { label: '已完成', color: 'stitch-tag stitch-tag-success' },
+  cancelled: { label: '已取消', color: 'stitch-tag stitch-tag-info' },
 }
 
 // 优先级筛选选项
@@ -74,14 +74,14 @@ const statusOptions = [
 
 // 优先级标签组件
 const PriorityTag = ({ priority }: { priority: string }) => {
-  const cfg = priorityMap[priority] || { label: priority, color: 'default' }
-  return <Tag color={cfg.color}>{cfg.label}</Tag>
+  const cfg = priorityMap[priority] || { label: priority, color: 'stitch-tag stitch-tag-info' }
+  return <Tag className={cfg.color}>{cfg.label}</Tag>
 }
 
 // 状态标签组件
 const StatusTag = ({ status }: { status: string }) => {
-  const cfg = statusMap[status] || { label: status, color: 'default' }
-  return <Tag color={cfg.color}>{cfg.label}</Tag>
+  const cfg = statusMap[status] || { label: status, color: 'stitch-tag stitch-tag-info' }
+  return <Tag className={cfg.color}>{cfg.label}</Tag>
 }
 
 export default function TaskCenter() {
@@ -118,7 +118,7 @@ export default function TaskCenter() {
         // 全部任务：使用查询表单参数
         params = { ...searchParams }
       }
-      const res = await getTasks(params)
+      const res = (await getTasks(params)) as Record<string, unknown>[]
       setData(res || [])
     } catch (error) {
       message.error('获取任务列表失败')
@@ -186,8 +186,8 @@ export default function TaskCenter() {
       setModalVisible(false)
       fetchData()
       fetchStats()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '创建失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '创建失败')
     }
   }
 
@@ -206,8 +206,8 @@ export default function TaskCenter() {
       setProgressModalVisible(false)
       fetchData()
       fetchStats()
-    } catch (error: any) {
-      message.error(error?.response?.data?.message || '更新失败')
+    } catch (error: unknown) {
+      message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '更新失败')
     }
   }
 
@@ -224,8 +224,8 @@ export default function TaskCenter() {
           message.success('任务已开始')
           fetchData()
           fetchStats()
-        } catch (error: any) {
-          message.error(error?.response?.data?.message || '操作失败')
+        } catch (error: unknown) {
+          message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
         }
       },
     })
@@ -244,8 +244,8 @@ export default function TaskCenter() {
           message.success('任务已完成')
           fetchData()
           fetchStats()
-        } catch (error: any) {
-          message.error(error?.response?.data?.message || '操作失败')
+        } catch (error: unknown) {
+          message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
         }
       },
     })
@@ -264,8 +264,8 @@ export default function TaskCenter() {
           message.success('任务已取消')
           fetchData()
           fetchStats()
-        } catch (error: any) {
-          message.error(error?.response?.data?.message || '操作失败')
+        } catch (error: unknown) {
+          message.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '操作失败')
         }
       },
     })
@@ -523,14 +523,16 @@ export default function TaskCenter() {
               新增任务
             </Button>
           </div>
-          <Table
-            dataSource={data}
-            columns={mineColumns}
-            loading={loading}
-            rowKey="id"
-            size="small"
-            pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
-          />
+          <div className="stitch-table">
+            <Table
+              dataSource={data}
+              columns={mineColumns}
+              loading={loading}
+              rowKey="id"
+              size="small"
+              pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+            />
+          </div>
         </>
       ),
     },
@@ -544,14 +546,16 @@ export default function TaskCenter() {
               新增任务
             </Button>
           </div>
-          <Table
-            dataSource={data}
-            columns={createdColumns}
-            loading={loading}
-            rowKey="id"
-            size="small"
-            pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
-          />
+          <div className="stitch-table">
+            <Table
+              dataSource={data}
+              columns={createdColumns}
+              loading={loading}
+              rowKey="id"
+              size="small"
+              pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+            />
+          </div>
         </>
       ),
     },
@@ -560,8 +564,8 @@ export default function TaskCenter() {
       label: '全部任务',
       children: (
         <>
-          {/* 查询表单：优先级/状态/关键词 */}
-          <div style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+          {/* 查询表单：优先级/状态/关键词 — Stitch 规范 stitch-filter-bar 统一浅灰背景+12px圆角 */}
+          <div className="stitch-filter-bar">
             <Form form={searchForm} layout="inline" style={{ gap: 8 }}>
               <Form.Item name="priority" label="优先级">
                 <Select
@@ -583,14 +587,14 @@ export default function TaskCenter() {
                 <Input placeholder="任务标题/描述" allowClear style={{ width: 200 }} />
               </Form.Item>
               <Form.Item>
-                <Space>
+                <div className="stitch-btn-group">
                   <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
                     查询
                   </Button>
                   <Button icon={<ReloadOutlined />} onClick={handleReset}>
                     重置
                   </Button>
-                </Space>
+                </div>
               </Form.Item>
             </Form>
           </div>
@@ -599,14 +603,16 @@ export default function TaskCenter() {
               新增任务
             </Button>
           </div>
-          <Table
-            dataSource={data}
-            columns={allColumns}
-            loading={loading}
-            rowKey="id"
-            size="small"
-            pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
-          />
+          <div className="stitch-table">
+            <Table
+              dataSource={data}
+              columns={allColumns}
+              loading={loading}
+              rowKey="id"
+              size="small"
+              pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+            />
+          </div>
         </>
       ),
     },

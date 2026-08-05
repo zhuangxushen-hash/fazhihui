@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Lead Management - JusticeLink CRM</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&amp;family=Noto+Serif+SC:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#bec7db",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed-variant": "#5a4302",
+                        "on-error-container": "#93000a",
+                        "secondary": "#565f70",
+                        "surface-tint": "#005cbb",
+                        "tertiary-fixed-dim": "#e4c278",
+                        "surface-variant": "#e2e2e4",
+                        "primary-fixed-dim": "#abc7ff",
+                        "on-tertiary": "#ffffff",
+                        "inverse-on-surface": "#f0f0f2",
+                        "on-surface": "#1a1c1d",
+                        "tertiary-fixed": "#ffdf9b",
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "tertiary": "#715818",
+                        "surface-container-high": "#e8e8ea",
+                        "surface-dim": "#d9dadc",
+                        "on-secondary-fixed-variant": "#3e4758",
+                        "on-primary-fixed-variant": "#00458f",
+                        "tertiary-container": "#8c702e",
+                        "on-tertiary-container": "#fffaf9",
+                        "on-tertiary-fixed": "#251a00",
+                        "primary": "#0059b5",
+                        "outline-variant": "#c1c6d6",
+                        "surface-container": "#eeeef0",
+                        "secondary-container": "#d7e0f4",
+                        "inverse-primary": "#abc7ff",
+                        "primary-fixed": "#d7e2ff",
+                        "background": "#f9f9fb",
+                        "error-container": "#ffdad6",
+                        "surface-container-low": "#f3f3f5",
+                        "primary-container": "#0071e3",
+                        "outline": "#717785",
+                        "on-background": "#1a1c1d",
+                        "on-secondary-container": "#5a6374",
+                        "inverse-surface": "#2f3132",
+                        "surface": "#f9f9fb",
+                        "surface-bright": "#f9f9fb",
+                        "on-surface-variant": "#414753",
+                        "surface-container-highest": "#e2e2e4",
+                        "on-primary-fixed": "#001b3f",
+                        "on-primary-container": "#fcfbff",
+                        "on-secondary-fixed": "#131c2a",
+                        "secondary-fixed": "#dae3f7",
+                        "on-secondary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "data_density_md": "12px",
+                        "container_gap": "20px",
+                        "grid_gutter": "16px",
+                        "header_height": "64px",
+                        "data_density_sm": "8px",
+                        "sidebar_width": "260px",
+                        "page_padding": "24px"
+                    },
+                    "fontFamily": {
+                        "mono-label": ["notoSans"],
+                        "label-md": ["Noto Sans SC"],
+                        "title-lg": ["Noto Serif SC"],
+                        "display-md": ["Noto Serif SC"],
+                        "display-lg": ["Noto Serif SC"],
+                        "body-md": ["Noto Sans SC"],
+                        "body-lg": ["Noto Sans SC"]
+                    },
+                    "fontSize": {
+                        "mono-label": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "title-lg": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "44px", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1;
+        }
+        .table-row-hover:hover {
+            background-color: #F0F7FF;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md h-screen flex overflow-hidden">
+<!-- SideNavBar -->
+<aside class="w-sidebar_width h-screen fixed left-0 top-0 bg-on-secondary-fixed-variant flex flex-col py-page_padding px-data_density_md z-50">
+<div class="mb-8 px-4 flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-primary-container flex items-center justify-center text-on-primary font-title-lg shadow">JL</div>
+<div>
+<h1 class="font-title-lg text-title-lg text-surface-container-lowest leading-tight">JusticeLink CRM</h1>
+<p class="font-label-md text-label-md text-secondary-fixed-dim">Law Firm Management</p>
+</div>
+</div>
+<button class="w-full bg-primary-container text-on-primary py-2.5 rounded-lg mb-6 font-label-md flex items-center justify-center gap-2 hover:bg-primary transition-colors shadow">
+<span class="material-symbols-outlined text-lg">add</span>
+            New Case
+        </button>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-secondary-fixed-dim hover:text-surface-container-lowest hover:bg-on-secondary-fixed-variant/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-primary-fixed bg-on-primary-fixed-variant rounded-lg font-bold transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">person_search</span>
+<span class="font-label-md text-label-md">Leads</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-secondary-fixed-dim hover:text-surface-container-lowest hover:bg-on-secondary-fixed-variant/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">gavel</span>
+<span class="font-label-md text-label-md">Cases</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-secondary-fixed-dim hover:text-surface-container-lowest hover:bg-on-secondary-fixed-variant/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">warning</span>
+<span class="font-label-md text-label-md">Conflict Check</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-secondary-fixed-dim hover:text-surface-container-lowest hover:bg-on-secondary-fixed-variant/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-md text-label-md">Financials</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-secondary-fixed-dim hover:text-surface-container-lowest hover:bg-on-secondary-fixed-variant/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+<div class="mt-auto">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-secondary-fixed-dim hover:text-surface-container-lowest hover:bg-on-secondary-fixed-variant/50 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-label-md text-label-md">Help Center</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 ml-sidebar_width flex flex-col h-screen relative">
+<!-- TopNavBar -->
+<header class="sticky top-0 w-full h-header_height bg-surface border-b border-outline-variant flex justify-between items-center px-page_padding z-40">
+<div class="flex items-center gap-6">
+<h2 class="font-title-lg text-title-lg font-bold text-on-surface">Lead Management</h2>
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="pl-10 pr-4 py-1.5 bg-surface-container-low border-none rounded-full text-body-md focus:ring-1 focus:ring-primary w-64" placeholder="Search leads, cases..." type="text"/>
+</div>
+</div>
+<nav class="flex items-center gap-6 h-full hidden md:flex">
+<a class="h-full flex items-center text-primary border-b-2 border-primary font-bold px-2 cursor-pointer transition-all" href="#">Recent Leads</a>
+<a class="h-full flex items-center text-on-surface-variant hover:text-primary px-2 cursor-pointer transition-all" href="#">My Tasks</a>
+<a class="h-full flex items-center text-on-surface-variant hover:text-primary px-2 cursor-pointer transition-all" href="#">Queue</a>
+</nav>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<button class="hover:bg-surface-container-low p-2 rounded-full transition-all"><span class="material-symbols-outlined">notifications</span></button>
+<button class="hover:bg-surface-container-low p-2 rounded-full transition-all"><span class="material-symbols-outlined">history</span></button>
+<button class="hover:bg-surface-container-low p-2 rounded-full transition-all"><span class="material-symbols-outlined">account_circle</span></button>
+</div>
+</header>
+<!-- Scrollable Content Canvas -->
+<div class="flex-1 overflow-y-auto p-page_padding bg-background">
+<!-- Summary Stats (Bento-style layout) -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-container_gap mb-6">
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-surface-variant shadow-sm flex flex-col gap-2">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-md text-label-md">Total Leads</span>
+<span class="material-symbols-outlined text-xl text-primary">groups</span>
+</div>
+<div class="font-display-lg text-display-lg text-on-surface">1,284</div>
+<div class="text-mono-label font-mono-label text-outline">+12% vs last month</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-surface-variant shadow-sm flex flex-col gap-2 relative overflow-hidden">
+<div class="absolute -right-4 -bottom-4 w-24 h-24 bg-primary/5 rounded-full blur-xl"></div>
+<div class="flex items-center justify-between text-on-surface-variant relative z-10">
+<span class="font-label-md text-label-md">New Today</span>
+<span class="material-symbols-outlined text-xl text-primary-container">fiber_new</span>
+</div>
+<div class="font-display-lg text-display-lg text-on-surface relative z-10">23</div>
+<div class="text-mono-label font-mono-label text-primary-container relative z-10 flex items-center gap-1"><span class="material-symbols-outlined text-sm">trending_up</span> 4 urgent</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-surface-variant shadow-sm flex flex-col gap-2">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-md text-label-md">Conversion Rate</span>
+<span class="material-symbols-outlined text-xl text-secondary">percent</span>
+</div>
+<div class="font-display-lg text-display-lg text-on-surface">18.5%</div>
+<div class="w-full bg-surface-variant rounded-full h-1.5 mt-1">
+<div class="bg-primary h-1.5 rounded-full" style="width: 18.5%"></div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-surface-variant shadow-sm flex flex-col gap-2">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-md text-label-md">Avg Response</span>
+<span class="material-symbols-outlined text-xl text-tertiary">timer</span>
+</div>
+<div class="font-display-lg text-display-lg text-on-surface">2.3h</div>
+<div class="text-mono-label font-mono-label text-outline">Target: &lt; 2.0h</div>
+</div>
+</div>
+<!-- Main Data Section -->
+<div class="bg-surface-container-lowest border border-surface-variant rounded-xl shadow-sm overflow-hidden flex flex-col">
+<!-- Filter Bar -->
+<div class="p-4 border-b border-surface-variant bg-surface flex flex-wrap gap-4 items-center justify-between">
+<div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+<div class="relative min-w-[200px]">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
+<input class="w-full pl-9 pr-3 py-1.5 text-sm border border-outline-variant rounded bg-surface-container-lowest focus:ring-1 focus:ring-primary focus:border-primary outline-none text-on-surface" placeholder="Search ID, Name, Phone..." type="text"/>
+</div>
+<select class="py-1.5 pl-3 pr-8 text-sm border border-outline-variant rounded bg-surface-container-lowest focus:ring-1 focus:ring-primary focus:border-primary outline-none text-on-surface appearance-none">
+<option value="">Status: All</option>
+<option value="new">新线索 (New)</option>
+<option value="contacted">已联系 (Contacted)</option>
+<option value="intent">意向客户 (Intent)</option>
+<option value="converted">已转化 (Converted)</option>
+<option value="lost">已流失 (Lost)</option>
+</select>
+<select class="py-1.5 pl-3 pr-8 text-sm border border-outline-variant rounded bg-surface-container-lowest focus:ring-1 focus:ring-primary focus:border-primary outline-none text-on-surface appearance-none">
+<option value="">Channel: All</option>
+<option value="douyin">抖音 (Douyin)</option>
+<option value="baidu">百度 (Baidu)</option>
+<option value="kuaishou">快手 (Kuaishou)</option>
+<option value="wechat">微信 (WeChat)</option>
+<option value="feishu">飞书 (Feishu)</option>
+</select>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">calendar_today</span>
+<input class="pl-9 pr-3 py-1.5 text-sm border border-outline-variant rounded bg-surface-container-lowest focus:ring-1 focus:ring-primary focus:border-primary outline-none text-on-surface w-40 cursor-pointer" placeholder="Date Range" readonly="" type="text" value="Last 30 Days"/>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 text-sm font-label-md text-on-surface-variant border border-outline-variant rounded hover:bg-surface-container-low flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">filter_list</span> More Filters
+                        </button>
+<button class="px-3 py-1.5 text-sm font-label-md bg-primary-container text-on-primary rounded hover:bg-primary flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-sm">download</span> Export
+                        </button>
+</div>
+</div>
+<!-- Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-on-surface-variant font-label-md text-label-md border-b border-surface-variant">
+<th class="py-3 px-4 font-medium">线索ID (Lead ID)</th>
+<th class="py-3 px-4 font-medium">客户姓名 (Name)</th>
+<th class="py-3 px-4 font-medium">手机号 (Phone)</th>
+<th class="py-3 px-4 font-medium">渠道 (Source)</th>
+<th class="py-3 px-4 font-medium">状态 (Status)</th>
+<th class="py-3 px-4 font-medium">承办律师 (Lawyer)</th>
+<th class="py-3 px-4 font-medium text-right">创建时间 (Created)</th>
+<th class="py-3 px-4 font-medium text-center">操作 (Actions)</th>
+</tr>
+</thead>
+<tbody class="text-body-md divide-y divide-surface-variant">
+<tr class="table-row-hover transition-colors">
+<td class="py-3 px-4 text-secondary font-mono">L-2023-0891</td>
+<td class="py-3 px-4 font-medium">张伟 (Zhang Wei)<br/><span class="text-xs text-outline font-normal">Marriage Dispute</span></td>
+<td class="py-3 px-4 text-on-surface-variant">138****4920</td>
+<td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-xs bg-surface-container-high text-on-surface border border-outline-variant">抖音</span></td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-primary-fixed text-on-primary-fixed border border-primary/20">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span> 新线索
+                                    </span>
+</td>
+<td class="py-3 px-4 flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-secondary-container flex items-center justify-center text-xs text-on-secondary-container">王</div>
+<span class="text-sm">王律师</span>
+</td>
+<td class="py-3 px-4 text-right text-on-surface-variant text-sm">2023-10-24 09:15</td>
+<td class="py-3 px-4">
+<div class="flex justify-center gap-3">
+<button class="text-primary hover:text-primary-container text-sm font-medium">详情</button>
+<button class="text-on-surface-variant hover:text-primary text-sm">分配</button>
+<button class="text-error hover:text-error/80 text-sm">退回</button>
+</div>
+</td>
+</tr>
+<tr class="table-row-hover transition-colors">
+<td class="py-3 px-4 text-secondary font-mono">L-2023-0890</td>
+<td class="py-3 px-4 font-medium">李娜 (Li Na)<br/><span class="text-xs text-outline font-normal">Labor Arbitration</span></td>
+<td class="py-3 px-4 text-on-surface-variant">159****8831</td>
+<td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-xs bg-surface-container-high text-on-surface border border-outline-variant">百度</span></td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-tertiary-fixed text-on-tertiary-fixed border border-tertiary/20">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> 已联系
+                                    </span>
+</td>
+<td class="py-3 px-4 flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-secondary-container flex items-center justify-center text-xs text-on-secondary-container">陈</div>
+<span class="text-sm">陈律师</span>
+</td>
+<td class="py-3 px-4 text-right text-on-surface-variant text-sm">2023-10-23 16:42</td>
+<td class="py-3 px-4">
+<div class="flex justify-center gap-3">
+<button class="text-primary hover:text-primary-container text-sm font-medium">详情</button>
+<button class="text-on-surface-variant hover:text-primary text-sm">分配</button>
+<button class="text-error hover:text-error/80 text-sm">退回</button>
+</div>
+</td>
+</tr>
+<tr class="table-row-hover transition-colors">
+<td class="py-3 px-4 text-secondary font-mono">L-2023-0888</td>
+<td class="py-3 px-4 font-medium">赵强 (Zhao Qiang)<br/><span class="text-xs text-outline font-normal">Traffic Accident</span></td>
+<td class="py-3 px-4 text-on-surface-variant">136****5521</td>
+<td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-xs bg-surface-container-high text-on-surface border border-outline-variant">微信</span></td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-secondary-fixed text-on-secondary-fixed border border-secondary/20">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> 意向客户
+                                    </span>
+</td>
+<td class="py-3 px-4 flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-variant flex items-center justify-center text-xs text-outline">--</div>
+<span class="text-sm text-outline italic">未分配</span>
+</td>
+<td class="py-3 px-4 text-right text-on-surface-variant text-sm">2023-10-23 11:20</td>
+<td class="py-3 px-4">
+<div class="flex justify-center gap-3">
+<button class="text-primary hover:text-primary-container text-sm font-medium">详情</button>
+<button class="text-primary hover:text-primary-container text-sm font-medium">分配</button>
+<button class="text-error hover:text-error/80 text-sm">退回</button>
+</div>
+</td>
+</tr>
+<tr class="table-row-hover transition-colors">
+<td class="py-3 px-4 text-secondary font-mono">L-2023-0885</td>
+<td class="py-3 px-4 font-medium">刘芳 (Liu Fang)<br/><span class="text-xs text-outline font-normal">Contract Dispute</span></td>
+<td class="py-3 px-4 text-on-surface-variant">188****9012</td>
+<td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-xs bg-surface-container-high text-on-surface border border-outline-variant">飞书</span></td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-surface-container text-on-surface border border-outline-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-outline"></span> 已流失
+                                    </span>
+</td>
+<td class="py-3 px-4 flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-secondary-container flex items-center justify-center text-xs text-on-secondary-container">王</div>
+<span class="text-sm">王律师</span>
+</td>
+<td class="py-3 px-4 text-right text-on-surface-variant text-sm">2023-10-22 14:05</td>
+<td class="py-3 px-4">
+<div class="flex justify-center gap-3">
+<button class="text-primary hover:text-primary-container text-sm font-medium">详情</button>
+<button class="text-outline hover:text-on-surface text-sm opacity-50 cursor-not-allowed">分配</button>
+<button class="text-outline hover:text-on-surface text-sm opacity-50 cursor-not-allowed">退回</button>
+</div>
+</td>
+</tr>
+<tr class="table-row-hover transition-colors bg-[#F5F5F7]/50">
+<td class="py-3 px-4 text-secondary font-mono">L-2023-0880</td>
+<td class="py-3 px-4 font-medium">Sun Corp<br/><span class="text-xs text-error font-normal flex items-center gap-1"><span class="material-symbols-outlined text-[10px]">warning</span> 利冲 (Conflict)</span></td>
+<td class="py-3 px-4 text-on-surface-variant">021-****443</td>
+<td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-xs bg-surface-container-high text-on-surface border border-outline-variant">百度</span></td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-error-container text-on-error-container border border-error/20">
+<span class="material-symbols-outlined text-[12px]">block</span> 已中止
+                                    </span>
+</td>
+<td class="py-3 px-4 flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-secondary-container flex items-center justify-center text-xs text-on-secondary-container">李</div>
+<span class="text-sm">李高级合伙人</span>
+</td>
+<td class="py-3 px-4 text-right text-on-surface-variant text-sm">2023-10-21 09:30</td>
+<td class="py-3 px-4">
+<div class="flex justify-center gap-3">
+<button class="text-primary hover:text-primary-container text-sm font-medium">详情</button>
+<button class="text-outline text-sm opacity-50 cursor-not-allowed">分配</button>
+<button class="text-outline text-sm opacity-50 cursor-not-allowed">退回</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="p-4 border-t border-surface-variant bg-surface-container-lowest flex items-center justify-between text-sm text-on-surface-variant">
+<div>Showing 1 to 5 of 1,284 entries</div>
+<div class="flex items-center gap-1">
+<button class="p-1 rounded hover:bg-surface-container-low text-outline disabled:opacity-50"><span class="material-symbols-outlined text-lg">chevron_left</span></button>
+<button class="w-8 h-8 rounded bg-primary-container text-on-primary font-medium flex items-center justify-center">1</button>
+<button class="w-8 h-8 rounded hover:bg-surface-container-low flex items-center justify-center">2</button>
+<button class="w-8 h-8 rounded hover:bg-surface-container-low flex items-center justify-center">3</button>
+<span class="px-1">...</span>
+<button class="w-8 h-8 rounded hover:bg-surface-container-low flex items-center justify-center">257</button>
+<button class="p-1 rounded hover:bg-surface-container-low text-outline"><span class="material-symbols-outlined text-lg">chevron_right</span></button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

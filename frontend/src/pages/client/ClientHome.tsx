@@ -4,7 +4,7 @@ import { FileTextOutlined, MessageOutlined, CreditCardOutlined, BellOutlined, Us
 import axios from '../../api/axios'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../../components/BottomNav'
-
+import { theme } from '../../constants/theme'
 export default function ClientHome() {
   const [cases, setCases] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -22,10 +22,10 @@ export default function ClientHome() {
   const fetchCases = async () => {
     setLoading(true)
     try {
-      const res = await axios.post('/client/cases', { client_id: user.id })
+      const res = await axios.post('/client/cases', { client_id: user.id }) as Record<string, unknown>[]
       setCases(res || [])
     } catch (error) {
-      console.error('Fetch client cases error:', error)
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
@@ -44,9 +44,9 @@ export default function ClientHome() {
 
   const statusPillStyles: Record<string, { bg: string; color: string }> = {
     pending_assign: { bg: 'rgba(237, 108, 2, 0.1)', color: '#ed6c02' },
-    processing: { bg: 'rgba(0, 113, 227, 0.1)', color: '#0071e3' },
-    filing: { bg: 'rgba(0, 113, 227, 0.1)', color: '#0071e3' },
-    evidence: { bg: 'rgba(0, 113, 227, 0.1)', color: '#0071e3' },
+    processing: { bg: 'rgba(0, 113, 227, 0.1)', color: theme.primary },
+    filing: { bg: 'rgba(0, 113, 227, 0.1)', color: theme.primary },
+    evidence: { bg: 'rgba(0, 113, 227, 0.1)', color: theme.primary },
     hearing: { bg: 'rgba(201, 169, 97, 0.14)', color: '#8c702e' },
     appeal: { bg: 'rgba(201, 169, 97, 0.14)', color: '#8c702e' },
     pending_close: { bg: 'rgba(237, 108, 2, 0.1)', color: '#ed6c02' },
@@ -58,7 +58,7 @@ export default function ClientHome() {
       title: '在线咨询',
       desc: 'AI法律助手随时解答',
       icon: MessageOutlined,
-      color: '#0071e3',
+      color: theme.primary,
       bg: 'rgba(0, 113, 227, 0.1)',
       path: '/client/ai-consult'
     },
@@ -74,7 +74,7 @@ export default function ClientHome() {
       title: '签约付款',
       desc: '一站式法律服务签约',
       icon: CreditCardOutlined,
-      color: '#0071e3',
+      color: theme.primary,
       bg: 'rgba(0, 113, 227, 0.1)',
       path: '/client/payment'
     },
@@ -97,9 +97,9 @@ export default function ClientHome() {
   ]
 
   const quickServiceItems = [
-    { label: '我的案件', icon: FileTextOutlined, color: '#0071e3', bg: 'rgba(0, 113, 227, 0.1)', value: cases.length, path: '/client/cases' },
+    { label: '我的案件', icon: FileTextOutlined, color: theme.primary, bg: 'rgba(0, 113, 227, 0.1)', value: cases.length, path: '/client/cases' },
     { label: '在线咨询', icon: MessageOutlined, color: '#2e7d32', bg: 'rgba(46, 125, 50, 0.1)', value: 'AI助手', path: '/client/ai-consult' },
-    { label: '签约付款', icon: CreditCardOutlined, color: '#0071e3', bg: 'rgba(0, 113, 227, 0.1)', value: '立即签约', path: '/client/payment' },
+    { label: '签约付款', icon: CreditCardOutlined, color: theme.primary, bg: 'rgba(0, 113, 227, 0.1)', value: '立即签约', path: '/client/payment' },
     { label: '投诉反馈', icon: BellOutlined, color: '#ba1a1a', bg: 'rgba(186, 26, 26, 0.1)', value: '24h响应', path: '/client/complaint' },
   ]
 
@@ -133,7 +133,7 @@ export default function ClientHome() {
               width: 40,
               height: 40,
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, #1a2332 0%, #131c2a 100%)',
+              background: `linear-gradient(135deg, ${theme.brandDark} 0%, #131c2a 100%)`,
               border: '1px solid rgba(201, 169, 97, 0.3)',
               color: '#e4c278',
             }}
@@ -279,8 +279,8 @@ export default function ClientHome() {
                         style={{
                           padding: '4px 14px',
                           borderRadius: 999,
-                          border: '1px solid #0071e3',
-                          color: '#0071e3',
+                          border: `1px solid ${theme.primary}`,
+                          color: theme.primary,
                           fontSize: 12,
                           fontWeight: 500,
                           cursor: 'pointer',
@@ -298,7 +298,7 @@ export default function ClientHome() {
                   >
                     <List.Item.Meta
                       avatar={<div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <FileTextOutlined style={{ fontSize: 18, color: '#0071e3' }} />
+                        <FileTextOutlined style={{ fontSize: 18, color: theme.primary }} />
                       </div>}
                       title={<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
                         <span style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 14, fontWeight: 600, color: '#1a1c1d' }}>案件ID: {item.id?.slice(0, 6)}...</span>
@@ -368,7 +368,7 @@ export default function ClientHome() {
         {/* === Law Firm Contact (Navy Bento) === */}
         <section>
           <Card
-            style={{ borderRadius: 12, border: '1px solid #1a2332', boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)', background: 'linear-gradient(135deg, #1a2332 0%, #131c2a 100%)' }}
+            style={{ borderRadius: 12, border: `1px solid ${theme.brandDark}`, boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)', background: `linear-gradient(135deg, ${theme.brandDark} 0%, #131c2a 100%)` }}
             styles={{ body: { padding: 16 } }}
           >
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>

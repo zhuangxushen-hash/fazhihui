@@ -20,29 +20,29 @@ export interface WarningStatistics {
 }
 
 export const getWarnings = async (filter?: WarningFilter): Promise<CaseWarning[]> => {
-  const res = await axios.get('/case-warnings', { params: filter });
-  return res.data || [];
+  const res = await axios.get('/case-warnings', { params: filter }) as Record<string, unknown>;
+  return (res.data || []) as CaseWarning[];
 };
 
 export const getWarningStatistics = async (): Promise<WarningStatistics> => {
-  const res = await axios.get('/case-warnings/statistics');
-  return res.data || { total: 0, pending: 0, overdue: 0, byLevel: { reminder: 0, warning: 0, urgent: 0 } };
+  const res = await axios.get('/case-warnings/statistics') as Record<string, unknown>;
+  return (res.data || { total: 0, pending: 0, overdue: 0, byLevel: { reminder: 0, warning: 0, urgent: 0 } }) as WarningStatistics;
 };
 
 export const getWarningDetail = async (id: string): Promise<CaseWarning> => {
-  const res = await axios.get(`/case-warnings/${id}`);
-  return res.data || {};
+  const res = await axios.get(`/case-warnings/${id}`) as Record<string, unknown>;
+  return (res.data || {}) as CaseWarning;
 };
 
 export const handleWarning = async (
   id: string,
   data: { status: WarningStatus; handle_note?: string }
 ): Promise<CaseWarning> => {
-  const res = await axios.put(`/case-warnings/${id}`, data);
-  return res.data || {};
+  const res = await axios.put(`/case-warnings/${id}`, data) as Record<string, unknown>;
+  return (res.data || {}) as CaseWarning;
 };
 
 export const triggerWarningGeneration = async (): Promise<{ message: string; count: number }> => {
-  const res = await axios.post('/case-warnings/trigger');
-  return res.data || { message: '', count: 0 };
+  const res = await axios.post('/case-warnings/trigger') as Record<string, unknown>;
+  return (res.data || { message: '', count: 0 }) as { message: string; count: number };
 };
