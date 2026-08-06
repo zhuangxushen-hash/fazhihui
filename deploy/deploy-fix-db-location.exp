@@ -1,0 +1,38 @@
+#!/usr/bin/expect -f
+# 修复数据库位置错误：服务实际使用根目录 sqlite
+set timeout 300
+set password "s\`3}2KG~n@D?N\$P"
+
+# 1. 备份根目录旧库
+puts "=== 1. 备份根目录旧库 ==="
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "mkdir -p /home/ubuntu/fazhihui/db-backup-root-20260806 && cp /home/ubuntu/fazhihui/fazhihui.sqlite /home/ubuntu/fazhihui/fazhihui_prod.sqlite /home/ubuntu/fazhihui/db-backup-root-20260806/ 2>/dev/null; ls -la /home/ubuntu/fazhihui/db-backup-root-20260806/"
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+        expect eof
+    }
+    timeout { puts "TIMEOUT"; exit 1 }
+}
+
+# 2. 上传本地完整测试库到根目录
+puts "=== 2. 上传本地测试库到根目录 ==="
+spawn scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /Users/season/AI编程/法律咨询/全链产品/backend/fazhihui.sqlite ubuntu@1.12.57.22:/home/ubuntu/fazhihui/fazhihui.sqlite.new
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+        expect eof
+    }
+    timeout { puts "TIMEOUT"; exit 1 }
+}
+
+# 3. 停服务 -> 替换测试库 -> 同步根目录生产库菜单 -> 重启
+puts "=== 3. 替换库并同步菜单 ==="
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "cd /home/ubuntu/fazhihui && pm2 stop all && rm -f fazhihui.sqlite-journal && mv fazhihui.sqlite.new fazhihui.sqlite && chown ubuntu:ubuntu fazhihui.sqlite && chmod 644 fazhihui.sqlite && echo '=== 测试库验证 ===' && NODE_PATH=/home/ubuntu/fazhihui/backend/node_modules node -e \"const db=require('better-sqlite3')('./fazhihui.sqlite');console.log('integrity:',db.pragma('integrity_check',{simple:true}));console.log('menus:',db.prepare('SELECT COUNT(*) c FROM menus').get().c);db.close()\" && echo '=== 根目录生产库菜单同步 ===' && NODE_PATH=/home/ubuntu/fazhihui/backend/node_modules node /home/ubuntu/fazhihui/sync-menus.js /home/ubuntu/fazhihui/fazhihui_prod.sqlite && pm2 restart all && pm2 save"
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+        exp_continue
+    }
+    -re "菜单重建完成" { exp_continue }
+    eof
+}

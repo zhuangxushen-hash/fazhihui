@@ -1,0 +1,16 @@
+set timeout 120
+set password "s\`3}2KG~n@D?N\$P"
+
+# 上传菜单同步脚本
+spawn scp -o StrictHostKeyChecking=no /Users/season/AI编程/法律咨询/全链产品/deploy/sync-menus.js ubuntu@1.12.57.22:/home/ubuntu/fazhihui/sync-menus.js
+
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+        expect eof
+    }
+    timeout {
+        puts "TIMEOUT"
+        exit 1
+    }
+}

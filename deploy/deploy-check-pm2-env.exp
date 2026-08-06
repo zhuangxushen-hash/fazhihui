@@ -1,0 +1,12 @@
+#!/usr/bin/expect -f
+set timeout 90
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "echo '=== PM2 进程详情 ===' && pm2 describe prod-backend | grep -E 'script path|exec cwd|NODE_ENV|DB_PATH|env' | head -20 && echo '=== 目录数据库文件 ===' && ls -la /home/ubuntu/fazhihui/backend/*.sqlite* 2>/dev/null; ls -la /home/ubuntu/fazhihui-test/backend/*.sqlite* 2>/dev/null; ls -la /home/ubuntu/fazhihui-prod/backend/*.sqlite* 2>/dev/null; echo '=== NODE_ENV 检查 ===' && node -e \"console.log('NODE_ENV:', process.env.NODE_ENV || '(未设置)')\""
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+        exp_continue
+    }
+    eof
+}

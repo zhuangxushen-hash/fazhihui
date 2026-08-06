@@ -1,6 +1,6 @@
 import { Injectable, ForbiddenException, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In } from 'typeorm';
+import { Repository, DataSource, In, IsNull } from 'typeorm';
 import { TalkSOP, OpportunitySOPProgress, TalkSOPNode, TalkSOPNodeType, SOPNodeStatus } from './talk-sop.entity';
 import { Opportunity } from './opportunity.entity';
 import { Lead } from './lead.entity';
@@ -50,10 +50,17 @@ export class TalkSOPService {
 
     // 如果设置为默认模板，先清除同类型的其他默认模板
     if (isDefault) {
-      await this.sopRepository.update(
-        { case_type: caseType || null, is_default: true },
-        { is_default: false },
-      );
+      if (caseType) {
+        await this.sopRepository.update(
+          { case_type: caseType, is_default: true },
+          { is_default: false },
+        );
+      } else {
+        await this.sopRepository.update(
+          { case_type: IsNull(), is_default: true },
+          { is_default: false },
+        );
+      }
     }
 
     // 处理节点数据
@@ -248,13 +255,16 @@ export class TalkSOPService {
     const caseType = lead?.case_type;
 
     // 匹配SOP模板（优先匹配案件类型，其次匹配默认模板）
-    let sop = await this.sopRepository.findOne({
-      where: { case_type: caseType, enabled: true, is_default: false },
-    });
+    let sop = null;
+    if (caseType) {
+      sop = await this.sopRepository.findOne({
+        where: { case_type: caseType, enabled: true, is_default: false },
+      });
+    }
 
     if (!sop) {
       sop = await this.sopRepository.findOne({
-        where: { case_type: null, enabled: true, is_default: true },
+        where: { case_type: IsNull(), enabled: true, is_default: true },
       });
     }
 

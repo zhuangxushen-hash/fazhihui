@@ -1,0 +1,12 @@
+#!/usr/bin/expect -f
+set timeout 120
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "cd /home/ubuntu/fazhihui/backend && D=\$(date +%Y%m%d) && mkdir -p /home/ubuntu/fazhihui/db-backup-\$D && cp fazhihui.sqlite fazhihui_prod.sqlite /home/ubuntu/fazhihui/db-backup-\$D/ && ls -la /home/ubuntu/fazhihui/db-backup-*/ && echo '=== integrity_check 测试库 ===' && NODE_PATH=/home/ubuntu/fazhihui/backend/node_modules node -e \"const db=require('better-sqlite3')('./fazhihui.sqlite');console.log(db.pragma('integrity_check',{simple:true}));db.close()\" && echo '=== integrity_check 生产库 ===' && NODE_PATH=/home/ubuntu/fazhihui/backend/node_modules node -e \"const db=require('better-sqlite3')('./fazhihui_prod.sqlite');console.log(db.pragma('integrity_check',{simple:true}));db.close()\""
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+        exp_continue
+    }
+    eof
+}

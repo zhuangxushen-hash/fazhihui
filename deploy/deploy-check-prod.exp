@@ -1,0 +1,12 @@
+#!/usr/bin/expect -f
+set timeout 120
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "cd /home/ubuntu/fazhihui/backend && echo '=== 生产库完整性 ===' && NODE_PATH=/home/ubuntu/fazhihui/backend/node_modules node -e \"const db=require('better-sqlite3')('./fazhihui_prod.sqlite');console.log(db.pragma('integrity_check',{simple:true}));console.log('menus数:',db.prepare('SELECT COUNT(*) c FROM menus').get().c);db.close()\" 2>&1 | tail -5 && echo '=== 生产库核心表数据量 ===' && NODE_PATH=/home/ubuntu/fazhihui/backend/node_modules node -e \"const db=require('better-sqlite3')('./fazhihui_prod.sqlite',{readonly:true});'users,cases,leads,clients,contracts,opportunities'.split(',').forEach(t=>{try{console.log(t+':',db.prepare('SELECT COUNT(*) c FROM '+t).get().c)}catch(e){console.log(t+': 表不存在')}});db.close()\""
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+        exp_continue
+    }
+    eof
+}

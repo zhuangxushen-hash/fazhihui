@@ -1,0 +1,10 @@
+#!/usr/bin/expect -f
+set timeout 300
+set password "s\`3}2KG~n@D?N\$P"
+
+puts "=== 测试环境全量接口验证 ==="
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "cd /home/ubuntu/fazhihui && node verify-all-routes.js http://localhost:3000 13800138000 123456 ./routes.json"
+expect {
+    -re "password:|Password:" { send "$password\r"; exp_continue }
+    eof
+}

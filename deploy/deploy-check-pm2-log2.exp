@@ -1,0 +1,9 @@
+#!/usr/bin/expect -f
+set timeout 90
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "tail -30 /home/ubuntu/.pm2/logs/test-backend-error.log; echo '=====OUT====='; tail -30 /home/ubuntu/.pm2/logs/test-backend-out.log"
+expect {
+    -re "password:|Password:" { send "$password\r"; exp_continue }
+    eof
+}

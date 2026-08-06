@@ -1,0 +1,12 @@
+#!/usr/bin/expect -f
+set timeout 90
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "TOKEN=\$(curl -s -X POST http://localhost:3000/api/auth/login -H 'Content-Type: application/json' -d '{\"phone\":\"13800138000\",\"password\":\"123456\"}' | node -e \"let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{console.log(JSON.parse(s).access_token||'')}catch(e){console.log('')}})\") && echo 'TOKEN长度:' \${#TOKEN} && echo '=== GET /api/system/integrations ===' && curl -s -w '\nHTTP:%{http_code}' http://localhost:3000/api/system/integrations -H \"Authorization: Bearer \$TOKEN\" | head -c 500 && echo && echo '=== GET /api/finance/invoices ===' && curl -s -w '\nHTTP:%{http_code}' http://localhost:3000/api/finance/invoices -H \"Authorization: Bearer \$TOKEN\" | head -c 200 && echo && echo '=== GET /api/hr/materials ===' && curl -s -w '\nHTTP:%{http_code}' http://localhost:3000/api/hr/materials -H \"Authorization: Bearer \$TOKEN\" | head -c 200"
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+        exp_continue
+    }
+    eof
+}

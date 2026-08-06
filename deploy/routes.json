@@ -1,0 +1,1646 @@
+[
+  {
+    "prefix": "ad-platforms",
+    "sub": "auth/:platform",
+    "full": "/ad-platforms/auth/:platform",
+    "hasParam": true
+  },
+  {
+    "prefix": "ad-platforms",
+    "sub": "callback/:platform",
+    "full": "/ad-platforms/callback/:platform",
+    "hasParam": true
+  },
+  {
+    "prefix": "ad-platforms",
+    "sub": "tokens",
+    "full": "/ad-platforms/tokens",
+    "hasParam": false
+  },
+  {
+    "prefix": "ai",
+    "sub": "nav",
+    "full": "/ai/nav",
+    "hasParam": false
+  },
+  {
+    "prefix": "ai",
+    "sub": "similar-cases",
+    "full": "/ai/similar-cases",
+    "hasParam": false
+  },
+  {
+    "prefix": "ai",
+    "sub": "laws",
+    "full": "/ai/laws",
+    "hasParam": false
+  },
+  {
+    "prefix": "approvals",
+    "sub": "",
+    "full": "/approvals",
+    "hasParam": false
+  },
+  {
+    "prefix": "archive-volumes",
+    "sub": "",
+    "full": "/archive-volumes",
+    "hasParam": false
+  },
+  {
+    "prefix": "archive-volumes",
+    "sub": ":id",
+    "full": "/archive-volumes/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "audit-logs",
+    "sub": "",
+    "full": "/audit-logs",
+    "hasParam": false
+  },
+  {
+    "prefix": "",
+    "sub": "bids",
+    "full": "/bids",
+    "hasParam": false
+  },
+  {
+    "prefix": "",
+    "sub": "bid-records",
+    "full": "/bid-records",
+    "hasParam": false
+  },
+  {
+    "prefix": "",
+    "sub": "bid-performances",
+    "full": "/bid-performances",
+    "hasParam": false
+  },
+  {
+    "prefix": "",
+    "sub": "bid-performances/:id",
+    "full": "/bid-performances/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "call-records",
+    "sub": "",
+    "full": "/call-records",
+    "hasParam": false
+  },
+  {
+    "prefix": "call-records",
+    "sub": ":id",
+    "full": "/call-records/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "case-sop-templates",
+    "sub": "",
+    "full": "/case-sop-templates",
+    "hasParam": false
+  },
+  {
+    "prefix": "case-sop-templates",
+    "sub": ":id",
+    "full": "/case-sop-templates/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "case-tasks",
+    "sub": "",
+    "full": "/case-tasks",
+    "hasParam": false
+  },
+  {
+    "prefix": "case-tasks",
+    "sub": "case/:caseId",
+    "full": "/case-tasks/case/:caseId",
+    "hasParam": true
+  },
+  {
+    "prefix": "case-tasks",
+    "sub": "case/:caseId/grouped",
+    "full": "/case-tasks/case/:caseId/grouped",
+    "hasParam": true
+  },
+  {
+    "prefix": "case-tasks",
+    "sub": "case/:caseId/statistics",
+    "full": "/case-tasks/case/:caseId/statistics",
+    "hasParam": true
+  },
+  {
+    "prefix": "case-tasks",
+    "sub": ":taskId",
+    "full": "/case-tasks/:taskId",
+    "hasParam": true
+  },
+  {
+    "prefix": "case-tasks",
+    "sub": ":taskId/comments",
+    "full": "/case-tasks/:taskId/comments",
+    "hasParam": true
+  },
+  {
+    "prefix": "case-tasks",
+    "sub": "case/:caseId/completion-rate",
+    "full": "/case-tasks/case/:caseId/completion-rate",
+    "hasParam": true
+  },
+  {
+    "prefix": "case-warnings",
+    "sub": "",
+    "full": "/case-warnings",
+    "hasParam": false
+  },
+  {
+    "prefix": "case-warnings",
+    "sub": "statistics",
+    "full": "/case-warnings/statistics",
+    "hasParam": false
+  },
+  {
+    "prefix": "case-warnings",
+    "sub": ":id",
+    "full": "/case-warnings/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "cases",
+    "sub": "",
+    "full": "/cases",
+    "hasParam": false
+  },
+  {
+    "prefix": "cases",
+    "sub": "overdue",
+    "full": "/cases/overdue",
+    "hasParam": false
+  },
+  {
+    "prefix": "cases",
+    "sub": "high-risk",
+    "full": "/cases/high-risk",
+    "hasParam": false
+  },
+  {
+    "prefix": "cases",
+    "sub": ":id",
+    "full": "/cases/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "cases",
+    "sub": ":id/documents",
+    "full": "/cases/:id/documents",
+    "hasParam": true
+  },
+  {
+    "prefix": "cases",
+    "sub": ":id/export",
+    "full": "/cases/:id/export",
+    "hasParam": true
+  },
+  {
+    "prefix": "conflict-checks",
+    "sub": "",
+    "full": "/conflict-checks",
+    "hasParam": false
+  },
+  {
+    "prefix": "evidences",
+    "sub": "",
+    "full": "/evidences",
+    "hasParam": false
+  },
+  {
+    "prefix": "evidences",
+    "sub": "case/:caseId",
+    "full": "/evidences/case/:caseId",
+    "hasParam": true
+  },
+  {
+    "prefix": "evidences",
+    "sub": ":id",
+    "full": "/evidences/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "evidences",
+    "sub": "catalog/:caseId",
+    "full": "/evidences/catalog/:caseId",
+    "hasParam": true
+  },
+  {
+    "prefix": "evidences",
+    "sub": ":id/preview",
+    "full": "/evidences/:id/preview",
+    "hasParam": true
+  },
+  {
+    "prefix": "evidences",
+    "sub": ":id/download",
+    "full": "/evidences/:id/download",
+    "hasParam": true
+  },
+  {
+    "prefix": "legal-documents",
+    "sub": "",
+    "full": "/legal-documents",
+    "hasParam": false
+  },
+  {
+    "prefix": "legal-documents",
+    "sub": ":id",
+    "full": "/legal-documents/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "similar-cases",
+    "sub": "stats",
+    "full": "/similar-cases/stats",
+    "hasParam": false
+  },
+  {
+    "prefix": "client-profiles",
+    "sub": "",
+    "full": "/client-profiles",
+    "hasParam": false
+  },
+  {
+    "prefix": "client-profiles",
+    "sub": ":id",
+    "full": "/client-profiles/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "client-profiles",
+    "sub": ":id/related-cases",
+    "full": "/client-profiles/:id/related-cases",
+    "hasParam": true
+  },
+  {
+    "prefix": "client-profiles",
+    "sub": ":id/related-leads",
+    "full": "/client-profiles/:id/related-leads",
+    "hasParam": true
+  },
+  {
+    "prefix": "client",
+    "sub": "service-ratings/admin",
+    "full": "/client/service-ratings/admin",
+    "hasParam": false
+  },
+  {
+    "prefix": "compliance",
+    "sub": "records",
+    "full": "/compliance/records",
+    "hasParam": false
+  },
+  {
+    "prefix": "compliance",
+    "sub": "complaints",
+    "full": "/compliance/complaints",
+    "hasParam": false
+  },
+  {
+    "prefix": "compliance",
+    "sub": "complaint/:id",
+    "full": "/compliance/complaint/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "compliance",
+    "sub": "marketing-content",
+    "full": "/compliance/marketing-content",
+    "hasParam": false
+  },
+  {
+    "prefix": "compliance",
+    "sub": "sales-compliance",
+    "full": "/compliance/sales-compliance",
+    "hasParam": false
+  },
+  {
+    "prefix": "compliance",
+    "sub": "signing-compliance",
+    "full": "/compliance/signing-compliance",
+    "hasParam": false
+  },
+  {
+    "prefix": "compliance",
+    "sub": "case-sop",
+    "full": "/compliance/case-sop",
+    "hasParam": false
+  },
+  {
+    "prefix": "compliance",
+    "sub": "case-sop/stats",
+    "full": "/compliance/case-sop/stats",
+    "hasParam": false
+  },
+  {
+    "prefix": "compliance",
+    "sub": "talk-quality-checks",
+    "full": "/compliance/talk-quality-checks",
+    "hasParam": false
+  },
+  {
+    "prefix": "compliance",
+    "sub": "talk-quality-checks/stats",
+    "full": "/compliance/talk-quality-checks/stats",
+    "hasParam": false
+  },
+  {
+    "prefix": "compliance",
+    "sub": "export-templates",
+    "full": "/compliance/export-templates",
+    "hasParam": false
+  },
+  {
+    "prefix": "compliance",
+    "sub": "export-history",
+    "full": "/compliance/export-history",
+    "hasParam": false
+  },
+  {
+    "prefix": "compliance",
+    "sub": "sales-reviews",
+    "full": "/compliance/sales-reviews",
+    "hasParam": false
+  },
+  {
+    "prefix": "compliance",
+    "sub": "sales-reviews/stats",
+    "full": "/compliance/sales-reviews/stats",
+    "hasParam": false
+  },
+  {
+    "prefix": "comprehensive",
+    "sub": "query",
+    "full": "/comprehensive/query",
+    "hasParam": false
+  },
+  {
+    "prefix": "contracts",
+    "sub": "",
+    "full": "/contracts",
+    "hasParam": false
+  },
+  {
+    "prefix": "contracts",
+    "sub": ":id",
+    "full": "/contracts/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "conversion-funnel",
+    "full": "/dashboard/conversion-funnel",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "channel-roi",
+    "full": "/dashboard/channel-roi",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "case-stats",
+    "full": "/dashboard/case-stats",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "compliance-stats",
+    "full": "/dashboard/compliance-stats",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "revenue-stats",
+    "full": "/dashboard/revenue-stats",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "lawyer-performance",
+    "full": "/dashboard/lawyer-performance",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "case-type-profit",
+    "full": "/dashboard/case-type-profit",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "risk-alerts",
+    "full": "/dashboard/risk-alerts",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "risk-stats",
+    "full": "/dashboard/risk-stats",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "funnel-filter-options",
+    "full": "/dashboard/funnel-filter-options",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "conversion-funnel-enhanced",
+    "full": "/dashboard/conversion-funnel-enhanced",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "sales-performance",
+    "full": "/dashboard/sales-performance",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "sales-ranking",
+    "full": "/dashboard/sales-ranking",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "case-efficiency",
+    "full": "/dashboard/case-efficiency",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "finance-dashboard",
+    "full": "/dashboard/finance-dashboard",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "compliance-risk-dashboard",
+    "full": "/dashboard/compliance-risk-dashboard",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "report-templates",
+    "full": "/dashboard/report-templates",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "export-logs",
+    "full": "/dashboard/export-logs",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "hr-efficiency",
+    "full": "/dashboard/hr-efficiency",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "hr-ranking",
+    "full": "/dashboard/hr-ranking",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "screen-data",
+    "full": "/dashboard/screen-data",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "finance",
+    "full": "/dashboard/finance",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "case-efficiency-dashboard",
+    "full": "/dashboard/case-efficiency-dashboard",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "tasks",
+    "full": "/dashboard/tasks",
+    "hasParam": false
+  },
+  {
+    "prefix": "dashboard",
+    "sub": "core-metrics",
+    "full": "/dashboard/core-metrics",
+    "hasParam": false
+  },
+  {
+    "prefix": "diagrams",
+    "sub": "",
+    "full": "/diagrams",
+    "hasParam": false
+  },
+  {
+    "prefix": "diagrams",
+    "sub": "creator/:creatorId",
+    "full": "/diagrams/creator/:creatorId",
+    "hasParam": true
+  },
+  {
+    "prefix": "diagrams",
+    "sub": ":id",
+    "full": "/diagrams/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "documents",
+    "sub": "",
+    "full": "/documents",
+    "hasParam": false
+  },
+  {
+    "prefix": "documents",
+    "sub": ":id",
+    "full": "/documents/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "",
+    "sub": "due-diligences",
+    "full": "/due-diligences",
+    "hasParam": false
+  },
+  {
+    "prefix": "",
+    "sub": "due-diligences/:id",
+    "full": "/due-diligences/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "finance/case-costs",
+    "sub": "case/:caseId",
+    "full": "/finance/case-costs/case/:caseId",
+    "hasParam": true
+  },
+  {
+    "prefix": "finance/case-costs",
+    "sub": "summary/:caseId",
+    "full": "/finance/case-costs/summary/:caseId",
+    "hasParam": true
+  },
+  {
+    "prefix": "commission",
+    "sub": "rules",
+    "full": "/commission/rules",
+    "hasParam": false
+  },
+  {
+    "prefix": "commission",
+    "sub": "rules/:id",
+    "full": "/commission/rules/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "commission",
+    "sub": "records",
+    "full": "/commission/records",
+    "hasParam": false
+  },
+  {
+    "prefix": "commission",
+    "sub": "records/:id",
+    "full": "/commission/records/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "finance",
+    "sub": "fees",
+    "full": "/finance/fees",
+    "hasParam": false
+  },
+  {
+    "prefix": "finance",
+    "sub": "profit-share",
+    "full": "/finance/profit-share",
+    "hasParam": false
+  },
+  {
+    "prefix": "finance",
+    "sub": "refunds",
+    "full": "/finance/refunds",
+    "hasParam": false
+  },
+  {
+    "prefix": "finance",
+    "sub": "invoices",
+    "full": "/finance/invoices",
+    "hasParam": false
+  },
+  {
+    "prefix": "finance",
+    "sub": "payment-records",
+    "full": "/finance/payment-records",
+    "hasParam": false
+  },
+  {
+    "prefix": "finance",
+    "sub": "case-profit/:caseId",
+    "full": "/finance/case-profit/:caseId",
+    "hasParam": true
+  },
+  {
+    "prefix": "finance",
+    "sub": "profit-stats",
+    "full": "/finance/profit-stats",
+    "hasParam": false
+  },
+  {
+    "prefix": "finance",
+    "sub": "payment-reminders",
+    "full": "/finance/payment-reminders",
+    "hasParam": false
+  },
+  {
+    "prefix": "finance",
+    "sub": "business-funds",
+    "full": "/finance/business-funds",
+    "hasParam": false
+  },
+  {
+    "prefix": "finance",
+    "sub": "business-funds/stats",
+    "full": "/finance/business-funds/stats",
+    "hasParam": false
+  },
+  {
+    "prefix": "finance",
+    "sub": "income-expenditure",
+    "full": "/finance/income-expenditure",
+    "hasParam": false
+  },
+  {
+    "prefix": "finance/reconciliations",
+    "sub": "",
+    "full": "/finance/reconciliations",
+    "hasParam": false
+  },
+  {
+    "prefix": "finance/reconciliations",
+    "sub": "stats",
+    "full": "/finance/reconciliations/stats",
+    "hasParam": false
+  },
+  {
+    "prefix": "finance/reconciliations",
+    "sub": ":id",
+    "full": "/finance/reconciliations/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "hr",
+    "sub": "leaves",
+    "full": "/hr/leaves",
+    "hasParam": false
+  },
+  {
+    "prefix": "hr",
+    "sub": "leaves/:id",
+    "full": "/hr/leaves/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "hr",
+    "sub": "attendances",
+    "full": "/hr/attendances",
+    "hasParam": false
+  },
+  {
+    "prefix": "hr",
+    "sub": "materials",
+    "full": "/hr/materials",
+    "hasParam": false
+  },
+  {
+    "prefix": "hr",
+    "sub": "materials/:id",
+    "full": "/hr/materials/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "hr",
+    "sub": "activities",
+    "full": "/hr/activities",
+    "hasParam": false
+  },
+  {
+    "prefix": "hr",
+    "sub": "activities/:id",
+    "full": "/hr/activities/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "hr",
+    "sub": "my-registrations",
+    "full": "/hr/my-registrations",
+    "hasParam": false
+  },
+  {
+    "prefix": "hr",
+    "sub": "activities/:id/registrations",
+    "full": "/hr/activities/:id/registrations",
+    "hasParam": true
+  },
+  {
+    "prefix": "hr",
+    "sub": "personnel",
+    "full": "/hr/personnel",
+    "hasParam": false
+  },
+  {
+    "prefix": "hr",
+    "sub": "personnel/:id",
+    "full": "/hr/personnel/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "internal-projects",
+    "sub": "",
+    "full": "/internal-projects",
+    "hasParam": false
+  },
+  {
+    "prefix": "internal-projects",
+    "sub": ":id",
+    "full": "/internal-projects/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "knowledge",
+    "sub": "articles",
+    "full": "/knowledge/articles",
+    "hasParam": false
+  },
+  {
+    "prefix": "knowledge",
+    "sub": "articles/:id/view",
+    "full": "/knowledge/articles/:id/view",
+    "hasParam": true
+  },
+  {
+    "prefix": "knowledge",
+    "sub": "law-regulations",
+    "full": "/knowledge/law-regulations",
+    "hasParam": false
+  },
+  {
+    "prefix": "knowledge",
+    "sub": "case-precedents",
+    "full": "/knowledge/case-precedents",
+    "hasParam": false
+  },
+  {
+    "prefix": "law-tools",
+    "sub": "",
+    "full": "/law-tools",
+    "hasParam": false
+  },
+  {
+    "prefix": "handover",
+    "sub": "",
+    "full": "/handover",
+    "hasParam": false
+  },
+  {
+    "prefix": "handover",
+    "sub": ":id",
+    "full": "/handover/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "handover",
+    "sub": "user-assets/:userId",
+    "full": "/handover/user-assets/:userId",
+    "hasParam": true
+  },
+  {
+    "prefix": "invite-tasks",
+    "sub": "",
+    "full": "/invite-tasks",
+    "hasParam": false
+  },
+  {
+    "prefix": "invite-tasks",
+    "sub": "my-tasks",
+    "full": "/invite-tasks/my-tasks",
+    "hasParam": false
+  },
+  {
+    "prefix": "invite-tasks",
+    "sub": "pending-leads",
+    "full": "/invite-tasks/pending-leads",
+    "hasParam": false
+  },
+  {
+    "prefix": "invite-tasks",
+    "sub": "today-tasks",
+    "full": "/invite-tasks/today-tasks",
+    "hasParam": false
+  },
+  {
+    "prefix": "invite-tasks",
+    "sub": "invited-tasks",
+    "full": "/invite-tasks/invited-tasks",
+    "hasParam": false
+  },
+  {
+    "prefix": "invite-tasks",
+    "sub": "history-tasks",
+    "full": "/invite-tasks/history-tasks",
+    "hasParam": false
+  },
+  {
+    "prefix": "lead-assignments",
+    "sub": "",
+    "full": "/lead-assignments",
+    "hasParam": false
+  },
+  {
+    "prefix": "lead-assignments",
+    "sub": ":id",
+    "full": "/lead-assignments/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "lead-assignments",
+    "sub": "users/available",
+    "full": "/lead-assignments/users/available",
+    "hasParam": false
+  },
+  {
+    "prefix": "lead-assignments",
+    "sub": "logs/:leadId",
+    "full": "/lead-assignments/logs/:leadId",
+    "hasParam": true
+  },
+  {
+    "prefix": "lead-pool",
+    "sub": "",
+    "full": "/lead-pool",
+    "hasParam": false
+  },
+  {
+    "prefix": "lead-pool",
+    "sub": "statistics",
+    "full": "/lead-pool/statistics",
+    "hasParam": false
+  },
+  {
+    "prefix": "leads",
+    "sub": "",
+    "full": "/leads",
+    "hasParam": false
+  },
+  {
+    "prefix": "leads",
+    "sub": "public",
+    "full": "/leads/public",
+    "hasParam": false
+  },
+  {
+    "prefix": "leads",
+    "sub": ":id",
+    "full": "/leads/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "leads",
+    "sub": ":id/follow-ups",
+    "full": "/leads/:id/follow-ups",
+    "hasParam": true
+  },
+  {
+    "prefix": "opportunities",
+    "sub": "",
+    "full": "/opportunities",
+    "hasParam": false
+  },
+  {
+    "prefix": "opportunities",
+    "sub": "today-arrivals",
+    "full": "/opportunities/today-arrivals",
+    "hasParam": false
+  },
+  {
+    "prefix": "opportunities",
+    "sub": "pending",
+    "full": "/opportunities/pending",
+    "hasParam": false
+  },
+  {
+    "prefix": "opportunities",
+    "sub": "signed",
+    "full": "/opportunities/signed",
+    "hasParam": false
+  },
+  {
+    "prefix": "opportunities",
+    "sub": "lost",
+    "full": "/opportunities/lost",
+    "hasParam": false
+  },
+  {
+    "prefix": "opportunities",
+    "sub": ":id",
+    "full": "/opportunities/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "talk-sop",
+    "sub": "",
+    "full": "/talk-sop",
+    "hasParam": false
+  },
+  {
+    "prefix": "talk-sop",
+    "sub": ":id",
+    "full": "/talk-sop/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "talk-sop",
+    "sub": "opportunity/:opportunityId/progress",
+    "full": "/talk-sop/opportunity/:opportunityId/progress",
+    "hasParam": true
+  },
+  {
+    "prefix": "talk-sop",
+    "sub": "opportunity/:opportunityId/completion",
+    "full": "/talk-sop/opportunity/:opportunityId/completion",
+    "hasParam": true
+  },
+  {
+    "prefix": "mail",
+    "sub": "inbox",
+    "full": "/mail/inbox",
+    "hasParam": false
+  },
+  {
+    "prefix": "mail",
+    "sub": "sent",
+    "full": "/mail/sent",
+    "hasParam": false
+  },
+  {
+    "prefix": "mail",
+    "sub": "drafts",
+    "full": "/mail/drafts",
+    "hasParam": false
+  },
+  {
+    "prefix": "mail",
+    "sub": "trash",
+    "full": "/mail/trash",
+    "hasParam": false
+  },
+  {
+    "prefix": "ad-accounts",
+    "sub": "",
+    "full": "/ad-accounts",
+    "hasParam": false
+  },
+  {
+    "prefix": "ad-accounts",
+    "sub": "groups",
+    "full": "/ad-accounts/groups",
+    "hasParam": false
+  },
+  {
+    "prefix": "ad-accounts",
+    "sub": "warnings",
+    "full": "/ad-accounts/warnings",
+    "hasParam": false
+  },
+  {
+    "prefix": "ad-accounts",
+    "sub": ":id",
+    "full": "/ad-accounts/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "ad-plans",
+    "sub": "",
+    "full": "/ad-plans",
+    "hasParam": false
+  },
+  {
+    "prefix": "ad-plans",
+    "sub": ":id/logs",
+    "full": "/ad-plans/:id/logs",
+    "hasParam": true
+  },
+  {
+    "prefix": "ad-plans",
+    "sub": ":id",
+    "full": "/ad-plans/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "conversions",
+    "sub": "events",
+    "full": "/conversions/events",
+    "hasParam": false
+  },
+  {
+    "prefix": "conversions",
+    "sub": "funnel",
+    "full": "/conversions/funnel",
+    "hasParam": false
+  },
+  {
+    "prefix": "conversions",
+    "sub": "roi-stats",
+    "full": "/conversions/roi-stats",
+    "hasParam": false
+  },
+  {
+    "prefix": "marketing/digital-human-lives",
+    "sub": "",
+    "full": "/marketing/digital-human-lives",
+    "hasParam": false
+  },
+  {
+    "prefix": "marketing/digital-human-lives",
+    "sub": "stats",
+    "full": "/marketing/digital-human-lives/stats",
+    "hasParam": false
+  },
+  {
+    "prefix": "marketing/digital-human-lives",
+    "sub": ":id",
+    "full": "/marketing/digital-human-lives/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "marketing-content",
+    "sub": "templates",
+    "full": "/marketing-content/templates",
+    "hasParam": false
+  },
+  {
+    "prefix": "marketing-content",
+    "sub": "templates/:id",
+    "full": "/marketing-content/templates/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "marketing-content",
+    "sub": "compliance/:materialId",
+    "full": "/marketing-content/compliance/:materialId",
+    "hasParam": true
+  },
+  {
+    "prefix": "marketing-content",
+    "sub": "bind-check/:materialId",
+    "full": "/marketing-content/bind-check/:materialId",
+    "hasParam": true
+  },
+  {
+    "prefix": "marketing",
+    "sub": "materials",
+    "full": "/marketing/materials",
+    "hasParam": false
+  },
+  {
+    "prefix": "ad-materials",
+    "sub": "",
+    "full": "/ad-materials",
+    "hasParam": false
+  },
+  {
+    "prefix": "ad-materials",
+    "sub": "tags",
+    "full": "/ad-materials/tags",
+    "hasParam": false
+  },
+  {
+    "prefix": "ad-materials",
+    "sub": "ranking",
+    "full": "/ad-materials/ranking",
+    "hasParam": false
+  },
+  {
+    "prefix": "ad-materials",
+    "sub": ":id",
+    "full": "/ad-materials/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "social-accounts",
+    "sub": "",
+    "full": "/social-accounts",
+    "hasParam": false
+  },
+  {
+    "prefix": "social-accounts",
+    "sub": "groups",
+    "full": "/social-accounts/groups",
+    "hasParam": false
+  },
+  {
+    "prefix": "social-accounts",
+    "sub": "stats/overview",
+    "full": "/social-accounts/stats/overview",
+    "hasParam": false
+  },
+  {
+    "prefix": "social-accounts",
+    "sub": "stats/by-platform",
+    "full": "/social-accounts/stats/by-platform",
+    "hasParam": false
+  },
+  {
+    "prefix": "social-accounts",
+    "sub": "stats/by-group",
+    "full": "/social-accounts/stats/by-group",
+    "hasParam": false
+  },
+  {
+    "prefix": "social-accounts",
+    "sub": ":id",
+    "full": "/social-accounts/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "social-posts",
+    "sub": "",
+    "full": "/social-posts",
+    "hasParam": false
+  },
+  {
+    "prefix": "social-posts",
+    "sub": "stats/by-status",
+    "full": "/social-posts/stats/by-status",
+    "hasParam": false
+  },
+  {
+    "prefix": "social-posts",
+    "sub": "stats/by-platform",
+    "full": "/social-posts/stats/by-platform",
+    "hasParam": false
+  },
+  {
+    "prefix": "social-posts",
+    "sub": "stats/daily-trend",
+    "full": "/social-posts/stats/daily-trend",
+    "hasParam": false
+  },
+  {
+    "prefix": "social-posts",
+    "sub": ":id",
+    "full": "/social-posts/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "property-preservation",
+    "sub": "",
+    "full": "/property-preservation",
+    "hasParam": false
+  },
+  {
+    "prefix": "property-preservation",
+    "sub": ":id",
+    "full": "/property-preservation/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "public-opinions",
+    "sub": "keywords",
+    "full": "/public-opinions/keywords",
+    "hasParam": false
+  },
+  {
+    "prefix": "public-opinions",
+    "sub": "",
+    "full": "/public-opinions",
+    "hasParam": false
+  },
+  {
+    "prefix": "public-opinions",
+    "sub": ":id",
+    "full": "/public-opinions/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "reconciliation-rules",
+    "sub": "",
+    "full": "/reconciliation-rules",
+    "hasParam": false
+  },
+  {
+    "prefix": "reconciliation-rules",
+    "sub": ":id",
+    "full": "/reconciliation-rules/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "schedules",
+    "sub": "",
+    "full": "/schedules",
+    "hasParam": false
+  },
+  {
+    "prefix": "schedules",
+    "sub": "my",
+    "full": "/schedules/my",
+    "hasParam": false
+  },
+  {
+    "prefix": "schedules",
+    "sub": ":id",
+    "full": "/schedules/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "schedules",
+    "sub": ":id/participants",
+    "full": "/schedules/:id/participants",
+    "hasParam": true
+  },
+  {
+    "prefix": "scrm/channels",
+    "sub": "",
+    "full": "/scrm/channels",
+    "hasParam": false
+  },
+  {
+    "prefix": "scrm/channels",
+    "sub": "statistics/list",
+    "full": "/scrm/channels/statistics/list",
+    "hasParam": false
+  },
+  {
+    "prefix": "scrm/channels",
+    "sub": "statistics/groups",
+    "full": "/scrm/channels/statistics/groups",
+    "hasParam": false
+  },
+  {
+    "prefix": "scrm/channels",
+    "sub": ":id",
+    "full": "/scrm/channels/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "scrm/chat-archives",
+    "sub": "",
+    "full": "/scrm/chat-archives",
+    "hasParam": false
+  },
+  {
+    "prefix": "scrm/chat-archives",
+    "sub": "search",
+    "full": "/scrm/chat-archives/search",
+    "hasParam": false
+  },
+  {
+    "prefix": "scrm/chat-archives",
+    "sub": ":id",
+    "full": "/scrm/chat-archives/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "scrm/client-tags",
+    "sub": "",
+    "full": "/scrm/client-tags",
+    "hasParam": false
+  },
+  {
+    "prefix": "scrm/client-tags",
+    "sub": ":id",
+    "full": "/scrm/client-tags/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "scrm/client-tags",
+    "sub": "relations/client/:clientId",
+    "full": "/scrm/client-tags/relations/client/:clientId",
+    "hasParam": true
+  },
+  {
+    "prefix": "scrm/client-tags",
+    "sub": "relations/tag/:tagId",
+    "full": "/scrm/client-tags/relations/tag/:tagId",
+    "hasParam": true
+  },
+  {
+    "prefix": "scrm/live-codes",
+    "sub": "",
+    "full": "/scrm/live-codes",
+    "hasParam": false
+  },
+  {
+    "prefix": "scrm/live-codes",
+    "sub": ":id",
+    "full": "/scrm/live-codes/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "scrm/reach-tasks",
+    "sub": "",
+    "full": "/scrm/reach-tasks",
+    "hasParam": false
+  },
+  {
+    "prefix": "scrm/reach-tasks",
+    "sub": "moments-schedule",
+    "full": "/scrm/reach-tasks/moments-schedule",
+    "hasParam": false
+  },
+  {
+    "prefix": "scrm/reach-tasks",
+    "sub": ":id",
+    "full": "/scrm/reach-tasks/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "scrm/scripts",
+    "sub": "",
+    "full": "/scrm/scripts",
+    "hasParam": false
+  },
+  {
+    "prefix": "scrm/scripts",
+    "sub": ":id",
+    "full": "/scrm/scripts/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "scrm/sidebar",
+    "sub": "",
+    "full": "/scrm/sidebar",
+    "hasParam": false
+  },
+  {
+    "prefix": "scrm/sidebar",
+    "sub": "clients/:clientId/profile",
+    "full": "/scrm/sidebar/clients/:clientId/profile",
+    "hasParam": true
+  },
+  {
+    "prefix": "",
+    "sub": "seals",
+    "full": "/seals",
+    "hasParam": false
+  },
+  {
+    "prefix": "",
+    "sub": "seals/:id",
+    "full": "/seals/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "",
+    "sub": "seal-applications",
+    "full": "/seal-applications",
+    "hasParam": false
+  },
+  {
+    "prefix": "",
+    "sub": "seal-records",
+    "full": "/seal-records",
+    "hasParam": false
+  },
+  {
+    "prefix": "social",
+    "sub": "posts",
+    "full": "/social/posts",
+    "hasParam": false
+  },
+  {
+    "prefix": "social",
+    "sub": "posts/:id",
+    "full": "/social/posts/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "social",
+    "sub": "posts/:postId/comments",
+    "full": "/social/posts/:postId/comments",
+    "hasParam": true
+  },
+  {
+    "prefix": "social",
+    "sub": "posts/:postId/likes",
+    "full": "/social/posts/:postId/likes",
+    "hasParam": true
+  },
+  {
+    "prefix": "statistical-analysis",
+    "sub": "",
+    "full": "/statistical-analysis",
+    "hasParam": false
+  },
+  {
+    "prefix": "system/brand-configs",
+    "sub": "",
+    "full": "/system/brand-configs",
+    "hasParam": false
+  },
+  {
+    "prefix": "system/brand-configs",
+    "sub": "active",
+    "full": "/system/brand-configs/active",
+    "hasParam": false
+  },
+  {
+    "prefix": "system/brand-configs",
+    "sub": ":id",
+    "full": "/system/brand-configs/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "system/deployment-configs",
+    "sub": "",
+    "full": "/system/deployment-configs",
+    "hasParam": false
+  },
+  {
+    "prefix": "system/deployment-configs",
+    "sub": "active",
+    "full": "/system/deployment-configs/active",
+    "hasParam": false
+  },
+  {
+    "prefix": "system/deployment-configs",
+    "sub": ":id",
+    "full": "/system/deployment-configs/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "system/integrations",
+    "sub": "",
+    "full": "/system/integrations",
+    "hasParam": false
+  },
+  {
+    "prefix": "system/integrations",
+    "sub": "active",
+    "full": "/system/integrations/active",
+    "hasParam": false
+  },
+  {
+    "prefix": "system/integrations",
+    "sub": ":id",
+    "full": "/system/integrations/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "tasks",
+    "sub": "",
+    "full": "/tasks",
+    "hasParam": false
+  },
+  {
+    "prefix": "tasks",
+    "sub": "stats",
+    "full": "/tasks/stats",
+    "hasParam": false
+  },
+  {
+    "prefix": "tasks",
+    "sub": "mine",
+    "full": "/tasks/mine",
+    "hasParam": false
+  },
+  {
+    "prefix": "tasks",
+    "sub": "created",
+    "full": "/tasks/created",
+    "hasParam": false
+  },
+  {
+    "prefix": "tasks",
+    "sub": ":id",
+    "full": "/tasks/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "menus",
+    "sub": "",
+    "full": "/menus",
+    "hasParam": false
+  },
+  {
+    "prefix": "menus",
+    "sub": "tree",
+    "full": "/menus/tree",
+    "hasParam": false
+  },
+  {
+    "prefix": "menus",
+    "sub": ":id",
+    "full": "/menus/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "notifications",
+    "sub": "",
+    "full": "/notifications",
+    "hasParam": false
+  },
+  {
+    "prefix": "notifications",
+    "sub": "unread-count",
+    "full": "/notifications/unread-count",
+    "hasParam": false
+  },
+  {
+    "prefix": "notifications",
+    "sub": ":id",
+    "full": "/notifications/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "permissions",
+    "sub": "",
+    "full": "/permissions",
+    "hasParam": false
+  },
+  {
+    "prefix": "permissions",
+    "sub": "modules",
+    "full": "/permissions/modules",
+    "hasParam": false
+  },
+  {
+    "prefix": "permissions",
+    "sub": ":id",
+    "full": "/permissions/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "roles",
+    "sub": "",
+    "full": "/roles",
+    "hasParam": false
+  },
+  {
+    "prefix": "roles",
+    "sub": ":id",
+    "full": "/roles/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "users",
+    "sub": "",
+    "full": "/users",
+    "hasParam": false
+  },
+  {
+    "prefix": "users",
+    "sub": ":id",
+    "full": "/users/:id",
+    "hasParam": true
+  },
+  {
+    "prefix": "users",
+    "sub": "profile",
+    "full": "/users/profile",
+    "hasParam": false
+  },
+  {
+    "prefix": "users",
+    "sub": ":id/level",
+    "full": "/users/:id/level",
+    "hasParam": true
+  },
+  {
+    "prefix": "worklogs",
+    "sub": "",
+    "full": "/worklogs",
+    "hasParam": false
+  },
+  {
+    "prefix": "worklogs",
+    "sub": "stats",
+    "full": "/worklogs/stats",
+    "hasParam": false
+  },
+  {
+    "prefix": "worklogs",
+    "sub": "mine",
+    "full": "/worklogs/mine",
+    "hasParam": false
+  }
+]

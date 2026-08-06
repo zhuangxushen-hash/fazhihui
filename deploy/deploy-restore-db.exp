@@ -1,0 +1,27 @@
+#!/usr/bin/expect -f
+# 恢复服务器数据库：本地上传测试库覆盖损坏库，服务器生产库同步菜单
+set timeout 300
+set password "s\`3}2KG~n@D?N\$P"
+
+# 1. 上传本地测试库到服务器
+puts "=== 1. 上传本地测试库 ==="
+spawn scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /Users/season/AI编程/法律咨询/全链产品/backend/fazhihui.sqlite ubuntu@1.12.57.22:/home/ubuntu/fazhihui/backend/fazhihui.sqlite.new
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+        expect eof
+    }
+    timeout { puts "TIMEOUT"; exit 1 }
+}
+
+# 2. 替换数据库并同步生产库菜单，重启服务
+puts "=== 2. 替换数据库并同步生产库菜单 ==="
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "cd /home/ubuntu/fazhihui/backend && rm -f fazhihui.sqlite-journal && mv fazhihui.sqlite.new fazhihui.sqlite && chown ubuntu:ubuntu fazhihui.sqlite && chmod 644 fazhihui.sqlite && echo '=== 测试库验证 ===' && NODE_PATH=/home/ubuntu/fazhihui/backend/node_modules node -e \"const db=require('better-sqlite3')('./fazhihui.sqlite');console.log('integrity:',db.pragma('integrity_check',{simple:true}));console.log('menus:',db.prepare('SELECT COUNT(*) c FROM menus').get().c);db.close()\" && echo '=== 生产库菜单同步 ===' && NODE_PATH=/home/ubuntu/fazhihui/backend/node_modules node /home/ubuntu/fazhihui/sync-menus.js /home/ubuntu/fazhihui/backend/fazhihui_prod.sqlite && echo '=== 重启 PM2 ===' && pm2 restart all && pm2 save"
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+        exp_continue
+    }
+    -re "菜单重建完成" { exp_continue }
+    eof
+}

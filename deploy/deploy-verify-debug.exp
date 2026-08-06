@@ -1,0 +1,16 @@
+#!/usr/bin/expect -f
+set timeout 300
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /Users/season/AI编程/法律咨询/全链产品/deploy/verify-all-routes.js ubuntu@1.12.57.22:/home/ubuntu/fazhihui/verify-all-routes.js
+expect {
+    -re "password:|Password:" { send "$password\r"; expect eof }
+    timeout { puts "TIMEOUT"; exit 1 }
+}
+
+puts "=== 测试环境全量验证(DEBUG) ==="
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "cd /home/ubuntu/fazhihui && DEBUG=1 node verify-all-routes.js http://localhost:3000 13800138000 123456 ./routes.json 2>&1 | grep -E 'DEBUG|PASS:|FAIL:|WARN:|SKIP:|合计:' | head -40"
+expect {
+    -re "password:|Password:" { send "$password\r"; exp_continue }
+    eof
+}

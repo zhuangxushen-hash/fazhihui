@@ -1,0 +1,17 @@
+set timeout 120
+set password "s\`3}2KG~n@D?N\$P"
+
+# 应用 conf.d 配置，恢复 sites-available 备份，重载 Nginx
+spawn ssh -o StrictHostKeyChecking=no ubuntu@1.12.57.22 {echo "===APPLY_CONFD===" && sudo cp /home/ubuntu/fazhihui-conf.d.conf /etc/nginx/conf.d/fazhihui.conf && echo "===RESTORE_SITES===" && sudo cp /etc/nginx/sites-available/fazhihui.bak /etc/nginx/sites-available/fazhihui && echo "===TEST===" && sudo nginx -t 2>&1 && echo "===RELOAD===" && sudo systemctl reload nginx 2>&1 && echo "===DONE==="}
+
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+    }
+    timeout {
+        puts "TIMEOUT"
+        exit 1
+    }
+}
+
+expect eof

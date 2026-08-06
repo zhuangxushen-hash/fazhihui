@@ -32,7 +32,7 @@ export class TalkSOPController {
     },
   ) {
     return this.talkSOPService.createSOP(
-      req.user.userId,
+      req.user.id,
       body.name,
       body.case_type,
       body.nodes,
@@ -61,7 +61,7 @@ export class TalkSOPController {
   ) {
     return this.talkSOPService.updateSOP(
       sopId,
-      req.user.userId,
+      req.user.id,
       body.name,
       body.case_type,
       body.nodes,
@@ -75,7 +75,7 @@ export class TalkSOPController {
     @Param('id') sopId: string,
     @Request() req: any,
   ) {
-    return this.talkSOPService.deleteSOP(sopId, req.user.userId);
+    return this.talkSOPService.deleteSOP(sopId, req.user.id);
   }
 
   // 查询SOP模板列表
@@ -100,7 +100,7 @@ export class TalkSOPController {
     @Param('id') sopId: string,
     @Request() req: any,
   ) {
-    return this.talkSOPService.setDefaultSOP(sopId, req.user.userId);
+    return this.talkSOPService.setDefaultSOP(sopId, req.user.id);
   }
 
   // 启用/禁用SOP
@@ -110,7 +110,7 @@ export class TalkSOPController {
     @Request() req: any,
     @Body() body: { enabled: boolean },
   ) {
-    return this.talkSOPService.toggleSOPEnabled(sopId, req.user.userId, body.enabled);
+    return this.talkSOPService.toggleSOPEnabled(sopId, req.user.id, body.enabled);
   }
 
   // ==================== SOP节点完成状态追踪接口 ====================
@@ -121,7 +121,7 @@ export class TalkSOPController {
     @Param('opportunityId') opportunityId: string,
     @Request() req: any,
   ) {
-    return this.talkSOPService.getOpportunitySOPProgress(opportunityId, req.user.userId);
+    return this.talkSOPService.getOpportunitySOPProgress(opportunityId, req.user.id);
   }
 
   // 完成单个节点
@@ -131,7 +131,7 @@ export class TalkSOPController {
     @Param('nodeId') nodeId: string,
     @Request() req: any,
   ) {
-    return this.talkSOPService.completeNode(opportunityId, nodeId, req.user.userId);
+    return this.talkSOPService.completeNode(opportunityId, nodeId, req.user.id);
   }
 
   // 取消完成节点
@@ -141,7 +141,7 @@ export class TalkSOPController {
     @Param('nodeId') nodeId: string,
     @Request() req: any,
   ) {
-    return this.talkSOPService.uncompleteNode(opportunityId, nodeId, req.user.userId);
+    return this.talkSOPService.uncompleteNode(opportunityId, nodeId, req.user.id);
   }
 
   // 获取SOP完成百分比
@@ -150,6 +150,6 @@ export class TalkSOPController {
     @Param('opportunityId') opportunityId: string,
     @Request() req: any,
   ) {
-    return this.talkSOPService.getSOPCompletionPercentage(opportunityId, req.user.userId);
+    return this.talkSOPService.getSOPCompletionPercentage(opportunityId, req.user.id);
   }
 }

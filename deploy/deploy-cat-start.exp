@@ -1,0 +1,12 @@
+#!/usr/bin/expect -f
+set timeout 90
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "cat /home/ubuntu/fazhihui/start-server.js"
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+        exp_continue
+    }
+    eof
+}

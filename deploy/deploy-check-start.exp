@@ -1,0 +1,12 @@
+#!/usr/bin/expect -f
+set timeout 90
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "echo '=== 根目录 sqlite ===' && ls -la /home/ubuntu/fazhihui/*.sqlite* 2>/dev/null; echo '=== start-server.js ===' && cat /home/ubuntu/fazhihui/start-server.js 2>/dev/null | head -40; echo '=== backend 根目录 ===' && ls /home/ubuntu/fazhihui/backend/ | head -20"
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+        exp_continue
+    }
+    eof
+}

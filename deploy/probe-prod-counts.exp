@@ -1,0 +1,8 @@
+#!/usr/bin/expect -f
+set timeout 90
+set password "s\`3}2KG~n@D?N\$P"
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 {cd /home/ubuntu/fazhihui && echo '=== 生产数据库文件 ===' && ls -la *.sqlite* 2>/dev/null && echo '=== PM2 状态 ===' && pm2 list 2>/dev/null | grep -E 'prod|test' && echo '=== 生产库业务表记录数 ===' && sqlite3 fazhihui_prod.sqlite "SELECT 'users', COUNT(*) FROM users UNION ALL SELECT 'client_profiles', COUNT(*) FROM client_profiles UNION ALL SELECT 'leads', COUNT(*) FROM leads UNION ALL SELECT 'opportunities', COUNT(*) FROM opportunities UNION ALL SELECT 'cases', COUNT(*) FROM cases UNION ALL SELECT 'case_documents', COUNT(*) FROM case_documents UNION ALL SELECT 'case_evidence_files', COUNT(*) FROM case_evidence_files UNION ALL SELECT 'case_tasks', COUNT(*) FROM case_tasks UNION ALL SELECT 'contracts', COUNT(*) FROM contracts UNION ALL SELECT 'payment_records', COUNT(*) FROM payment_records UNION ALL SELECT 'menus', COUNT(*) FROM menus UNION ALL SELECT 'permissions', COUNT(*) FROM permissions UNION ALL SELECT 'organizations', COUNT(*) FROM organizations UNION ALL SELECT 'roles', COUNT(*) FROM roles UNION ALL SELECT 'role_permissions', COUNT(*) FROM role_permissions UNION ALL SELECT 'user_roles', COUNT(*) FROM user_roles UNION ALL SELECT 'tasks', COUNT(*) FROM tasks UNION ALL SELECT 'schedules', COUNT(*) FROM schedules UNION ALL SELECT 'knowledge_articles', COUNT(*) FROM knowledge_articles UNION ALL SELECT 'marketing_materials', COUNT(*) FROM marketing_materials;" 2>&1}
+expect {
+    "password:" { send "$password\r"; expect eof }
+    eof
+}

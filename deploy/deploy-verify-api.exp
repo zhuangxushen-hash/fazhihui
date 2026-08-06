@@ -1,0 +1,23 @@
+#!/usr/bin/expect -f
+set timeout 180
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /Users/season/AI编程/法律咨询/全链产品/deploy/verify-api-loop.js ubuntu@1.12.57.22:/home/ubuntu/fazhihui/verify-api-loop.js
+expect {
+    -re "password:|Password:" { send "$password\r"; expect eof }
+    timeout { puts "TIMEOUT"; exit 1 }
+}
+
+puts "=== 测试环境 API 验证 ==="
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "node /home/ubuntu/fazhihui/verify-api-loop.js http://localhost:3000 13800138000 123456"
+expect {
+    -re "password:|Password:" { send "$password\r"; exp_continue }
+    eof
+}
+
+puts "=== 生产环境 API 验证 ==="
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "node /home/ubuntu/fazhihui/verify-api-loop.js http://localhost:3001 15820275356 zxs123456"
+expect {
+    -re "password:|Password:" { send "$password\r"; exp_continue }
+    eof
+}

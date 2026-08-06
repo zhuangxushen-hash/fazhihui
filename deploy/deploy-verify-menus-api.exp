@@ -1,0 +1,22 @@
+#!/usr/bin/expect -f
+set timeout 120
+set password "s\`3}2KG~n@D?N\$P"
+
+# 上传并执行菜单接口验证脚本
+spawn scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /Users/season/AI编程/法律咨询/全链产品/deploy/verify-menus-api.js ubuntu@1.12.57.22:/home/ubuntu/fazhihui/verify-menus-api.js
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+        expect eof
+    }
+    timeout { puts "TIMEOUT"; exit 1 }
+}
+
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "node /home/ubuntu/fazhihui/verify-menus-api.js"
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+        exp_continue
+    }
+    eof
+}

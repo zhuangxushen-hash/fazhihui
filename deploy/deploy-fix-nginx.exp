@@ -1,0 +1,98 @@
+set timeout 120
+set password "s\`3}2KG~n@D?N\$P"
+
+# 同步最新前端构建产物到 Nginx 目录，并更新 Nginx 配置按域名区分环境
+spawn ssh -o StrictHostKeyChecking=no ubuntu@1.12.57.22 {echo "===SYNC_DIST===" && sudo rm -rf /var/www/html/fazhi/assets && sudo cp -r /home/ubuntu/fazhihui/frontend/dist/* /var/www/html/fazhi/ && ls -la /var/www/html/fazhi/ && echo "===NEW_INDEX===" && head -12 /var/www/html/fazhi/index.html && echo "===WRITE_NGINX===" && sudo bash -c "cat > /etc/nginx/sites-available/fazhihui << '\''NGINXEOF'\''
+server {
+    listen 80 default_server;
+    server_name 1.12.57.22;
+
+    root /var/www/html/fazhi;
+    index index.html;
+
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection '\''upgrade'\'';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+
+    location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff2)$ {
+        expires 7d;
+    }
+}
+
+server {
+    listen 80;
+    server_name test.meichuangmenye.com;
+
+    root /var/www/html/fazhi;
+    index index.html;
+
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection '\''upgrade'\'';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+
+    location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff2)$ {
+        expires 7d;
+    }
+}
+
+server {
+    listen 80;
+    server_name fazhihui.meichuangmenye.com;
+
+    root /var/www/html/fazhi;
+    index index.html;
+
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection '\''upgrade'\'';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+
+    location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff2)$ {
+        expires 7d;
+    }
+}
+NGINXEOF" && echo "===NGINX_TEST===" && sudo nginx -t 2>&1 && echo "===RELOAD===" && sudo systemctl reload nginx 2>&1 && echo "===DONE==="}
+
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+    }
+    timeout {
+        puts "TIMEOUT"
+        exit 1
+    }
+}
+
+expect eof
