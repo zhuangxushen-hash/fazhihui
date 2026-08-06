@@ -1,0 +1,17 @@
+set timeout 300
+set password "s\`3}2KG~n@D?N\$P"
+
+# 添加 GitHub 远程并拉取最新 test 分支代码
+spawn ssh -o StrictHostKeyChecking=no ubuntu@1.12.57.22 {cd /home/ubuntu/fazhihui && echo "===REMOTES===" && git remote -v && echo "===ADD_GITHUB===" && git remote add github https://github.com/zhuangxushen-hash/fazhihui.git 2>&1 || echo "already exists" && echo "===FETCH===" && git fetch github test 2>&1 && echo "===RESET===" && git reset --hard github/test 2>&1 && echo "===LOG===" && git log --oneline -3}
+
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+    }
+    timeout {
+        puts "TIMEOUT waiting for password"
+        exit 1
+    }
+}
+
+expect eof
