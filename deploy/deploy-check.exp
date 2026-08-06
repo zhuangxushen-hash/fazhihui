@@ -1,0 +1,16 @@
+set timeout 60
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn ssh -o StrictHostKeyChecking=no ubuntu@1.12.57.22 "echo SSH_OK && hostname && date && pm2 list --no-color 2>/dev/null | head -15"
+
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+    }
+    timeout {
+        puts "TIMEOUT waiting for password prompt"
+        exit 1
+    }
+}
+
+expect eof

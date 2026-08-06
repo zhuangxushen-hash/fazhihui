@@ -1,0 +1,43 @@
+set timeout 30
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn ssh -o StrictHostKeyChecking=no ubuntu@1.12.57.22 {cat > /home/ubuntu/fazhihui/backend/.env << 'EOF'
+PORT=3000
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=password
+DB_DATABASE=fazhihui
+JWT_SECRET=your_jwt_secret_key_here_must_be_long_and_secure
+JWT_EXPIRES_IN=86400s
+BCRYPT_ROUNDS=10
+EOF
+cat > /home/ubuntu/fazhihui/backend/.env.production << 'EOF'
+NODE_ENV=production
+PORT=3001
+JWT_SECRET=Fzh$2026!Pr0d_Jwt_S3cr3t_K3y_8mQxL9wR
+JWT_EXPIRES_IN=86400s
+BCRYPT_ROUNDS=10
+CORS_ORIGIN=https://fazhihui.meichuangmenye.com,https://test.meichuangmenye.com
+EOF
+cat > /home/ubuntu/fazhihui/backend/.env.development << 'EOF'
+NODE_ENV=development
+PORT=3000
+JWT_SECRET=Fzh$2026!Test_Jwt_S3cr3t_K3y_2vNpK7jH
+JWT_EXPIRES_IN=86400s
+BCRYPT_ROUNDS=10
+CORS_ORIGIN=https://test.meichuangmenye.com
+EOF
+echo "===ENV_UPDATED===" && cat /home/ubuntu/fazhihui/backend/.env && echo "===RESTART_PM2===" && pm2 restart prod-backend 2>&1 && pm2 restart test-backend 2>&1}
+
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+    }
+    timeout {
+        puts "TIMEOUT waiting for password"
+        exit 1
+    }
+}
+
+expect eof

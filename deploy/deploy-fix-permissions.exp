@@ -1,0 +1,16 @@
+set timeout 600
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn ssh -o StrictHostKeyChecking=no ubuntu@1.12.57.22 {cd /home/ubuntu/fazhihui && echo "===STOP_PM2===" && pm2 stop prod-backend 2>/dev/null; pm2 stop test-backend 2>/dev/null; echo "===FIX_PERMISSIONS===" && sudo chown -R ubuntu:ubuntu frontend/dist 2>/dev/null || echo "no dist yet" && sudo rm -rf frontend/dist 2>/dev/null && echo "dist removed" && echo "===BUILD_FRONTEND===" && cd frontend && npm run build 2>&1 && echo "===BUILD_SUCCESS===" || echo "===BUILD_FAILED==="}
+
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+    }
+    timeout {
+        puts "TIMEOUT waiting for password"
+        exit 1
+    }
+}
+
+expect eof

@@ -1,0 +1,40 @@
+set timeout 30
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn ssh -o StrictHostKeyChecking=no ubuntu@1.12.57.22 {cd /home/ubuntu/fazhihui && echo "===STOP_ALL===" && pm2 delete all 2>&1 && echo "===CREATE_ECOSYSTEM===" && cat > ecosystem.config.js << 'EOF'
+module.exports = {
+  apps: [
+    {
+      name: 'prod-backend',
+      script: './backend/dist/main.js',
+      cwd: '/home/ubuntu/fazhihui',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3001,
+      },
+    },
+    {
+      name: 'test-backend',
+      script: './backend/dist/main.js',
+      cwd: '/home/ubuntu/fazhihui',
+      env: {
+        NODE_ENV: 'development',
+        PORT: 3000,
+      },
+    },
+  ],
+};
+EOF
+echo "===START_WITH_CONFIG===" && pm2 start ecosystem.config.js 2>&1 && echo "===PM2_LIST===" && pm2 list --no-color 2>/dev/null}
+
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+    }
+    timeout {
+        puts "TIMEOUT waiting for password"
+        exit 1
+    }
+}
+
+expect eof

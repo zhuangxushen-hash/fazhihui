@@ -1,0 +1,16 @@
+set timeout 120
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn ssh -o StrictHostKeyChecking=no ubuntu@1.12.57.22 {cd /home/ubuntu/fazhihui && echo "===CLEANUP_PM2===" && pm2 delete 0 2>/dev/null; pm2 delete 1 2>/dev/null; pm2 save 2>&1 && echo "===RESTART_NGINX===" && sudo nginx -s reload 2>&1 || sudo nginx 2>&1 && echo "===FINAL_PM2===" && pm2 list --no-color 2>/dev/null && echo "===NGINX_STATUS===" && curl -s -o /dev/null -w "%{http_code}" http://localhost/ 2>&1}
+
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+    }
+    timeout {
+        puts "TIMEOUT waiting for password"
+        exit 1
+    }
+}
+
+expect eof

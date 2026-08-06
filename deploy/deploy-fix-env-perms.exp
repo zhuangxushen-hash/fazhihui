@@ -1,0 +1,32 @@
+set timeout 30
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn ssh -o StrictHostKeyChecking=no ubuntu@1.12.57.22 {echo "===CHECK_OWNER===" && ls -la /home/ubuntu/fazhihui/backend/.env* && echo "===FIX_PERMS===" && sudo chown ubuntu:ubuntu /home/ubuntu/fazhihui/backend/.env* && sudo chmod 644 /home/ubuntu/fazhihui/backend/.env* && echo "===WRITE_PROD_ENV===" && sudo tee /home/ubuntu/fazhihui/backend/.env.production << 'ENDOFFILE'
+NODE_ENV=production
+PORT=3001
+JWT_SECRET=Fzh$2026!Pr0d_Jwt_S3cr3t_K3y_8mQxL9wR
+JWT_EXPIRES_IN=86400s
+BCRYPT_ROUNDS=10
+CORS_ORIGIN=https://fazhihui.meichuangmenye.com,https://test.meichuangmenye.com
+ENDOFFILE
+sudo chown ubuntu:ubuntu /home/ubuntu/fazhihui/backend/.env.production && echo "===WRITE_TEST_ENV===" && sudo tee /home/ubuntu/fazhihui/backend/.env.development << 'ENDOFFILE'
+NODE_ENV=development
+PORT=3000
+JWT_SECRET=Fzh$2026!Test_Jwt_S3cr3t_K3y_2vNpK7jH
+JWT_EXPIRES_IN=86400s
+BCRYPT_ROUNDS=10
+CORS_ORIGIN=https://test.meichuangmenye.com
+ENDOFFILE
+sudo chown ubuntu:ubuntu /home/ubuntu/fazhihui/backend/.env.development && echo "===FINAL_CHECK===" && cat /home/ubuntu/fazhihui/backend/.env && echo "---" && cat /home/ubuntu/fazhihui/backend/.env.production}
+
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+    }
+    timeout {
+        puts "TIMEOUT waiting for password"
+        exit 1
+    }
+}
+
+expect eof

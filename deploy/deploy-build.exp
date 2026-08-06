@@ -1,0 +1,17 @@
+set timeout 600
+set password "s\`3}2KG~n@D?N\$P"
+
+# 在服务器上构建前后端并重启服务
+spawn ssh -o StrictHostKeyChecking=no ubuntu@1.12.57.22 {cd /home/ubuntu/fazhihui && echo "===BUILD_BACKEND===" && cd backend && npm run build 2>&1 | tail -5 && echo "===BUILD_FRONTEND===" && cd ../frontend && npm run build 2>&1 | tail -5 && echo "===RESTART_PROD===" && cd .. && pm2 restart prod-backend 2>&1 && echo "===RESTART_TEST===" && pm2 restart test-backend 2>&1 && echo "===PM2_LIST===" && pm2 list --no-color 2>/dev/null | head -10 && echo "===NGINX_TEST===" && sudo nginx -t 2>&1}
+
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+    }
+    timeout {
+        puts "TIMEOUT waiting for password"
+        exit 1
+    }
+}
+
+expect eof

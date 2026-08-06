@@ -1,0 +1,16 @@
+set timeout 30
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn ssh -o StrictHostKeyChecking=no ubuntu@1.12.57.22 {echo "===RECENT_ERRORS===" && tail -20 /home/ubuntu/.pm2/logs/prod-backend-error.log 2>&1 && echo "===CURRENT_PM2===" && pm2 list --no-color 2>/dev/null && echo "===CHECK_DB===" && ls -la /home/ubuntu/fazhihui/backend/*.sqlite 2>&1}
+
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+    }
+    timeout {
+        puts "TIMEOUT waiting for password"
+        exit 1
+    }
+}
+
+expect eof

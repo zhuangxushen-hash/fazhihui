@@ -1,0 +1,16 @@
+set timeout 60
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn ssh -o StrictHostKeyChecking=no ubuntu@1.12.57.22 {sleep 15 && echo "===PORT_CHECK===" && ss -tlnp | grep -E '3000|3001|80' && echo "===PROD_CURL===" && timeout 10 curl -s http://127.0.0.1:3001/api/auth/login -X POST -H "Content-Type: application/json" -d '{"phone":"15820275356","password":"zxs123456"}' 2>&1 || echo "PROD_TIMEOUT" && echo "===TEST_CURL===" && timeout 10 curl -s http://127.0.0.1:3000/api/auth/login -X POST -H "Content-Type: application/json" -d '{"phone":"13800138000","password":"123456"}' 2>&1 || echo "TEST_TIMEOUT"}
+
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+    }
+    timeout {
+        puts "TIMEOUT waiting for password"
+        exit 1
+    }
+}
+
+expect eof

@@ -1,0 +1,16 @@
+set timeout 30
+set password "s\`3}2KG~n@D?N\$P"
+
+spawn ssh -o StrictHostKeyChecking=no ubuntu@1.12.57.22 {echo "===TEST_FRONTEND===" && curl -s -o /dev/null -w "HTTP_STATUS: %{http_code}\n" -H "Host: test.meichuangmenye.com" http://127.0.0.1/ 2>&1 && echo "===PROD_FRONTEND===" && curl -s -o /dev/null -w "HTTP_STATUS: %{http_code}\n" -H "Host: fazhihui.meichuangmenye.com" http://127.0.0.1/ 2>&1 && echo "===TEST_FRONTEND_CONTENT===" && curl -s -H "Host: test.meichuangmenye.com" http://127.0.0.1/ 2>&1 | head -5}
+
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+    }
+    timeout {
+        puts "TIMEOUT waiting for password"
+        exit 1
+    }
+}
+
+expect eof
