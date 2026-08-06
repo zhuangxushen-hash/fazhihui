@@ -1,0 +1,17 @@
+set timeout 300
+set password "s\`3}2KG~n@D?N\$P"
+
+# 从 Gitee 拉取代码并部署
+spawn ssh -o StrictHostKeyChecking=no ubuntu@1.12.57.22 {cd /home/ubuntu/fazhihui && echo "===ADD_GITEE===" && git remote add gitee https://gitee.com/railwy/fazhihui.git 2>/dev/null || echo "gitee remote already exists" && echo "===FETCH_GITEE===" && git fetch gitee test 2>&1 && echo "===RESET_TO_GITEE===" && git reset --hard gitee/test 2>&1 && echo "===LATEST_COMMIT===" && git log --oneline -3}
+
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+    }
+    timeout {
+        puts "TIMEOUT waiting for password"
+        exit 1
+    }
+}
+
+expect eof
