@@ -1,0 +1,17 @@
+set timeout 60
+set password "s\`3}2KG~n@D?N\$P"
+
+# 验证服务
+spawn ssh -o StrictHostKeyChecking=no ubuntu@1.12.57.22 {sleep 15 && echo "===PROD_LOGIN===" && timeout 10 curl -s http://127.0.0.1:3001/api/auth/login -X POST -H "Content-Type: application/json" -d '{"phone":"15820275356","password":"zxs123456"}' 2>&1 | head -1 && echo "===TEST_LOGIN===" && timeout 10 curl -s http://127.0.0.1:3000/api/auth/login -X POST -H "Content-Type: application/json" -d '{"phone":"13800138000","password":"123456"}' 2>&1 | head -1 && echo "===NGINX_TEST===" && sudo nginx -t 2>&1}
+
+expect {
+    -re "password:|Password:" {
+        send "$password\r"
+    }
+    timeout {
+        puts "TIMEOUT waiting for password"
+        exit 1
+    }
+}
+
+expect eof
