@@ -462,6 +462,7 @@ export default function TalkWorkbench() {
                 rowKey="id"
                 loading={loading}
                 pagination={{ pageSize: 10 }}
+                scroll={{ x: 800 }}
               />
             </div>
           </TabPane>
@@ -481,6 +482,7 @@ export default function TalkWorkbench() {
                 rowKey="id"
                 loading={loading}
                 pagination={{ pageSize: 10 }}
+                scroll={{ x: 1200 }}
               />
             </div>
           </TabPane>
@@ -496,6 +498,7 @@ export default function TalkWorkbench() {
                 rowKey="id"
                 loading={loading}
                 pagination={{ pageSize: 10 }}
+                scroll={{ x: 1200 }}
               />
             </div>
           </TabPane>
@@ -511,6 +514,7 @@ export default function TalkWorkbench() {
                 rowKey="id"
                 loading={loading}
                 pagination={{ pageSize: 10 }}
+                scroll={{ x: 1200 }}
               />
             </div>
           </TabPane>
@@ -644,6 +648,7 @@ export default function TalkWorkbench() {
                 rowKey="id"
                 size="small"
                 pagination={false}
+                scroll={{ x: 800 }}
                 columns={[
                   { title: '项目名称', dataIndex: 'item_name', key: 'item_name' },
                   { title: '金额', dataIndex: 'amount', key: 'amount', render: (v: number) => `¥${v.toLocaleString()}` },

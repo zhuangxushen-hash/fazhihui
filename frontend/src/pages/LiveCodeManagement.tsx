@@ -260,6 +260,7 @@ export default function LiveCodeManagement() {
           rowKey="id"
           pagination={{ pageSize: 10 }}
           style={{ padding: 20 }}
+          scroll={{ x: 1200 }}
         />
       </div>
 

@@ -118,7 +118,7 @@ export class MarketingService {
       }
     }
 
-    qb.orderBy('m.created_at', 'DESC');
+    qb.orderBy('m.updated_at', 'DESC');
     return qb.getMany();
   }
 

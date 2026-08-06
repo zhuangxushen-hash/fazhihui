@@ -107,7 +107,7 @@ export class ComprehensiveService {
         .where('entity.organization_id = :orgId', { orgId: params.organization_id })
         .andWhere('entity.stage != :stage', { stage: 'intake' })
         .andWhere(params.keyword ? 'entity.case_name LIKE :kw' : '1=1', { kw: `%${params.keyword}%` })
-        .orderBy('entity.created_at', 'DESC')
+        .orderBy('entity.updated_at', 'DESC')
         .skip((page - 1) * pageSize)
         .take(pageSize)
         .getManyAndCount();
@@ -116,7 +116,7 @@ export class ComprehensiveService {
 
     const [list, total] = await repo.findAndCount({
       where: queryWhere,
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
       skip: (page - 1) * pageSize,
       take: pageSize,
     });
@@ -144,7 +144,7 @@ export class ComprehensiveService {
     if (params.date_to) {
       qb.andWhere('lead.created_at <= :dateTo', { dateTo: new Date(params.date_to) });
     }
-    qb.orderBy('lead.created_at', 'DESC');
+    qb.orderBy('lead.updated_at', 'DESC');
     qb.skip((page - 1) * pageSize).take(pageSize);
     const [list, total] = await qb.getManyAndCount();
     return { list, total, page, pageSize };
@@ -168,7 +168,7 @@ export class ComprehensiveService {
     if (params.date_to) {
       qb.andWhere('inv.created_at <= :dateTo', { dateTo: new Date(params.date_to) });
     }
-    qb.orderBy('inv.created_at', 'DESC');
+    qb.orderBy('inv.updated_at', 'DESC');
     qb.skip((page - 1) * pageSize).take(pageSize);
     const [list, total] = await qb.getManyAndCount();
     return { list, total, page, pageSize };

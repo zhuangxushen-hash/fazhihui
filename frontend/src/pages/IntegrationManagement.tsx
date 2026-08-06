@@ -185,7 +185,7 @@ export default function IntegrationManagement() {
         <Tabs activeKey={activeTab} onChange={handleTabChange}>
           <TabPane tab={<span><SettingOutlined /> 对接列表</span>} key="list">
             <div className="stitch-table">
-              <Table columns={columns} dataSource={integrations} loading={loading} rowKey="id" pagination={{ pageSize: 10 }} />
+              <Table columns={columns} dataSource={integrations} loading={loading} rowKey="id" pagination={{ pageSize: 10 }} scroll={{ x: 1200 }} />
             </div>
           </TabPane>
 

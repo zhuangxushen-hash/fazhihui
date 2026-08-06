@@ -335,6 +335,7 @@ export default function ChatArchiveManagement() {
             },
           }}
           style={{ padding: 20 }}
+          scroll={{ x: 1200 }}
         />
       </div>
 

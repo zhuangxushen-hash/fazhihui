@@ -42,7 +42,7 @@ export class InternalProjectService {
     }
     const [list, total] = await this.projectRepository.findAndCount({
       where,
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
       skip: (page - 1) * pageSize,
       take: pageSize,
     });

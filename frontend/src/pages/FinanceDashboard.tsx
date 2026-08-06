@@ -379,6 +379,7 @@ export default function FinanceDashboard() {
           dataSource={dimStats}
           columns={dimColumns}
           rowKey={(record, idx) => `${record.dim_name}-${idx}`}
+          scroll={{ x: 800 }}
           pagination={{ pageSize: 10, showSizeChanger: true }}
           size="middle"
           loading={loading}

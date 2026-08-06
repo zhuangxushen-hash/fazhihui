@@ -751,6 +751,7 @@ export default function KnowledgeBase() {
               rowKey="id"
               size="small"
               pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+              scroll={{ x: 1200 }}
             />
           </div>
         </>
@@ -804,6 +805,7 @@ export default function KnowledgeBase() {
               rowKey="id"
               size="small"
               pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+              scroll={{ x: 800 }}
             />
           </div>
         </>
@@ -855,6 +857,7 @@ export default function KnowledgeBase() {
               rowKey="id"
               size="small"
               pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+              scroll={{ x: 1200 }}
             />
           </div>
         </>

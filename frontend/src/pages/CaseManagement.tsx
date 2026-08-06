@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Table, Button, Modal, Form, Input, Select, Space, message, Upload, DatePicker, Card, Tag, InputNumber, Switch, Popconfirm } from 'antd'
 import { PlusOutlined, EditOutlined, EyeOutlined, UploadOutlined, SearchOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
-import { generateLetter, closeCaseReport, archiveCase } from '../api/case'
+import { generateLetter, closeCaseReport, archiveCase, createCase, CreateCasePayload } from '../api/case'
 import { formatDate, formatDateTime } from '../utils/format'
 import { theme } from '../constants/theme'
 // === Material Design 3 Style Tokens ===
@@ -95,6 +95,8 @@ const caseStatusKindMap: Record<string, PillKind> = {
   appeal: 'geekblue',
   pending_close: 'orange',
   closed: 'green',
+  terminated: 'orange',
+  voided: 'red',
 }
 
 const caseStatusLabelMap: Record<string, string> = {
@@ -243,12 +245,21 @@ export default function CaseManagement() {
 
   const handleSubmit = async (values: Record<string, unknown>) => {
     try {
-      await axios.post('/cases', { ...values, organization_id: user.organization_id })
+      // DatePicker 返回 dayjs 对象，转换为 ISO 字符串供后端 @IsDateString 校验
+      const payload = { ...values, organization_id: user.organization_id } as Record<string, unknown>
+      if (payload.filing_date && typeof payload.filing_date === 'object' && 'format' in (payload.filing_date as object)) {
+        payload.filing_date = (payload.filing_date as { format: (f: string) => string }).format('YYYY-MM-DD')
+      }
+      if (payload.expected_close_date && typeof payload.expected_close_date === 'object' && 'format' in (payload.expected_close_date as object)) {
+        payload.expected_close_date = (payload.expected_close_date as { format: (f: string) => string }).format('YYYY-MM-DD')
+      }
+      await createCase(payload as CreateCasePayload)
       setModalVisible(false)
       message.success('案件创建成功')
       fetchData()
-    } catch (error) {
-      message.error('案件创建失败')
+    } catch (error: any) {
+      const detail = error?.response?.data?.message || '案件创建失败，请重试'
+      message.error(detail)
     }
   }
 
@@ -548,7 +559,7 @@ export default function CaseManagement() {
       </div>
 
       <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
-        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" size="small" />
+        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" size="small" scroll={{ x: 2000 }} />
       </Card>
 
       <Modal
@@ -559,9 +570,6 @@ export default function CaseManagement() {
         width={600}
       >
         <Form onFinish={handleSubmit}>
-          <Form.Item name="case_no" label="案件编号" rules={[{ required: true }]}>
-            <Input placeholder="请输入案件编号" />
-          </Form.Item>
           <Form.Item name="case_name" label="案件名称">
             <Input placeholder="请输入案件名称" />
           </Form.Item>

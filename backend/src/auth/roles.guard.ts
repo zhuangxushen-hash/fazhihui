@@ -6,17 +6,25 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { ConfigService } from '@nestjs/config';
 import { ROLES_KEY } from './roles.decorator';
 import { UserRole } from '../types';
-import { JwtService } from '@nestjs/jwt';
-import { UserService } from '../user/user.service';
+import * as jwt from 'jsonwebtoken';
+
+/**
+ * JWT载荷接口
+ */
+interface JwtPayload {
+  sub: string;
+  phone?: string;
+  role?: UserRole;
+}
 
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    private jwtService: JwtService,
-    private userService: UserService,
+    private configService: ConfigService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -37,8 +45,14 @@ export class RolesGuard implements CanActivate {
       if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.substring(7);
         try {
-          const payload = this.jwtService.verify(token);
-          user = await this.userService.findById(payload.sub);
+          const secret = this.configService.get('JWT_SECRET');
+          const payload = jwt.verify(token, secret) as JwtPayload;
+          // 直接从JWT载荷构造用户对象，无需查询数据库
+          user = {
+            id: payload.sub,
+            role: payload.role,
+            phone: payload.phone,
+          };
           // 写回 request.user，供后续 JwtAuthGuard 及业务逻辑复用
           request.user = user;
         } catch {

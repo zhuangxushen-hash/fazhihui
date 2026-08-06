@@ -293,7 +293,7 @@ export default function CaseProfitAnalysis({ caseId }: CaseProfitAnalysisProps) 
               rowKey="id"
               pagination={false}
               size="small"
-              scroll={{ y: 300 }}
+              scroll={{ x: 800, y: 300 }}
               locale={{ emptyText: '暂无成本数据' }}
             />
           </Card>

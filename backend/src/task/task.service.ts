@@ -70,8 +70,23 @@ export class TaskService {
       });
     }
 
-    qb.orderBy('t.created_at', 'DESC');
+    qb.orderBy('t.updated_at', 'DESC');
     return qb.getMany();
+  }
+
+  // 查询任务详情
+  async findOne(id: string, orgId?: string): Promise<Task> {
+    const qb = this.taskRepository
+      .createQueryBuilder('t')
+      .where('t.id = :id', { id });
+    if (orgId) {
+      qb.andWhere('t.organization_id = :orgId', { orgId });
+    }
+    const task = await qb.getOne();
+    if (!task) {
+      throw new NotFoundException('任务不存在');
+    }
+    return task;
   }
 
   // 查询分配给我的任务
@@ -92,7 +107,7 @@ export class TaskService {
       });
     }
 
-    qb.orderBy('t.created_at', 'DESC');
+    qb.orderBy('t.updated_at', 'DESC');
     return qb.getMany();
   }
 
@@ -114,7 +129,7 @@ export class TaskService {
       });
     }
 
-    qb.orderBy('t.created_at', 'DESC');
+    qb.orderBy('t.updated_at', 'DESC');
     return qb.getMany();
   }
 

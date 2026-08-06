@@ -2,18 +2,65 @@ import axios from './axios'
 
 export interface Case {
   id: string
+  case_no: string
+  case_name?: string
+  client_name: string
+  client_phone?: string
+  client_id?: string
+  client_type?: string
   case_type: string
+  case_category?: string
+  court?: string
+  opposing_party?: string
+  opposing_agent?: string
+  court_room?: string
+  case_source?: string
+  amount?: number
+  quality_deposit?: number
+  filing_date?: string
+  expected_close_date?: string
+  is_confidential?: boolean
+  stage?: string
+  description?: string
+  organization_id: string
   status: string
-  client_id: string
+  approval_status?: string
+  created_at: string
+  updated_at?: string
   assignee_lawyer_id?: string
   fee_amount?: number
-  description?: string
   deadline?: string
-  created_at: string
+  lawyer_name?: string
+  risk_level?: string
+  is_overdue?: boolean
+  change_status?: string
+}
+
+export type CreateCasePayload = {
+  case_no: string
+  case_name?: string
+  client_name: string
+  client_phone?: string
+  client_id?: string
+  client_type?: string
+  case_type: string
+  case_category?: string
+  court?: string
+  opposing_party?: string
+  opposing_agent?: string
+  court_room?: string
+  case_source?: string
+  amount?: number
+  quality_deposit?: number
+  filing_date?: string
+  expected_close_date?: string
+  is_confidential?: boolean
+  stage?: string
+  description?: string
   organization_id: string
 }
 
-export const createCase = (data: Partial<Case>) => {
+export const createCase = (data: CreateCasePayload) => {
   return axios.post('/cases', data)
 }
 

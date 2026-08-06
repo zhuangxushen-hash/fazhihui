@@ -154,7 +154,7 @@ export class TalkSOPService {
       queryBuilder.andWhere('sop.enabled = :enabled', { enabled });
     }
 
-    queryBuilder.orderBy('sop.created_at', 'DESC');
+    queryBuilder.orderBy('sop.updated_at', 'DESC');
 
     const sops = await queryBuilder.getMany();
 
@@ -261,7 +261,7 @@ export class TalkSOPService {
     if (!sop) {
       sop = await this.sopRepository.findOne({
         where: { enabled: true },
-        order: { created_at: 'DESC' },
+        order: { updated_at: 'DESC' },
       });
     }
 
@@ -381,7 +381,7 @@ export class TalkSOPService {
         // 查找该线索对应的邀约任务，作为质检关联对象
         const inviteTask = await this.inviteTaskRepository.findOne({
           where: { lead_id: lead.id },
-          order: { created_at: 'DESC' },
+          order: { updated_at: 'DESC' },
         });
         // 质检内容取节点名称与描述
         const checkContent = [node.node_name, node.description].filter(Boolean).join(' ');

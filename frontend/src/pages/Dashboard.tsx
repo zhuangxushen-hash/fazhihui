@@ -475,7 +475,7 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
-            <Table dataSource={conversionData} columns={columns} pagination={false} rowKey="stage" size="small" />
+            <Table dataSource={conversionData} columns={columns} pagination={false} rowKey="stage" size="small" scroll={{ x: 800 }} />
           </Card>
         </Col>
         <Col xs={24} lg={12}>
@@ -531,7 +531,7 @@ export default function Dashboard() {
             headStyle={cardHeadStyle}
             style={{ height: '100%' }}
           >
-            <Table dataSource={lawyerStats} columns={lawyerColumns} pagination={false} rowKey="lawyer_name" size="small" />
+            <Table dataSource={lawyerStats} columns={lawyerColumns} pagination={false} rowKey="lawyer_name" size="small" scroll={{ x: 800 }} />
           </Card>
         </Col>
         <Col xs={24} lg={12}>
@@ -546,6 +546,7 @@ export default function Dashboard() {
               pagination={false}
               rowKey="case_type_label"
               size="small"
+              scroll={{ x: 800 }}
             />
           </Card>
         </Col>

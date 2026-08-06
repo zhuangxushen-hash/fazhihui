@@ -342,7 +342,7 @@ export class ScheduleService {
     if (status) {
       qb.andWhere('r.status = :status', { status });
     }
-    qb.orderBy('r.created_at', 'DESC');
+    qb.orderBy('r.updated_at', 'DESC');
     return qb.getMany();
   }
 
@@ -474,7 +474,7 @@ export class ScheduleService {
     if (bookerId) {
       qb.andWhere('b.booker_id = :bookerId', { bookerId });
     }
-    qb.orderBy('b.created_at', 'DESC');
+    qb.orderBy('b.updated_at', 'DESC');
     const bookings = await qb.getMany();
     // 关联查询会议室与日程信息
     const roomIds = Array.from(new Set(bookings.map((b) => b.room_id)));

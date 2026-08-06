@@ -14,6 +14,9 @@ export class LeadPool {
   @ManyToOne(() => Lead)
   lead: Lead;
 
+  @Column({ nullable: true })
+  organization_id: string;
+
   @Column()
   original_owner_id: string;
 

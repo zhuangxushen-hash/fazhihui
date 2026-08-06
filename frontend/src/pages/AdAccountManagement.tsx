@@ -653,6 +653,7 @@ export default function AdAccountManagement() {
               loading={loading}
               rowKey="id"
               pagination={{ pageSize: 10 }}
+              scroll={{ x: 1600 }}
               rowSelection={{
                 selectedRowKeys,
                 onChange: (keys) => setSelectedRowKeys(keys as string[]),
@@ -679,6 +680,7 @@ export default function AdAccountManagement() {
             loading={loading}
             rowKey="id"
             pagination={{ pageSize: 10 }}
+            scroll={{ x: 1200 }}
             style={{ padding: 20 }}
           />
         </div>

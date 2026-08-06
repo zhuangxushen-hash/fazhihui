@@ -208,6 +208,7 @@ function ReportSections({ record }: { record: DueDiligenceRecord | null }) {
               rowKey={(_, idx) => String(idx)}
               dataSource={shareholders}
               pagination={false}
+              scroll={{ x: 800 }}
               columns={[
                 { title: '股东姓名', dataIndex: 'name', key: 'name' },
                 { title: '持股比例', dataIndex: 'ratio', key: 'ratio' },
@@ -457,7 +458,7 @@ export default function DueDiligenceTool() {
         历史查询记录
       </div>
       <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
-        <Table dataSource={list} columns={columns} loading={loading} rowKey="id" size="small" pagination={{ pageSize: 10 }} />
+        <Table dataSource={list} columns={columns} loading={loading} rowKey="id" size="small" pagination={{ pageSize: 10 }} scroll={{ x: 800 }} />
       </Card>
 
       {/* 详情Modal */}

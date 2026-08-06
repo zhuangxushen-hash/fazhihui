@@ -393,7 +393,7 @@ export default function BidManagement() {
             <Button type="primary" icon={<PlusOutlined />} onClick={handleAddBid}>新增投标</Button>
           </div>
           <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
-            <Table dataSource={bids} columns={bidColumns} loading={bidLoading} rowKey="id" size="small" pagination={{ pageSize: 10 }} />
+            <Table dataSource={bids} columns={bidColumns} loading={bidLoading} rowKey="id" size="small" pagination={{ pageSize: 10 }} scroll={{ x: 1200 }} />
           </Card>
         </>
       ),
@@ -418,7 +418,7 @@ export default function BidManagement() {
             <Button type="primary" icon={<PlusOutlined />} onClick={handleAddRecord}>新增业绩</Button>
           </div>
           <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
-            <Table dataSource={records} columns={recordColumns} loading={recordLoading} rowKey="id" size="small" pagination={{ pageSize: 10 }} />
+            <Table dataSource={records} columns={recordColumns} loading={recordLoading} rowKey="id" size="small" pagination={{ pageSize: 10 }} scroll={{ x: 1200 }} />
           </Card>
         </>
       ),

@@ -27,7 +27,7 @@ export class ReconciliationService {
   async findAll(orgId: string): Promise<Reconciliation[]> {
     return this.reconciliationRepository.find({
       where: { organization_id: orgId },
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
     });
   }
 

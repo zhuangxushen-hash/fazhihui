@@ -118,7 +118,7 @@ export class AdPlanService {
         { platform: filters.platform },
       );
     }
-    queryBuilder.orderBy('plan.created_at', 'DESC');
+    queryBuilder.orderBy('plan.updated_at', 'DESC');
     return queryBuilder.getMany();
   }
 

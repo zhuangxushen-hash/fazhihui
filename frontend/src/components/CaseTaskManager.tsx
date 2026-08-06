@@ -294,6 +294,7 @@ export default function CaseTaskManager({ caseId }: Props) {
             rowKey="id"
             pagination={false}
             size="small"
+            scroll={{ x: 1200 }}
           />
         )}
       </Spin>

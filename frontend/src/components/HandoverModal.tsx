@@ -348,7 +348,7 @@ export default function HandoverModal({ visible, onCancel, onSuccess, fromUser, 
                       loading={assetsLoading}
                       size="small"
                       pagination={false}
-                      scroll={{ y: 200 }}
+                      scroll={{ x: 800, y: 200 }}
                       rowSelection={{
                         selectedRowKeys: selectedLeads,
                         onChange: (keys) => setSelectedLeads(keys as string[]),
@@ -389,7 +389,7 @@ export default function HandoverModal({ visible, onCancel, onSuccess, fromUser, 
                       loading={assetsLoading}
                       size="small"
                       pagination={false}
-                      scroll={{ y: 200 }}
+                      scroll={{ x: 800, y: 200 }}
                       rowSelection={{
                         selectedRowKeys: selectedOpportunities,
                         onChange: (keys) => setSelectedOpportunities(keys as string[]),
@@ -430,7 +430,7 @@ export default function HandoverModal({ visible, onCancel, onSuccess, fromUser, 
                       loading={assetsLoading}
                       size="small"
                       pagination={false}
-                      scroll={{ y: 200 }}
+                      scroll={{ x: 800, y: 200 }}
                       rowSelection={{
                         selectedRowKeys: selectedCases,
                         onChange: (keys) => setSelectedCases(keys as string[]),

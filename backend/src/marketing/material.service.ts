@@ -226,7 +226,7 @@ export class MaterialService {
       qb.andWhere('m.tags LIKE :tag', { tag: `%"${filters.tag}"%` });
     }
 
-    qb.orderBy('m.created_at', 'DESC');
+    qb.orderBy('m.updated_at', 'DESC');
     return qb.getMany();
   }
 

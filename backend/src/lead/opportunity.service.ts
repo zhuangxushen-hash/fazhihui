@@ -552,7 +552,7 @@ export class OpportunityService {
     const page = filters?.page || 1;
     const limit = filters?.limit || 20;
     queryBuilder.skip((page - 1) * limit).take(limit);
-    queryBuilder.orderBy('opp.created_at', 'DESC');
+    queryBuilder.orderBy('opp.updated_at', 'DESC');
 
     const data = await queryBuilder.getMany();
     return { data, total };

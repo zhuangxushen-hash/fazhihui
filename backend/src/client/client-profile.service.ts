@@ -33,7 +33,7 @@ export class ClientProfileService {
       qb.andWhere('c.updated_at < :threshold', { threshold });
     }
 
-    qb.orderBy('c.created_at', 'DESC');
+    qb.orderBy('c.updated_at', 'DESC');
     return qb.getMany();
   }
 
@@ -82,7 +82,7 @@ export class ClientProfileService {
     return this.caseRepository
       .createQueryBuilder('c')
       .where('c.client_name LIKE :name', { name: `%${clientName}%` })
-      .orderBy('c.created_at', 'DESC')
+      .orderBy('c.updated_at', 'DESC')
       .getMany();
   }
 
@@ -94,7 +94,7 @@ export class ClientProfileService {
     return this.leadRepository
       .createQueryBuilder('l')
       .where('l.phone LIKE :phone', { phone: `%${phone}%` })
-      .orderBy('l.created_at', 'DESC')
+      .orderBy('l.updated_at', 'DESC')
       .getMany();
   }
 }

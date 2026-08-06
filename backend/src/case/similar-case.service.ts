@@ -41,7 +41,7 @@ export class SimilarCaseService {
     }
 
     query.andWhere('case.status = :status', { status: 'closed' });
-    query.orderBy('case.created_at', 'DESC');
+    query.orderBy('case.updated_at', 'DESC');
     query.limit(50);
 
     const cases = await query.getMany();

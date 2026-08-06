@@ -141,7 +141,7 @@ export class PropertyPreservationService {
       query.andWhere('bq.apply_date <= :ed', { ed: filters.end_date });
     }
 
-    query.orderBy('bq.created_at', 'DESC');
+    query.orderBy('bq.updated_at', 'DESC');
     const total = await query.getCount();
     const page = filters?.page || 1;
     const limit = filters?.limit || 20;
@@ -264,14 +264,23 @@ export class PropertyPreservationService {
 
     // 标记过期后，若关联案件则回写案件风险备注（非关键操作，静默处理）
     try {
-      for (const preservation of affected) {
-        if (preservation.case_id) {
-          const caseEntity = await this.caseRepository.findOne({ where: { id: preservation.case_id } });
-          if (caseEntity) {
-            const note = `保全 ${preservation.preservation_no} 已过期`;
-            caseEntity.risk_notes = caseEntity.risk_notes ? `${caseEntity.risk_notes}; ${note}` : note;
-            await this.caseRepository.save(caseEntity);
+      const caseIds = affected.map(p => p.case_id).filter(Boolean) as string[];
+      if (caseIds.length > 0) {
+        const cases = await this.caseRepository.find({ where: { id: In(caseIds) } });
+        const caseMap = new Map(cases.map(c => [c.id, c]));
+        const toSave: Case[] = [];
+        for (const preservation of affected) {
+          if (preservation.case_id) {
+            const caseEntity = caseMap.get(preservation.case_id);
+            if (caseEntity) {
+              const note = `保全 ${preservation.preservation_no} 已过期`;
+              caseEntity.risk_notes = caseEntity.risk_notes ? `${caseEntity.risk_notes}; ${note}` : note;
+              toSave.push(caseEntity);
+            }
           }
+        }
+        if (toSave.length > 0) {
+          await this.caseRepository.save(toSave);
         }
       }
     } catch (err) {}
@@ -305,6 +314,7 @@ export class PropertyPreservationService {
       this.logger.log(`已标记 ${affectedCount} 个保全为过期`);
 
       // 为每个关联案件的过期保全创建 PRESERVATION_EXPIRE 类型预警（非关键操作，静默处理）
+      const warningsToCreate: CaseWarning[] = [];
       for (const preservation of expiredPreservations) {
         if (preservation.case_id) {
           try {
@@ -318,9 +328,14 @@ export class PropertyPreservationService {
               description: `财产保全 ${preservation.preservation_no} 已于 ${preservation.expire_date ? preservation.expire_date.toISOString().slice(0, 10) : '今日'} 过期`,
               advance_days: 0,
             });
-            await this.caseWarningRepository.save(warning);
+            warningsToCreate.push(warning);
           } catch (err) {}
         }
+      }
+      if (warningsToCreate.length > 0) {
+        try {
+          await this.caseWarningRepository.save(warningsToCreate);
+        } catch (err) {}
       }
 
       this.logger.log('过期保全扫描完成');

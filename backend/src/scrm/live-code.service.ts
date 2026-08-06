@@ -31,7 +31,7 @@ export class LiveCodeService {
     if (filters?.code_type) where.code_type = filters.code_type;
     if (filters?.status) where.status = filters.status;
     if (filters?.channel_id) where.channel_id = filters.channel_id;
-    return this.liveCodeRepository.find({ where, order: { created_at: 'DESC' } });
+    return this.liveCodeRepository.find({ where, order: { updated_at: 'DESC' } });
   }
 
   async findById(id: string): Promise<LiveCode> {

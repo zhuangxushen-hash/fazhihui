@@ -226,6 +226,7 @@ export default function ChannelTracking() {
           rowKey="channel_group"
           pagination={false}
           style={{ padding: 20 }}
+          scroll={{ x: 1200 }}
         />
       </div>
 

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { FinanceService } from './finance.service';
@@ -30,8 +30,16 @@ export class FinanceController {
   ) {}
 
   @Post('fee')
-  createFee(@Body() body: { case_id: string; amount: number; organization_id: string; description?: string }) {
-    return this.financeService.createFee(body);
+  createFee(
+    @Body() body: { case_id: string; amount: number; organization_id: string; description?: string },
+    @Request() req?: any,
+  ) {
+    const organizationId = req?.user?.organization_id;
+    const finalBody = { ...body };
+    if (organizationId) {
+      finalBody.organization_id = organizationId;
+    }
+    return this.financeService.createFee(finalBody);
   }
 
   @Get('fees')
@@ -41,24 +49,35 @@ export class FinanceController {
   }
 
   @Put('fee/:id/paid')
-  markAsPaid(@Param('id') id: string) {
+  async markAsPaid(@Param('id') id: string, @Request() req?: any) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.financeService.findBusinessFundById(id);
+    if (!existing) throw new NotFoundException('费用记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.financeService.markAsPaid(id);
   }
 
   @Post('profit-share')
-  calculateProfitShare(@Body() body: {
-    case_id: string;
-    organization_id: string;
-    fee_amount: number;
-    rules: {
-      org?: number;
-      lawyer?: number;
-      sales?: number;
-      marketing?: number;
-      assistant?: number;
-    };
-  }) {
-    return this.financeService.calculateProfitShare(body.case_id, body.organization_id, body.fee_amount, body.rules);
+  calculateProfitShare(
+    @Body() body: {
+      case_id: string;
+      organization_id: string;
+      fee_amount: number;
+      rules: {
+        org?: number;
+        lawyer?: number;
+        sales?: number;
+        marketing?: number;
+        assistant?: number;
+      };
+    },
+    @Request() req?: any,
+  ) {
+    const organizationId = req?.user?.organization_id;
+    const finalOrgId = organizationId || body.organization_id;
+    return this.financeService.calculateProfitShare(body.case_id, finalOrgId, body.fee_amount, body.rules);
   }
 
   @Get('profit-share')
@@ -68,25 +87,69 @@ export class FinanceController {
   }
 
   @Post('refund')
-  createRefund(@Body() body: {
-    case_id: string;
-    organization_id: string;
-    amount: number;
-    reason: string;
-    fee_id?: string;
-    evidence_files?: string;
-  }) {
-    return this.financeService.createRefund(body);
+  createRefund(
+    @Body() body: {
+      case_id: string;
+      organization_id: string;
+      amount: number;
+      reason: string;
+      fee_id?: string;
+      evidence_files?: string;
+    },
+    @Request() req?: any,
+  ) {
+    const organizationId = req?.user?.organization_id;
+    const finalBody = { ...body };
+    if (organizationId) {
+      finalBody.organization_id = organizationId;
+    }
+    return this.financeService.createRefund(finalBody);
   }
 
   @Put('refund/:id/approve')
-  approveRefund(@Param('id') id: string, @Body() body: { approved_by: string; note?: string }) {
+  async approveRefund(
+    @Param('id') id: string,
+    @Body() body: { approved_by: string; note?: string },
+    @Request() req?: any,
+  ) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.financeService.findRefundById(id);
+    if (!existing) throw new NotFoundException('退款记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.financeService.approveRefund(id, body.approved_by, body.note);
   }
 
   @Put('refund/:id/reject')
-  rejectRefund(@Param('id') id: string, @Body() body: { note?: string }) {
+  async rejectRefund(
+    @Param('id') id: string,
+    @Body() body: { note?: string },
+    @Request() req?: any,
+  ) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.financeService.findRefundById(id);
+    if (!existing) throw new NotFoundException('退款记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.financeService.rejectRefund(id, body.note);
+  }
+
+  // 退款打款完成：审核通过后执行打款，状态流转为 paid
+  @Put('refund/:id/pay')
+  async payRefund(
+    @Param('id') id: string,
+    @Body() body: { note?: string },
+    @Request() req?: any,
+  ) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.financeService.findRefundById(id);
+    if (!existing) throw new NotFoundException('退款记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
+    return this.financeService.payRefund(id, req?.user?.id, body.note);
   }
 
   @Get('refunds')
@@ -96,8 +159,16 @@ export class FinanceController {
   }
 
   @Post('invoice')
-  createInvoice(@Body() body: Partial<Invoice>) {
-    return this.financeService.createInvoice(body);
+  createInvoice(
+    @Body() body: Partial<Invoice>,
+    @Request() req?: any,
+  ) {
+    const organizationId = req?.user?.organization_id;
+    const finalBody = { ...body };
+    if (organizationId) {
+      finalBody.organization_id = organizationId;
+    }
+    return this.financeService.createInvoice(finalBody);
   }
 
   @Get('invoices')
@@ -121,17 +192,43 @@ export class FinanceController {
   }
 
   @Put('invoice/:id/issue')
-  issueInvoice(@Param('id') id: string, @Body() body: { invoice_no: string }) {
+  async issueInvoice(
+    @Param('id') id: string,
+    @Body() body: { invoice_no: string },
+    @Request() req?: any,
+  ) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.financeService.findInvoiceById(id);
+    if (!existing) throw new NotFoundException('发票记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.financeService.issueInvoice(id, body.invoice_no);
   }
 
   @Put('invoice/:id/paid')
-  markInvoicePaid(@Param('id') id: string) {
+  async markInvoicePaid(@Param('id') id: string, @Request() req?: any) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.financeService.findInvoiceById(id);
+    if (!existing) throw new NotFoundException('发票记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.financeService.markInvoicePaid(id);
   }
 
   @Put('invoice/:id/cancel')
-  cancelInvoice(@Param('id') id: string, @Body() body?: { note?: string }) {
+  async cancelInvoice(
+    @Param('id') id: string,
+    @Body() body?: { note?: string },
+    @Request() req?: any,
+  ) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.financeService.findInvoiceById(id);
+    if (!existing) throw new NotFoundException('发票记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.financeService.cancelInvoice(id, body?.note);
   }
 
@@ -139,7 +236,14 @@ export class FinanceController {
   async recordPayment(
     @Param('id') id: string,
     @Body() body: { amount: number; method?: PaymentMethod; transaction_id?: string; remarks?: string; client_id?: string },
+    @Request() req?: any,
   ) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.financeService.findReceivableById(id);
+    if (!existing) throw new NotFoundException('应收台账不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.financeService.recordPayment(
       id,
       body.amount,
@@ -167,7 +271,14 @@ export class FinanceController {
       remarks?: string;
       client_id?: string;
     },
+    @Request() req?: any,
   ) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.financeService.findReceivableById(body.receivable_id);
+    if (!existing) throw new NotFoundException('应收台账不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.financeService.recordPayment(
       body.receivable_id,
       body.amount,
@@ -234,28 +345,58 @@ export class FinanceController {
   }
 
   @Put('payment-reminders/:id')
-  async updatePaymentReminder(@Param('id') id: string, @Body() body: any) {
+  async updatePaymentReminder(@Param('id') id: string, @Body() body: any, @Request() req?: any) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.paymentReminderService.findOne(id);
+    if (!existing) throw new NotFoundException('催款记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.paymentReminderService.update(id, body);
   }
 
   @Delete('payment-reminders/:id')
-  async removePaymentReminder(@Param('id') id: string) {
+  async removePaymentReminder(@Param('id') id: string, @Request() req?: any) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.paymentReminderService.findOne(id);
+    if (!existing) throw new NotFoundException('催款记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     await this.paymentReminderService.remove(id);
     return { message: '删除成功' };
   }
 
   @Put('payment-reminders/:id/remind')
   async remindPaymentReminder(@Param('id') id: string, @Request() req?: any) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.paymentReminderService.findOne(id);
+    if (!existing) throw new NotFoundException('催款记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.paymentReminderService.remind(id, req?.user?.id);
   }
 
   @Put('payment-reminders/:id/paid')
-  async markPaidPaymentReminder(@Param('id') id: string) {
+  async markPaidPaymentReminder(@Param('id') id: string, @Request() req?: any) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.paymentReminderService.findOne(id);
+    if (!existing) throw new NotFoundException('催款记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.paymentReminderService.markPaid(id);
   }
 
   @Put('payment-reminders/:id/give-up')
-  async giveUpPaymentReminder(@Param('id') id: string) {
+  async giveUpPaymentReminder(@Param('id') id: string, @Request() req?: any) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.paymentReminderService.findOne(id);
+    if (!existing) throw new NotFoundException('催款记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.paymentReminderService.giveUp(id);
   }
 
@@ -270,23 +411,47 @@ export class FinanceController {
   }
 
   @Put('invoices/:id')
-  async updateInvoiceV2(@Param('id') id: string, @Body() body: any) {
+  async updateInvoiceV2(@Param('id') id: string, @Body() body: any, @Request() req?: any) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.invoiceService.findOne(id);
+    if (!existing) throw new NotFoundException('发票记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.invoiceService.update(id, body);
   }
 
   @Delete('invoices/:id')
-  async removeInvoiceV2(@Param('id') id: string) {
+  async removeInvoiceV2(@Param('id') id: string, @Request() req?: any) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.invoiceService.findOne(id);
+    if (!existing) throw new NotFoundException('发票记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     await this.invoiceService.remove(id);
     return { message: '删除成功' };
   }
 
   @Put('invoices/:id/void')
-  async voidInvoiceV2(@Param('id') id: string, @Body() body: { reason: string }) {
+  async voidInvoiceV2(@Param('id') id: string, @Body() body: { reason: string }, @Request() req?: any) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.invoiceService.findOne(id);
+    if (!existing) throw new NotFoundException('发票记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.invoiceService.void(id, body.reason);
   }
 
   @Put('invoices/:id/red-flush')
-  async redFlushInvoiceV2(@Param('id') id: string) {
+  async redFlushInvoiceV2(@Param('id') id: string, @Request() req?: any) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.invoiceService.findOne(id);
+    if (!existing) throw new NotFoundException('发票记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.invoiceService.redFlush(id);
   }
 
@@ -295,7 +460,14 @@ export class FinanceController {
   async refundInvoice(
     @Param('id') id: string,
     @Body() body: { amount: number; date: string },
+    @Request() req?: any,
   ) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.invoiceService.findOne(id);
+    if (!existing) throw new NotFoundException('发票记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.invoiceService.refundInvoice(id, body.amount, body.date);
   }
 
@@ -304,7 +476,14 @@ export class FinanceController {
   async adjustInvoice(
     @Param('id') id: string,
     @Body() body: { reason: string; amount: number; operator_id: string },
+    @Request() req?: any,
   ) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.invoiceService.findOne(id);
+    if (!existing) throw new NotFoundException('发票记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.invoiceService.adjustInvoice(id, body);
   }
 
@@ -339,12 +518,24 @@ export class FinanceController {
   }
 
   @Put('business-funds/:id')
-  async updateBusinessFund(@Param('id') id: string, @Body() body: any) {
+  async updateBusinessFund(@Param('id') id: string, @Body() body: any, @Request() req?: any) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.businessFundService.findOne(id);
+    if (!existing) throw new NotFoundException('业务款记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.businessFundService.update(id, body);
   }
 
   @Delete('business-funds/:id')
-  async removeBusinessFund(@Param('id') id: string) {
+  async removeBusinessFund(@Param('id') id: string, @Request() req?: any) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.businessFundService.findOne(id);
+    if (!existing) throw new NotFoundException('业务款记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     await this.businessFundService.remove(id);
     return { message: '删除成功' };
   }
@@ -362,7 +553,13 @@ export class FinanceController {
 
   // 入账
   @Put('business-funds/:id/account')
-  async accountBusinessFund(@Param('id') id: string) {
+  async accountBusinessFund(@Param('id') id: string, @Request() req?: any) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.businessFundService.findOne(id);
+    if (!existing) throw new NotFoundException('业务款记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.businessFundService.accountFund(id);
   }
 
@@ -371,7 +568,14 @@ export class FinanceController {
   async allocateBusinessFund(
     @Param('id') id: string,
     @Body() body: { records: Array<{ role: string; amount: number }> },
+    @Request() req?: any,
   ) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.businessFundService.findOne(id);
+    if (!existing) throw new NotFoundException('业务款记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.businessFundService.allocateFund(id, body.records);
   }
 
@@ -380,7 +584,14 @@ export class FinanceController {
   async taxShareBusinessFund(
     @Param('id') id: string,
     @Body() body: { amount: number },
+    @Request() req?: any,
   ) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.businessFundService.findOne(id);
+    if (!existing) throw new NotFoundException('业务款记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.businessFundService.taxShareFund(id, body.amount);
   }
 
@@ -389,7 +600,14 @@ export class FinanceController {
   async refundQualityDeposit(
     @Param('id') id: string,
     @Body() body: { refund_amount: number },
+    @Request() req?: any,
   ) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.businessFundService.findOne(id);
+    if (!existing) throw new NotFoundException('业务款记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
     return this.financeService.refundQualityDeposit(id, body.refund_amount);
   }
 

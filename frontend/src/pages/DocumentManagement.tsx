@@ -279,6 +279,7 @@ export default function DocumentManagement() {
           columns={myDocColumns}
           loading={loading}
           rowKey="key"
+          scroll={{ x: 800 }}
           pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
         />
       </div>
@@ -326,6 +327,7 @@ export default function DocumentManagement() {
             columns={firmDocColumns}
             loading={loading}
             rowKey="key"
+            scroll={{ x: 800 }}
             pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
           />
         </div>

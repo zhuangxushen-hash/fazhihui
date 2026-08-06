@@ -119,7 +119,7 @@ export class OpportunityStageLog {
   @JoinColumn({ name: 'opportunity_id' })
   opportunity: Opportunity;
 
-  @Column({ type: 'varchar', nullable: false })
+  @Column({ type: 'varchar', nullable: true })
   from_stage: OpportunityStage;
 
   @Column({ type: 'varchar', nullable: false })

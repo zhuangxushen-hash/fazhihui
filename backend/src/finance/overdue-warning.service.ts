@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Receivable, ReceivableStatus } from './receivable.entity';
 import { OverdueWarning, WarningStatus } from './overdue-warning.entity';
 import { NotificationService } from '../user/notification.service';
@@ -34,35 +34,51 @@ export class OverdueWarningService {
         ],
       });
 
+      interface WarningTask {
+        receivable: Receivable;
+        installmentId: string | null;
+        overdueAmount: number;
+        dueDate: Date;
+      }
+      const tasks: WarningTask[] = [];
+      const receivableStatusUpdates: Map<string, boolean> = new Map();
+      const installmentUpdates: Map<string, Map<string, boolean>> = new Map();
+
       for (const receivable of receivables) {
-        // 检查整体应收是否逾期
         if (receivable.pending_amount > 0) {
-          // 如果没有分期计划，检查整体是否逾期（默认合同签订后30天）
           if (!receivable.installment_plan || receivable.installment_plan.length === 0) {
             const createdDate = new Date(receivable.created_at);
             const dueDate = new Date(createdDate);
-            dueDate.setDate(dueDate.getDate() + 30); // 默认30天应收期
+            dueDate.setDate(dueDate.getDate() + 30);
 
             if (now > dueDate) {
-              await this.createOrUpdateWarning(receivable, null, receivable.pending_amount, dueDate);
+              tasks.push({ receivable, installmentId: null, overdueAmount: receivable.pending_amount, dueDate });
+              receivableStatusUpdates.set(receivable.id, true);
             }
           } else {
-            // 检查分期计划中的逾期项
+            let receivableOverdue = false;
             for (const installment of receivable.installment_plan) {
               if (installment.status === 'pending' || installment.status === 'overdue') {
                 const dueDate = new Date(installment.due_date);
                 if (now > dueDate) {
-                  await this.createOrUpdateWarning(
-                    receivable,
-                    installment.installment_id,
-                    installment.amount,
-                    dueDate,
-                  );
+                  tasks.push({ receivable, installmentId: installment.installment_id, overdueAmount: installment.amount, dueDate });
+                  receivableOverdue = true;
+                  if (!installmentUpdates.has(receivable.id)) {
+                    installmentUpdates.set(receivable.id, new Map());
+                  }
+                  installmentUpdates.get(receivable.id)!.set(installment.installment_id, true);
                 }
               }
             }
+            if (receivableOverdue) {
+              receivableStatusUpdates.set(receivable.id, true);
+            }
           }
         }
+      }
+
+      if (tasks.length > 0) {
+        await this.batchCreateOrUpdateWarnings(tasks, receivableStatusUpdates, installmentUpdates);
       }
 
       this.logger.log('逾期应收检查完成');
@@ -71,76 +87,109 @@ export class OverdueWarningService {
     }
   }
 
-  /**
-   * 创建或更新逾期预警
-   */
-  private async createOrUpdateWarning(
-    receivable: Receivable,
-    installmentId: string | null,
-    overdueAmount: number,
-    dueDate: Date,
+  private async batchCreateOrUpdateWarnings(
+    tasks: Array<{ receivable: Receivable; installmentId: string | null; overdueAmount: number; dueDate: Date }>,
+    receivableStatusUpdates: Map<string, boolean>,
+    installmentUpdates: Map<string, Map<string, boolean>>,
   ) {
     const now = new Date();
-    const overdueDays = Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
 
-    // 查找是否已存在预警记录
-    const existingWarning = await this.warningRepository.findOne({
-      where: {
-        receivable_id: receivable.id,
-        installment_id: installmentId || undefined,
-        status: WarningStatus.PENDING,
-      },
-    });
+    const warningKeys = tasks.map(t => ({
+      receivable_id: t.receivable.id,
+      installment_id: t.installmentId || undefined,
+    }));
 
-    if (existingWarning) {
-      // 更新逾期天数
-      await this.warningRepository.update(existingWarning.id, {
-        overdue_days: overdueDays,
-        overdue_amount: overdueAmount,
-      });
-    } else {
-      // 创建新的预警记录
-      const warning = this.warningRepository.create({
-        receivable_id: receivable.id,
-        case_id: receivable.case_id,
-        installment_id: installmentId || undefined,
-        overdue_amount: overdueAmount,
-        overdue_days: overdueDays,
-        due_date: dueDate,
-        organization_id: receivable.organization_id,
-        status: WarningStatus.PENDING,
-      });
-      await this.warningRepository.save(warning);
-      // 财务管理员通知，暂用空字符串
-      await this.notificationService.notify({
-        receiver_id: '',
-        title: '应收账款逾期',
-        content: `案件 ${receivable.case_id} 的应收账款已逾期`,
-        type: 'finance',
-        level: 'high',
-        related_type: 'Receivable',
-        related_id: receivable.id,
-      });
+    const receivableIds = [...new Set(tasks.map(t => t.receivable.id))];
+    const existingWarnings = receivableIds.length > 0
+      ? await this.warningRepository.find({
+          where: {
+            receivable_id: In(receivableIds),
+            status: WarningStatus.PENDING,
+          },
+        })
+      : [];
+
+    const existingMap = new Map<string, OverdueWarning>();
+    for (const w of existingWarnings) {
+      const key = `${w.receivable_id}::${w.installment_id || 'null'}`;
+      existingMap.set(key, w);
     }
 
-    // 更新应收台账状态为逾期
-    if (receivable.status !== ReceivableStatus.OVERDUE) {
-      await this.receivableRepository.update(receivable.id, {
-        status: ReceivableStatus.OVERDUE,
-      });
+    const warningsToUpdate: OverdueWarning[] = [];
+    const warningsToCreate: OverdueWarning[] = [];
+    const notifyTasks: Array<{ receivable: Receivable }> = [];
+
+    for (const task of tasks) {
+      const overdueDays = Math.floor((now.getTime() - task.dueDate.getTime()) / (1000 * 60 * 60 * 24));
+      const key = `${task.receivable.id}::${task.installmentId || 'null'}`;
+      const existing = existingMap.get(key);
+
+      if (existing) {
+        existing.overdue_days = overdueDays;
+        existing.overdue_amount = task.overdueAmount;
+        warningsToUpdate.push(existing);
+      } else {
+        const warning = this.warningRepository.create({
+          receivable_id: task.receivable.id,
+          case_id: task.receivable.case_id,
+          installment_id: task.installmentId || undefined,
+          overdue_amount: task.overdueAmount,
+          overdue_days: overdueDays,
+          due_date: task.dueDate,
+          organization_id: task.receivable.organization_id,
+          status: WarningStatus.PENDING,
+        });
+        warningsToCreate.push(warning);
+        notifyTasks.push({ receivable: task.receivable });
+      }
     }
 
-    // 更新分期计划状态
-    if (installmentId && receivable.installment_plan) {
-      const updatedPlan = receivable.installment_plan.map(item => {
-        if (item.installment_id === installmentId) {
-          return { ...item, status: 'overdue' as const };
-        }
-        return item;
-      });
-      await this.receivableRepository.update(receivable.id, {
-        installment_plan: updatedPlan,
-      });
+    if (warningsToUpdate.length > 0) {
+      await this.warningRepository.save(warningsToUpdate);
+    }
+    if (warningsToCreate.length > 0) {
+      await this.warningRepository.save(warningsToCreate);
+    }
+
+    for (const { receivable } of notifyTasks) {
+      try {
+        await this.notificationService.notify({
+          receiver_id: '',
+          title: '应收账款逾期',
+          content: `案件 ${receivable.case_id} 的应收账款已逾期`,
+          type: 'finance',
+          level: 'high',
+          related_type: 'Receivable',
+          related_id: receivable.id,
+        });
+      } catch (e) {}
+    }
+
+    const receivablesToUpdate: Receivable[] = [];
+    for (const receivable of tasks.map(t => t.receivable)) {
+      if (receivableStatusUpdates.has(receivable.id) && receivable.status !== ReceivableStatus.OVERDUE) {
+        receivable.status = ReceivableStatus.OVERDUE as any;
+      }
+      if (installmentUpdates.has(receivable.id) && receivable.installment_plan) {
+        const updateMap = installmentUpdates.get(receivable.id)!;
+        receivable.installment_plan = receivable.installment_plan.map(item => {
+          if (updateMap.has(item.installment_id)) {
+            return { ...item, status: 'overdue' as const };
+          }
+          return item;
+        });
+      }
+      if (receivableStatusUpdates.has(receivable.id) || installmentUpdates.has(receivable.id)) {
+        receivablesToUpdate.push(receivable);
+      }
+    }
+
+    const uniqueReceivables = new Map<string, Receivable>();
+    for (const r of receivablesToUpdate) {
+      uniqueReceivables.set(r.id, r);
+    }
+    if (uniqueReceivables.size > 0) {
+      await this.receivableRepository.save([...uniqueReceivables.values()]);
     }
   }
 
@@ -152,7 +201,7 @@ export class OverdueWarningService {
     if (status) {
       query.status = status;
     }
-    return this.warningRepository.find({ where: query, order: { created_at: 'DESC' } });
+    return this.warningRepository.find({ where: query, order: { updated_at: 'DESC' } });
   }
 
   /**

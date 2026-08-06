@@ -347,6 +347,7 @@ export default function SimilarCaseMatch() {
             showSizeChanger: true,
             showTotal: (total) => `共找到 ${total} 条相似案件`,
           }}
+          scroll={{ x: 1600 }}
         />
       </Card>
     </div>

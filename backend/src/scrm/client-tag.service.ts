@@ -31,7 +31,7 @@ export class ClientTagService {
     if (orgId) where.organization_id = orgId;
     if (filters?.tag_type) where.tag_type = filters.tag_type;
     if (filters?.category) where.category = filters.category;
-    return this.clientTagRepository.find({ where, order: { created_at: 'DESC' } });
+    return this.clientTagRepository.find({ where, order: { updated_at: 'DESC' } });
   }
 
   async findTagById(id: string): Promise<ClientTag> {

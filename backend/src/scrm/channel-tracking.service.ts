@@ -23,7 +23,7 @@ export class ChannelTrackingService {
     if (orgId) where.organization_id = orgId;
     if (filters?.channel_group) where.channel_group = filters.channel_group;
     if (filters?.live_code_id) where.live_code_id = filters.live_code_id;
-    return this.channelTrackingRepository.find({ where, order: { created_at: 'DESC' } });
+    return this.channelTrackingRepository.find({ where, order: { updated_at: 'DESC' } });
   }
 
   async findById(id: string): Promise<ChannelTracking> {

@@ -399,6 +399,7 @@ export default function ConversionReport() {
           rowKey="dimension_key"
           pagination={{ pageSize: 10 }}
           locale={{ emptyText: <Empty description="暂无 ROI 数据" /> }}
+          scroll={{ x: 1600 }}
         />
       </Card>
 

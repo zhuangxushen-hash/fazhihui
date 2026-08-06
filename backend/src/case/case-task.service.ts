@@ -390,7 +390,7 @@ export class CaseTaskService {
     const limit = filters?.limit || 20;
     query.skip((page - 1) * limit).take(limit);
 
-    query.orderBy('task.created_at', 'DESC');
+    query.orderBy('task.updated_at', 'DESC');
     const tasks = await query.getMany();
 
     const data = await Promise.all(tasks.map(async (task) => {

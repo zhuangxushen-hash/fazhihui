@@ -317,7 +317,7 @@ export default function FinanceManagement() {
             <Button onClick={handleReset}>重置</Button>
           </div>
           <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
-            <Table dataSource={fees} columns={feeColumns} loading={loading} rowKey="id" size="small" />
+            <Table dataSource={fees} columns={feeColumns} loading={loading} rowKey="id" size="small" scroll={{ x: 1200 }} />
           </Card>
         </>
       ),
@@ -327,7 +327,7 @@ export default function FinanceManagement() {
       label: '分润管理',
       children: (
         <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
-          <Table dataSource={profitShares} columns={profitShareColumns} loading={loading} rowKey="id" size="small" />
+          <Table dataSource={profitShares} columns={profitShareColumns} loading={loading} rowKey="id" size="small" scroll={{ x: 1600 }} />
         </Card>
       ),
     },
@@ -350,7 +350,7 @@ export default function FinanceManagement() {
             <Button onClick={handleReset}>重置</Button>
           </div>
           <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
-            <Table dataSource={refunds} columns={refundColumns} loading={loading} rowKey="id" size="small" />
+            <Table dataSource={refunds} columns={refundColumns} loading={loading} rowKey="id" size="small" scroll={{ x: 1200 }} />
           </Card>
         </>
       ),

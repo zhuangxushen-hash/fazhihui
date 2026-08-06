@@ -484,6 +484,7 @@ export default function WorkLogManagement() {
               rowKey="id"
               size="small"
               pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+              scroll={{ x: 1200 }}
             />
           </div>
         </>
@@ -501,6 +502,7 @@ export default function WorkLogManagement() {
             rowKey="id"
             size="small"
             pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+            scroll={{ x: 800 }}
           />
         </div>
       ),
@@ -551,6 +553,7 @@ export default function WorkLogManagement() {
                 size="small"
                 pagination={false}
                 loading={loading}
+                scroll={{ x: 800 }}
               />
             </div>
           </Card>
@@ -690,6 +693,7 @@ export default function WorkLogManagement() {
             rowKey="id"
             size="small"
             pagination={{ pageSize: 10 }}
+            scroll={{ x: 800 }}
             rowSelection={{
               type: 'radio',
               selectedRowKeys: selectedScheduleId ? [selectedScheduleId] : [],

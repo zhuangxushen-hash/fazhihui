@@ -42,6 +42,14 @@ export class Refund {
   @Column({ nullable: true })
   approved_at: Date;
 
+  // 打款操作人
+  @Column({ nullable: true })
+  paid_by: string;
+
+  // 打款时间
+  @Column({ nullable: true })
+  paid_at: Date;
+
   @ManyToOne(() => Organization)
   organization: Organization;
 

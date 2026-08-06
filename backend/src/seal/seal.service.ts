@@ -173,7 +173,7 @@ export class SealService {
       query.andWhere('DATE(app.apply_time) <= :ed', { ed: filters.apply_date_end });
     }
 
-    query.orderBy('app.created_at', 'DESC');
+    query.orderBy('app.updated_at', 'DESC');
     const total = await query.getCount();
     const page = filters?.page || 1;
     const limit = filters?.limit || 20;

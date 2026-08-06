@@ -479,7 +479,7 @@ export default function BusinessFundManagement() {
       </div>
 
       <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
-        <Table dataSource={list} columns={columns} loading={loading} rowKey="id" size="small" pagination={{ pageSize: 10 }} />
+        <Table dataSource={list} columns={columns} loading={loading} rowKey="id" size="small" pagination={{ pageSize: 10 }} scroll={{ x: 1600 }} />
       </Card>
 
       <Modal
@@ -566,6 +566,7 @@ export default function BusinessFundManagement() {
           rowKey={(_, idx) => String(idx)}
           size="small"
           pagination={false}
+          scroll={{ x: 800 }}
           columns={[
             { title: '角色', dataIndex: 'role', key: 'role' },
             {

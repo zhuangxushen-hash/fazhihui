@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef, Logger, InternalServerErrorException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, In } from 'typeorm';
+import { Repository, DataSource, In, QueryBuilder } from 'typeorm';
 import { Case } from './case.entity';
 import { Document } from './document.entity';
 import { User } from '../user/user.entity';
@@ -17,6 +17,7 @@ import { SimilarCaseService } from './similar-case.service';
 import { AuditService } from '../audit/audit.service';
 // Phase5 L1: 结案自动生成法律文书需注入法律文书服务
 import { LegalDocumentService } from './legal-document.service';
+import { CreateCaseDto } from './dto/create-case.dto';
 
 @Injectable()
 export class CaseService {
@@ -46,6 +47,52 @@ export class CaseService {
     // Phase5 L1: 注入法律文书服务，结案后自动生成结案报告文书
     private legalDocumentService: LegalDocumentService,
   ) {}
+
+  private readonly logger = new Logger(CaseService.name);
+
+  /**
+   * 自动生成案件编号
+   * 格式: AJ-YYYYMMDD-XXXX (如 AJ-20260806-0001)
+   * 通过查询当天已有最大序号+1实现递增，并检查唯一性
+   */
+  private async generateCaseNo(manager: any): Promise<string> {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const datePrefix = `AJ-${year}${month}${day}-`;
+
+    // 查询当天已有的最大序号
+    const result = await manager
+      .createQueryBuilder(Case, 'c')
+      .select('MAX(CAST(SUBSTR(c.case_no, LENGTH(:prefix) + 1) AS INTEGER))', 'maxSeq')
+      .where('c.case_no LIKE :likePattern', { likePattern: `${datePrefix}%`, prefix: datePrefix })
+      .getRawOne();
+
+    const maxSeq = result?.maxseq || 0;
+    let nextSeq = maxSeq + 1;
+    
+    // 循环尝试生成唯一编号
+    const maxAttempts = 100;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const seqStr = String(nextSeq).padStart(4, '0');
+      const candidateNo = `${datePrefix}${seqStr}`;
+      
+      // 检查该编号是否已存在
+      const existing = await manager
+        .createQueryBuilder(Case, 'c')
+        .where('c.case_no = :caseNo', { caseNo: candidateNo })
+        .getOne();
+      
+      if (!existing) {
+        return candidateNo;
+      }
+      // 编号已存在，继续递增
+      nextSeq++;
+    }
+    
+    throw new InternalServerErrorException('无法生成唯一的案件编号');
+  }
 
   /**
    * Phase5 M8: 记录案件相关审计日志（失败静默不影响主流程）
@@ -77,39 +124,83 @@ export class CaseService {
     }
   }
 
-  async create(caseData: Partial<Case>): Promise<Case> {
-    const caseEntity = this.caseRepository.create(caseData);
+  async create(dto: CreateCaseDto, organizationId?: string): Promise<Case> {
+    // 0. organization_id 空值守卫
+    if (!organizationId) {
+      throw new BadRequestException('缺少组织信息，无法创建案件');
+    }
+
+    // 1. 构建实体（案件编号由系统自动生成，不再依赖前端传入）
+    const caseEntity = this.caseRepository.create({
+      case_name: dto.case_name,
+      client_name: dto.client_name,
+      client_phone: dto.client_phone,
+      client_id: dto.client_id,
+      client_type: dto.client_type,
+      case_type: dto.case_type as CaseType,
+      case_category: dto.case_category,
+      court: dto.court,
+      opposing_party: dto.opposing_party,
+      opposing_agent: dto.opposing_agent,
+      court_room: dto.court_room,
+      case_source: dto.case_source,
+      amount: dto.amount,
+      quality_deposit: dto.quality_deposit,
+      filing_date: dto.filing_date ? new Date(dto.filing_date) : undefined,
+      expected_close_date: dto.expected_close_date ? new Date(dto.expected_close_date) : undefined,
+      is_confidential: dto.is_confidential,
+      stage: dto.stage,
+      description: dto.description,
+      organization_id: organizationId || dto.organization_id,
+    });
+
     const { risk_level, risk_notes } = this.analyzeRisk(caseEntity);
     caseEntity.risk_level = risk_level;
     caseEntity.risk_notes = risk_notes;
-    const savedCase = await this.caseRepository.save(caseEntity);
 
-    // 立案时自动执行利冲检索，若检测到明确冲突则将案件审批状态置为 conflict_hold 等待利冲审批
-    const conflictResult = await this.conflictCheckService.check({
-      partyName: savedCase.client_name,
-      opposingParty: savedCase.opposing_party,
-      partyPhone: savedCase.client_phone,
-      orgId: savedCase.organization_id,
-      caseId: savedCase.id,
-    });
-    if (conflictResult.check_result === 'conflict') {
-      await this.caseRepository.update(savedCase.id, { approval_status: 'conflict_hold' });
-      return this.caseRepository.findOne({ where: { id: savedCase.id } });
+    // 2. 短事务：仅保存案件 + 更新利冲状态
+    let savedCase: Case | null = null;
+
+    try {
+      await this.dataSource.transaction(async (manager) => {
+        // 案件编号始终由系统自动生成，确保唯一性
+        caseEntity.case_no = await this.generateCaseNo(manager);
+
+        savedCase = await manager.save(Case, caseEntity);
+
+        // 利冲检查（在事务内但用 try-catch 保护，失败回滚案件创建）
+        try {
+          const conflictResult = await this.conflictCheckService.check({
+            partyName: savedCase.client_name,
+            opposingParty: savedCase.opposing_party,
+            partyPhone: savedCase.client_phone,
+            orgId: savedCase.organization_id,
+            caseId: savedCase.id,
+          });
+          if (conflictResult.check_result === 'conflict') {
+            await manager.update(Case, savedCase.id, { approval_status: 'conflict_hold' });
+          }
+        } catch (conflictErr) {
+          this.logger.error('利冲检索失败', conflictErr);
+        }
+      });
+    } catch (e) {
+      this.logger.error('案件创建失败', e);
+      throw new InternalServerErrorException('案件创建失败，请重试');
     }
 
-    // Phase4 H7: 案件创建后自动生成SOP任务（异常静默处理，不影响案件创建主流程）
-    try {
-      await this.complianceService.createCaseSOP(savedCase.id, savedCase.case_type, savedCase.organization_id);
-    } catch (err) {}
+    // 3. 空值守卫
+    if (!savedCase) {
+      throw new InternalServerErrorException('案件创建失败，请重试');
+    }
 
-    // Phase4 M4: 案件创建后异步匹配类案，将匹配结果回写到案件描述（异常静默处理）
+    // 4. 事务外：类案匹配（失败忽略，不影响主流程）
     try {
       const similarResult = await this.similarCaseService.searchSimilarCases({
         case_type: savedCase.case_type,
         orgId: savedCase.organization_id,
       });
       if (similarResult.data && similarResult.data.length > 0) {
-        // 取相似度最高的前3条类案，追加"相关类案"段到案件描述
         const topSimilar = similarResult.data.slice(0, 3);
         const similarSection = topSimilar
           .map((c) => `- ${c.case_no || c.case_name || c.id}（相似度:${c.similarity}）`)
@@ -118,7 +209,16 @@ export class CaseService {
         const originDesc = savedCase.description || '';
         await this.caseRepository.update(savedCase.id, { description: originDesc + similarText });
       }
-    } catch (err) {}
+    } catch (err) {
+      this.logger.error('类案匹配失败', err);
+    }
+
+    // 5. 事务外：SOP 生成（失败忽略）
+    try {
+      await this.complianceService.createCaseSOP(savedCase.id, savedCase.case_type, savedCase.organization_id);
+    } catch (err) {
+      this.logger.error('SOP生成失败', err);
+    }
 
     return savedCase;
   }
@@ -126,12 +226,12 @@ export class CaseService {
   private analyzeRisk(caseEntity: Partial<Case>): { risk_level: string; risk_notes: string } {
     const factors: string[] = [];
     
-    if (caseEntity.fee_amount && caseEntity.fee_amount > 500000) {
+    if (caseEntity.amount && caseEntity.amount > 500000) {
       factors.push('涉案金额较大(>50万)');
     }
     
-    if (caseEntity.deadline) {
-      const deadline = new Date(caseEntity.deadline);
+    if (caseEntity.expected_close_date) {
+      const deadline = new Date(caseEntity.expected_close_date);
       const now = new Date();
       const diffDays = Math.floor((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       if (diffDays < 15) {
@@ -139,7 +239,7 @@ export class CaseService {
       }
     }
     
-    if (['criminal', 'admin'].includes(caseEntity.case_type)) {
+    if (['criminal', 'admin'].includes(caseEntity.case_category)) {
       factors.push('案由复杂度较高');
     }
     
@@ -199,7 +299,8 @@ export class CaseService {
     days_no_maintain?: number; // 智能筛选：超过X天未维护
   }): Promise<{ data: (Case & { lawyer_name?: string })[]; total: number }> {
     const query = this.caseRepository.createQueryBuilder('case')
-      .where('case.organization_id = :orgId', { orgId });
+      .where('case.organization_id = :orgId', { orgId })
+      .orderBy('case.updated_at', 'DESC');  // 全部列表按更新时间倒序排列
 
     if (filters?.status) {
       query.andWhere('case.status = :status', { status: filters.status });
@@ -278,7 +379,7 @@ export class CaseService {
   }
 
   async getDocuments(caseId: string): Promise<Document[]> {
-    return this.documentRepository.find({ where: { case_id: caseId }, order: { created_at: 'DESC' } });
+    return this.documentRepository.find({ where: { case_id: caseId }, order: { updated_at: 'DESC' } });
   }
 
   async closeCase(id: string): Promise<Case> {
@@ -367,9 +468,11 @@ export class CaseService {
 
   /**
    * 案件解约：将 change_status 设置为 terminated，并记录解约原因、操作人和时间
+   * 同步更新 status 为 terminated，避免作废案件仍出现在按 status 筛选的有效列表中
    */
   async terminateCase(id: string, reason: string, operatorId: string): Promise<Case> {
     await this.caseRepository.update(id, {
+      status: CaseStatus.TERMINATED,
       change_status: 'terminated',
       change_reason: reason || null,
       change_operator_id: operatorId || null,
@@ -393,9 +496,11 @@ export class CaseService {
 
   /**
    * 案件作废：将 change_status 设置为 voided，并记录作废原因、操作人和时间
+   * 同步更新 status 为 voided，避免作废案件仍出现在按 status 筛选的有效列表中
    */
   async voidCase(id: string, reason: string, operatorId: string): Promise<Case> {
     await this.caseRepository.update(id, {
+      status: CaseStatus.VOIDED,
       change_status: 'voided',
       change_reason: reason || null,
       change_operator_id: operatorId || null,

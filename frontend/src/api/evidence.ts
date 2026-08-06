@@ -141,14 +141,22 @@ export const batchUpdateCategory = async (
   return (res as Record<string, unknown>).data
 }
 
-// 获取预览URL
-export const getPreviewUrl = (id: string) => {
-  const token = localStorage.getItem('token')
-  return `${axios.defaults.baseURL}/evidences/${id}/preview?token=${token}`
+// 获取预览URL（使用 axios 实例注入 Authorization 头，避免 token 暴露在 URL 中）
+export const getPreviewUrl = async (id: string): Promise<string> => {
+  const res = await axios.get(`/evidences/${id}/preview`, { responseType: 'blob' })
+  return URL.createObjectURL(res as unknown as Blob)
 }
 
-// 获取下载URL
-export const getDownloadUrl = (id: string) => {
-  const token = localStorage.getItem('token')
-  return `${axios.defaults.baseURL}/evidences/${id}/download?token=${token}`
+// 下载证据文件（使用 blob 方式，token 通过拦截器注入）
+export const downloadEvidence = async (id: string, filename?: string): Promise<void> => {
+  const res = await axios.get(`/evidences/${id}/download`, { responseType: 'blob' })
+  const blob = res as unknown as Blob
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename || `evidence-${id}`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }

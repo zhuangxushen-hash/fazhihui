@@ -70,7 +70,7 @@ export class FinanceService {
     if (caseId) {
       query.case_id = caseId;
     }
-    return this.businessFundRepository.find({ where: query, order: { created_at: 'DESC' } });
+    return this.businessFundRepository.find({ where: query, order: { updated_at: 'DESC' } });
   }
 
   // 标记已付：合并后更新 BusinessFund 的 account_status
@@ -187,7 +187,7 @@ export class FinanceService {
     if (caseId) {
       qb.andWhere('pr.case_id = :caseId', { caseId });
     }
-    qb.orderBy('pr.created_at', 'DESC');
+    qb.orderBy('pr.updated_at', 'DESC');
     return qb.getMany();
   }
 
@@ -267,7 +267,7 @@ export class FinanceService {
     if (caseId) {
       query.case_id = caseId;
     }
-    return this.profitShareRepository.find({ where: query });
+    return this.profitShareRepository.find({ where: query, order: { updated_at: 'DESC' } });
   }
 
   async createRefund(refundData: Partial<Refund>): Promise<Refund> {
@@ -276,19 +276,70 @@ export class FinanceService {
   }
 
   async approveRefund(id: string, approvedBy: string, note?: string): Promise<Refund> {
-    await this.refundRepository.update(id, {
-      status: RefundStatus.APPROVED,
-      approved_by: approvedBy,
-      approved_at: new Date(),
-      approval_note: note,
+    return this.dataSource.transaction(async (manager) => {
+      const refund = await manager.findOne(Refund, { where: { id } });
+      if (!refund) {
+        throw new NotFoundException('退费记录不存在');
+      }
+
+      await manager.update(Refund, id, {
+        status: RefundStatus.APPROVED,
+        approved_by: approvedBy,
+        approved_at: new Date(),
+        approval_note: note,
+      });
+
+      const receivable = await manager.findOne(Receivable, {
+        where: { case_id: refund.case_id },
+      });
+
+      if (receivable) {
+        const refundAmount = Number(refund.amount) || 0;
+        const newReceived = Math.max(Number(receivable.received_amount || 0) - refundAmount, 0);
+        const newPending = Number(receivable.pending_amount || 0) + refundAmount;
+        let newStatus = receivable.status;
+        if (newReceived <= 0 && newPending > 0) {
+          newStatus = ReceivableStatus.PENDING;
+        } else if (newPending <= 0) {
+          newStatus = ReceivableStatus.COMPLETED;
+        } else {
+          newStatus = ReceivableStatus.PARTIAL;
+        }
+        await manager.update(Receivable, receivable.id, {
+          received_amount: newReceived,
+          pending_amount: newPending,
+          status: newStatus,
+        });
+      }
+
+      return manager.findOne(Refund, { where: { id } });
     });
-    return this.refundRepository.findOne({ where: { id } });
   }
 
   async rejectRefund(id: string, note?: string): Promise<Refund> {
     await this.refundRepository.update(id, {
       status: RefundStatus.REJECTED,
       approval_note: note,
+    });
+    return this.refundRepository.findOne({ where: { id } });
+  }
+
+  /**
+   * 退款打款完成：将状态从 approved 流转到 paid，并记录打款操作人和时间
+   */
+  async payRefund(id: string, operatorId?: string, note?: string): Promise<Refund> {
+    const refund = await this.refundRepository.findOne({ where: { id } });
+    if (!refund) {
+      throw new NotFoundException('退费记录不存在');
+    }
+    if (refund.status !== RefundStatus.APPROVED) {
+      throw new BadRequestException('仅已审核通过的退费记录可以打款');
+    }
+    await this.refundRepository.update(id, {
+      status: RefundStatus.PAID,
+      paid_by: operatorId,
+      paid_at: new Date(),
+      approval_note: note || refund.approval_note,
     });
     return this.refundRepository.findOne({ where: { id } });
   }
@@ -301,7 +352,7 @@ export class FinanceService {
     if (caseId) {
       query.case_id = caseId;
     }
-    return this.refundRepository.find({ where: query });
+    return this.refundRepository.find({ where: query, order: { updated_at: 'DESC' } });
   }
 
   async createInvoice(invoiceData: Partial<Invoice>): Promise<Invoice> {
@@ -320,7 +371,7 @@ export class FinanceService {
     if (status) {
       query.status = status;
     }
-    return this.invoiceRepository.find({ where: query });
+    return this.invoiceRepository.find({ where: query, order: { updated_at: 'DESC' } });
   }
 
   async issueInvoice(id: string, invoiceNo: string): Promise<Invoice> {
@@ -526,6 +577,26 @@ export class FinanceService {
       profitable_cases: profitableCases,
       loss_cases: lossCases,
     };
+  }
+
+  // 辅助方法：根据ID查询应收台账（含organization_id）
+  async findReceivableById(id: string): Promise<Receivable | null> {
+    return this.receivableRepository.findOne({ where: { id } });
+  }
+
+  // 辅助方法：根据ID查询费用/业务款记录（含organization_id）
+  async findBusinessFundById(id: string): Promise<BusinessFund | null> {
+    return this.businessFundRepository.findOne({ where: { id } });
+  }
+
+  // 辅助方法：根据ID查询退款记录（含organization_id）
+  async findRefundById(id: string): Promise<Refund | null> {
+    return this.refundRepository.findOne({ where: { id } });
+  }
+
+  // 辅助方法：根据ID查询发票记录（含organization_id）
+  async findInvoiceById(id: string): Promise<Invoice | null> {
+    return this.invoiceRepository.findOne({ where: { id } });
   }
 
   // 退还质保金

@@ -40,7 +40,7 @@ export class SidebarService {
     // 2. 通过 client_id 找案件
     const cases = await this.caseRepository.find({
       where: { client_id: clientId },
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
     });
 
     // 3. 通过 lead_id 找跟进记录
@@ -135,7 +135,7 @@ export class SidebarService {
 
     const recentCases = await this.caseRepository.find({
       where: { organization_id: orgId },
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
       take: 5,
     });
 

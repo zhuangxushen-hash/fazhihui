@@ -162,6 +162,7 @@ export default function Reconciliation() {
         columns={columns}
         dataSource={reconciliations}
         loading={loading}
+        scroll={{ x: 1200 }}
         pagination={{ pageSize: 10, showSizeChanger: true }}
       />
     </Card>

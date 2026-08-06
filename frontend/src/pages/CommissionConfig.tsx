@@ -303,6 +303,7 @@ export default function CommissionConfig() {
           rowKey="id"
           pagination={{ pageSize: 10 }}
           style={{ padding: 20 }}
+          scroll={{ x: 1600 }}
         />
       </div>
 

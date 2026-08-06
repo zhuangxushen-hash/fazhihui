@@ -283,7 +283,7 @@ export default function PaymentReminderManagement() {
       <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems.map(t => ({ key: t.key, label: t.label }))} />
 
       <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
-        <Table dataSource={list} columns={columns} loading={loading} rowKey="id" size="small" pagination={{ pageSize: 10 }} />
+        <Table dataSource={list} columns={columns} loading={loading} rowKey="id" size="small" pagination={{ pageSize: 10 }} scroll={{ x: 1600 }} />
       </Card>
 
       <Modal

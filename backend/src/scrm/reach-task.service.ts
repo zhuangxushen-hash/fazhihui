@@ -35,7 +35,7 @@ export class ReachTaskService {
     if (orgId) where.organization_id = orgId;
     if (filters?.task_type) where.task_type = filters.task_type;
     if (filters?.status) where.status = filters.status;
-    return this.reachTaskRepository.find({ where, order: { created_at: 'DESC' } });
+    return this.reachTaskRepository.find({ where, order: { updated_at: 'DESC' } });
   }
 
   async findById(id: string): Promise<ReachTask> {

@@ -951,6 +951,7 @@ export default function SealManagement() {
           loading={sealLoading}
           rowKey="id"
           pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+          scroll={{ x: 1200 }}
         />
       </div>
     </div>

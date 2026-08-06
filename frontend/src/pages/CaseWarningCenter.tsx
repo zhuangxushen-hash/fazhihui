@@ -294,6 +294,7 @@ const CaseWarningCenter: React.FC = () => {
             dataSource={warnings}
             rowKey="id"
             loading={loading}
+            scroll={{ x: 1600 }}
             pagination={{
               pageSize: 10,
               showSizeChanger: true,

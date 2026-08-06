@@ -60,7 +60,7 @@ export class CaseSopTemplateService {
    */
   async findAll(orgId?: string, caseType?: CaseType): Promise<CaseSOPTemplate[]> {
     const query = this.sopTemplateRepository.createQueryBuilder('template')
-      .orderBy('template.created_at', 'DESC');
+      .orderBy('template.updated_at', 'DESC');
 
     if (orgId) {
       query.where('template.organization_id = :orgId OR template.organization_id IS NULL', { orgId });

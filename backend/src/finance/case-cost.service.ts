@@ -20,7 +20,7 @@ export class CaseCostService {
   async findByCaseId(caseId: string): Promise<CaseCost[]> {
     return this.caseCostRepository.find({
       where: { case_id: caseId },
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
     });
   }
 

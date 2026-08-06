@@ -57,7 +57,7 @@ export class SocialService {
       qb.andWhere('p.post_type = :postType', { postType });
     }
 
-    qb.orderBy('p.created_at', 'DESC');
+    qb.orderBy('p.updated_at', 'DESC');
 
     const currentPage = page && page > 0 ? page : 1;
     const currentLimit = limit && limit > 0 ? limit : 20;

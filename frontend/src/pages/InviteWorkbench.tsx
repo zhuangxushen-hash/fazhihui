@@ -315,6 +315,7 @@ export default function InviteWorkbench() {
                 dataSource={pendingLeads}
                 rowKey="id"
                 loading={loading}
+                scroll={{ x: 800 }}
                 pagination={{ pageSize: 10 }}
               />
             </div>
@@ -334,6 +335,7 @@ export default function InviteWorkbench() {
                 dataSource={todayTasks}
                 rowKey="id"
                 loading={loading}
+                scroll={{ x: 800 }}
                 pagination={false}
               />
             </div>
@@ -353,6 +355,7 @@ export default function InviteWorkbench() {
                 dataSource={invitedTasks}
                 rowKey="id"
                 loading={loading}
+                scroll={{ x: 800 }}
                 pagination={{ pageSize: 10 }}
               />
             </div>
@@ -365,6 +368,7 @@ export default function InviteWorkbench() {
                 dataSource={historyTasks}
                 rowKey="id"
                 loading={loading}
+                scroll={{ x: 800 }}
                 pagination={{ pageSize: 10 }}
               />
             </div>

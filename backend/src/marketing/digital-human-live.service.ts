@@ -149,7 +149,7 @@ export class DigitalHumanLiveService {
       queryBuilder.andWhere('live.status = :status', { status });
     }
 
-    queryBuilder.orderBy('live.created_at', 'DESC');
+    queryBuilder.orderBy('live.updated_at', 'DESC');
     return queryBuilder.getMany();
   }
 }

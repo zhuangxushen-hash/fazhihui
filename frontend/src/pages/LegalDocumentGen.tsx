@@ -401,6 +401,7 @@ export default function LegalDocumentGen() {
           rowKey="id"
           size="small"
           pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }}
+          scroll={{ x: 1200 }}
         />
       </Card>
     </div>

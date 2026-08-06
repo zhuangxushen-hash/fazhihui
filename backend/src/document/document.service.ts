@@ -42,7 +42,7 @@ export class DocumentItemService {
     }
     const [list, total] = await this.documentRepository.findAndCount({
       where,
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
       skip: (page - 1) * pageSize,
       take: pageSize,
     });

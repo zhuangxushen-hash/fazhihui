@@ -371,6 +371,7 @@ export default function TalkQualityCheck() {
                     loading={loading}
                     rowKey="id"
                     size="small"
+                    scroll={{ x: 1600 }}
                     pagination={{ pageSize: 10 }}
                   />
                 </Card>
@@ -392,6 +393,7 @@ export default function TalkQualityCheck() {
                     loading={loading}
                     rowKey="id"
                     size="small"
+                    scroll={{ x: 800 }}
                     pagination={{ pageSize: 10 }}
                   />
                 </Card>

@@ -833,6 +833,7 @@ export default function CustomReport() {
             onChange: (page) => fetchExportLogs(page),
           }}
           size="middle"
+          scroll={{ x: 1200 }}
         />
       </Card>
 

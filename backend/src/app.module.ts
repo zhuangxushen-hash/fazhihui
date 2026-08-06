@@ -38,6 +38,12 @@ import { LawToolModule } from './law-tool/law-tool.module';
 import { ArchiveVolumeModule } from './archive-volume/archive-volume.module';
 import { ComprehensiveModule } from './comprehensive/comprehensive.module';
 import { StatisticalAnalysisModule } from './statistical-analysis/statistical-analysis.module';
+import { ScheduleModule as NestScheduleModule } from '@nestjs/schedule';
+import { AdPlatformsModule } from './ad-platforms/ad-platforms.module';
+// 新增模块：AI 营销工作手机 / 舆情监控 / 自动对账规则
+import { CallRecordsModule } from './call-records/call-records.module';
+import { PublicOpinionModule } from './public-opinion/public-opinion.module';
+import { ReconciliationRulesModule } from './reconciliation-rules/reconciliation-rules.module';
 
 @Module({
   imports: [
@@ -55,6 +61,8 @@ import { StatisticalAnalysisModule } from './statistical-analysis/statistical-an
       // 生产环境关闭 synchronize，避免结构同步风险
       synchronize: process.env.NODE_ENV !== 'production',
     }),
+    // 启用 @nestjs/schedule 定时任务能力（@Cron 装饰器依赖此模块）
+    NestScheduleModule.forRoot(),
     AuthModule,
     UserModule,
     LeadModule,
@@ -90,6 +98,11 @@ import { StatisticalAnalysisModule } from './statistical-analysis/statistical-an
     ArchiveVolumeModule,
     ComprehensiveModule,
     StatisticalAnalysisModule,
+    AdPlatformsModule,
+    // 新增模块：AI 营销工作手机 / 舆情监控 / 自动对账规则
+    CallRecordsModule,
+    PublicOpinionModule,
+    ReconciliationRulesModule,
   ],
   providers: [
     // 注册全局限流守卫

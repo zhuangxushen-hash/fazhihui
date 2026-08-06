@@ -38,7 +38,7 @@ export class BidService {
     }
     return this.bidRepository.find({
       where,
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
     });
   }
 
@@ -107,7 +107,7 @@ export class BidService {
     }
     return this.bidRecordRepository.find({
       where,
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
     });
   }
 

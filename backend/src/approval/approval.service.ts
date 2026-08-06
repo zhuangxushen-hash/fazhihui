@@ -61,62 +61,66 @@ export class ApprovalService {
 
   // 审批通过：当前步骤通过，推进到下一步或完成
   async approve(requestId: string, userId: string, comment?: string): Promise<ApprovalRequest> {
-    const request = await this.requestRepository.findOne({ where: { id: requestId } });
-    if (!request) {
-      throw new NotFoundException('审批申请不存在');
-    }
-    if (request.status !== 'pending') {
-      throw new BadRequestException('当前申请不可审批');
-    }
-    // 查找当前待处理步骤
-    const currentStep = await this.stepRepository.findOne({
-      where: { request_id: requestId, step_order: request.current_step, result: 'pending' },
+    return await this.dataSource.transaction(async (manager) => {
+      const request = await manager.findOne(ApprovalRequest, { where: { id: requestId } });
+      if (!request) {
+        throw new NotFoundException('审批申请不存在');
+      }
+      if (request.status !== 'pending') {
+        throw new BadRequestException('当前申请不可审批');
+      }
+      // 查找当前待处理步骤
+      const currentStep = await manager.findOne(ApprovalStep, {
+        where: { request_id: requestId, step_order: request.current_step, result: 'pending' },
+      });
+      if (!currentStep) {
+        throw new BadRequestException('当前无待处理步骤');
+      }
+      if (currentStep.approver_id !== userId) {
+        throw new ForbiddenException('您无权审批此步骤');
+      }
+      // 更新当前步骤为已通过
+      currentStep.result = 'approved';
+      currentStep.comment = comment || null;
+      currentStep.approve_time = new Date();
+      await manager.save(ApprovalStep, currentStep);
+      // 判断是否所有步骤完成
+      const totalSteps = await manager.count(ApprovalStep, { where: { request_id: requestId } });
+      if (request.current_step + 1 >= totalSteps) {
+        request.status = 'approved';
+      } else {
+        request.current_step = request.current_step + 1;
+      }
+      return manager.save(ApprovalRequest, request);
     });
-    if (!currentStep) {
-      throw new BadRequestException('当前无待处理步骤');
-    }
-    if (currentStep.approver_id !== userId) {
-      throw new ForbiddenException('您无权审批此步骤');
-    }
-    // 更新当前步骤为已通过
-    currentStep.result = 'approved';
-    currentStep.comment = comment || null;
-    currentStep.approve_time = new Date();
-    await this.stepRepository.save(currentStep);
-    // 判断是否所有步骤完成
-    const totalSteps = await this.stepRepository.count({ where: { request_id: requestId } });
-    if (request.current_step + 1 >= totalSteps) {
-      request.status = 'approved';
-    } else {
-      request.current_step = request.current_step + 1;
-    }
-    return this.requestRepository.save(request);
   }
 
   // 驳回：整单驳回
   async reject(requestId: string, userId: string, comment?: string): Promise<ApprovalRequest> {
-    const request = await this.requestRepository.findOne({ where: { id: requestId } });
-    if (!request) {
-      throw new NotFoundException('审批申请不存在');
-    }
-    if (request.status !== 'pending') {
-      throw new BadRequestException('当前申请不可审批');
-    }
-    const currentStep = await this.stepRepository.findOne({
-      where: { request_id: requestId, step_order: request.current_step, result: 'pending' },
+    return await this.dataSource.transaction(async (manager) => {
+      const request = await manager.findOne(ApprovalRequest, { where: { id: requestId } });
+      if (!request) {
+        throw new NotFoundException('审批申请不存在');
+      }
+      if (request.status !== 'pending') {
+        throw new BadRequestException('当前申请不可审批');
+      }
+      const currentStep = await manager.findOne(ApprovalStep, {
+        where: { request_id: requestId, step_order: request.current_step, result: 'pending' },
+      });
+      if (!currentStep) {
+        throw new BadRequestException('当前无待处理步骤');
+      }
+      if (currentStep.approver_id !== userId) {
+        throw new ForbiddenException('您无权审批此步骤');
+      }
+      currentStep.result = 'rejected';
+      currentStep.comment = comment || null;
+      currentStep.approve_time = new Date();
+      await manager.save(ApprovalStep, currentStep);
+      request.status = 'rejected';
+      return manager.save(ApprovalRequest, request);
     });
-    if (!currentStep) {
-      throw new BadRequestException('当前无待处理步骤');
-    }
-    if (currentStep.approver_id !== userId) {
-      throw new ForbiddenException('您无权审批此步骤');
-    }
-    currentStep.result = 'rejected';
-    currentStep.comment = comment || null;
-    currentStep.approve_time = new Date();
-    await this.stepRepository.save(currentStep);
-    request.status = 'rejected';
-    return this.requestRepository.save(request);
   }
 
   // 撤销：仅发起人可撤销
@@ -152,7 +156,7 @@ export class ApprovalService {
     if (status) {
       qb.andWhere('request.status = :status', { status });
     }
-    qb.orderBy('request.created_at', 'DESC');
+    qb.orderBy('request.updated_at', 'DESC');
     return qb.getMany();
   }
 
@@ -188,7 +192,7 @@ export class ApprovalService {
     if (status) {
       qb.andWhere('request.status = :status', { status });
     }
-    qb.orderBy('request.created_at', 'DESC');
+    qb.orderBy('request.updated_at', 'DESC');
     return qb.getMany();
   }
 
@@ -207,30 +211,32 @@ export class ApprovalService {
 
   // 退回上一步：current_step 减1，状态保持 pending，在当前步骤审批意见中追加退回标记
   async returnBack(id: string, userId: string, comment: string): Promise<ApprovalRequest> {
-    const request = await this.requestRepository.findOne({ where: { id } });
-    if (!request) {
-      throw new NotFoundException('审批申请不存在');
-    }
-    if (request.status !== 'pending') {
-      throw new BadRequestException('当前申请不可退回');
-    }
-    if (request.current_step <= 1) {
-      throw new BadRequestException('已是第一步，无法退回');
-    }
-    // 找到当前步骤记录，在审批意见中追加退回标记
-    const currentStep = await this.stepRepository.findOne({
-      where: { request_id: id, step_order: request.current_step, result: 'pending' },
+    return await this.dataSource.transaction(async (manager) => {
+      const request = await manager.findOne(ApprovalRequest, { where: { id } });
+      if (!request) {
+        throw new NotFoundException('审批申请不存在');
+      }
+      if (request.status !== 'pending') {
+        throw new BadRequestException('当前申请不可退回');
+      }
+      if (request.current_step <= 1) {
+        throw new BadRequestException('已是第一步，无法退回');
+      }
+      // 找到当前步骤记录，在审批意见中追加退回标记
+      const currentStep = await manager.findOne(ApprovalStep, {
+        where: { request_id: id, step_order: request.current_step, result: 'pending' },
+      });
+      if (currentStep) {
+        const existingComment = currentStep.comment || '';
+        currentStep.comment = existingComment
+          ? `${existingComment}\n【退回】${comment}`
+          : `【退回】${comment}`;
+        await manager.save(ApprovalStep, currentStep);
+      }
+      // 退回上一步：current_step 减1，状态保持 pending
+      request.current_step = request.current_step - 1;
+      return manager.save(ApprovalRequest, request);
     });
-    if (currentStep) {
-      const existingComment = currentStep.comment || '';
-      currentStep.comment = existingComment
-        ? `${existingComment}\n【退回】${comment}`
-        : `【退回】${comment}`;
-      await this.stepRepository.save(currentStep);
-    }
-    // 退回上一步：current_step 减1，状态保持 pending
-    request.current_step = request.current_step - 1;
-    return this.requestRepository.save(request);
   }
 
   // 批量撤销：只更新 status 为 pending 的记录，在当前步骤审批意见中追加撤销标记，使用事务保证一致性
@@ -332,22 +338,24 @@ export class ApprovalService {
 
   // 转批：将当前步骤的审批权转交给其他人
   async transfer(id: string, fromUserId: string, toUserId: string, comment: string): Promise<ApprovalRequest> {
-    const request = await this.requestRepository.findOne({ where: { id } });
-    if (!request) throw new NotFoundException('审批申请不存在');
-    if (request.status !== 'pending') throw new BadRequestException('仅待审批状态可转批');
+    return await this.dataSource.transaction(async (manager) => {
+      const request = await manager.findOne(ApprovalRequest, { where: { id } });
+      if (!request) throw new NotFoundException('审批申请不存在');
+      if (request.status !== 'pending') throw new BadRequestException('仅待审批状态可转批');
 
-    // 查找当前步骤
-    const currentStep = await this.stepRepository.findOne({
-      where: { request_id: id, step_order: request.current_step },
+      // 查找当前步骤
+      const currentStep = await manager.findOne(ApprovalStep, {
+        where: { request_id: id, step_order: request.current_step },
+      });
+      if (!currentStep) throw new NotFoundException('当前审批步骤不存在');
+      if (currentStep.approver_id !== fromUserId) throw new BadRequestException('仅当前审批人可转批');
+
+      // 更新审批人为转交目标
+      currentStep.approver_id = toUserId;
+      currentStep.comment = `【转批】${comment}`;
+      await manager.save(ApprovalStep, currentStep);
+
+      return manager.findOne(ApprovalRequest, { where: { id } });
     });
-    if (!currentStep) throw new NotFoundException('当前审批步骤不存在');
-    if (currentStep.approver_id !== fromUserId) throw new BadRequestException('仅当前审批人可转批');
-
-    // 更新审批人为转交目标
-    currentStep.approver_id = toUserId;
-    currentStep.comment = `【转批】${comment}`;
-    await this.stepRepository.save(currentStep);
-
-    return request;
   }
 }

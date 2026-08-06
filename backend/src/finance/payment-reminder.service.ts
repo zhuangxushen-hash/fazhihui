@@ -48,7 +48,7 @@ export class PaymentReminderService {
     }
     return this.reminderRepository.find({
       where,
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
     });
   }
 

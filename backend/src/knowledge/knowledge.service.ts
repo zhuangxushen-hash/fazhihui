@@ -73,7 +73,7 @@ export class KnowledgeService {
       });
     }
 
-    qb.orderBy('a.created_at', 'DESC');
+    qb.orderBy('a.updated_at', 'DESC');
     return qb.getMany();
   }
 

@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne } from 'typeorm';
 import { Organization } from '../user/organization.entity';
 import { User } from '../user/user.entity';
 import { ComplianceType, ComplianceResult } from '../types';
@@ -43,4 +43,7 @@ export class ComplianceRecord {
 
   @CreateDateColumn()
   created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
 }

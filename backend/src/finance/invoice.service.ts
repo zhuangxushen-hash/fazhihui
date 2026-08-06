@@ -100,7 +100,7 @@ export class InvoiceService {
     }
     return this.invoiceRepository.find({
       where,
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
     });
   }
 

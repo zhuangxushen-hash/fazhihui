@@ -310,7 +310,7 @@ export class HrController {
       qb.andWhere('u.status = :status', { status: statusBool });
     }
 
-    qb.orderBy('u.created_at', 'DESC')
+    qb.orderBy('u.updated_at', 'DESC')
       .skip((pageNum - 1) * pageSizeNum)
       .take(pageSizeNum);
 

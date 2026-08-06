@@ -40,6 +40,7 @@ const RefundTierConfig = lazy(() => import('./pages/RefundTierConfig'))
 const CaseProfitAnalysis = lazy(() => import('./pages/CaseProfitAnalysis'))
 // Phase 3 模块1 投放营销
 const AdAccountManagement = lazy(() => import('./pages/AdAccountManagement'))
+const AdPlatformIntegration = lazy(() => import('./pages/AdPlatformIntegration'))
 const AdPlanManagement = lazy(() => import('./pages/AdPlanManagement'))
 const ConversionReport = lazy(() => import('./pages/ConversionReport'))
 const MaterialManagement = lazy(() => import('./pages/MaterialManagement'))
@@ -115,6 +116,16 @@ const BidPerformance = lazy(() => import('./pages/BidPerformance'))
 const LawToolNav = lazy(() => import('./pages/LawToolNav'))
 const PersonalCenter = lazy(() => import('./pages/PersonalCenter'))
 const PersonnelManagement = lazy(() => import('./pages/PersonnelManagement'))
+// 第二批新增页面：工作手机/舆情监控/退费管理/审计日志/组织管理/对账规则配置
+const WorkPhoneManagement = lazy(() => import('./pages/WorkPhoneManagement'))
+const PublicOpinionMonitor = lazy(() => import('./pages/PublicOpinionMonitor'))
+const RefundManagement = lazy(() => import('./pages/RefundManagement'))
+const AuditLogManagement = lazy(() => import('./pages/AuditLogManagement'))
+const OrganizationManagement = lazy(() => import('./pages/OrganizationManagement'))
+const ReconciliationRuleConfig = lazy(() => import('./pages/ReconciliationRuleConfig'))
+// 第三批新增页面：C端推送规则配置/营销内容预审工作台
+const PushRuleConfig = lazy(() => import('./pages/PushRuleConfig'))
+const ContentPreviewWorkbench = lazy(() => import('./pages/ContentPreviewWorkbench'))
 
 // 设置 dayjs 中文语言
 dayjs.locale('zh-cn')
@@ -357,6 +368,7 @@ function App() {
           <Route path="/compliance-center" element={<ProtectedRoute><ComplianceCenter /></ProtectedRoute>} />
           <Route path="/compliance/export" element={<ProtectedRoute><ComplianceExport /></ProtectedRoute>} />
           <Route path="/compliance/sales-review" element={<ProtectedRoute><SalesComplianceReview /></ProtectedRoute>} />
+          <Route path="/compliance/public-opinion" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><PublicOpinionMonitor /></ProtectedRoute>} />
           {/* 财务分润 */}
           <Route path="/finance" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><FinanceManagement /></ProtectedRoute>} />
           <Route path="/commission-config" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><CommissionConfig /></ProtectedRoute>} />
@@ -366,15 +378,20 @@ function App() {
           <Route path="/finance/payment-reminder" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><PaymentReminderManagement /></ProtectedRoute>} />
           <Route path="/finance/invoices" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><InvoiceManagement /></ProtectedRoute>} />
           <Route path="/finance/business-funds" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><BusinessFundManagement /></ProtectedRoute>} />
+          <Route path="/finance/refund" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><RefundManagement /></ProtectedRoute>} />
+          <Route path="/finance/reconciliation-rules" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><ReconciliationRuleConfig /></ProtectedRoute>} />
           <Route path="/service-ratings" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><ServiceRatingManagement /></ProtectedRoute>} />
           {/* 投放营销 */}
           <Route path="/marketing/ad-accounts" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><AdAccountManagement /></ProtectedRoute>} />
+          <Route path="/marketing/platform-integration" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><AdPlatformIntegration /></ProtectedRoute>} />
           <Route path="/marketing/ad-plans" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><AdPlanManagement /></ProtectedRoute>} />
           <Route path="/marketing/conversion" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><ConversionReport /></ProtectedRoute>} />
           <Route path="/marketing/materials" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><MaterialManagement /></ProtectedRoute>} />
           <Route path="/marketing/ai-content" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><AIContentGenerator /></ProtectedRoute>} />
           <Route path="/marketing/social-accounts" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><SocialAccountMatrix /></ProtectedRoute>} />
           <Route path="/marketing/digital-human-live" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><DigitalHumanLive /></ProtectedRoute>} />
+          <Route path="/marketing/work-phone" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><WorkPhoneManagement /></ProtectedRoute>} />
+          <Route path="/marketing/content-preview" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><ContentPreviewWorkbench /></ProtectedRoute>} />
           {/* SCRM私域 */}
           <Route path="/scrm/live-codes" element={<ProtectedRoute><LiveCodeManagement /></ProtectedRoute>} />
           <Route path="/scrm/channels" element={<ProtectedRoute><ChannelTracking /></ProtectedRoute>} />
@@ -393,6 +410,9 @@ function App() {
           <Route path="/system/deployment-config" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><DeploymentConfig /></ProtectedRoute>} />
           <Route path="/system/brand-customization" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><BrandCustomization /></ProtectedRoute>} />
           <Route path="/system/integrations" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><IntegrationManagement /></ProtectedRoute>} />
+          <Route path="/system/audit-logs" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><AuditLogManagement /></ProtectedRoute>} />
+          <Route path="/system/organizations" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><OrganizationManagement /></ProtectedRoute>} />
+          <Route path="/system/push-rules" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><PushRuleConfig /></ProtectedRoute>} />
           <Route path="/cloud-archive" element={<ProtectedRoute><CloudArchiveManagement /></ProtectedRoute>} />
           <Route path="/approval-center" element={<ProtectedRoute><ApprovalCenter /></ProtectedRoute>} />
           {/* 可视化绘图 + 数据大屏 */}
@@ -405,9 +425,6 @@ function App() {
           <Route path="/schedules" element={<ProtectedRoute><ScheduleManagement /></ProtectedRoute>} />
           <Route path="/tasks" element={<ProtectedRoute><TaskCenter /></ProtectedRoute>} />
           <Route path="/knowledge" element={<ProtectedRoute><KnowledgeBase /></ProtectedRoute>} />
-          <Route path="/finance/payment-reminder" element={<ProtectedRoute><PaymentReminderManagement /></ProtectedRoute>} />
-          <Route path="/finance/invoices" element={<ProtectedRoute><InvoiceManagement /></ProtectedRoute>} />
-          <Route path="/finance/business-funds" element={<ProtectedRoute><BusinessFundManagement /></ProtectedRoute>} />
           <Route path="/bids" element={<ProtectedRoute><BidManagement /></ProtectedRoute>} />
           <Route path="/due-diligence" element={<ProtectedRoute><DueDiligenceTool /></ProtectedRoute>} />
           {/* HR人力资源 */}

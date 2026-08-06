@@ -433,6 +433,7 @@ export default function ApprovalCenter() {
               selectedRowKeys: selectedIds,
               onChange: (keys) => setSelectedIds(keys as string[]),
             }}
+            scroll={{ x: 1200 }}
             pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
           />
         </div>

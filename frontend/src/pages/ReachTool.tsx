@@ -290,6 +290,7 @@ export default function ReachTool() {
           columns={columns}
           loading={loading}
           rowKey="id"
+          scroll={{ x: 1200 }}
           pagination={{ pageSize: 10 }}
           style={{ padding: 20 }}
         />
@@ -362,6 +363,7 @@ export default function ReachTool() {
           dataSource={momentsSchedule}
           columns={scheduleColumns}
           rowKey="id"
+          scroll={{ x: 800 }}
           pagination={{ pageSize: 10 }}
         />
       </Modal>

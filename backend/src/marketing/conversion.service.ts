@@ -1,6 +1,6 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import { Repository, Between, LessThanOrEqual, MoreThanOrEqual, In } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConversionEvent } from './conversion-event.entity';
 import { AdMaterial } from './ad-material.entity';
@@ -449,25 +449,34 @@ export class ConversionService {
       today.setHours(0, 0, 0, 0);
 
       const materials = await this.adMaterialRepository.find();
-      let updated = 0;
-      for (const material of materials) {
-        const revenueRow = await this.conversionEventRepository
-          .createQueryBuilder('e')
-          .select('COALESCE(SUM(e.amount), 0)', 'revenue')
-          .where('e.material_id = :materialId', { materialId: material.id })
-          .andWhere('e.event_type = :eventType', { eventType: ConversionEventType.SIGN })
-          .andWhere('e.created_at >= :startDate', { startDate: yesterday })
-          .andWhere('e.created_at < :endDate', { endDate: today })
-          .getRawOne();
+      const materialIds = materials.map(m => m.id);
 
-        const revenue = parseFloat(revenueRow?.revenue) || 0;
+      const revenueRaw = materialIds.length > 0
+        ? await this.conversionEventRepository
+            .createQueryBuilder('e')
+            .select('e.material_id', 'material_id')
+            .addSelect('COALESCE(SUM(e.amount), 0)', 'revenue')
+            .where('e.material_id IN (:...materialIds)', { materialIds })
+            .andWhere('e.event_type = :eventType', { eventType: ConversionEventType.SIGN })
+            .andWhere('e.created_at >= :startDate', { startDate: yesterday })
+            .andWhere('e.created_at < :endDate', { endDate: today })
+            .groupBy('e.material_id')
+            .getRawMany()
+        : [];
+      const revenueMap = new Map(revenueRaw.map((r: any) => [r.material_id, parseFloat(r.revenue) || 0]));
+
+      const toSave: AdMaterial[] = [];
+      for (const material of materials) {
+        const revenue = revenueMap.get(material.id) || 0;
         const cost = Number(material.cost) || 0;
-        // ROI = 累计回款 / 累计消耗 * 100（百分比）
         material.roi = cost > 0 ? Math.round((revenue / cost) * 10000) / 100 : 0;
-        await this.adMaterialRepository.save(material);
-        updated++;
+        toSave.push(material);
       }
-      this.logger.log(`T+1 素材 ROI 数据更新完成，共更新 ${updated} 个素材`);
+
+      if (toSave.length > 0) {
+        await this.adMaterialRepository.save(toSave);
+      }
+      this.logger.log(`T+1 素材 ROI 数据更新完成，共更新 ${toSave.length} 个素材`);
     } catch (err) {
       this.logger.error(`T+1 素材 ROI 数据更新失败: ${err?.message ?? err}`);
     }

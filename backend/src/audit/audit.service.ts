@@ -43,6 +43,8 @@ export class AuditService {
     resource_type?: string;
     page?: number;
     limit?: number;
+    start_date?: string;
+    end_date?: string;
   }) {
     const qb = this.auditRepository.createQueryBuilder('audit');
     if (params.user_id) {
@@ -53,6 +55,21 @@ export class AuditService {
     }
     if (params.resource_type) {
       qb.andWhere('audit.resource_type = :resourceType', { resourceType: params.resource_type });
+    }
+    // 按时间范围筛选审计日志
+    if (params.start_date && params.end_date) {
+      qb.andWhere('audit.created_at BETWEEN :start AND :end', {
+        start: new Date(params.start_date),
+        end: new Date(params.end_date),
+      });
+    } else if (params.start_date) {
+      qb.andWhere('audit.created_at >= :start', {
+        start: new Date(params.start_date),
+      });
+    } else if (params.end_date) {
+      qb.andWhere('audit.created_at <= :end', {
+        end: new Date(params.end_date),
+      });
     }
     qb.orderBy('audit.created_at', 'DESC');
     const page = params.page || 1;

@@ -376,6 +376,7 @@ export default function ComplianceExport() {
                     rowKey="id"
                     size="small"
                     pagination={{ pageSize: 10 }}
+                    scroll={{ x: 1200 }}
                   />
                 </Card>
               ),
@@ -495,6 +496,7 @@ export default function ComplianceExport() {
                     rowKey="id"
                     size="small"
                     pagination={{ pageSize: 10 }}
+                    scroll={{ x: 1200 }}
                   />
                 </Card>
               ),

@@ -89,6 +89,13 @@ export class TaskController {
     return this.taskService.create(userId, orgId, body);
   }
 
+  // 查询任务详情
+  @Get(':id')
+  findOne(@Param('id') id: string, @Request() req: any) {
+    const orgId = req?.user?.organization_id;
+    return this.taskService.findOne(id, orgId);
+  }
+
   // 更新任务
   @Put(':id')
   update(@Param('id') id: string, @Body() body: Partial<Task>) {

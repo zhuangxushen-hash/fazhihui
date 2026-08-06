@@ -30,3 +30,12 @@ stitch_spec_extracted/
 
 # TypeScript 构建缓存
 *.tsbuildinfo
+
+# 临时测试脚本
+test_*.js
+*_test.js
+verify_*.js
+auth_test.js
+backend/env_test.js
+backend/test_*.js
+backend/scripts/validate_*.js

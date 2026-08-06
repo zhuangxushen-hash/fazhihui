@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, DeleteDateColumn, Index } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, Index } from 'typeorm';
 
 // 用印申请状态：pending待审批 / approved已通过 / rejected已驳回 / used已盖章 / voided已作废
 // 用印介质：paper纸质 / electronic电子
@@ -107,6 +107,9 @@ export class SealApplication {
 
   @CreateDateColumn()
   created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
 
   @DeleteDateColumn({ nullable: true })
   deleted_at: Date;

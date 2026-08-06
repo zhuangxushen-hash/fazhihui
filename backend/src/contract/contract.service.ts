@@ -253,7 +253,7 @@ export class ContractService {
       );
     }
 
-    query.orderBy('contract.created_at', 'DESC');
+    query.orderBy('contract.updated_at', 'DESC');
     const total = await query.getCount();
     const page = filters?.page || 1;
     const limit = filters?.limit || 20;
@@ -309,15 +309,17 @@ export class ContractService {
   async review(id: string, remarks?: string): Promise<Contract> {
     const contract = await this.contractRepository.findOne({ where: { id } });
     if (!contract) return null;
-    await this.contractRepository.update(id, { stage: ContractStageEnum.REVIEWING });
-    await this.recordStage({
-      contract_id: id,
-      stage_name: ContractStageEnum.REVIEWING,
-      stage_status: 'entered',
-      remarks: remarks || '合同审查中',
-      organization_id: contract.organization_id,
+    return this.dataSource.transaction(async (manager) => {
+      await manager.update(Contract, id, { stage: ContractStageEnum.REVIEWING });
+      await this.recordStage({
+        contract_id: id,
+        stage_name: ContractStageEnum.REVIEWING,
+        stage_status: 'entered',
+        remarks: remarks || '合同审查中',
+        organization_id: contract.organization_id,
+      }, manager);
+      return manager.findOne(Contract, { where: { id } });
     });
-    return this.contractRepository.findOne({ where: { id } });
   }
 
   // 签订合同: reviewing -> signed
@@ -329,16 +331,18 @@ export class ContractService {
     else if (!contract.sign_date) updateData.sign_date = new Date();
     if (data?.start_date) updateData.start_date = data.start_date;
     if (data?.end_date) updateData.end_date = data.end_date;
-    await this.contractRepository.update(id, updateData);
-    await this.recordStage({
-      contract_id: id,
-      stage_name: ContractStageEnum.SIGNED,
-      stage_status: 'entered',
-      start_date: updateData.sign_date as Date,
-      remarks: data?.remarks || '合同签订',
-      organization_id: contract.organization_id,
+    return this.dataSource.transaction(async (manager) => {
+      await manager.update(Contract, id, updateData);
+      await this.recordStage({
+        contract_id: id,
+        stage_name: ContractStageEnum.SIGNED,
+        stage_status: 'entered',
+        start_date: updateData.sign_date as Date,
+        remarks: data?.remarks || '合同签订',
+        organization_id: contract.organization_id,
+      }, manager);
+      return manager.findOne(Contract, { where: { id } });
     });
-    return this.contractRepository.findOne({ where: { id } });
   }
 
   // 变更合同: 更新可变字段并记录阶段
@@ -370,44 +374,36 @@ export class ContractService {
   async terminate(id: string, remarks?: string): Promise<Contract> {
     const contract = await this.contractRepository.findOne({ where: { id } });
     if (!contract) return null;
-    await this.contractRepository.update(id, { stage: ContractStageEnum.TERMINATED });
-    await this.recordStage({
-      contract_id: id,
-      stage_name: ContractStageEnum.TERMINATED,
-      stage_status: 'entered',
-      end_date: new Date(),
-      remarks: remarks || '合同解约',
-      organization_id: contract.organization_id,
+    return this.dataSource.transaction(async (manager) => {
+      await manager.update(Contract, id, { stage: ContractStageEnum.TERMINATED });
+      await this.recordStage({
+        contract_id: id,
+        stage_name: ContractStageEnum.TERMINATED,
+        stage_status: 'entered',
+        end_date: new Date(),
+        remarks: remarks || '合同解约',
+        organization_id: contract.organization_id,
+      }, manager);
+      return manager.findOne(Contract, { where: { id } });
     });
-    const result = await this.contractRepository.findOne({ where: { id } });
-
-    // Phase5 M8: 合同终止审计日志（异常静默不影响主流程）
-    try {
-      await this.logContractAudit({
-        action: '合同终止',
-        resourceType: 'Contract',
-        resourceId: id,
-        detail: JSON.stringify({ contract_id: id, stage: 'terminated', remarks: remarks || '' }),
-      });
-    } catch (e) {}
-
-    return result;
   }
 
   // 作废: -> voided
   async void(id: string, remarks?: string): Promise<Contract> {
     const contract = await this.contractRepository.findOne({ where: { id } });
     if (!contract) return null;
-    await this.contractRepository.update(id, { stage: ContractStageEnum.VOIDED });
-    await this.recordStage({
-      contract_id: id,
-      stage_name: ContractStageEnum.VOIDED,
-      stage_status: 'entered',
-      end_date: new Date(),
-      remarks: remarks || '合同作废',
-      organization_id: contract.organization_id,
+    return this.dataSource.transaction(async (manager) => {
+      await manager.update(Contract, id, { stage: ContractStageEnum.VOIDED });
+      await this.recordStage({
+        contract_id: id,
+        stage_name: ContractStageEnum.VOIDED,
+        stage_status: 'entered',
+        end_date: new Date(),
+        remarks: remarks || '合同作废',
+        organization_id: contract.organization_id,
+      }, manager);
+      return manager.findOne(Contract, { where: { id } });
     });
-    return this.contractRepository.findOne({ where: { id } });
   }
 
   // 推进履行阶段: signed -> performing -> completed（辅助方法，便于后续扩展）
@@ -421,13 +417,16 @@ export class ContractService {
       nextStage = ContractStageEnum.COMPLETED;
     }
     if (nextStage !== contract.stage) {
-      await this.contractRepository.update(id, { stage: nextStage });
-      await this.recordStage({
-        contract_id: id,
-        stage_name: nextStage,
-        stage_status: 'entered',
-        remarks: remarks || '合同阶段推进',
-        organization_id: contract.organization_id,
+      return this.dataSource.transaction(async (manager) => {
+        await manager.update(Contract, id, { stage: nextStage });
+        await this.recordStage({
+          contract_id: id,
+          stage_name: nextStage,
+          stage_status: 'entered',
+          remarks: remarks || '合同阶段推进',
+          organization_id: contract.organization_id,
+        }, manager);
+        return manager.findOne(Contract, { where: { id } });
       });
     }
     return this.contractRepository.findOne({ where: { id } });
@@ -530,15 +529,17 @@ export class ContractService {
   async submitApproval(id: string): Promise<Contract> {
     const contract = await this.contractRepository.findOne({ where: { id } });
     if (!contract) return null;
-    await this.contractRepository.update(id, { approval_status: 'pending' });
-    await this.recordStage({
-      contract_id: id,
-      stage_name: contract.stage,
-      stage_status: 'submit_approval',
-      remarks: '提交合同审批',
-      organization_id: contract.organization_id,
+    return this.dataSource.transaction(async (manager) => {
+      await manager.update(Contract, id, { approval_status: 'pending' });
+      await this.recordStage({
+        contract_id: id,
+        stage_name: contract.stage,
+        stage_status: 'submit_approval',
+        remarks: '提交合同审批',
+        organization_id: contract.organization_id,
+      }, manager);
+      return manager.findOne(Contract, { where: { id } });
     });
-    return this.contractRepository.findOne({ where: { id } });
   }
 
   // 合同审批通过：approval_status approved

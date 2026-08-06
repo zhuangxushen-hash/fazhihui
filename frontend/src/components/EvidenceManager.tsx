@@ -39,7 +39,7 @@ import {
   getEvidenceCatalog,
   batchArchiveEvidence,
   getPreviewUrl,
-  getDownloadUrl,
+  downloadEvidence,
 } from '../api/evidence'
 import { Evidence, EvidenceType, EvidenceCategory } from '../types'
 import { formatFileSize } from '../utils/format'
@@ -67,6 +67,7 @@ export default function EvidenceManager({ caseId }: EvidenceManagerProps) {
   const [fileList, setFileList] = useState<UploadFile[]>([])
   const [detailDrawerVisible, setDetailDrawerVisible] = useState(false)
   const [detail, setDetail] = useState<Evidence | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string>('')
 
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const [uploadForm] = Form.useForm()
@@ -192,6 +193,10 @@ export default function EvidenceManager({ caseId }: EvidenceManagerProps) {
       const data = await getEvidenceDetail(id)
       setDetail(data as Evidence | null)
       setDetailDrawerVisible(true)
+      if (data) {
+        const url = await getPreviewUrl(id)
+        setPreviewUrl(url)
+      }
     } catch (error) {
       message.error('获取证据详情失败')
     }
@@ -274,7 +279,7 @@ export default function EvidenceManager({ caseId }: EvidenceManagerProps) {
           <Button
             size="small"
             icon={<DownloadOutlined />}
-            onClick={() => window.open(getDownloadUrl(record.id))}
+            onClick={() => downloadEvidence(record.id, record.name)}
           >
             下载
           </Button>
@@ -384,6 +389,7 @@ export default function EvidenceManager({ caseId }: EvidenceManagerProps) {
         dataSource={evidences}
         rowKey="id"
         loading={loading}
+        scroll={{ x: 1200 }}
         rowSelection={{
           selectedRowKeys,
           onChange: setSelectedRowKeys,
@@ -526,6 +532,7 @@ export default function EvidenceManager({ caseId }: EvidenceManagerProps) {
                       dataSource={item.evidences}
                       rowKey="id"
                       pagination={false}
+                      scroll={{ x: 800 }}
                       columns={[
                         { title: '文件名', dataIndex: 'name', key: 'name' },
                         { title: '版本', dataIndex: 'version', key: 'version', render: (v) => `V${v}` },
@@ -575,20 +582,20 @@ export default function EvidenceManager({ caseId }: EvidenceManagerProps) {
               <Descriptions.Item label="说明">{detail.description || '-'}</Descriptions.Item>
             </Descriptions>
 
-            {detail.mime_type?.startsWith('image/') && (
+            {detail.mime_type?.startsWith('image/') && previewUrl && (
               <div style={{ marginTop: 16 }}>
                 <h4>预览</h4>
                 <img
-                  src={getPreviewUrl(detail.id)}
+                  src={previewUrl}
                   alt={detail.name}
                   style={{ maxWidth: '100%', border: '1px solid #d9d9d9', borderRadius: 4 }}
                 />
               </div>
             )}
 
-            {detail.mime_type === 'application/pdf' && (
+            {detail.mime_type === 'application/pdf' && previewUrl && (
               <div style={{ marginTop: 16 }}>
-                <Button onClick={() => window.open(getPreviewUrl(detail.id))}>在新窗口打开PDF</Button>
+                <Button onClick={() => previewUrl && window.open(previewUrl)}>在新窗口打开PDF</Button>
               </div>
             )}
 
@@ -600,6 +607,7 @@ export default function EvidenceManager({ caseId }: EvidenceManagerProps) {
                   dataSource={detail.versions}
                   rowKey="id"
                   pagination={false}
+                  scroll={{ x: 800 }}
                   columns={[
                     { title: '版本', dataIndex: 'version', key: 'version', render: (v) => `V${v}` },
                     {
@@ -612,7 +620,7 @@ export default function EvidenceManager({ caseId }: EvidenceManagerProps) {
                       title: '操作',
                       key: 'action',
                       render: (_: any, record: Evidence) => (
-                        <Button size="small" onClick={() => window.open(getDownloadUrl(record.id))}>
+                        <Button size="small" onClick={() => downloadEvidence(record.id, record.name)}>
                           下载
                         </Button>
                       ),

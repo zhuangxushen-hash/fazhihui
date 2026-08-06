@@ -285,6 +285,7 @@ export default function StatisticalAnalysis() {
             columns={detailColumns}
             loading={loading}
             rowKey="key"
+            scroll={{ x: 800 }}
             pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
           />
         </div>

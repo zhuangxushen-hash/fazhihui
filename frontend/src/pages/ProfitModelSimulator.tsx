@@ -634,6 +634,7 @@ export default function ProfitModelSimulator() {
                         rowKey="conversion_rate"
                         pagination={false}
                         size="small"
+                        scroll={{ x: 800 }}
                       />
                     </div>
                   </Col>
@@ -648,6 +649,7 @@ export default function ProfitModelSimulator() {
                         rowKey="fee_rate"
                         pagination={false}
                         size="small"
+                        scroll={{ x: 800 }}
                       />
                     </div>
                   </Col>

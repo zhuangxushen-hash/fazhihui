@@ -27,7 +27,10 @@ export class LeadService {
     private leadAssignmentService: LeadAssignmentService,
   ) {}
 
-  async create(leadData: Partial<Lead>): Promise<Lead> {
+  async create(leadData: Partial<Lead>, organizationId?: string): Promise<Lead> {
+    if (organizationId) {
+      leadData.organization_id = organizationId;
+    }
     const existingLead = await this.leadRepository.findOne({
       where: { phone: leadData.phone },
     });
@@ -74,6 +77,8 @@ export class LeadService {
     const total = await query.getCount();
     const page = filters?.page || 1;
     const limit = filters?.limit || 20;
+    // 全部列表按更新时间倒序排列（放在分页 skip/take 之前）
+    query.orderBy('lead.updated_at', 'DESC');
     query.skip((page - 1) * limit).take(limit);
 
     const data = await query.getMany();
@@ -107,7 +112,7 @@ export class LeadService {
   }
 
   async getFollowUps(leadId: string): Promise<FollowUp[]> {
-    return this.followUpRepository.find({ where: { lead_id: leadId }, order: { created_at: 'DESC' } });
+    return this.followUpRepository.find({ where: { lead_id: leadId }, order: { updated_at: 'DESC' } });
   }
 
   async updateFee(id: string, serviceFee: number): Promise<Lead> {
@@ -216,7 +221,7 @@ export class LeadService {
   async getPublicLeads(organizationId: string): Promise<Lead[]> {
     return this.leadRepository.find({
       where: { is_public: true, organization_id: organizationId },
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
     });
   }
 }

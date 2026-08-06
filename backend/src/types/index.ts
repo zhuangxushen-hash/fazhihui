@@ -44,6 +44,8 @@ export enum CaseStatus {
   APPEAL = 'appeal',
   PENDING_CLOSE = 'pending_close',
   CLOSED = 'closed',
+  TERMINATED = 'terminated',
+  VOIDED = 'voided',
 }
 
 export enum ComplianceType {

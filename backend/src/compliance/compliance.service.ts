@@ -135,7 +135,7 @@ export class ComplianceService {
     if (result) {
       query.result = result;
     }
-    return this.complianceRecordRepository.find({ where: query, order: { created_at: 'DESC' } });
+    return this.complianceRecordRepository.find({ where: query, order: { updated_at: 'DESC' } });
   }
 
   // 合并后：投诉统一写入 ComplaintTicket 表（旧 Complaint 表逻辑保留声明，不再写入）
@@ -231,7 +231,7 @@ export class ComplianceService {
     if (status) {
       query.status = this.complaintStatusToTicketStatusMap[status] || TicketStatus.PROCESSING;
     }
-    return this.complaintTicketRepository.find({ where: query, order: { created_at: 'DESC' } });
+    return this.complaintTicketRepository.find({ where: query, order: { updated_at: 'DESC' } });
   }
 
   async getComplaintById(id: string): Promise<ComplaintTicket> {
@@ -277,7 +277,7 @@ export class ComplianceService {
     if (status) {
       query.status = status;
     }
-    return this.marketingContentRepository.find({ where: query, order: { created_at: 'DESC' } });
+    return this.marketingContentRepository.find({ where: query, order: { updated_at: 'DESC' } });
   }
 
   async createSalesCompliance(salesData: Partial<SalesCompliance>): Promise<SalesCompliance> {
@@ -318,7 +318,7 @@ export class ComplianceService {
     if (leadId) {
       query.lead_id = leadId;
     }
-    return this.salesComplianceRepository.find({ where: query, order: { created_at: 'DESC' } });
+    return this.salesComplianceRepository.find({ where: query, order: { updated_at: 'DESC' } });
   }
 
   async createSigningCompliance(signingData: Partial<SigningCompliance>): Promise<SigningCompliance> {
@@ -368,7 +368,7 @@ export class ComplianceService {
     if (caseId) {
       query.case_id = caseId;
     }
-    return this.signingComplianceRepository.find({ where: query, order: { created_at: 'DESC' } });
+    return this.signingComplianceRepository.find({ where: query, order: { updated_at: 'DESC' } });
   }
 
   async createCaseSOP(caseId: string, caseType: string, orgId: string): Promise<CaseTask[]> {
@@ -572,7 +572,7 @@ export class ComplianceService {
     if (handleStatus) {
       query.handle_status = handleStatus;
     }
-    return this.talkQualityCheckRepository.find({ where: query, order: { created_at: 'DESC' } });
+    return this.talkQualityCheckRepository.find({ where: query, order: { updated_at: 'DESC' } });
   }
 
   async handleQualityCheck(id: string, handlerId: string, handleNote: string): Promise<TalkQualityCheck> {
@@ -636,32 +636,32 @@ export class ComplianceService {
 
     result.compliance_records = await this.complianceRecordRepository.find({
       where: recordQuery,
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
     });
 
     result.complaints = await this.complaintTicketRepository.find({
       where: { organization_id: orgId },
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
     });
 
     result.marketing_contents = await this.marketingContentRepository.find({
       where: { organization_id: orgId },
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
     });
 
     result.sales_compliance = await this.salesComplianceRepository.find({
       where: { organization_id: orgId },
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
     });
 
     result.signing_compliance = await this.signingComplianceRepository.find({
       where: { organization_id: orgId },
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
     });
 
     result.quality_checks = await this.talkQualityCheckRepository.find({
       where: { organization_id: orgId },
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
     });
 
     const totalRecords = result.compliance_records.length;
@@ -687,7 +687,7 @@ export class ComplianceService {
     if (orgId) {
       query.organization_id = orgId;
     }
-    return this.reportTemplateRepository.find({ where: query, order: { created_at: 'DESC' } });
+    return this.reportTemplateRepository.find({ where: query, order: { updated_at: 'DESC' } });
   }
 
   async createExport(body: {
@@ -725,7 +725,7 @@ export class ComplianceService {
     }
     return this.salesComplianceRepository.find({
       where: query,
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
     });
   }
 

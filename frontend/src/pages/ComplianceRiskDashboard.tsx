@@ -418,7 +418,7 @@ export default function ComplianceRiskDashboard() {
                   rowKey={(record, idx) => `${record.id}-${idx}`}
                   pagination={false}
                   size="middle"
-                  scroll={{ y: 320 }}
+                  scroll={{ x: 1200, y: 320 }}
                 />
               )}
             </Spin>

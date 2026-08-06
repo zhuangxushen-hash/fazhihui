@@ -87,6 +87,11 @@ export class SealController {
     });
   }
 
+  @Put('seal-applications/batch-use')
+  batchUseApplications(@Body() body: { ids: string[] }, @Request() req: any) {
+    return this.sealService.batchUseApplications(body.ids, req.user.id);
+  }
+
   @Put('seal-applications/:id')
   updateApplication(@Param('id') id: string, @Body() body: any) {
     return this.sealService.updateApplication(id, body);
@@ -105,11 +110,6 @@ export class SealController {
   @Put('seal-applications/:id/use')
   useApplication(@Param('id') id: string, @Request() req: any) {
     return this.sealService.useApplication(id, req.user.id);
-  }
-
-  @Put('seal-applications/batch-use')
-  batchUseApplications(@Body() body: { ids: string[] }, @Request() req: any) {
-    return this.sealService.batchUseApplications(body.ids, req.user.id);
   }
 
   // 批量作废用印申请

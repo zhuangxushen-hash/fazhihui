@@ -179,7 +179,7 @@ export default function DeploymentConfig() {
 
           <TabPane tab={<span><UnorderedListOutlined /> 配置列表</span>} key="list">
             <div className="stitch-table">
-              <Table columns={columns} dataSource={configs} loading={loading} rowKey="id" pagination={{ pageSize: 10 }} />
+              <Table columns={columns} dataSource={configs} loading={loading} rowKey="id" pagination={{ pageSize: 10 }} scroll={{ x: 1600 }} />
             </div>
           </TabPane>
         </Tabs>

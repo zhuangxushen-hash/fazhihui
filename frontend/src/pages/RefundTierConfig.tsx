@@ -114,6 +114,7 @@ export default function RefundTierConfig() {
         rowKey="key"
         columns={ruleColumns}
         dataSource={tierRules}
+        scroll={{ x: 800 }}
         pagination={false}
         bordered
       />
@@ -191,6 +192,7 @@ export default function RefundTierConfig() {
               rowKey="tier"
               columns={refundColumns}
               dataSource={result.tiered_refunds || []}
+              scroll={{ x: 800 }}
               pagination={false}
               bordered
             />

@@ -180,9 +180,10 @@ export class HandoverService {
       .orderBy('handover.created_at', 'DESC');
 
     if (organizationId) {
-      query
-        .andWhere('from_user.organization_id = :orgId', { orgId: organizationId })
-        .orWhere('to_user.organization_id = :orgId', { orgId: organizationId });
+      query.andWhere(
+        '(from_user.organization_id = :orgId OR to_user.organization_id = :orgId)',
+        { orgId: organizationId },
+      );
     }
 
     return await query.getMany();

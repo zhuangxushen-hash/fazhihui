@@ -24,7 +24,7 @@ export class ScriptLibraryService {
     const where: any = {};
     if (orgId) where.organization_id = orgId;
     if (filters?.category) where.category = filters.category;
-    return this.scriptLibraryRepository.find({ where, order: { created_at: 'DESC' } });
+    return this.scriptLibraryRepository.find({ where, order: { updated_at: 'DESC' } });
   }
 
   async findById(id: string): Promise<ScriptLibrary> {

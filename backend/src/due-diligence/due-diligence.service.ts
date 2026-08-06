@@ -117,7 +117,7 @@ export class DueDiligenceService {
     }
     return this.ddRepository.find({
       where,
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
     });
   }
 

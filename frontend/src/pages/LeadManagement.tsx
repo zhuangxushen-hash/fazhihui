@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, InputNumber } from 'antd'
-import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, HistoryOutlined, SaveOutlined, SwapOutlined } from '@ant-design/icons'
+import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, InputNumber, Alert } from 'antd'
+import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, HistoryOutlined, SaveOutlined, SwapOutlined, SafetyCertificateOutlined, WarningOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
+import { checkConflict, ConflictCheckRecord } from '../api/conflictCheck'
 import { formatDateTime } from '../utils/format'
 import { theme } from '../constants/theme'
 
@@ -37,6 +38,15 @@ export default function LeadManagement() {
   const [convertVisible, setConvertVisible] = useState(false)
   const [convertForm] = Form.useForm()
   const [converting, setConverting] = useState(false)
+
+  // 利冲初查相关状态
+  const [conflictVisible, setConflictVisible] = useState(false)
+  const [conflictChecking, setConflictChecking] = useState(false)
+  const [conflictResult, setConflictResult] = useState<ConflictCheckRecord | null>(null)
+  const [conflictLead, setConflictLead] = useState<Record<string, unknown> | null>(null)
+  const [conflictForm] = Form.useForm()
+  // 记录检测到冲突的线索ID集合，用于在状态列展示红色标记
+  const [conflictLeadIds, setConflictLeadIds] = useState<Set<string>>(new Set())
 
   const user = JSON.parse(localStorage.getItem('user') || '{}')
 
@@ -193,6 +203,43 @@ export default function LeadManagement() {
     }
   }
 
+  // 打开利冲初查弹窗，预填线索联系人和电话
+  const handleConflictCheck = (record: Record<string, unknown>) => {
+    setConflictLead(record)
+    setConflictResult(null)
+    conflictForm.resetFields()
+    conflictForm.setFieldsValue({
+      party_name: (record.contact_name as string) || '',
+      party_phone: (record.phone as string) || '',
+    })
+    setConflictVisible(true)
+  }
+
+  // 执行利冲初查
+  const handleConflictSubmit = async (values: Record<string, unknown>) => {
+    setConflictChecking(true)
+    try {
+      const res = (await checkConflict({
+        party_name: values.party_name as string,
+        opposing_party: values.opposing_party as string,
+        party_phone: (values.party_phone as string) || undefined,
+      })) as ConflictCheckRecord
+      setConflictResult(res)
+      // 如果检测到冲突，将该线索ID加入冲突集合，在状态列展示红色标记
+      if (res.check_result === 'conflict' && conflictLead) {
+        setConflictLeadIds(prev => {
+          const next = new Set(prev)
+          next.add(String(conflictLead.id))
+          return next
+        })
+      }
+    } catch (error) {
+      message.error('利冲初查失败')
+    } finally {
+      setConflictChecking(false)
+    }
+  }
+
   const statusOptions = [
     { value: 'new', label: '新线索' },
     { value: 'pending_follow', label: '待跟进' },
@@ -238,7 +285,7 @@ export default function LeadManagement() {
       other: '其他',
     }[channel]) },
     { title: '服务费用', dataIndex: 'service_fee', key: 'service_fee', render: (fee: number) => fee ? `¥${fee.toFixed(2)}` : '-' },
-    { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => {
+    { title: '状态', dataIndex: 'status', key: 'status', render: (status: string, record: Record<string, unknown>) => {
       // colors 映射存放 stitch-tag 变体类名
       const colors: Record<string, string> = {
         new: 'stitch-tag stitch-tag-primary',
@@ -258,7 +305,18 @@ export default function LeadManagement() {
         pending_sign: '待签约',
         lost: '已流失',
       }
-      return <Tag className={colors[status]}>{labels[status]}</Tag>
+      // 若该线索检测到利益冲突，在状态旁展示红色标记图标
+      const hasConflict = conflictLeadIds.has(String(record.id))
+      return (
+        <Space size={4}>
+          <Tag className={colors[status]}>{labels[status]}</Tag>
+          {hasConflict && (
+            <span title="检测到利益冲突" style={{ color: theme.error, fontSize: 14 }}>
+              <WarningOutlined />
+            </span>
+          )}
+        </Space>
+      )
     }},
     { title: '转化状态', dataIndex: 'conversion_status', key: 'conversion_status', render: (status: string) => {
       const info = conversionStatusMap[status] || conversionStatusMap.not_converted
@@ -266,10 +324,11 @@ export default function LeadManagement() {
     }},
     { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
     { title: '操作', key: 'action', render: (_: unknown, record: Record<string, unknown>) => (
-      <Space>
+      <Space wrap>
         <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
         <Button size="small" icon={<EditOutlined />} onClick={() => handleChangeStatus(record)}>状态</Button>
         <Button size="small" icon={<SaveOutlined />} onClick={() => handleEditFee(record)}>设置费用</Button>
+        <Button size="small" icon={<SafetyCertificateOutlined />} onClick={() => handleConflictCheck(record)}>利冲初查</Button>
         {record.conversion_status !== 'converted' && (
           <Button size="small" icon={<SwapOutlined />} onClick={() => handleConvert(record)}>转化为案件</Button>
         )}
@@ -338,7 +397,7 @@ export default function LeadManagement() {
       </div>
 
       <div className="stitch-table">
-        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" />
+        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" scroll={{ x: 1600 }} />
       </div>
 
       <Modal
@@ -551,6 +610,72 @@ export default function LeadManagement() {
             <Button type="primary" htmlType="submit" loading={converting} icon={<SwapOutlined />}>确认转化</Button>
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* 利冲初查弹窗：预填线索联系人信息，输入对方当事人后检索 */}
+      <Modal
+        title="利冲初查"
+        open={conflictVisible}
+        onCancel={() => setConflictVisible(false)}
+        footer={null}
+        width={560}
+      >
+        <Form form={conflictForm} layout="vertical" onFinish={handleConflictSubmit}>
+          <Form.Item name="party_name" label="当事人姓名" rules={[{ required: true, message: '请输入当事人姓名' }]}>
+            <Input className="stitch-input" placeholder="请输入当事人姓名" />
+          </Form.Item>
+          <Form.Item name="opposing_party" label="对方当事人姓名" rules={[{ required: true, message: '请输入对方当事人姓名' }]}>
+            <Input className="stitch-input" placeholder="请输入对方当事人姓名" />
+          </Form.Item>
+          <Form.Item name="party_phone" label="当事人电话">
+            <Input className="stitch-input" placeholder="可选" />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={conflictChecking} icon={<SafetyCertificateOutlined />}>
+              开始检索
+            </Button>
+          </Form.Item>
+        </Form>
+
+        {/* 检索结果展示区 */}
+        {conflictResult && (() => {
+          const isClear = conflictResult.check_result === 'clear'
+          const isConflict = conflictResult.check_result === 'conflict'
+          const cfg = isClear
+            ? { color: theme.success, icon: <CheckCircleOutlined />, bg: 'rgba(46, 125, 50, 0.08)' }
+            : isConflict
+              ? { color: theme.error, icon: <CloseCircleOutlined />, bg: 'rgba(186, 26, 26, 0.08)' }
+              : { color: theme.warning, icon: <WarningOutlined />, bg: 'rgba(237, 108, 2, 0.08)' }
+          return (
+            <div style={{ marginTop: 16, background: cfg.bg, padding: 16, borderRadius: 8, border: `1px solid ${cfg.color}33` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <span style={{ fontSize: 18, color: cfg.color }}>{cfg.icon}</span>
+                <span style={{ fontSize: 15, fontWeight: 600, color: cfg.color }}>
+                  {isClear ? '未检测到利益冲突' : isConflict ? '检测到利益冲突' : '检测到风险提示'}
+                </span>
+              </div>
+              {isClear ? (
+                <Alert type="success" showIcon message="未在现有案件中检索到相关当事人，可放心推进转化" />
+              ) : (
+                <div>
+                  {conflictResult.conflict_case_name && (
+                    <div style={{ marginBottom: 8, fontSize: 13, color: theme.textSecondary }}>
+                      冲突案件：<span style={{ color: theme.error, fontWeight: 600 }}>{conflictResult.conflict_case_name}</span>
+                    </div>
+                  )}
+                  {conflictResult.conflict_detail && (
+                    <div style={{ background: theme.bgContainer, padding: 12, borderRadius: 6, border: `1px solid ${theme.borderSecondary}` }}>
+                      <div style={{ fontSize: 12, color: theme.textTertiary, marginBottom: 6 }}>冲突详情（含案件名称与当事人）</div>
+                      <div style={{ whiteSpace: 'pre-wrap', fontSize: 13, color: theme.textSecondary, lineHeight: 1.8 }}>
+                        {conflictResult.conflict_detail}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })()}
       </Modal>
     </div>
   )

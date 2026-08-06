@@ -279,6 +279,7 @@ export default function ServiceRatingManagement() {
         dataSource={data}
         rowKey="id"
         loading={loading}
+        scroll={{ x: 1200 }}
         pagination={{ pageSize: 10, showTotal: (total) => `共 ${total} 条` }}
         rowClassName={(record) => (record.rating <= 2 ? 'low-score-row' : '')}
       />

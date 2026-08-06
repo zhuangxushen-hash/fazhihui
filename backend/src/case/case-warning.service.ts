@@ -19,6 +19,7 @@ interface WarningRule {
 @Injectable()
 export class CaseWarningService {
   private readonly logger = new Logger(CaseWarningService.name);
+  private runningTasks: Set<string> = new Set();
 
   // 预警规则配置
   private readonly warningRules: WarningRule[] = [
@@ -178,10 +179,12 @@ export class CaseWarningService {
   // 每日凌晨扫描生成预警
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async generateWarnings() {
-    this.logger.log('开始扫描案件关键节点，生成预警...');
-
+    const taskKey = 'generateWarnings';
+    if (this.runningTasks.has(taskKey)) return;
+    this.runningTasks.add(taskKey);
     try {
-      // 获取所有在办案件
+      this.logger.log('开始扫描案件关键节点，生成预警...');
+
       const cases = await this.caseRepository.find({
         where: {
           status: In([
@@ -197,16 +200,112 @@ export class CaseWarningService {
 
       this.logger.log(`找到 ${cases.length} 个在办案件需要检查`);
 
-      let generatedCount = 0;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-      for (const caseEntity of cases) {
-        // 检查案件的各个关键时间节点
-        generatedCount += await this.checkCaseDeadlines(caseEntity);
+      interface WarningCandidate {
+        case_id: string;
+        warning_type: WarningType;
+        target_date: Date;
+        advance_days: number;
+        level: WarningLevel;
+        description: string;
+        status: WarningStatus;
       }
 
-      this.logger.log(`预警生成完成，共生成 ${generatedCount} 条预警`);
+      const candidates: WarningCandidate[] = [];
+
+      for (const caseEntity of cases) {
+        if (caseEntity.deadline) {
+          const target = new Date(caseEntity.deadline);
+          target.setHours(0, 0, 0, 0);
+          const daysDiff = Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          const rule = this.warningRules.find(r => r.type === WarningType.STATUTE_EXPIRE);
+          if (rule && rule.advanceDays.includes(daysDiff)) {
+            let level = rule.level;
+            if (daysDiff <= 1) level = WarningLevel.URGENT;
+            else if (daysDiff <= 3) level = WarningLevel.WARNING;
+            candidates.push({
+              case_id: caseEntity.id,
+              warning_type: WarningType.STATUTE_EXPIRE,
+              target_date: target,
+              advance_days: daysDiff,
+              level,
+              description: `${rule.description}（剩余${daysDiff}天）`,
+              status: daysDiff < 0 ? WarningStatus.OVERDUE : WarningStatus.PENDING,
+            });
+          }
+        }
+
+        if (caseEntity.expected_close_date) {
+          const target = new Date(caseEntity.expected_close_date);
+          target.setHours(0, 0, 0, 0);
+          const daysDiff = Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          const rule = this.warningRules.find(r => r.type === WarningType.HEARING_DATE);
+          if (rule && rule.advanceDays.includes(daysDiff)) {
+            let level = rule.level;
+            if (daysDiff <= 1) level = WarningLevel.URGENT;
+            else if (daysDiff <= 3) level = WarningLevel.WARNING;
+            candidates.push({
+              case_id: caseEntity.id,
+              warning_type: WarningType.HEARING_DATE,
+              target_date: target,
+              advance_days: daysDiff,
+              level,
+              description: `${rule.description}（剩余${daysDiff}天）`,
+              status: daysDiff < 0 ? WarningStatus.OVERDUE : WarningStatus.PENDING,
+            });
+          }
+        }
+      }
+
+      if (candidates.length === 0) {
+        this.logger.log('没有需要生成的预警');
+        return;
+      }
+
+      // 批量查询已存在的预警（防止重复创建）
+      const caseIds = [...new Set(candidates.map(c => c.case_id))];
+      const existingWarnings = await this.warningRepository.find({
+        where: {
+          case_id: In(caseIds),
+          status: In([WarningStatus.PENDING, WarningStatus.OVERDUE]),
+        },
+      });
+
+      const existingSet = new Set<string>();
+      for (const w of existingWarnings) {
+        const key = `${w.case_id}::${w.warning_type}::${w.target_date.getTime?.() ?? w.target_date}::${w.advance_days}`;
+        existingSet.add(key);
+      }
+
+      // 过滤掉已存在的预警，批量创建新的
+      const toCreate: CaseWarning[] = [];
+      for (const c of candidates) {
+        const key = `${c.case_id}::${c.warning_type}::${c.target_date.getTime?.() ?? c.target_date}::${c.advance_days}`;
+        if (!existingSet.has(key)) {
+          toCreate.push(this.warningRepository.create({
+            case_id: c.case_id,
+            warning_type: c.warning_type,
+            warning_level: c.level,
+            warning_date: today,
+            target_date: c.target_date,
+            advance_days: c.advance_days,
+            description: c.description,
+            status: c.status,
+          }));
+        }
+      }
+
+      if (toCreate.length > 0) {
+        await this.warningRepository.save(toCreate);
+      }
+
+      this.logger.log(`预警生成完成，共生成 ${toCreate.length} 条预警`);
     } catch (error) {
       this.logger.error('生成预警时发生错误:', error);
+    } finally {
+      this.runningTasks.delete(taskKey);
     }
   }
 
@@ -300,13 +399,15 @@ export class CaseWarningService {
   // 每小时检查超期预警并升级
   @Cron(CronExpression.EVERY_HOUR)
   async checkOverdueWarnings() {
-    this.logger.log('开始检查超期预警...');
-
+    const taskKey = 'checkOverdueWarnings';
+    if (this.runningTasks.has(taskKey)) return;
+    this.runningTasks.add(taskKey);
     try {
+      this.logger.log('开始检查超期预警...');
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // 查找所有已超期但未标记的预警
       const overdueWarnings = await this.warningRepository
         .createQueryBuilder('warning')
         .leftJoinAndSelect('warning.case', 'case')
@@ -316,14 +417,18 @@ export class CaseWarningService {
 
       this.logger.log(`找到 ${overdueWarnings.length} 条超期预警`);
 
+      const toUpdate: CaseWarning[] = [];
       for (const warning of overdueWarnings) {
-        // 更新为超期状态
         warning.status = WarningStatus.OVERDUE;
         warning.warning_level = WarningLevel.URGENT;
+        toUpdate.push(warning);
+      }
 
-        await this.warningRepository.save(warning);
+      if (toUpdate.length > 0) {
+        await this.warningRepository.save(toUpdate);
+      }
 
-        // 如果案件有指派律师，发送通知
+      for (const warning of overdueWarnings) {
         if (warning.case && warning.case.assignee_lawyer_id) {
           await this.notifyOverdue(warning);
         }
@@ -332,6 +437,8 @@ export class CaseWarningService {
       this.logger.log('超期预警检查完成');
     } catch (error) {
       this.logger.error('检查超期预警时发生错误:', error);
+    } finally {
+      this.runningTasks.delete(taskKey);
     }
   }
 

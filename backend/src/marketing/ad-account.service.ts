@@ -90,7 +90,7 @@ export class AdAccountService {
     }
     return this.accountRepository.find({
       where,
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
     });
   }
 
@@ -232,7 +232,7 @@ export class AdAccountService {
     }
     return this.warningRepository.find({
       where,
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
     });
   }
 

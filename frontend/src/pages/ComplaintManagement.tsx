@@ -182,7 +182,7 @@ export default function ComplaintManagement() {
       </div>
 
       <div className="stitch-table">
-        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" />
+        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" scroll={{ x: 1200 }} />
       </div>
 
       <Modal

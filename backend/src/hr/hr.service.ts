@@ -63,7 +63,7 @@ export class HrService {
       qb.andWhere('l.end_date <= :endDate', { endDate: params.end_date });
     }
 
-    qb.orderBy('l.created_at', 'DESC');
+    qb.orderBy('l.updated_at', 'DESC');
     return qb.getMany();
   }
 
@@ -297,7 +297,7 @@ export class HrService {
       qb.andWhere('m.material_name LIKE :keyword', { keyword: `%${params.keyword}%` });
     }
 
-    qb.orderBy('m.created_at', 'DESC');
+    qb.orderBy('m.updated_at', 'DESC');
     return qb.getMany();
   }
 

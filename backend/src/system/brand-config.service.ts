@@ -20,6 +20,8 @@ export class BrandConfigService {
     if (orgId) {
       queryBuilder.where('bc.organization_id = :orgId', { orgId });
     }
+    // 按更新时间倒序排列
+    queryBuilder.orderBy('bc.updated_at', 'DESC');
     const total = await queryBuilder.getCount();
     const data = await queryBuilder.getMany();
     return { data, total };

@@ -101,7 +101,7 @@ export class InviteTaskService {
       queryBuilder.andWhere('task.status = :status', { status });
     }
 
-    queryBuilder.orderBy('task.created_at', 'DESC');
+    queryBuilder.orderBy('task.updated_at', 'DESC');
 
     return queryBuilder.getMany();
   }
@@ -123,7 +123,7 @@ export class InviteTaskService {
         return `lead.id NOT IN ${subQuery}`;
       })
       .setParameter('userId', userId)
-      .orderBy('lead.created_at', 'DESC');
+      .orderBy('lead.updated_at', 'DESC');
 
     return queryBuilder.getMany();
   }
@@ -244,7 +244,7 @@ export class InviteTaskService {
     const page = filters?.page || 1;
     const limit = filters?.limit || 20;
     queryBuilder.skip((page - 1) * limit).take(limit);
-    queryBuilder.orderBy('task.created_at', 'DESC');
+    queryBuilder.orderBy('task.updated_at', 'DESC');
 
     const data = await queryBuilder.getMany();
     return { data, total };

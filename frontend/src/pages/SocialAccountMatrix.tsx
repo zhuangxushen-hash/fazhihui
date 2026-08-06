@@ -608,6 +608,7 @@ function AccountsTab() {
           loading={loading}
           rowKey="id"
           pagination={{ pageSize: 10 }}
+          scroll={{ x: 1600 }}
           rowSelection={{
             selectedRowKeys,
             onChange: (keys) => setSelectedRowKeys(keys as string[]),
@@ -1296,6 +1297,7 @@ function PostsTab() {
           rowKey="id"
           pagination={{ pageSize: 10 }}
           style={{ padding: 20 }}
+          scroll={{ x: 1200 }}
         />
       </div>
 
@@ -1712,6 +1714,7 @@ function StatsTab() {
               size="small"
               pagination={false}
               loading={loading}
+              scroll={{ x: 800 }}
               columns={[
                 {
                   title: '分组',
@@ -1824,6 +1827,7 @@ function StatsTab() {
           size="small"
           pagination={false}
           loading={loading}
+          scroll={{ x: 1200 }}
           columns={[
             {
               title: '平台',

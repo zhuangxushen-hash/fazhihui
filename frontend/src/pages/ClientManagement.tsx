@@ -270,7 +270,7 @@ export default function ClientManagement() {
       </div>
 
       <div className="stitch-table">
-        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" />
+        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" scroll={{ x: 1600 }} />
       </div>
 
       {/* 新增/编辑弹窗 */}
@@ -377,6 +377,7 @@ export default function ClientManagement() {
                       rowKey="id"
                       size="small"
                       pagination={{ pageSize: 5 }}
+                      scroll={{ x: 800 }}
                     />
                   ),
                 },
@@ -392,6 +393,7 @@ export default function ClientManagement() {
                         rowKey="id"
                         size="small"
                         pagination={{ pageSize: 5 }}
+                        scroll={{ x: 800 }}
                       />
                     </div>
                   ),

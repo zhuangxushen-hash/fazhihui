@@ -20,6 +20,8 @@ export class DeploymentConfigService {
     if (orgId) {
       queryBuilder.where('dc.organization_id = :orgId', { orgId });
     }
+    // 按更新时间倒序排列
+    queryBuilder.orderBy('dc.updated_at', 'DESC');
     const total = await queryBuilder.getCount();
     const data = await queryBuilder.getMany();
     return { data, total };

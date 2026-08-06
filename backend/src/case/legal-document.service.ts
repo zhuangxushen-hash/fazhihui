@@ -24,7 +24,7 @@ export class LegalDocumentService {
     if (orgId) {
       query.andWhere('(doc.organization_id = :orgId OR doc.is_system = :isSystem)', { orgId, isSystem: true });
     }
-    query.orderBy('doc.created_at', 'DESC');
+    query.orderBy('doc.updated_at', 'DESC');
     return query.getMany();
   }
 
@@ -44,7 +44,7 @@ export class LegalDocumentService {
   async getTemplatesByCaseType(caseType: string): Promise<LegalDocument[]> {
     return this.legalDocumentRepository.find({
       where: { case_type: caseType, status: 'active' },
-      order: { created_at: 'DESC' },
+      order: { updated_at: 'DESC' },
     });
   }
 

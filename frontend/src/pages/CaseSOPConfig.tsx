@@ -353,6 +353,7 @@ const CaseSOPConfig = () => {
           dataSource={templates}
           rowKey="id"
           loading={loading}
+          scroll={{ x: 1200 }}
           pagination={{
             pageSize: 10,
             showTotal: (total) => `共 ${total} 条`,

@@ -408,6 +408,7 @@ export default function HRDashboard() {
                       rowKey="lawyer_id"
                       pagination={false}
                       locale={{ emptyText: <Empty description="暂无律师数据" /> }}
+                      scroll={{ x: 1200 }}
                     />
                   </Card>
                 </div>
@@ -437,6 +438,7 @@ export default function HRDashboard() {
                     rowKey="lawyer_id"
                     pagination={false}
                     locale={{ emptyText: <Empty description="暂无排名数据" /> }}
+                    scroll={{ x: 1200 }}
                   />
                 </Card>
               ),

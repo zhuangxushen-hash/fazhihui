@@ -105,6 +105,7 @@ const menuGroups: MenuGroup[] = [
       { key: '/compliance', label: '投诉管理' },
       { key: '/compliance-center', label: '合规风控中心' },
       { key: '/talk-quality-check', label: '谈案AI质检' },
+      { key: '/compliance/public-opinion', label: '舆情监控' },
     ],
   },
   {
@@ -121,6 +122,8 @@ const menuGroups: MenuGroup[] = [
       { key: '/finance/payment-reminder', label: '催款管理' },
       { key: '/finance/invoices', label: '发票管理' },
       { key: '/finance/business-funds', label: '业务款管理' },
+      { key: '/finance/refund', label: '退费管理' },
+      { key: '/finance/reconciliation-rules', label: '对账规则' },
     ],
   },
   {
@@ -129,12 +132,15 @@ const menuGroups: MenuGroup[] = [
     label: '投放营销',
     children: [
       { key: '/marketing/ad-accounts', label: '广告账户' },
+      { key: '/marketing/platform-integration', label: '平台对接' },
       { key: '/marketing/ad-plans', label: '投放计划' },
       { key: '/marketing/conversion', label: '转化归因' },
       { key: '/marketing/materials', label: '素材管理' },
       { key: '/marketing/ai-content', label: 'AI内容生成' },
       { key: '/marketing/social-accounts', label: '公域账号' },
       { key: '/marketing/digital-human-live', label: '数字人直播' },
+      { key: '/marketing/work-phone', label: '工作手机' },
+      { key: '/marketing/content-preview', label: '内容预审' },
     ],
   },
   {
@@ -152,6 +158,9 @@ const menuGroups: MenuGroup[] = [
       { key: '/system/deployment-config', label: '部署配置' },
       { key: '/system/brand-customization', label: '品牌定制' },
       { key: '/system/integrations', label: '第三方对接' },
+      { key: '/system/audit-logs', label: '审计日志' },
+      { key: '/system/organizations', label: '组织管理' },
+      { key: '/system/push-rules', label: '推送规则' },
       // 合并原个人中心 1项
       { key: '/personal-center', label: '个人中心' },
     ],
@@ -271,6 +280,7 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
     '/compliance': ['super_admin', 'org_admin', 'lawyer', 'finance', 'sales', 'marketing'],
     '/compliance-center': ['super_admin', 'org_admin'],
     '/talk-quality-check': ['super_admin', 'org_admin', 'sales'],
+    '/compliance/public-opinion': ['super_admin', 'org_admin'],
   },
   // 财务分润
   finance: {
@@ -283,16 +293,21 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
     '/finance/payment-reminder': ['super_admin', 'org_admin', 'finance'],
     '/finance/invoices': ['super_admin', 'org_admin', 'finance'],
     '/finance/business-funds': ['super_admin', 'org_admin', 'finance'],
+    '/finance/refund': ['super_admin', 'org_admin', 'finance'],
+    '/finance/reconciliation-rules': ['super_admin', 'org_admin', 'finance'],
   },
   // 投放营销
   marketing: {
     '/marketing/ad-accounts': ['super_admin', 'org_admin', 'marketing'],
+    '/marketing/platform-integration': ['super_admin', 'org_admin', 'marketing'],
     '/marketing/ad-plans': ['super_admin', 'org_admin', 'marketing'],
     '/marketing/conversion': ['super_admin', 'org_admin', 'marketing'],
     '/marketing/materials': ['super_admin', 'org_admin', 'marketing'],
     '/marketing/ai-content': ['super_admin', 'org_admin', 'marketing'],
     '/marketing/social-accounts': ['super_admin', 'org_admin', 'marketing'],
     '/marketing/digital-human-live': ['super_admin', 'org_admin', 'marketing'],
+    '/marketing/work-phone': ['super_admin', 'org_admin', 'marketing'],
+    '/marketing/content-preview': ['super_admin', 'org_admin', 'marketing'],
   },
   // 系统管理：只有管理员能进（合并原个人中心，移出审批中心/用印管理到综合管理）
   system: {
@@ -305,6 +320,9 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
     '/system/deployment-config': ['super_admin', 'org_admin'],
     '/system/brand-customization': ['super_admin', 'org_admin'],
     '/system/integrations': ['super_admin', 'org_admin'],
+    '/system/audit-logs': ['super_admin', 'org_admin'],
+    '/system/organizations': ['super_admin', 'org_admin'],
+    '/system/push-rules': ['super_admin', 'org_admin'],
     // 合并原个人中心 1项
     '/personal-center': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
   },

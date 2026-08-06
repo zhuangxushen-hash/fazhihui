@@ -62,6 +62,7 @@ export class LeadAssignmentService {
 
   async deleteRule(id: string): Promise<void> {
     await this.assignmentRepository.delete(id);
+    this.loadBalanceIndex.delete(id);
   }
 
   async toggleRule(id: string, enabled: boolean): Promise<LeadAssignment> {

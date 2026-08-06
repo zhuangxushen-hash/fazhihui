@@ -10,6 +10,7 @@ import { CaseType, CaseStatus } from '../types';
 @Index(['case_type'])
 @Index(['assignee_lawyer_id'])
 @Index(['created_at'])
+@Index(['case_no'])
 export class Case {
   @PrimaryGeneratedColumn('uuid')
   id: string;

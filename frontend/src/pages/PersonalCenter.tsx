@@ -390,6 +390,7 @@ export default function PersonalCenter() {
                 columns={orderColumns}
                 rowKey="orderNo"
                 pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+                scroll={{ x: 800 }}
               />
             </div>
           </Card>

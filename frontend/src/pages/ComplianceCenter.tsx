@@ -499,6 +499,7 @@ export default function ComplianceCenter() {
                     loading={loading}
                     rowKey="id"
                     size="small"
+                    scroll={{ x: 1200 }}
                   />
                 </Card>
               ),
@@ -556,6 +557,7 @@ export default function ComplianceCenter() {
                     size="small"
                     pagination={false}
                     showHeader
+                    scroll={{ x: 1200 }}
                   />
                   <div style={{ textAlign: 'center', marginTop: 16 }}>
                     <Button type="primary" onClick={() => navigate('/compliance/sales-review')}>
@@ -581,6 +583,7 @@ export default function ComplianceCenter() {
                     loading={loading}
                     rowKey="id"
                     size="small"
+                    scroll={{ x: 1600 }}
                   />
                 </Card>
               ),
@@ -601,6 +604,7 @@ export default function ComplianceCenter() {
                     loading={loading}
                     rowKey="id"
                     size="small"
+                    scroll={{ x: 1600 }}
                   />
                 </Card>
               ),

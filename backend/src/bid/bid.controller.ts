@@ -145,7 +145,7 @@ export class BidController {
       qb.andWhere('r.start_date <= :dateTo', { dateTo });
     }
 
-    qb.orderBy('r.created_at', 'DESC')
+    qb.orderBy('r.updated_at', 'DESC')
       .skip((pageNum - 1) * pageSizeNum)
       .take(pageSizeNum);
 

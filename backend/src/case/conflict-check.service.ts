@@ -33,10 +33,14 @@ export class ConflictCheckService {
   }): Promise<ConflictCheck> {
     const { partyName, opposingParty, partyPhone, orgId, checkerId, caseId } = params;
 
-    // 查询当前组织下命中当事人的案件
-    const partyHits = await this.findCasesByNameOrPhone(partyName, partyPhone, orgId);
-    // 查询当前组织下命中对方当事人的案件
-    const opposingHits = await this.findCasesByNameOrPhone(opposingParty, undefined, orgId);
+    // 查询当前组织下命中当事人的案件（partyName 为空时跳过）
+    const partyHits = partyName
+      ? await this.findCasesByNameOrPhone(partyName, partyPhone, orgId)
+      : [];
+    // 查询当前组织下命中对方当事人的案件（opposingParty 为空时跳过）
+    const opposingHits = opposingParty
+      ? await this.findCasesByNameOrPhone(opposingParty, undefined, orgId)
+      : [];
 
     // 判断是否存在明确冲突：当事人姓名与对方当事人姓名同时命中同一案件
     const partyHitIds = new Set(partyHits.map((c) => c.id));
@@ -46,11 +50,9 @@ export class ConflictCheckService {
     let conflictDetail = '';
 
     if (exactConflictCases.length > 0) {
-      // 明确冲突：同一案件中当事人与对方当事人同时出现
       checkResult = 'conflict';
       conflictDetail = this.buildDetail('检测到明确利益冲突', exactConflictCases);
     } else if (partyHits.length > 0 || opposingHits.length > 0) {
-      // 有风险：当事人或对方当事人曾在本组织其他案件中出现
       checkResult = 'warning';
       const parts: string[] = [];
       if (partyHits.length > 0) {
@@ -62,11 +64,11 @@ export class ConflictCheckService {
       conflictDetail = parts.join('\n');
     }
 
-    // 落库检索记录
+    // 落库检索记录（空值填默认值避免 NOT NULL 约束违反）
     const record = this.conflictCheckRepository.create({
       case_id: caseId || null,
-      party_name: partyName,
-      opposing_party: opposingParty,
+      party_name: partyName || '未知',
+      opposing_party: opposingParty || '未知',
       party_phone: partyPhone || null,
       check_result: checkResult,
       conflict_detail: conflictDetail || null,
@@ -99,7 +101,7 @@ export class ConflictCheckService {
           }
         }),
       )
-      .orderBy('case.created_at', 'DESC')
+      .orderBy('case.updated_at', 'DESC')
       .limit(20);
 
     return query.getMany();
@@ -133,7 +135,7 @@ export class ConflictCheckService {
       );
     }
 
-    query.orderBy('cc.created_at', 'DESC').limit(100);
+    query.orderBy('cc.updated_at', 'DESC').limit(100);
 
     const [data, total] = await query.getManyAndCount();
     return { data, total };
@@ -168,7 +170,7 @@ export class ConflictCheckService {
           );
         }),
       )
-      .orderBy('case.created_at', 'DESC')
+      .orderBy('case.updated_at', 'DESC')
       .limit(20)
       .getMany();
 

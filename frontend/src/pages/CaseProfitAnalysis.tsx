@@ -244,6 +244,7 @@ export default function CaseProfitAnalysis() {
             dataSource={searchResults.length > 0 ? searchResults : getMockCaseList()}
             loading={loading}
             pagination={{ pageSize: 10, showSizeChanger: true }}
+            scroll={{ x: 1200 }}
           />
         </div>
       </Card>
@@ -292,6 +293,7 @@ export default function CaseProfitAnalysis() {
               dataSource={profitAnalysis.fee_details || []}
               pagination={false}
               size="small"
+              scroll={{ x: 800 }}
             />
           </div>
 
@@ -303,6 +305,7 @@ export default function CaseProfitAnalysis() {
               dataSource={profitAnalysis.cost_details || []}
               pagination={false}
               size="small"
+              scroll={{ x: 800 }}
             />
           </div>
 
@@ -314,6 +317,7 @@ export default function CaseProfitAnalysis() {
               dataSource={profitAnalysis.profit_share_details || []}
               pagination={false}
               size="small"
+              scroll={{ x: 800 }}
             />
           </div>
         </Card>

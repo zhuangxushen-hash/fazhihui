@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan, MoreThanOrEqual, Between } from 'typeorm';
+import { Repository, LessThan, MoreThanOrEqual, Between, In } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import * as ExcelJS from 'exceljs';
 import * as fs from 'fs';
@@ -162,30 +162,43 @@ export class DashboardService {
     queryBuilder.groupBy('lead.source_channel');
     const channelData = await queryBuilder.getRawMany();
 
-    const result = [];
-    for (const data of channelData) {
-      const signed = await this.leadRepository.count({
-        where: {
-          organization_id: orgId,
-          source_channel: data.channel,
-          status: LeadStatus.PENDING_SIGN,
-        },
-      });
+    const channels = channelData.map((d: any) => d.channel).filter(Boolean);
 
-      const revenue = await this.feeRepository.createQueryBuilder('fee')
-        .select('SUM(fee.amount)', 'total')
-        .where('fee.organization_id = :orgId', { orgId })
-        .getRawOne();
+    const signedQb = this.leadRepository.createQueryBuilder('lead')
+      .select('lead.source_channel', 'channel')
+      .addSelect('COUNT(lead.id)', 'signed')
+      .where('lead.organization_id = :orgId', { orgId })
+      .andWhere('lead.status = :status', { status: LeadStatus.PENDING_SIGN });
+    if (channels.length > 0) {
+      signedQb.andWhere('lead.source_channel IN (:...channels)', { channels });
+    }
+    if (startDate) {
+      signedQb.andWhere('lead.created_at >= :startDate', { startDate });
+    }
+    if (endDate) {
+      signedQb.andWhere('lead.created_at <= :endDate', { endDate });
+    }
+    signedQb.groupBy('lead.source_channel');
+    const signedRaw = await signedQb.getRawMany();
+    const signedMap = new Map(signedRaw.map((r: any) => [r.channel, parseInt(r.signed)]));
 
-      result.push({
+    const totalRevenueResult = await this.feeRepository.createQueryBuilder('fee')
+      .select('SUM(fee.amount)', 'total')
+      .where('fee.organization_id = :orgId', { orgId })
+      .getRawOne();
+    const totalRevenue = parseFloat(totalRevenueResult?.total || '0');
+
+    const result = channelData.map((data: any) => {
+      const signed = signedMap.get(data.channel) || 0;
+      return {
         channel: data.channel,
         leads: parseInt(data.leads),
         signed,
-        revenue: parseFloat(revenue?.total || '0'),
+        revenue: totalRevenue,
         cost: 0,
-        roi: signed > 0 ? ((parseFloat(revenue?.total || '0') - 0) / 1) * 100 : 0,
-      });
-    }
+        roi: signed > 0 ? ((totalRevenue - 0) / 1) * 100 : 0,
+      };
+    });
 
     return result;
   }
@@ -333,6 +346,7 @@ export class DashboardService {
     const queryBuilder = this.caseRepository.createQueryBuilder('case')
       .select('case.assignee_lawyer_id', 'lawyer_id')
       .addSelect('COUNT(case.id)', 'cases_count')
+      .addSelect("SUM(CASE WHEN case.status = 'closed' THEN 1 ELSE 0 END)", 'closed_cases')
       .where('case.organization_id = :orgId AND case.assignee_lawyer_id IS NOT NULL', { orgId });
 
     if (startDate) {
@@ -345,32 +359,31 @@ export class DashboardService {
     queryBuilder.groupBy('case.assignee_lawyer_id');
     const rawData = await queryBuilder.getRawMany();
 
-    const result = [];
-    for (const data of rawData) {
-      const lawyer = await this.userRepository.findOne({ where: { id: data.lawyer_id } });
-      const closedCases = await this.caseRepository.count({
-        where: {
-          organization_id: orgId,
-          assignee_lawyer_id: data.lawyer_id,
-          status: CaseStatus.CLOSED,
-        },
-      });
+    const lawyerIds = rawData.map((d: any) => d.lawyer_id).filter(Boolean);
+    const users = lawyerIds.length > 0
+      ? await this.userRepository.find({ where: { id: In(lawyerIds) } })
+      : [];
+    const userMap = new Map(users.map(u => [u.id, u]));
 
-      const revenue = await this.feeRepository.createQueryBuilder('fee')
-        .select('SUM(fee.amount)', 'total')
-        .where('fee.organization_id = :orgId', { orgId })
-        .getRawOne();
+    const totalRevenueResult = await this.feeRepository.createQueryBuilder('fee')
+      .select('SUM(fee.amount)', 'total')
+      .where('fee.organization_id = :orgId', { orgId })
+      .getRawOne();
+    const totalRevenue = parseFloat(totalRevenueResult?.total || '0');
 
-      result.push({
+    const result = rawData.map((data: any) => {
+      const casesCount = parseInt(data.cases_count);
+      const closedCases = parseInt(data.closed_cases);
+      return {
         lawyer_id: data.lawyer_id,
-        lawyer_name: lawyer?.real_name || '未知',
-        cases_count: parseInt(data.cases_count),
+        lawyer_name: userMap.get(data.lawyer_id)?.real_name || '未知',
+        cases_count: casesCount,
         closed_cases: closedCases,
         avg_duration: 0,
-        total_revenue: parseFloat(revenue?.total || '0'),
-        revenue_rate: parseInt(data.cases_count) > 0 ? (closedCases / parseInt(data.cases_count)) * 100 : 0,
-      });
-    }
+        total_revenue: totalRevenue,
+        revenue_rate: casesCount > 0 ? (closedCases / casesCount) * 100 : 0,
+      };
+    });
 
     return result;
   }
@@ -410,25 +423,23 @@ export class DashboardService {
     queryBuilder.groupBy('case.case_type');
     const rawData = await queryBuilder.getRawMany();
 
-    const result = [];
-    for (const data of rawData) {
-      const revenue = await this.feeRepository.createQueryBuilder('fee')
-        .select('SUM(fee.amount)', 'total')
-        .where('fee.organization_id = :orgId', { orgId })
-        .getRawOne();
+    const totalRevenueResult = await this.feeRepository.createQueryBuilder('fee')
+      .select('SUM(fee.amount)', 'total')
+      .where('fee.organization_id = :orgId', { orgId })
+      .getRawOne();
+    const totalRevenue = parseFloat(totalRevenueResult?.total || '0');
 
+    const result = rawData.map((data: any) => {
       const caseCount = parseInt(data.cases_count);
-      const totalRev = parseFloat(revenue?.total || '0');
-
-      result.push({
+      return {
         case_type: data.case_type,
         case_type_label: caseTypes[data.case_type] || data.case_type,
         cases_count: caseCount,
-        total_revenue: totalRev,
-        avg_revenue: caseCount > 0 ? totalRev / caseCount : 0,
+        total_revenue: totalRevenue,
+        avg_revenue: caseCount > 0 ? totalRevenue / caseCount : 0,
         profit_margin: caseCount > 0 ? Math.min(80, Math.random() * 30 + 50) : 0,
-      });
-    }
+      };
+    });
 
     return result;
   }
@@ -1488,35 +1499,37 @@ export class DashboardService {
   @Cron(CronExpression.EVERY_DAY_AT_9AM)
   async sendSubscribedReports(): Promise<void> {
     this.logger.log('开始执行订阅报表推送定时任务');
-    const now = new Date();
-    const dayOfWeek = now.getDay(); // 0=周日, 1=周一
-    const dayOfMonth = now.getDate();
+    try {
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const dayOfMonth = now.getDate();
 
-    const templates = await this.reportTemplateRepository.find();
-    for (const template of templates) {
-      if (!template.subscriber_ids || !template.subscription_frequency) {
-        continue;
+      const templates = await this.reportTemplateRepository.find();
+      for (const template of templates) {
+        if (!template.subscriber_ids || !template.subscription_frequency) {
+          continue;
+        }
+
+        const shouldRun =
+          template.subscription_frequency === 'daily' ||
+          (template.subscription_frequency === 'weekly' && dayOfWeek === 1) ||
+          (template.subscription_frequency === 'monthly' && dayOfMonth === 1);
+
+        if (!shouldRun) {
+          continue;
+        }
+
+        try {
+          await this.exportReportToExcel(template.id);
+          this.logger.log(`报表「${template.name}」(${template.id}) 已生成并推送`);
+        } catch (err) {
+          this.logger.error(`报表「${template.name}」(${template.id}) 推送失败: ${err.message}`);
+        }
       }
-
-      // 根据频率判断今天是否需要推送
-      const shouldRun =
-        template.subscription_frequency === 'daily' ||
-        (template.subscription_frequency === 'weekly' && dayOfWeek === 1) ||
-        (template.subscription_frequency === 'monthly' && dayOfMonth === 1);
-
-      if (!shouldRun) {
-        continue;
-      }
-
-      try {
-        // 生成 Excel 报表文件
-        await this.exportReportToExcel(template.id);
-        this.logger.log(`报表「${template.name}」(${template.id}) 已生成并推送`);
-      } catch (err) {
-        this.logger.error(`报表「${template.name}」(${template.id}) 推送失败: ${err.message}`);
-      }
+      this.logger.log('订阅报表推送定时任务完成');
+    } catch (error) {
+      this.logger.error('订阅报表推送定时任务执行失败', error);
     }
-    this.logger.log('订阅报表推送定时任务完成');
   }
 
   // ==================== 8.7 人效分析 ====================
@@ -1614,79 +1627,65 @@ export class DashboardService {
    * 律师人效排名
    */
   async getLawyerEfficiencyRanking(orgId: string, startDate?: Date, endDate?: Date): Promise<any[]> {
-    // 获取所有律师
     const lawyers = await this.userRepository.find({
       where: { organization_id: orgId, role: UserRole.LAWYER },
     });
 
-    const result = [];
-    for (const lawyer of lawyers) {
-      // 办案数
-      const caseBuilder = this.caseRepository.createQueryBuilder('case')
-        .where('case.organization_id = :orgId', { orgId })
-        .andWhere('case.assignee_lawyer_id = :lawyerId', { lawyerId: lawyer.id });
-      if (startDate) {
-        caseBuilder.andWhere('case.created_at >= :startDate', { startDate });
-      }
-      if (endDate) {
-        caseBuilder.andWhere('case.created_at <= :endDate', { endDate });
-      }
-      const totalCases = await caseBuilder.getCount();
-      const closedCases = await caseBuilder.clone()
-        .andWhere('case.status = :status', { status: CaseStatus.CLOSED })
-        .getCount();
+    const lawyerIds = lawyers.map(l => l.id);
+    if (lawyerIds.length === 0) return [];
 
-      // 总收入
-      const feeBuilder = this.feeRepository.createQueryBuilder('fee')
-        .innerJoin(Case, 'case', 'case.id = fee.case_id')
-        .where('case.assignee_lawyer_id = :lawyerId', { lawyerId: lawyer.id })
-        .andWhere('fee.organization_id = :orgId', { orgId });
-      if (startDate) {
-        feeBuilder.andWhere('fee.created_at >= :startDate', { startDate });
-      }
-      if (endDate) {
-        feeBuilder.andWhere('fee.created_at <= :endDate', { endDate });
-      }
-      const feeResult = await feeBuilder
-        .select('COALESCE(SUM(fee.amount), 0)', 'total')
-        .getRawOne();
-      const totalRevenue = parseFloat(feeResult?.total || '0');
+    const dateWhere = (qb: any) => {
+      if (startDate) qb.andWhere('case.created_at >= :startDate', { startDate });
+      if (endDate) qb.andWhere('case.created_at <= :endDate', { endDate });
+    };
 
-      // 平均周期
-      const cycleBuilder = this.caseRepository.createQueryBuilder('case')
-        .where('case.organization_id = :orgId', { orgId })
-        .andWhere('case.assignee_lawyer_id = :lawyerId', { lawyerId: lawyer.id })
-        .andWhere('case.status = :status', { status: CaseStatus.CLOSED });
-      if (startDate) {
-        cycleBuilder.andWhere('case.created_at >= :startDate', { startDate });
-      }
-      if (endDate) {
-        cycleBuilder.andWhere('case.created_at <= :endDate', { endDate });
-      }
-      const cycleResult = await cycleBuilder
-        .select('AVG(JULIANDAY(case.updated_at) - JULIANDAY(case.created_at))', 'avg_cycle')
-        .getRawOne();
-      const avgCycleDays = cycleResult?.avg_cycle ? parseFloat(cycleResult.avg_cycle) : 0;
+    // 批量查询：每个律师的办案数、结案数、平均周期
+    const caseStatsQb = this.caseRepository.createQueryBuilder('case')
+      .select('case.assignee_lawyer_id', 'lawyer_id')
+      .addSelect('COUNT(case.id)', 'total_cases')
+      .addSelect("SUM(CASE WHEN case.status = 'closed' THEN 1 ELSE 0 END)", 'closed_cases')
+      .addSelect("AVG(CASE WHEN case.status = 'closed' THEN JULIANDAY(case.updated_at) - JULIANDAY(case.created_at) ELSE NULL END)", 'avg_cycle')
+      .where('case.organization_id = :orgId', { orgId })
+      .andWhere('case.assignee_lawyer_id IN (:...lawyerIds)', { lawyerIds });
+    dateWhere(caseStatsQb);
+    const caseStatsRaw = await caseStatsQb.groupBy('case.assignee_lawyer_id').getRawMany();
 
-      // 客户满意度（该律师经办案件的平均评分）
-      let lawyerSatisfaction = 0;
-      if (totalCases > 0) {
-        const caseIds = await this.caseRepository.find({
-          where: { organization_id: orgId, assignee_lawyer_id: lawyer.id },
-        });
-        const caseIdList = caseIds.map(c => c.id);
-        if (caseIdList.length > 0) {
-          const ratingResult = await this.serviceRatingRepository.createQueryBuilder('rating')
-            .where('rating.organization_id = :orgId', { orgId })
-            .andWhere('rating.case_id IN (:...caseIds)', { caseIds: caseIdList })
-            .andWhere('rating.status = :status', { status: 'approved' })
-            .select('AVG(rating.rating)', 'avg_rating')
-            .getRawOne();
-          lawyerSatisfaction = ratingResult?.avg_rating ? parseFloat(ratingResult.avg_rating) : 0;
-        }
-      }
+    const caseStatsMap = new Map(caseStatsRaw.map((r: any) => [r.lawyer_id, r]));
 
-      // 人效评分 = 满意度 * 0.4 + 结案率 * 0.3 + 创收评分 * 0.3
+    // 批量查询：每个律师的创收金额
+    const feeStatsQb = this.feeRepository.createQueryBuilder('fee')
+      .select('case.assignee_lawyer_id', 'lawyer_id')
+      .addSelect('COALESCE(SUM(fee.amount), 0)', 'total_revenue')
+      .innerJoin(Case, 'case', 'case.id = fee.case_id')
+      .where('case.organization_id = :orgId', { orgId })
+      .andWhere('case.assignee_lawyer_id IN (:...lawyerIds)', { lawyerIds });
+    dateWhere(feeStatsQb);
+    const feeStatsRaw = await feeStatsQb.groupBy('case.assignee_lawyer_id').getRawMany();
+
+    const feeStatsMap = new Map(feeStatsRaw.map((r: any) => [r.lawyer_id, parseFloat(r.total_revenue || '0')]));
+
+    // 批量查询：每个律师的客户满意度评分
+    const ratingStatsQb = this.serviceRatingRepository.createQueryBuilder('rating')
+      .select('case.assignee_lawyer_id', 'lawyer_id')
+      .addSelect('AVG(rating.rating)', 'avg_rating')
+      .innerJoin(Case, 'case', 'case.id = rating.case_id')
+      .where('case.organization_id = :orgId', { orgId })
+      .andWhere('case.assignee_lawyer_id IN (:...lawyerIds)', { lawyerIds })
+      .andWhere('rating.status = :status', { status: 'approved' });
+    if (startDate) ratingStatsQb.andWhere('rating.created_at >= :startDate', { startDate });
+    if (endDate) ratingStatsQb.andWhere('rating.created_at <= :endDate', { endDate });
+    const ratingStatsRaw = await ratingStatsQb.groupBy('case.assignee_lawyer_id').getRawMany();
+
+    const ratingStatsMap = new Map(ratingStatsRaw.map((r: any) => [r.lawyer_id, r.avg_rating ? parseFloat(r.avg_rating) : 0]));
+
+    const result = lawyers.map(lawyer => {
+      const stats = caseStatsMap.get(lawyer.id) || { total_cases: '0', closed_cases: '0', avg_cycle: null };
+      const totalCases = parseInt(stats.total_cases);
+      const closedCases = parseInt(stats.closed_cases);
+      const avgCycleDays = stats.avg_cycle ? parseFloat(stats.avg_cycle) : 0;
+      const totalRevenue = feeStatsMap.get(lawyer.id) || 0;
+      const lawyerSatisfaction = ratingStatsMap.get(lawyer.id) || 0;
+
       const closeRate = totalCases > 0 ? (closedCases / totalCases) * 100 : 0;
       const revenueScore = Math.min(100, totalRevenue / 10000);
       const efficiencyScore =
@@ -1694,7 +1693,7 @@ export class DashboardService {
         Math.min(100, closeRate) * 0.3 +
         revenueScore * 0.3;
 
-      result.push({
+      return {
         lawyer_id: lawyer.id,
         lawyer_name: lawyer.real_name,
         cases_count: totalCases,
@@ -1703,10 +1702,9 @@ export class DashboardService {
         avg_cycle_days: Math.round(avgCycleDays * 10) / 10,
         satisfaction: Math.round(lawyerSatisfaction * 100) / 100,
         efficiency_score: Math.round(efficiencyScore * 10) / 10,
-      });
-    }
+      };
+    });
 
-    // 按人效评分排序
     result.sort((a, b) => b.efficiency_score - a.efficiency_score);
     return result;
   }

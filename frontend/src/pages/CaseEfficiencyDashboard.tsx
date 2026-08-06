@@ -388,6 +388,7 @@ export default function CaseEfficiencyDashboard() {
           pagination={{ pageSize: 10, showSizeChanger: true }}
           size="middle"
           loading={loading}
+          scroll={{ x: 1200 }}
         />
       </Card>
     </div>
