@@ -1,4 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('scrm_chat_archives')
 export class ChatArchive {
@@ -28,6 +30,9 @@ export class ChatArchive {
   // 归档时间
   @CreateDateColumn()
   archived_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
 
   @Column({ nullable: true })
   organization_id: string;

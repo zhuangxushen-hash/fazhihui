@@ -3,6 +3,7 @@ import {
   Column,
   PrimaryGeneratedColumn,
   CreateDateColumn,
+  UpdateDateColumn,
   ManyToOne,
 } from 'typeorm';
 import { Organization } from '../user/organization.entity';
@@ -92,6 +93,9 @@ export class FinanceComplianceCheck {
 
   @CreateDateColumn()
   created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
 
   @Column({ type: 'datetime', nullable: true })
   handled_at: Date;

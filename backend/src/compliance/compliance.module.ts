@@ -18,9 +18,27 @@ import { CaseSOPTemplate } from '../case/case-sop-template.entity';
 // 合并后：案件SOP操作统一使用 CaseTask 表
 import { CaseTask } from '../case/case-task.entity';
 import { Case } from '../case/case.entity';
+// 合规规则管理
+import { ComplianceRule } from './compliance-rule.entity';
+// 合规检查结果
+import { ComplianceCheckResult } from './compliance-check-result.entity';
+// 财务税务合规校验
+import { FinanceComplianceCheck } from './finance-compliance-check.entity';
+// 办案交付合规检查
+import { CaseComplianceCheck } from './case-compliance-check.entity';
+// 人员变更申请
+import { CasePersonnelChange } from './case-personnel-change.entity';
+// 结案归档
+import { CaseArchive } from './case-archive.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ComplianceRecord, Complaint, MarketingContent, SalesCompliance, SigningCompliance, CaseSOP, TalkQualityCheck, ReportTemplate, ReportExportLog, ComplaintTicket, CaseSOPTemplate, CaseTask, Case]), UserModule],
+  imports: [TypeOrmModule.forFeature([
+    ComplianceRecord, Complaint, MarketingContent, SalesCompliance, SigningCompliance,
+    CaseSOP, TalkQualityCheck, ReportTemplate, ReportExportLog, ComplaintTicket,
+    CaseSOPTemplate, CaseTask, Case,
+    ComplianceRule, ComplianceCheckResult, FinanceComplianceCheck,
+    CaseComplianceCheck, CasePersonnelChange, CaseArchive,
+  ]), UserModule],
   providers: [ComplianceService],
   controllers: [ComplianceController],
   exports: [ComplianceService],

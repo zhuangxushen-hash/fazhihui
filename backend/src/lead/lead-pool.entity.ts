@@ -32,6 +32,9 @@ export class LeadPool {
   @CreateDateColumn()
   recycle_time: Date;
 
+  @UpdateDateColumn()
+  updated_at: Date;
+
   @Column({ type: 'varchar', default: LeadPoolStatus.AVAILABLE })
   status: LeadPoolStatus;
 

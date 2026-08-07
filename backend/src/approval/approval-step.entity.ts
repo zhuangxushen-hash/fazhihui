@@ -1,4 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne, JoinColumn } from 'typeorm';
 import { User } from '../user/user.entity';
 import { ApprovalRequest } from './approval-request.entity';
 
@@ -42,4 +44,7 @@ export class ApprovalStep {
 
   @CreateDateColumn()
   created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
 }

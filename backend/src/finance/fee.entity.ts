@@ -1,4 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne } from 'typeorm';
 import { Organization } from '../user/organization.entity';
 import { Case } from '../case/case.entity';
 import { FeeRole } from '../types';
@@ -37,4 +39,7 @@ export class Fee {
 
   @CreateDateColumn()
   created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
 }

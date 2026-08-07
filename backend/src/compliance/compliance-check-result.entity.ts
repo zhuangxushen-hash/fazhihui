@@ -1,4 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne, JoinColumn } from 'typeorm';
 import { Organization } from '../user/organization.entity';
 import { User } from '../user/user.entity';
 
@@ -159,6 +161,9 @@ export class ComplianceCheckResult {
 
   @CreateDateColumn()
   created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
 
   @Column({ type: 'datetime', nullable: true })
   handled_at: Date;

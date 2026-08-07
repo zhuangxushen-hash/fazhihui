@@ -1,4 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne } from 'typeorm';
 import { Organization } from '../user/organization.entity';
 
 // 审批流定义
@@ -31,4 +33,7 @@ export class ApprovalFlow {
 
   @CreateDateColumn()
   created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
 }

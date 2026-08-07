@@ -1,0 +1,14 @@
+{
+  "name": "audit-tools",
+  "version": "1.0.0",
+  "description": "LangChain 项目完整性检查工具",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "check": "node src/index.js"
+  },
+  "dependencies": {
+    "langchain": "^0.3.0"
+  }
+}

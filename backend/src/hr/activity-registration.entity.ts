@@ -3,6 +3,7 @@ import {
   Column,
   PrimaryGeneratedColumn,
   CreateDateColumn,
+  UpdateDateColumn,
   ManyToOne,
 } from 'typeorm';
 import { Organization } from '../user/organization.entity';
@@ -24,4 +25,7 @@ export class ActivityRegistration {
   // 报名时间（冗余，便于查询）
   @CreateDateColumn()
   created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
 }

@@ -1,4 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('scrm_client_tag_relations')
 export class ClientTagRelation {
@@ -17,6 +19,9 @@ export class ClientTagRelation {
 
   @CreateDateColumn()
   tagged_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
 
   @Column({ nullable: true })
   organization_id: string;

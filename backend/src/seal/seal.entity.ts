@@ -1,4 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn,
+  UpdateDateColumn
+} from 'typeorm';
 
 // 印章类型：official公章 / financial财务章 / contract合同章 / personal法人章
 // 印章状态：active启用 / inactive停用
@@ -37,4 +39,7 @@ export class Seal {
 
   @CreateDateColumn()
   created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
 }
