@@ -112,9 +112,20 @@ export class ComplianceController {
   }
 
   @Get('marketing-content')
-  getMarketingContents(@Query('org_id') orgId: string, @Query('status') status?: string, @Request() req?: any) {
+  getMarketingContents(
+    @Query('org_id') orgId: string,
+    @Query('status') status?: string,
+    @Query('content_type') contentType?: string,
+    @Query('keyword') keyword?: string,
+    @Request() req?: any,
+  ) {
     const finalOrgId = orgId || req?.user?.organization_id;
-    return this.complianceService.getMarketingContents(finalOrgId, status);
+    return this.complianceService.getMarketingContents(finalOrgId, status, contentType, keyword);
+  }
+
+  @Get('marketing-content/:id')
+  getMarketingContentById(@Param('id') id: string) {
+    return this.complianceService.getMarketingContentById(id);
   }
 
   @Post('sales-compliance')

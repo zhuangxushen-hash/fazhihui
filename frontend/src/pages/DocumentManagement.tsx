@@ -15,6 +15,7 @@ import {
   Row,
   Col,
   Popconfirm,
+  Tag,
 } from 'antd'
 import {
   UploadOutlined,
@@ -26,10 +27,17 @@ import {
   DeleteOutlined,
   FolderOutlined,
   FileOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons'
 import type { UploadProps } from 'antd'
 import type { DataNode } from 'antd/es/tree'
 import axios from '../api/axios'
+import {
+  getDocumentVersions,
+  createDocumentVersion,
+  rollbackDocumentVersion,
+} from '../api/document'
+import type { DocumentVersionItem } from '../api/document'
 
 // 左侧菜单3个子项
 const menuItems = [
@@ -83,6 +91,15 @@ export default function DocumentManagement() {
   const [createForm] = Form.useForm()
   // 律所资料文件夹树选中
   const [selectedFolder, setSelectedFolder] = useState<string>('firm-root')
+  // 版本历史弹窗
+  const [versionVisible, setVersionVisible] = useState(false)
+  const [versionLoading, setVersionLoading] = useState(false)
+  const [versions, setVersions] = useState<DocumentVersionItem[]>([])
+  const [currentDoc, setCurrentDoc] = useState<Record<string, unknown> | null>(null)
+  // 新建版本弹窗
+  const [versionModalVisible, setVersionModalVisible] = useState(false)
+  const [versionCreating, setVersionCreating] = useState(false)
+  const [versionForm] = Form.useForm()
 
   // 获取文档列表
   const fetchData = async () => {
@@ -180,6 +197,71 @@ export default function DocumentManagement() {
     }
   }
 
+  // 打开版本历史弹窗
+  const handleOpenVersions = async (record: Record<string, unknown>) => {
+    const docId = (record.id as string) || (record.key as string)
+    setCurrentDoc(record)
+    setVersionVisible(true)
+    setVersionLoading(true)
+    setVersions([])
+    try {
+      const res = await getDocumentVersions(docId)
+      setVersions(res || [])
+    } catch (error) {
+      message.error('加载版本历史失败')
+    } finally {
+      setVersionLoading(false)
+    }
+  }
+
+  // 提交新建版本
+  const handleCreateVersion = async () => {
+    try {
+      const values = await versionForm.validateFields()
+      if (!currentDoc) return
+      const docId = (currentDoc.id as string) || (currentDoc.key as string)
+      setVersionCreating(true)
+      await createDocumentVersion(docId, {
+        file_url: values.file_url,
+        file_type: values.file_type,
+        file_size: values.file_size,
+        description: values.description,
+      })
+      message.success('版本创建成功')
+      setVersionModalVisible(false)
+      versionForm.resetFields()
+      handleOpenVersions(currentDoc)
+    } catch (error) {
+      const e = error as { errorFields?: unknown }
+      if (e?.errorFields) return
+      message.error('创建版本失败')
+    } finally {
+      setVersionCreating(false)
+    }
+  }
+
+  // 回滚到指定版本
+  const handleRollback = (version: DocumentVersionItem) => {
+    if (!currentDoc) return
+    Modal.confirm({
+      title: '确认回滚',
+      content: `确定回滚到 v${version.version_no} 版本吗？当前文档内容将被该版本覆盖。`,
+      okText: '回滚',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          const docId = (currentDoc.id as string) || (currentDoc.key as string)
+          await rollbackDocumentVersion(docId, version.id)
+          message.success('回滚成功')
+          handleOpenVersions(currentDoc)
+        } catch (error) {
+          message.error('回滚失败')
+        }
+      },
+    })
+  }
+
   // 搜索
   const handleSearch = () => {
     fetchData()
@@ -216,6 +298,7 @@ export default function DocumentManagement() {
         <Space>
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handlePreview(record)}>预览</Button>
           <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
+          <Button type="link" size="small" icon={<HistoryOutlined />} onClick={() => handleOpenVersions(record)}>版本</Button>
           <Button type="link" size="small" icon={<DownloadOutlined />} onClick={() => handleDownload(record)}>下载</Button>
           <Popconfirm
             title="确认删除"
@@ -401,6 +484,112 @@ export default function DocumentManagement() {
         <Form form={createForm} onFinish={handleCreate} layout="vertical">
           <Form.Item name="name" label="文档名称" rules={[{ required: true, message: '请输入文档名称' }]}>
             <Input placeholder="请输入文档名称" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 版本历史弹窗 */}
+      <Modal
+        title={`版本历史 - ${(currentDoc?.name as string) || ''}`}
+        open={versionVisible}
+        onCancel={() => setVersionVisible(false)}
+        footer={[
+          <Button key="new" type="primary" icon={<PlusOutlined />} onClick={() => setVersionModalVisible(true)}>
+            新建版本
+          </Button>,
+          <Button key="close" onClick={() => setVersionVisible(false)}>
+            关闭
+          </Button>,
+        ]}
+        width={760}
+      >
+        <Table
+          dataSource={versions}
+          columns={[
+            {
+              title: '版本号',
+              dataIndex: 'version_no',
+              key: 'version_no',
+              width: 90,
+              render: (v: number) => <Tag color="blue">v{v}</Tag>,
+            },
+            {
+              title: '文件类型',
+              dataIndex: 'file_type',
+              key: 'file_type',
+              width: 100,
+              render: (v: string) => v || '-',
+            },
+            {
+              title: '文件大小',
+              dataIndex: 'file_size',
+              key: 'file_size',
+              width: 110,
+              align: 'right' as const,
+              render: (v: number) => (v ? `${(Number(v) / 1024).toFixed(1)} KB` : '-'),
+            },
+            {
+              title: '版本说明',
+              dataIndex: 'description',
+              key: 'description',
+              ellipsis: true,
+              render: (v: string) => v || '-',
+            },
+            {
+              title: '创建时间',
+              dataIndex: 'created_at',
+              key: 'created_at',
+              width: 170,
+              render: (v: string) => v?.slice(0, 19).replace('T', ' ') || '-',
+            },
+            {
+              title: '操作',
+              key: 'action',
+              width: 100,
+              render: (_: unknown, version: DocumentVersionItem) => (
+                <Popconfirm
+                  title="确认回滚"
+                  description={`回滚到 v${version.version_no} 版本？`}
+                  onConfirm={() => handleRollback(version)}
+                  okText="回滚"
+                  okType="danger"
+                  cancelText="取消"
+                >
+                  <Button type="link" size="small" icon={<HistoryOutlined />}>回滚</Button>
+                </Popconfirm>
+              ),
+            },
+          ]}
+          rowKey="id"
+          loading={versionLoading}
+          size="middle"
+          pagination={false}
+          locale={{ emptyText: '暂无版本记录' }}
+        />
+      </Modal>
+
+      {/* 新建版本弹窗 */}
+      <Modal
+        title="新建文档版本"
+        open={versionModalVisible}
+        onCancel={() => setVersionModalVisible(false)}
+        onOk={handleCreateVersion}
+        okText="创建"
+        cancelText="取消"
+        confirmLoading={versionCreating}
+      >
+        <Form form={versionForm} layout="vertical" style={{ marginTop: 8 }}>
+          <Form.Item name="file_url" label="文件地址" rules={[{ required: true, message: '请输入文件地址' }]}>
+            <Input placeholder="请输入文件 URL 地址" />
+          </Form.Item>
+          <Form.Item name="file_type" label="文件类型">
+            <Input placeholder="如：pdf / docx / xlsx" />
+          </Form.Item>
+          <Form.Item name="file_size" label="文件大小（字节）">
+            <Input placeholder="可选，输入文件大小（字节）" />
+          </Form.Item>
+          <Form.Item name="description" label="版本说明">
+            <Input.TextArea rows={3} placeholder="本次版本的变更说明" />
           </Form.Item>
         </Form>
       </Modal>

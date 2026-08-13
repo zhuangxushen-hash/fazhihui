@@ -36,6 +36,15 @@ import { User } from '../user/user.entity';
 import { UserModule } from '../user/user.module';
 // Phase5+6 M8: 注入审计服务，财务核心操作记录审计日志
 import { AuditModule } from '../audit/audit.module';
+// 财务核算模块（代扣/个税）
+import { WithholdingRecord } from './withholding-record.entity';
+import { WithholdingBatch } from './withholding-batch.entity';
+import { TaxCalculation } from './tax-calculation.entity';
+import { FinancialAccountingService } from './financial-accounting.service';
+import { FinancialAccountingController } from './financial-accounting.controller';
+// 财务报表模块（账户台账/项目收入/发票打印）
+import { FinanceStatementService } from './finance-statement.service';
+import { FinanceStatementController } from './finance-statement.controller';
 
 @Module({
   imports: [
@@ -64,6 +73,10 @@ import { AuditModule } from '../audit/audit.module';
       PaymentReminder,
       // 业务款管理
       BusinessFund,
+      // 财务核算（代扣/个税）
+      WithholdingRecord,
+      WithholdingBatch,
+      TaxCalculation,
     ]),
     UserModule,
     // Phase5+6 M8: 注入审计模块，财务核心操作记录审计日志
@@ -86,6 +99,10 @@ import { AuditModule } from '../audit/audit.module';
     BusinessFundService,
     // 案件成本服务
     CaseCostService,
+    // 财务核算服务（代扣/个税）
+    FinancialAccountingService,
+    // 财务报表服务
+    FinanceStatementService,
   ],
   controllers: [
     // 保留原有控制器
@@ -96,6 +113,10 @@ import { AuditModule } from '../audit/audit.module';
     ReconciliationController,
     // 案件成本控制器
     CaseCostController,
+    // 财务核算控制器（代扣/个税）
+    FinancialAccountingController,
+    // 财务报表控制器
+    FinanceStatementController,
   ],
   // Phase5: 导出 CommissionService，供 CaseModule 案件结案时计算佣金使用
   exports: [CommissionService],

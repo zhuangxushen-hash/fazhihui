@@ -19,6 +19,23 @@ export const getMyNotifications = (isRead?: boolean) => {
   return axios.get('/notifications', { params })
 }
 
+// 查询通知详情
+export const getNotificationById = (id: string) =>
+  axios.get(`/notifications/${id}`)
+
+// 发布通知（超管/律所管理员）
+export const createNotification = (data: {
+  title: string
+  content?: string
+  type?: string
+  level?: string
+  receiver_id?: string
+  sender_id?: string
+  related_type?: string
+  related_id?: string
+}) =>
+  axios.post('/notifications', data)
+
 export const getUnreadCount = () =>
   axios.get('/notifications/unread-count')
 

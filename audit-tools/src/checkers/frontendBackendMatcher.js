@@ -38,6 +38,8 @@ export function normalizePathStructure(path) {
   normalized = normalized.replace(/^\/api/, '');
   if (!normalized.startsWith('/')) normalized = '/' + normalized;
   
+  // 先将 ${encodeURIComponent(xxx)} 替换为 :xxx（模板表达式场景）
+  normalized = normalized.replace(/\$\{encodeURIComponent\(([^)]+)\)\}/g, ':$1');
   // 先将 ${xxx} 替换为 :xxx
   normalized = normalized.replace(/\$\{([^}]+)\}/g, ':$1');
   
@@ -63,6 +65,8 @@ export function normalizeUrl(url) {
   normalized = normalized.replace(/^\/api/, '');
   // 确保以 / 开头
   if (!normalized.startsWith('/')) normalized = '/' + normalized;
+  // 先将 ${encodeURIComponent(xxx)} 替换为 :xxx（模板表达式场景）
+  normalized = normalized.replace(/\$\{encodeURIComponent\(([^)]+)\)\}/g, ':$1');
   // 将动态参数 ${xxx} 替换为 :xxx
   normalized = normalized.replace(/\$\{([^}]+)\}/g, ':$1');
   // 将 :paramName/xxx 这样的路径段标准化

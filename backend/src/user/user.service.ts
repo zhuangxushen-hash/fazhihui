@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
@@ -70,9 +70,35 @@ export class UserService {
     return this.userRepository.findOne({ where: { id } });
   }
 
-  async createOrganization(name: string): Promise<Organization> {
-    const org = this.orgRepository.create({ name });
+  async createOrganization(data: Partial<Organization>): Promise<Organization> {
+    // 组织名称为必填字段，缺失时抛出异常（保留原有必填校验逻辑）
+    if (!data.name) {
+      throw new BadRequestException('组织名称不能为空');
+    }
+    const org = this.orgRepository.create(data);
     return this.orgRepository.save(org);
+  }
+
+  // 查询组织列表：keyword 模糊匹配组织名称或简称，status 精确筛选（如传值），按更新时间倒序排列
+  async findOrganizations(keyword?: string, status?: string): Promise<Organization[]> {
+    const queryBuilder = this.orgRepository.createQueryBuilder('org');
+    if (keyword) {
+      // keyword 模糊匹配组织名称或简称
+      queryBuilder.andWhere('(org.name LIKE :keyword OR org.short_name LIKE :keyword)', { keyword: `%${keyword}%` });
+    }
+    if (status) {
+      // status 精确筛选
+      queryBuilder.andWhere('org.status = :status', { status });
+    }
+    // 按更新时间倒序排列
+    queryBuilder.orderBy('org.updated_at', 'DESC');
+    return queryBuilder.getMany();
+  }
+
+  // 更新组织信息：先执行更新，再查询返回更新后的组织
+  async updateOrganization(id: string, data: Partial<Organization>): Promise<Organization> {
+    await this.orgRepository.update(id, data);
+    return this.orgRepository.findOne({ where: { id } });
   }
 
   async validatePassword(plainPassword: string, hashedPassword: string): Promise<boolean> {

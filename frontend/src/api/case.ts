@@ -111,3 +111,23 @@ export const generateContract = (data: { case_id: string; template_id: string })
 export const batchGenerateDocuments = (data: { case_ids: string[]; template_id: string }) => {
   return axios.post('/cases/documents/batch-generate', data)
 }
+
+// 获取逾期案件列表
+export const getOverdueCases = () => {
+  return axios.get('/cases/overdue')
+}
+
+// 获取高风险案件列表
+export const getHighRiskCases = () => {
+  return axios.get('/cases/high-risk')
+}
+
+// 检查逾期案件
+export const checkOverdueCases = () => {
+  return axios.post('/cases/check-overdue')
+}
+
+// 批量分配案件
+export const batchAssignCases = (data: { case_ids: string[]; lawyer_id: string }) => {
+  return axios.post('/cases/batch-assign', data)
+}

@@ -159,12 +159,69 @@ export class BidController {
   }
 
   /**
+   * 导出业绩记录（批量下载）
+   * 返回符合 CSV 结构的行数据，前端负责生成并下载文件
+   */
+  @Get('bid-performances/export')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.LAWYER, UserRole.SALES)
+  async exportPerformances(
+    @Query('project_name') projectName: string,
+    @Query('status') status: string,
+    @Request() req: any,
+  ) {
+    const orgId = req?.user?.organization_id;
+    const qb = this.bidRecordRepository.createQueryBuilder('r');
+    if (orgId) {
+      qb.andWhere('r.organization_id = :orgId', { orgId });
+    }
+    if (projectName) {
+      qb.andWhere('r.project_name LIKE :projectName', { projectName: `%${projectName}%` });
+    }
+    if (status) {
+      qb.andWhere('r.status = :status', { status });
+    }
+    qb.orderBy('r.updated_at', 'DESC');
+    const list = await qb.getMany();
+    return { data: list, total: list.length };
+  }
+
+  /**
    * 查询业绩详情
    */
   @Get('bid-performances/:id')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.LAWYER, UserRole.SALES)
   async findOnePerformance(@Param('id') id: string) {
     return this.bidRecordRepository.findOne({ where: { id } });
+  }
+
+  /**
+   * 批量导入业绩记录（接收数组，逐条创建）
+   */
+  @Post('bid-performances/import')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.LAWYER, UserRole.SALES)
+  async importPerformances(@Body() body: { records: Partial<BidRecord>[] }, @Request() req: any) {
+    const orgId = req?.user?.organization_id;
+    const records = Array.isArray(body?.records) ? body.records : [];
+    if (records.length === 0) {
+      return { imported: 0, message: '未检测到可导入的数据' };
+    }
+    const entities = records.map((r) =>
+      this.bidRecordRepository.create({
+        project_name: r.project_name,
+        client: r.client,
+        amount: r.amount,
+        start_date: r.start_date,
+        end_date: r.end_date || null,
+        category: r.category,
+        description: r.description,
+        file_url: r.file_url || null,
+        file_name: r.file_name || null,
+        organization_id: orgId,
+        status: 'pending',
+      }),
+    );
+    const saved = await this.bidRecordRepository.save(entities);
+    return { imported: saved.length, message: `成功导入 ${saved.length} 条业绩记录` };
   }
 
   /**
@@ -184,20 +241,53 @@ export class BidController {
 
   /**
    * 审核业绩记录
+   * 兼容两种参数：{ status: 'approved' } 或 { action: 'approve'|'reject', comment }
    */
   @Put('bid-performances/:id/audit')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.LAWYER, UserRole.SALES)
   async auditPerformance(
     @Param('id') id: string,
-    @Body() body: { status: string; audit_comment?: string },
+    @Body() body: { status?: string; action?: string; audit_comment?: string; comment?: string },
     @Request() req: any,
   ) {
+    // action 模式映射为状态：approve -> approved / reject -> rejected
+    const actionStatusMap: Record<string, string> = {
+      approve: 'approved',
+      reject: 'rejected',
+    };
+    const status = body.status || actionStatusMap[body.action] || 'pending';
     await this.bidRecordRepository.update(id, {
-      status: body.status,
-      audit_comment: body.audit_comment,
+      status,
+      audit_comment: body.audit_comment || body.comment || null,
       audited_by: req?.user?.id,
       audited_at: new Date(),
     });
     return this.bidRecordRepository.findOne({ where: { id } });
+  }
+
+  /**
+   * 上传业绩附件（记录 file_url/file_name）
+   */
+  @Post('bid-performances/:id/upload')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.LAWYER, UserRole.SALES)
+  async uploadPerformanceFile(
+    @Param('id') id: string,
+    @Body() body: { file_url: string; file_name?: string },
+  ) {
+    await this.bidRecordRepository.update(id, {
+      file_url: body.file_url,
+      file_name: body.file_name || null,
+    });
+    return this.bidRecordRepository.findOne({ where: { id } });
+  }
+
+  /**
+   * 删除业绩记录
+   */
+  @Delete('bid-performances/:id')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.LAWYER, UserRole.SALES)
+  async removePerformance(@Param('id') id: string) {
+    await this.bidRecordRepository.delete(id);
+    return { message: '删除成功' };
   }
 }

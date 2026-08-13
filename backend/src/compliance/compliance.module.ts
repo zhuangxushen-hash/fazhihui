@@ -12,6 +12,7 @@ import { TalkQualityCheck } from './talk-quality-check.entity';
 import { ReportTemplate } from '../dashboard/report-template.entity';
 import { ReportExportLog } from '../dashboard/report-export-log.entity';
 import { UserModule } from '../user/user.module';
+import { User } from '../user/user.entity';
 // 引入投诉工单与案件SOP模板实体（Phase4: M3 投诉走合规通道、H7 SOP模板联动）
 import { ComplaintTicket } from './complaint-ticket.entity';
 import { CaseSOPTemplate } from '../case/case-sop-template.entity';
@@ -38,6 +39,7 @@ import { CaseArchive } from './case-archive.entity';
     CaseSOPTemplate, CaseTask, Case,
     ComplianceRule, ComplianceCheckResult, FinanceComplianceCheck,
     CaseComplianceCheck, CasePersonnelChange, CaseArchive,
+    User,
   ]), UserModule],
   providers: [ComplianceService],
   controllers: [ComplianceController],

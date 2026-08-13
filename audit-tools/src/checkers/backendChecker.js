@@ -44,9 +44,9 @@ export function checkBackendCompleteness(backendSrcPath) {
     const hasRepositoryDependency = dependencies.repositories.length > 0;
     const hasAnyDependency = hasServiceDependency || hasRepositoryDependency;
 
-    // 查找对应的 Service 文件
+    // 查找对应的 Service 文件（精确匹配主 Service，排除 case-task-comment.service.ts 等子模块 Service）
     const correspondingService = serviceFiles.find(sf =>
-      basename(sf).startsWith(moduleName) && (basename(sf).includes('.service.'))
+      basename(sf) === `${moduleName}.service.ts` || basename(sf) === `${moduleName}.service.js`
     );
 
     // 判断是否为简单控制器（只有 GET 方法，无业务操作）

@@ -56,7 +56,7 @@ export const createRefund = (data: {
   organization_id?: string
   applicant_id?: string
 }) => {
-  return axios.post<Refund>('/finance/refunds', data)
+  return axios.post<Refund>('/finance/refund', data)
 }
 
 /** 审批通过退费 */
@@ -64,7 +64,7 @@ export const approveRefund = (id: string, data: {
   approver_id?: string
   approval_note?: string
 }) => {
-  return axios.put<Refund>(`/finance/refunds/${id}/approve`, data)
+  return axios.put<Refund>(`/finance/refund/${id}/approve`, data)
 }
 
 /** 驳回退费 */
@@ -72,5 +72,5 @@ export const rejectRefund = (id: string, data: {
   approver_id?: string
   approval_note?: string
 }) => {
-  return axios.put<Refund>(`/finance/refunds/${id}/reject`, data)
+  return axios.put<Refund>(`/finance/refund/${id}/reject`, data)
 }

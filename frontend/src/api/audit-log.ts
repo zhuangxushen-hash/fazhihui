@@ -33,5 +33,5 @@ export const getAuditLogs = (params?: {
   start_date?: string
   end_date?: string
 }) => {
-  return axios.get<AuditLog[]>('/audit', { params })
+  return axios.get<AuditLog[]>('/audit-logs', { params })
 }

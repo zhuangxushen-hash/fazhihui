@@ -503,3 +503,91 @@ export const validateMaterialForBinding = (materialId: string) => {
 export const bindMaterialToPlan = (materialId: string, planId: string) => {
   return axios.put<AdMaterial>(`/ad-materials/${materialId}/bind-plan`, { plan_id: planId })
 }
+
+// ========== 伪直播管理接口 ==========
+
+export interface FakeLiveRoom {
+  id: string
+  title: string
+  anchor_name: string
+  video_url: string
+  cover_url: string
+  status: 'draft' | 'live' | 'ended'
+  viewer_count: number
+  max_viewers: number
+  duration: number
+  organization_id: string
+  created_by: string
+  actual_start?: string
+  actual_end?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface FakeLiveMessage {
+  id: string
+  room_id: string
+  viewer_id: string
+  viewer_nickname: string
+  viewer_avatar: string
+  content: string
+  created_at: string
+}
+
+export interface FakeLiveViewer {
+  id: string
+  room_id: string
+  openid: string
+  nickname: string
+  avatar: string
+  enter_at: string
+  leave_at: string
+}
+
+export const createFakeLiveRoom = (data: {
+  title: string
+  anchor_name: string
+  video_url?: string
+  cover_url?: string
+  max_viewers?: number
+}) => {
+  return axios.post<FakeLiveRoom>('/marketing/fake-live-rooms', data)
+}
+
+export const getFakeLiveRooms = (params?: { org_id?: string; status?: string }) => {
+  return axios.get<FakeLiveRoom[]>('/marketing/fake-live-rooms', { params })
+}
+
+export const getFakeLiveRoomById = (id: string) => {
+  return axios.get<FakeLiveRoom>(`/marketing/fake-live-rooms/${id}`)
+}
+
+export const updateFakeLiveRoom = (id: string, data: {
+  title?: string
+  anchor_name?: string
+  video_url?: string
+  cover_url?: string
+  max_viewers?: number
+}) => {
+  return axios.put<FakeLiveRoom>(`/marketing/fake-live-rooms/${id}`, data)
+}
+
+export const deleteFakeLiveRoom = (id: string) => {
+  return axios.delete(`/marketing/fake-live-rooms/${id}`)
+}
+
+export const startFakeLiveRoom = (id: string) => {
+  return axios.post<FakeLiveRoom>(`/marketing/fake-live-rooms/${id}/start`)
+}
+
+export const endFakeLiveRoom = (id: string) => {
+  return axios.post<FakeLiveRoom>(`/marketing/fake-live-rooms/${id}/end`)
+}
+
+export const getFakeLiveRoomMessages = (id: string, limit = 200) => {
+  return axios.get<FakeLiveMessage[]>(`/marketing/fake-live-rooms/${id}/messages`, { params: { limit } })
+}
+
+export const getFakeLiveRoomViewers = (id: string) => {
+  return axios.get<FakeLiveViewer[]>(`/marketing/fake-live-rooms/${id}/viewers`)
+}

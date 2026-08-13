@@ -77,4 +77,36 @@ export class DocumentItemController {
     await this.documentService.remove(id);
     return { message: '删除成功' };
   }
+
+  // ========== 文档版本管理 ==========
+
+  // 创建文档版本
+  @Post(':id/versions')
+  async createVersion(
+    @Param('id') id: string,
+    @Body() body: { file_url?: string; file_type?: string; file_size?: number; description?: string },
+    @Request() req: any,
+  ) {
+    return this.documentService.createVersion({
+      document_id: id,
+      file_url: body.file_url,
+      file_type: body.file_type,
+      file_size: body.file_size,
+      description: body.description,
+      creator_id: req?.user?.id,
+      organization_id: req?.user?.organization_id,
+    });
+  }
+
+  // 查询文档版本列表
+  @Get(':id/versions')
+  async getVersions(@Param('id') id: string) {
+    return this.documentService.getVersions(id);
+  }
+
+  // 回滚到指定版本
+  @Post(':id/versions/:versionId/rollback')
+  async rollbackToVersion(@Param('id') id: string, @Param('versionId') versionId: string) {
+    return this.documentService.rollbackToVersion(id, versionId);
+  }
 }

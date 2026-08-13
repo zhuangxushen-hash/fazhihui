@@ -1,0 +1,238 @@
+import axios from './axios'
+
+// ==================== 类型定义 ====================
+
+export interface Complaint {
+  id: string
+  type: string
+  content: string
+  client_id: string
+  client_name: string
+  client_phone: string
+  organization_id: string
+  case_id?: string
+  evidence_files?: string
+  status?: string
+  created_at?: string
+}
+
+export interface ServiceRating {
+  id: string
+  case_id: string
+  client_id: string
+  rating: number
+  content?: string
+  organization_id?: string
+  status?: string
+  created_at?: string
+}
+
+export interface Archive {
+  id: string
+  client_id: string
+  case_id?: string
+  file_name: string
+  file_type: string
+  file_size?: number
+  file_url?: string
+  description?: string
+  organization_id?: string
+  created_at?: string
+}
+
+export interface Consultation {
+  id: string
+  client_id: string
+  question: string
+  answer?: string
+  case_id?: string
+  organization_id?: string
+  created_at?: string
+}
+
+export interface Payment {
+  id: string
+  client_id: string
+  amount: number
+  status: string
+  method?: string
+  case_id?: string
+  created_at?: string
+}
+
+export interface PushNotification {
+  id: string
+  client_id: string
+  case_id?: string
+  title: string
+  content: string
+  is_read?: boolean
+  created_at?: string
+}
+
+// ==================== API 函数 ====================
+
+/**
+ * 获取客户的案件列表
+ * POST /client/cases
+ * @param data 包含 client_id 的对象
+ */
+export const getClientCases = (data: { client_id: string }) => {
+  return axios.post('/client/cases', data)
+}
+
+/**
+ * AI 客户咨询（基础版）
+ * POST /client/ai/consult
+ * @param data 包含 question 的对象
+ */
+export const aiClientConsult = (data: { question: string }) => {
+  return axios.post('/client/ai/consult', data)
+}
+
+/**
+ * 创建投诉/反馈
+ * POST /client/complaint
+ * @param data 投诉信息
+ */
+export const createComplaint = (data: {
+  type: string
+  content: string
+  client_id: string
+  client_name: string
+  client_phone: string
+  organization_id: string
+  case_id?: string
+  evidence_files?: string
+}) => {
+  return axios.post('/client/complaint', data)
+}
+
+/**
+ * 获取客户的投诉列表
+ * POST /client/complaints
+ * @param data 包含 client_id 的对象
+ */
+export const getClientComplaints = (data: { client_id: string }) => {
+  return axios.post('/client/complaints', data)
+}
+
+/**
+ * 获取客户的支付记录
+ * POST /client/payments
+ * @param data 包含 client_id 的对象
+ */
+export const getClientPayments = (data: { client_id: string }) => {
+  return axios.post('/client/payments', data)
+}
+
+/**
+ * 获取客户的服务费信息
+ * POST /client/service-fee
+ * @param data 包含 client_id 的对象
+ */
+export const getClientServiceFee = (data: { client_id: string }) => {
+  return axios.post('/client/service-fee', data)
+}
+
+/**
+ * 获取客户的推送通知列表
+ * POST /client/push-notifications
+ * @param data 包含 client_id 的对象
+ */
+export const getPushNotificationsByClient = (data: { client_id: string }) => {
+  return axios.post('/client/push-notifications', data)
+}
+
+/**
+ * AI 客户增强咨询（带上下文）
+ * POST /client/ai/consult-enhanced
+ * @param data 咨询信息，包含客户ID、问题及可选的案件/组织ID
+ */
+export const aiConsultEnhanced = (data: {
+  client_id: string
+  question: string
+  case_id?: string
+  organization_id?: string
+}) => {
+  return axios.post('/client/ai/consult-enhanced', data)
+}
+
+/**
+ * 获取客户的咨询记录
+ * POST /client/consultations
+ * @param data 包含 client_id 的对象
+ */
+export const getConsultations = (data: { client_id: string }) => {
+  return axios.post('/client/consultations', data)
+}
+
+/**
+ * 线上签约
+ * POST /client/online-sign
+ * @param data 签约信息
+ */
+export const onlineSign = (data: {
+  case_id: string
+  client_id: string
+  lawyer_id: string
+  contract_template_id: string
+  organization_id: string
+}) => {
+  return axios.post('/client/online-sign', data)
+}
+
+/**
+ * 创建服务评价
+ * POST /client/service-ratings
+ * @param data 评价信息
+ */
+export const createServiceRating = (data: {
+  case_id: string
+  client_id: string
+  rating: number
+  content?: string
+  organization_id?: string
+}) => {
+  return axios.post('/client/service-ratings', data)
+}
+
+/**
+ * 获取客户的服务评价列表
+ * POST /client/service-ratings/list
+ * @param data 包含 client_id 的对象
+ */
+export const getServiceRatingsByClient = (data: { client_id: string }) => {
+  return axios.post('/client/service-ratings/list', data)
+}
+
+/**
+ * 上传归档文件
+ * POST /client/archives
+ * @param data 归档文件信息
+ */
+export const uploadArchive = (data: {
+  client_id: string
+  case_id?: string
+  file_name: string
+  file_type: string
+  file_size?: number
+  file_url?: string
+  description?: string
+  organization_id?: string
+}) => {
+  return axios.post('/client/archives', data)
+}
+
+/**
+ * 获取客户的归档文件列表
+ * POST /client/archives/list
+ * @param data 查询参数
+ */
+export const getClientArchives = (data: {
+  client_id: string
+  case_id?: string
+  file_type?: string
+}) => {
+  return axios.post('/client/archives/list', data)
+}

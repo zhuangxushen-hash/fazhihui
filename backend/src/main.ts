@@ -15,7 +15,7 @@ async function bootstrap() {
   // CORS 白名单模式：从环境变量读取允许的来源，开发环境默认允许本地
   const corsOrigins = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map(s => s.trim())
-    : ['http://localhost:5173', 'http://localhost:5174'];
+    : ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:8080', 'http://127.0.0.1:8080'];
   app.enableCors({
     origin: corsOrigins,
     credentials: true,

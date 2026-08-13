@@ -13,7 +13,9 @@ export function parseApiFile(filePath) {
   // 匹配 axios/http 调用
   // 支持: axios.get(url, config), axios.post(url, data, config) 等
   // URL 可以是字符串或模板字符串（包含 ${xxx}）
-  const apiPattern = /(axios|http)\.(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/g;
+  // 支持 TypeScript 泛型语法: axios.get<{ data: X[] }>('/url'), axios.post<BidPerformanceItem>('/url', data) 等
+  // 泛型内容可能包含 { } [ ] , 及嵌套的 < >，但不含引号
+  const apiPattern = /(axios|http)\.(get|post|put|delete|patch)\s*(?:<(?:[^<>'"`]+|<[^<>'"`]*>)*>)?\s*\(\s*['"`]([^'"`]+)['"`]/g;
   let match;
 
   while ((match = apiPattern.exec(content)) !== null) {
@@ -31,7 +33,9 @@ export function parseApiFile(filePath) {
   }
 
   // 匹配封装的 API 调用（如 api.get, apiClient.post）
-  const apiPattern2 = /\w+\.(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]/g;
+  // 支持任意标识符 + TypeScript 泛型语法: api.get<T>('/url'), getPosts<Xxx>('/url') 等
+  // 第一分支：带客户端前缀（要求前缀前为边界且排除 localStorage 等）；第二分支：裸调用要求前为边界（避免 Storage.getItem 拆分误判）
+  const apiPattern2 = /(?:(?<![\w.`])(?!(?:localStorage|sessionStorage|document|window)\.)\w+\.|(?<![\w.`]))(get|post|put|delete|patch)\w*\s*(?:<(?:[^<>'"`]+|<[^<>'"`]*>)*>)?\s*\(\s*['"`]([^'"`]+)['"`]/g;
   while ((match = apiPattern2.exec(content)) !== null) {
     const url = match[2];
     const hasTemplate = /\$\{[^}]+\}/.test(url);

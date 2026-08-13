@@ -17,6 +17,8 @@ import {
   AppstoreOutlined,
   SolutionOutlined,
   SearchOutlined,
+  ToolOutlined,
+  StarOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { theme } from '../constants/theme'
@@ -113,17 +115,31 @@ const menuGroups: MenuGroup[] = [
     icon: <DollarOutlined />,
     label: '财务分润',
     children: [
+      // 财务核心
       { key: '/finance', label: '财务管理' },
       { key: '/finance/income-expenditure', label: '收支综合' },
+      // 代扣管理
+      { key: '/finance/fixed-cost-withholding', label: '固定费用代扣' },
+      { key: '/finance/salary-fees-withholding', label: '工资代扣' },
+      { key: '/finance/income-tax-withholding', label: '个税结算' },
+      { key: '/finance/withholding-offset', label: '代扣撤销冲抵' },
+      // 报表与打印
+      { key: '/finance/account-statistics', label: '账户台账' },
+      { key: '/finance/project-revenue', label: '项目收入' },
+      { key: '/finance/electronic-invoice-print', label: '电子发票打印' },
+      { key: '/finance/paper-invoice-print', label: '纸质发票打印' },
+      // 分润与对账
       { key: '/commission-config', label: '分润配置' },
       { key: '/finance/reconciliation', label: '智能对账' },
+      { key: '/finance/reconciliation-rules', label: '对账规则' },
+      // 退费管理
+      { key: '/finance/refund', label: '退费管理' },
       { key: '/finance/refund-tier', label: '阶梯退费' },
+      // 业务财务
       { key: '/finance/case-profit', label: '单案利润分析' },
       { key: '/finance/payment-reminder', label: '催款管理' },
       { key: '/finance/invoices', label: '发票管理' },
       { key: '/finance/business-funds', label: '业务款管理' },
-      { key: '/finance/refund', label: '退费管理' },
-      { key: '/finance/reconciliation-rules', label: '对账规则' },
     ],
   },
   {
@@ -139,6 +155,7 @@ const menuGroups: MenuGroup[] = [
       { key: '/marketing/ai-content', label: 'AI内容生成' },
       { key: '/marketing/social-accounts', label: '公域账号' },
       { key: '/marketing/digital-human-live', label: '数字人直播' },
+      { key: '/marketing/fake-live', label: '伪直播管理' },
       { key: '/marketing/work-phone', label: '工作手机' },
       { key: '/marketing/content-preview', label: '内容预审' },
     ],
@@ -148,21 +165,24 @@ const menuGroups: MenuGroup[] = [
     icon: <SettingOutlined />,
     label: '系统管理',
     children: [
-      // 原系统管理（移出审批中心/用印管理到综合管理，角色管理已合并入权限管理）
+      // 用户与权限
       { key: '/users', label: '用户管理' },
       { key: '/permissions', label: '角色权限' },
       { key: '/menus', label: '菜单管理' },
+      // 组织架构
+      { key: '/system/organizations', label: '组织管理' },
+      { key: '/system/push-rules', label: '推送规则' },
+      // 消息与通知
       { key: '/notifications', label: '消息通知' },
+      { key: '/notifications/publish', label: '发布通知' },
       { key: '/service-ratings', label: '评价管理' },
+      // AI与智能
       { key: '/ai-nav', label: 'AI工具' },
+      // 系统配置
       { key: '/system/deployment-config', label: '部署配置' },
       { key: '/system/brand-customization', label: '品牌定制' },
       { key: '/system/integrations', label: '第三方对接' },
       { key: '/system/audit-logs', label: '审计日志' },
-      { key: '/system/organizations', label: '组织管理' },
-      { key: '/system/push-rules', label: '推送规则' },
-      // 合并原个人中心 1项
-      { key: '/personal-center', label: '个人中心' },
     ],
   },
   {
@@ -170,21 +190,27 @@ const menuGroups: MenuGroup[] = [
     icon: <SolutionOutlined />,
     label: '人事行政',
     children: [
-      // 原人力资源 5项
+      // 人事管理
       { key: '/hr/personnel', label: '人事管理' },
       { key: '/hr/leaves', label: '请假管理' },
       { key: '/hr/attendances', label: '考勤管理' },
       { key: '/hr/materials', label: '物品管理' },
       { key: '/hr/activities', label: '活动管理' },
-      // 合并原个人办公 5项（同事圆/邮件/计算器/计时器已移除）
+      // 个人办公
       { key: '/worklogs', label: '工作日志' },
       { key: '/schedules', label: '日程管理' },
       { key: '/tasks', label: '任务中心' },
       { key: '/knowledge', label: '知识库' },
       { key: '/diagram-tool', label: '可视化绘图' },
-      // 从综合管理移入 2项
+      // 审批与用印
       { key: '/approval-center', label: '审批中心' },
       { key: '/seals', label: '用印管理' },
+      { key: '/approval/finance-withdrawal', label: '财务提款审批' },
+      { key: '/approval/pay-apply', label: '支付申请' },
+      { key: '/approval/pay-approve', label: '支付审批' },
+      { key: '/approval/repay-apply', label: '报销申请' },
+      { key: '/approval/repay-approve', label: '报销审批' },
+      { key: '/approval/invoice-repay', label: '成本票报销' },
     ],
   },
   {
@@ -192,35 +218,74 @@ const menuGroups: MenuGroup[] = [
     icon: <SearchOutlined />,
     label: '综合管理',
     children: [
-      // 原综合管理 5项
+      // 查询与分析
       { key: '/comprehensive/query', label: '综合查询' },
       { key: '/statistical-analysis', label: '统计分析' },
       { key: '/internal-projects', label: '内部项目' },
       { key: '/bid-performances', label: '投标业绩库' },
-      // 通知公告已合并到系统管理-消息通知（同一页面/notifications，左侧菜单含通知公告子分类）
-      // 审批中心、用印管理已移至人事行政
-      // 合并原法律工具 1项
+      // 法律工具
       { key: '/law-tools', label: '法律工具' },
-      // AI导航已合并到系统管理-AI工具（同一页面/ai-nav，不再重复展示）
     ],
   },
+  // 第三阶段新增：快捷工具（协作案源/疑难案件/协作律所/法律文库）
+  {
+    key: 'shortcut',
+    icon: <ToolOutlined />,
+    label: '快捷工具',
+    children: [
+      { key: '/shortcut/cooperative-source', label: '协作案源' },
+      { key: '/shortcut/difficult-cases', label: '疑难案件' },
+      { key: '/shortcut/cooperative-firms', label: '协作律所' },
+      { key: '/shortcut/legal-library', label: '法律文库' },
+    ],
+  },
+  // 第三阶段新增：律师中心（律师评级/评级管理，律师主页为详情页不进菜单）
+  {
+    key: 'lawyer-center',
+    icon: <StarOutlined />,
+    label: '律师中心',
+    children: [
+      { key: '/lawyer-center/rating', label: '律师评级' },
+      { key: '/lawyer-center/rating-manage', label: '评级管理' },
+    ],
+  },
+  // 已关闭：同事圈和订单管理功能
+  // // 第三阶段新增：同事圈（动态流/发布动态）
+  // {
+  //   key: 'social',
+  //   icon: <TeamOutlined />,
+  //   label: '同事圈',
+  //   children: [
+  //     { key: '/colleague-circle', label: '同事圈动态' },
+  //   ],
+  // },
+  // {
+  //   key: 'orders',
+  //   icon: <ShoppingOutlined />,
+  //   label: '订单管理',
+  //   children: [
+  //     { key: '/orders', label: '订单列表' },
+  //     { key: '/orders/vip', label: 'VIP订单' },
+  //     { key: '/orders/vip/subscribe', label: '开通VIP' },
+  //   ],
+  // },
 ]
 
 // 角色-一级菜单分组访问矩阵：每个角色能看到哪些分组
-// 合并后9个分组：dashboard/crm/case/compliance/finance/marketing/system/hr/comprehensive
+// 已关闭 social（同事圈）和 orders（订单管理）功能
 const roleGroupAccess: Record<string, string[]> = {
-  super_admin: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'marketing', 'system', 'hr', 'comprehensive'],
-  org_admin: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'marketing', 'system', 'hr', 'comprehensive'],
+  super_admin: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'marketing', 'system', 'hr', 'comprehensive', 'shortcut', 'lawyer-center'],
+  org_admin: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'marketing', 'system', 'hr', 'comprehensive', 'shortcut', 'lawyer-center'],
   // marketing 原有 scrm→crm, office→hr, document→case, lawtool/ainav→comprehensive, personal→system
-  marketing: ['dashboard', 'crm', 'case', 'marketing', 'hr', 'comprehensive', 'system'],
+  marketing: ['dashboard', 'crm', 'case', 'marketing', 'hr', 'comprehensive', 'shortcut', 'system'],
   // sales 原有 scrm→crm, office→hr, document→case, lawtool/ainav→comprehensive, personal→system
-  sales: ['dashboard', 'crm', 'case', 'compliance', 'hr', 'comprehensive', 'system'],
+  sales: ['dashboard', 'crm', 'case', 'compliance', 'hr', 'comprehensive', 'shortcut', 'system'],
   // lawyer 原有 office→hr, document→case, lawtool/ainav→comprehensive, personal→system
-  lawyer: ['dashboard', 'crm', 'case', 'compliance', 'hr', 'comprehensive', 'system'],
+  lawyer: ['dashboard', 'crm', 'case', 'compliance', 'hr', 'comprehensive', 'shortcut', 'lawyer-center', 'system'],
   // assistant 原有 office→hr, document→case, lawtool/ainav→comprehensive, personal→system
-  assistant: ['dashboard', 'crm', 'case', 'compliance', 'hr', 'comprehensive', 'system'],
+  assistant: ['dashboard', 'crm', 'case', 'compliance', 'hr', 'comprehensive', 'shortcut', 'lawyer-center', 'system'],
   // finance 原有 office→hr, document→case, lawtool/ainav→comprehensive, personal→system（system 已有）
-  finance: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'system', 'hr', 'comprehensive'],
+  finance: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'system', 'hr', 'comprehensive', 'shortcut'],
   client: [],
 }
 
@@ -286,6 +351,16 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
   finance: {
     '/finance': ['super_admin', 'org_admin', 'finance'],
     '/finance/income-expenditure': ['super_admin', 'org_admin', 'finance'],
+    // 财务核算（第一阶段新增）
+    '/finance/fixed-cost-withholding': ['super_admin', 'org_admin', 'finance'],
+    '/finance/salary-fees-withholding': ['super_admin', 'org_admin', 'finance'],
+    '/finance/income-tax-withholding': ['super_admin', 'org_admin', 'finance'],
+    '/finance/withholding-offset': ['super_admin', 'org_admin', 'finance'],
+    // 财务报表与打印（第二阶段新增）
+    '/finance/account-statistics': ['super_admin', 'org_admin', 'finance'],
+    '/finance/project-revenue': ['super_admin', 'org_admin', 'finance'],
+    '/finance/electronic-invoice-print': ['super_admin', 'org_admin', 'finance'],
+    '/finance/paper-invoice-print': ['super_admin', 'org_admin', 'finance'],
     '/commission-config': ['super_admin', 'org_admin', 'finance'],
     '/finance/reconciliation': ['super_admin', 'org_admin', 'finance'],
     '/finance/refund-tier': ['super_admin', 'org_admin', 'finance'],
@@ -309,12 +384,13 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
     '/marketing/work-phone': ['super_admin', 'org_admin', 'marketing'],
     '/marketing/content-preview': ['super_admin', 'org_admin', 'marketing'],
   },
-  // 系统管理：只有管理员能进（合并原个人中心，移出审批中心/用印管理到综合管理）
+  // 系统管理
   system: {
     '/users': ['super_admin', 'org_admin'],
     '/permissions': ['super_admin', 'org_admin'],
     '/menus': ['super_admin', 'org_admin'],
     '/notifications': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/notifications/publish': ['super_admin', 'org_admin'],
     '/service-ratings': ['super_admin', 'org_admin'],
     '/ai-nav': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'sales', 'marketing', 'finance'],
     '/system/deployment-config': ['super_admin', 'org_admin'],
@@ -323,40 +399,62 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
     '/system/audit-logs': ['super_admin', 'org_admin'],
     '/system/organizations': ['super_admin', 'org_admin'],
     '/system/push-rules': ['super_admin', 'org_admin'],
-    // 合并原个人中心 1项
-    '/personal-center': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
   },
-  // 人事行政：原HR + 原个人办公（所有内部角色都能看自己的）
+  // 人事行政
   hr: {
-    // 原人力资源 5项
+    // 人事管理
     '/hr/personnel': ['super_admin', 'org_admin', 'assistant'],
     '/hr/leaves': ['super_admin', 'org_admin', 'assistant'],
     '/hr/attendances': ['super_admin', 'org_admin', 'assistant'],
     '/hr/materials': ['super_admin', 'org_admin', 'assistant'],
     '/hr/activities': ['super_admin', 'org_admin', 'assistant'],
-    // 合并原个人办公 5项（同事圆/邮件/计算器/计时器已移除）
+    // 个人办公
     '/worklogs': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/schedules': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/tasks': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/knowledge': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'sales'],
     '/diagram-tool': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
-    // 从综合管理移入 2项
+    // 审批与用印
     '/approval-center': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'finance', 'sales', 'marketing'],
     '/seals': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
+    '/approval/finance-withdrawal': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'finance', 'sales', 'marketing'],
+    '/approval/pay-apply': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'finance', 'sales', 'marketing'],
+    '/approval/pay-approve': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'finance', 'sales', 'marketing'],
+    '/approval/repay-apply': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'finance', 'sales', 'marketing'],
+    '/approval/repay-approve': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'finance', 'sales', 'marketing'],
+    '/approval/invoice-repay': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'finance', 'sales', 'marketing'],
   },
-  // 综合管理：原综合管理 + 审批中心 + 用印管理 + 法律工具 + AI导航
+  // 综合管理
   comprehensive: {
-    // 原综合管理 5项
     '/comprehensive/query': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/statistical-analysis': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/internal-projects': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/bid-performances': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
-    // 通知公告已合并到系统管理-消息通知（同一页面/notifications，权限规则在system分组中）
-    // 审批中心、用印管理已移至人事行政（权限规则在hr分组中）
-    // 合并原法律工具 1项
     '/law-tools': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
-    // AI导航权限已合并到系统管理-AI工具（同一页面/ai-nav，权限规则在system分组中）
   },
+  // 快捷工具（第三阶段新增：协作案源/疑难案件/协作律所/法律文库）
+  shortcut: {
+    '/shortcut/cooperative-source': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/shortcut/difficult-cases': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/shortcut/cooperative-firms': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/shortcut/legal-library': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'sales'],
+  },
+  // 律师中心（第三阶段新增：律师评级/评级管理）
+  'lawyer-center': {
+    '/lawyer-center/rating': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
+    '/lawyer-center/rating-manage': ['super_admin', 'org_admin'],
+  },
+  // 已关闭：同事圈和订单管理功能
+  // // 同事圈（第三阶段新增：动态流/发布动态）
+  // social: {
+  //   '/colleague-circle': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+  // },
+  // // 订单管理：仅管理员可见
+  // orders: {
+  //   '/orders': ['super_admin', 'org_admin'],
+  //   '/orders/vip': ['super_admin', 'org_admin'],
+  //   '/orders/vip/subscribe': ['super_admin', 'org_admin'],
+  // },
 }
 
 export default function Layout({ children }: { children: React.ReactNode }) {

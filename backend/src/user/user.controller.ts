@@ -5,6 +5,7 @@ import * as bcrypt from 'bcryptjs';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User } from './user.entity';
+import { Organization } from './organization.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../types';
@@ -149,6 +150,32 @@ export class UserController {
     return user;
   }
 
+  // ==================== 组织管理接口（必须定义在 @Get(':id') 等参数路由之前，否则会被 :id 捕获）====================
+
+  /**
+   * 获取组织列表（keyword 模糊匹配名称/简称，status 精确筛选）
+   */
+  @Get('organizations')
+  findOrganizations(@Query('keyword') keyword?: string, @Query('status') status?: string) {
+    return this.userService.findOrganizations(keyword, status);
+  }
+
+  /**
+   * 创建组织
+   */
+  @Post('organizations')
+  createOrganization(@Body() body: Partial<Organization>) {
+    return this.userService.createOrganization(body);
+  }
+
+  /**
+   * 更新组织
+   */
+  @Put('organizations/:id')
+  updateOrganization(@Param('id') id: string, @Body() body: Partial<Organization>) {
+    return this.userService.updateOrganization(id, body);
+  }
+
   // ==================== 以下为原有路由（:id 等参数路由）====================
 
   @Get(':id')
@@ -173,8 +200,8 @@ export class UserController {
   }
 
   @Post('organization')
-  createOrganization(@Body() body: { name: string }) {
-    return this.userService.createOrganization(body.name);
+  createOrganizationLegacy(@Body() body: { name: string }) {
+    return this.userService.createOrganization(body);
   }
 
   // 获取用户经验值/等级信息

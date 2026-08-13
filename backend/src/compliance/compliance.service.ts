@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, Like } from 'typeorm';
 import { ComplianceRecord } from './compliance-record.entity';
 import { Complaint } from './complaint.entity';
 import { MarketingContent, ContentStatus } from './marketing-content.entity';
@@ -12,6 +12,7 @@ import { ReportTemplate } from '../dashboard/report-template.entity';
 import { ReportExportLog } from '../dashboard/report-export-log.entity';
 import { ComplianceType, ComplianceResult, ComplaintType, ComplaintStatus } from '../types';
 import { NotificationService } from '../user/notification.service';
+import { User } from '../user/user.entity';
 // Phase4: 引入案件SOP模板与投诉工单实体（H7 SOP模板联动、M3 投诉走合规通道）
 import { CaseSOPTemplate } from '../case/case-sop-template.entity';
 import { ComplaintTicket, TicketSourceChannel, TicketComplaintType, TicketSeverity, TicketStatus, ProcessRecord } from './complaint-ticket.entity';
@@ -80,6 +81,9 @@ export class ComplianceService {
     private complaintRepository: Repository<Complaint>,
     @InjectRepository(MarketingContent)
     private marketingContentRepository: Repository<MarketingContent>,
+    // 营销内容提交人姓名关联查询（operator_id 关联 users 表 real_name）
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     @InjectRepository(SalesCompliance)
     private salesComplianceRepository: Repository<SalesCompliance>,
     @InjectRepository(SigningCompliance)
@@ -299,15 +303,68 @@ export class ComplianceService {
     return this.marketingContentRepository.findOne({ where: { id } });
   }
 
-  async getMarketingContents(orgId: string, status?: string): Promise<MarketingContent[]> {
-    const query: any = {};
+  /**
+   * 查询营销内容列表
+   * status：状态精确匹配（pending_review/approved/rejected/draft）
+   * contentType：内容类型精确匹配
+   * keyword：标题或内容模糊匹配
+   * 返回结果补充 operator_name（operator_id 关联 users 表 real_name）
+   */
+  async getMarketingContents(orgId: string, status?: string, contentType?: string, keyword?: string): Promise<MarketingContent[]> {
+    const baseQuery: any = {};
     if (orgId) {
-      query.organization_id = orgId;
+      baseQuery.organization_id = orgId;
     }
     if (status) {
-      query.status = status;
+      baseQuery.status = status;
     }
-    return this.marketingContentRepository.find({ where: query, order: { updated_at: 'DESC' } });
+    if (contentType) {
+      baseQuery.content_type = contentType;
+    }
+
+    let where: any = baseQuery;
+    if (keyword) {
+      const like = Like(`%${keyword}%`);
+      // 标题或内容任一命中即返回（OR 条件）
+      where = [
+        { ...baseQuery, title: like },
+        { ...baseQuery, content: like },
+      ];
+    }
+
+    const list = await this.marketingContentRepository.find({ where, order: { updated_at: 'DESC' } });
+    return this.attachOperatorName(list);
+  }
+
+  /** 查询营销内容详情（含 operator_name） */
+  async getMarketingContentById(id: string): Promise<MarketingContent> {
+    const content = await this.marketingContentRepository.findOne({ where: { id } });
+    if (!content) {
+      return null;
+    }
+    const withName = await this.attachOperatorName([content]);
+    return withName[0];
+  }
+
+  /** 批量补充 operator_name（operator_id 关联 users 表 real_name） */
+  private async attachOperatorName(list: MarketingContent[]): Promise<MarketingContent[]> {
+    if (!list || list.length === 0) {
+      return list;
+    }
+    const operatorIds = [...new Set(list.map(item => item.operator_id).filter(Boolean))];
+    if (operatorIds.length === 0) {
+      return list;
+    }
+    const users = await this.userRepository.find({ where: operatorIds.map(id => ({ id })) });
+    const userMap: Record<string, string> = {};
+    for (const u of users) {
+      userMap[u.id] = u.real_name;
+    }
+    return list.map(item => {
+      const copy: any = { ...item };
+      copy.operator_name = userMap[item.operator_id] || null;
+      return copy;
+    });
   }
 
   async createSalesCompliance(salesData: Partial<SalesCompliance>): Promise<SalesCompliance> {

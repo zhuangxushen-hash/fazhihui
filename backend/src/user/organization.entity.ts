@@ -11,6 +11,18 @@ export class Organization {
   @Column({ nullable: false })
   name: string;
 
+  // 组织简称
+  @Column({ type: 'varchar', nullable: true })
+  short_name: string;
+
+  // 联系人
+  @Column({ type: 'varchar', nullable: true })
+  contact_name: string;
+
+  // 联系电话
+  @Column({ type: 'varchar', nullable: true })
+  contact_phone: string;
+
   @Column({ nullable: true })
   logo: string;
 
@@ -23,8 +35,13 @@ export class Organization {
   @Column({ nullable: true })
   license_no: string;
 
-  @Column({ default: true })
-  status: boolean;
+  // 组织描述
+  @Column({ type: 'text', nullable: true })
+  description: string;
+
+  // 状态：active 正常 / inactive 停用
+  @Column({ type: 'varchar', default: 'active' })
+  status: string;
 
   @OneToMany(() => User, user => user.organization)
   users: User[];

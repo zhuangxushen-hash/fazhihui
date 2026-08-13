@@ -13,6 +13,7 @@ import { KuaishouAdsService } from './platforms/kuaishou-ads.service';
 import { DouyinOpenService } from './platforms/douyin-open.service';
 import { OauthController } from './oauth.controller';
 import { WebhookController } from './webhook.controller';
+import { SyncController } from './sync.controller';
 import { MarketingModule } from '../marketing/marketing.module';
 import { LeadModule } from '../lead/lead.module';
 
@@ -42,7 +43,7 @@ import { LeadModule } from '../lead/lead.module';
     KuaishouAdsService,
     DouyinOpenService,
   ],
-  controllers: [OauthController, WebhookController],
+  controllers: [OauthController, WebhookController, SyncController],
   exports: [
     TokenManagerService,
     OceanEngineService,

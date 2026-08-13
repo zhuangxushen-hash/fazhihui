@@ -143,6 +143,11 @@ import { SocialLike } from '../social/social-like.entity';
 // 邮件模块实体
 import { Mail, MailType } from '../mail/mail.entity';
 
+// 伪直播模块实体
+import { FakeLiveRoom, FakeLiveRoomStatus } from '../fake-live/fake-live-room.entity';
+import { FakeLiveMessage } from '../fake-live/fake-live-message.entity';
+import { FakeLiveViewer } from '../fake-live/fake-live-viewer.entity';
+
 @Module({
   imports: [TypeOrmModule.forFeature([
     User,
@@ -255,6 +260,10 @@ import { Mail, MailType } from '../mail/mail.entity';
     SocialLike,
     // 邮件模块
     Mail,
+    // 伪直播模块
+    FakeLiveRoom,
+    FakeLiveMessage,
+    FakeLiveViewer,
   ])],
 })
 export class SeedsModule implements OnModuleInit {
@@ -464,6 +473,13 @@ export class SeedsModule implements OnModuleInit {
     // 邮件模块
     @InjectRepository(Mail)
     private readonly mailRepository: Repository<Mail>,
+    // 伪直播模块
+    @InjectRepository(FakeLiveRoom)
+    private readonly fakeLiveRoomRepository: Repository<FakeLiveRoom>,
+    @InjectRepository(FakeLiveMessage)
+    private readonly fakeLiveMessageRepository: Repository<FakeLiveMessage>,
+    @InjectRepository(FakeLiveViewer)
+    private readonly fakeLiveViewerRepository: Repository<FakeLiveViewer>,
   ) {}
 
   async onModuleInit() {
@@ -660,6 +676,8 @@ export class SeedsModule implements OnModuleInit {
     await this.seedSocialPosts(orgId, userMap);
     // 邮件数据
     await this.seedMails(orgId, userMap);
+    // 伪直播数据
+    await this.seedFakeLiveRooms(orgId, userMap);
   }
 
   /**
@@ -7251,6 +7269,127 @@ export class SeedsModule implements OnModuleInit {
 
       await this.mailRepository.save(mailData);
     }
+  }
+
+  /**
+   * 伪直播种子数据：创建直播间、添加初始聊天消息
+   */
+  private async seedFakeLiveRooms(orgId: string, userMap: Record<string, User>): Promise<void> {
+    // 检查是否已有伪直播数据
+    const existingRoom = await this.fakeLiveRoomRepository.findOne({ where: { organization_id: orgId } });
+    if (existingRoom) {
+      return;
+    }
+
+    const marketingUser = userMap['13800138002'];
+
+    // 创建一个正在直播中的房间
+    const liveRoom = this.fakeLiveRoomRepository.create({
+      title: '婚姻家事法律咨询专场 - 在线答疑',
+      anchor_name: '张律师',
+      video_url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+      cover_url: '',
+      status: FakeLiveRoomStatus.LIVE,
+      viewer_count: 0,
+      max_viewers: 1000,
+      actual_start: new Date(Date.now() - 30 * 60 * 1000), // 30分钟前开播
+      organization_id: orgId,
+      created_by: marketingUser?.id,
+    });
+    const savedRoom = await this.fakeLiveRoomRepository.save(liveRoom);
+
+    // 创建初始聊天消息
+    const initialMessages = [
+      {
+        room_id: savedRoom.id,
+        viewer_id: 'dev_test_openid_test_viewer_001',
+        viewer_nickname: '法律小白',
+        viewer_avatar: '',
+        content: '张律师好，我想咨询一下离婚财产分割的问题',
+      },
+      {
+        room_id: savedRoom.id,
+        viewer_id: 'dev_test_openid_test_viewer_002',
+        viewer_nickname: '困惑的小王',
+        viewer_avatar: '',
+        content: '请问对方不同意离婚怎么办？',
+      },
+      {
+        room_id: savedRoom.id,
+        viewer_id: 'dev_test_openid_test_viewer_003',
+        viewer_nickname: '焦虑的宝妈',
+        viewer_avatar: '',
+        content: '孩子抚养权一般会判给谁？',
+      },
+      {
+        room_id: savedRoom.id,
+        viewer_id: 'dev_test_openid_test_viewer_004',
+        viewer_nickname: '旁观者',
+        viewer_avatar: '',
+        content: '直播很精彩，学到了很多',
+      },
+      {
+        room_id: savedRoom.id,
+        viewer_id: 'dev_test_openid_test_viewer_005',
+        viewer_nickname: '咨询者',
+        viewer_avatar: '',
+        content: '张律师能说说抚养费的标准吗？',
+      },
+      {
+        room_id: savedRoom.id,
+        viewer_id: 'dev_test_openid_test_viewer_001',
+        viewer_nickname: '法律小白',
+        viewer_avatar: '',
+        content: '房子是婚前买的，婚后一起还贷，怎么分？',
+      },
+      {
+        room_id: savedRoom.id,
+        viewer_id: 'dev_test_openid_test_viewer_006',
+        viewer_nickname: '吃瓜群众',
+        viewer_avatar: '',
+        content: '主播讲得很清楚，点赞！',
+      },
+      {
+        room_id: savedRoom.id,
+        viewer_id: 'dev_test_openid_test_viewer_002',
+        viewer_nickname: '困惑的小王',
+        viewer_avatar: '',
+        content: '起诉离婚需要准备什么材料？',
+      },
+    ];
+
+    // 批量保存消息（设置递增的创建时间，使其看起来是陆续发送的）
+    for (let i = 0; i < initialMessages.length; i++) {
+      const msg = initialMessages[i];
+      const savedMsg = this.fakeLiveMessageRepository.create({
+        ...msg,
+        created_at: new Date(Date.now() - (initialMessages.length - i) * 30000),
+      });
+      await this.fakeLiveMessageRepository.save(savedMsg);
+    }
+
+    // 模拟一些观众进入记录
+    const viewers = [
+      { openid: 'dev_test_openid_test_viewer_001', nickname: '法律小白' },
+      { openid: 'dev_test_openid_test_viewer_002', nickname: '困惑的小王' },
+      { openid: 'dev_test_openid_test_viewer_003', nickname: '焦虑的宝妈' },
+      { openid: 'dev_test_openid_test_viewer_004', nickname: '旁观者' },
+      { openid: 'dev_test_openid_test_viewer_005', nickname: '咨询者' },
+    ];
+
+    for (const viewer of viewers) {
+      const viewerEntity = this.fakeLiveViewerRepository.create({
+        room_id: savedRoom.id,
+        openid: viewer.openid,
+        nickname: viewer.nickname,
+        avatar: '',
+        enter_at: new Date(Date.now() - Math.random() * 30 * 60 * 1000),
+      });
+      await this.fakeLiveViewerRepository.save(viewerEntity);
+    }
+
+    // 更新观看人数
+    await this.fakeLiveRoomRepository.increment({ id: savedRoom.id }, 'viewer_count', viewers.length);
   }
 
 

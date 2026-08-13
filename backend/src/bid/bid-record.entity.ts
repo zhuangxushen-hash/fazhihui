@@ -46,6 +46,14 @@ export class BidRecord {
   @Column({ type: 'text', nullable: true })
   description: string; // 描述（可空）
 
+  // 附件文件地址（投标文件/合同等，可空）
+  @Column({ type: 'text', nullable: true, comment: '附件文件地址' })
+  file_url: string;
+
+  // 附件名称（可空）
+  @Column({ type: 'varchar', nullable: true, comment: '附件名称' })
+  file_name: string;
+
   @Column()
   organization_id: string;
 

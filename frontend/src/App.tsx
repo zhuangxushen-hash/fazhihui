@@ -47,6 +47,7 @@ const MaterialManagement = lazy(() => import('./pages/MaterialManagement'))
 const AIContentGenerator = lazy(() => import('./pages/AIContentGenerator'))
 const SocialAccountMatrix = lazy(() => import('./pages/SocialAccountMatrix'))
 const DigitalHumanLive = lazy(() => import('./pages/DigitalHumanLive'))
+const FakeLiveManagement = lazy(() => import('./pages/FakeLiveManagement'))
 // Phase 3 模块2 SCRM私域
 const LiveCodeManagement = lazy(() => import('./pages/LiveCodeManagement'))
 const ChannelTracking = lazy(() => import('./pages/ChannelTracking'))
@@ -126,6 +127,86 @@ const ReconciliationRuleConfig = lazy(() => import('./pages/ReconciliationRuleCo
 // 第三批新增页面：C端推送规则配置/营销内容预审工作台
 const PushRuleConfig = lazy(() => import('./pages/PushRuleConfig'))
 const ContentPreviewWorkbench = lazy(() => import('./pages/ContentPreviewWorkbench'))
+
+// 文档管理模块新增
+const PDFViewer = lazy(() => import('./pages/PDFViewer'))
+const DocumentSeal = lazy(() => import('./pages/DocumentSeal'))
+const VolumeCatalog = lazy(() => import('./pages/VolumeCatalog'))
+const DocumentPreview = lazy(() => import('./pages/DocumentPreview'))
+const DocumentShare = lazy(() => import('./pages/DocumentShare'))
+
+// 财务核算模块新增
+const WithdrawSchedule = lazy(() => import('./pages/WithdrawSchedule'))
+const DepositSchedule = lazy(() => import('./pages/DepositSchedule'))
+const TransferSchedule = lazy(() => import('./pages/TransferSchedule'))
+const FinanceReport = lazy(() => import('./pages/FinanceReport'))
+const AccountSettlement = lazy(() => import('./pages/AccountSettlement'))
+
+// 表格工具模块
+const TaxAllocationTable = lazy(() => import('./pages/TaxAllocationTable'))
+const MonthlyExpenseTable = lazy(() => import('./pages/MonthlyExpenseTable'))
+const WithholdingTable = lazy(() => import('./pages/WithholdingTable'))
+const BatchWithholding = lazy(() => import('./pages/BatchWithholding'))
+const BatchWithholdingUndo = lazy(() => import('./pages/BatchWithholdingUndo'))
+
+// AI功能模块
+const ContractReview = lazy(() => import('./pages/ContractReview'))
+const LegalResearch = lazy(() => import('./pages/LegalResearch'))
+
+// 快捷工具模块
+const CooperativeSource = lazy(() => import('./pages/CooperativeSource'))
+const DifficultCases = lazy(() => import('./pages/DifficultCases'))
+const CooperativeFirm = lazy(() => import('./pages/CooperativeFirm'))
+
+// 尽调宝模块
+const BiddingDetail = lazy(() => import('./pages/BiddingDetail'))
+const AnnualReportDetail = lazy(() => import('./pages/AnnualReportDetail'))
+
+// 订单系统模块
+const OrderManagement = lazy(() => import('./pages/OrderManagement'))
+const VIPOrder = lazy(() => import('./pages/VIPOrder'))
+const OrderDetail = lazy(() => import('./pages/OrderDetail'))
+const VIPSubscription = lazy(() => import('./pages/VIPSubscription'))
+
+// 财务核算模块（第一阶段新增：固定费用/工资/个税代扣与撤销冲抵）
+const FixedCostWithholding = lazy(() => import('./pages/FixedCostWithholding'))
+const SalaryFeesWithholding = lazy(() => import('./pages/SalaryFeesWithholding'))
+const IncomeTaxWithholding = lazy(() => import('./pages/IncomeTaxWithholding'))
+const WithholdingOffset = lazy(() => import('./pages/WithholdingOffset'))
+
+// 财务报表与打印（第二阶段新增：账户台账/项目收入/收支详情/发票打印）
+const AccountStatistics = lazy(() => import('./pages/AccountStatistics'))
+const ProjectRevenueOverview = lazy(() => import('./pages/ProjectRevenueOverview'))
+const IncomeExpenditureDetail = lazy(() => import('./pages/IncomeExpenditureDetail'))
+const ElectronicInvoicePrint = lazy(() => import('./pages/ElectronicInvoicePrint'))
+const PaperInvoicePrint = lazy(() => import('./pages/PaperInvoicePrint'))
+
+// 综合审批单据（第二阶段新增：财务提款/支付/报销/成本票）
+const FinanceApprovalForm = lazy(() => import('./pages/FinanceApprovalForm'))
+const PayApplyForm = lazy(() => import('./pages/PayApplyForm'))
+const PayApproveForm = lazy(() => import('./pages/PayApproveForm'))
+const RepayApplyForm = lazy(() => import('./pages/RepayApplyForm'))
+const RepayApproveForm = lazy(() => import('./pages/RepayApproveForm'))
+const InvoiceRepayApproveForm = lazy(() => import('./pages/InvoiceRepayApproveForm'))
+
+// 个人中心增强（第二阶段新增：在线模板/最近关注/VIP记录）
+const OnlineTemplate = lazy(() => import('./pages/OnlineTemplate'))
+const RecentConcerns = lazy(() => import('./pages/RecentConcerns'))
+const VipRecords = lazy(() => import('./pages/VipRecords'))
+
+// 律师中心模块
+const LawyerRating = lazy(() => import('./pages/LawyerRating'))
+const LawyerProfile = lazy(() => import('./pages/LawyerProfile'))
+const LawyerHome = lazy(() => import('./pages/LawyerHome'))
+const LawyerRatingManage = lazy(() => import('./pages/LawyerRatingManage'))
+
+// 消息通知中心（第三阶段新增）
+const NoticePublish = lazy(() => import('./pages/NoticePublish'))
+const NoticeDetail = lazy(() => import('./pages/NoticeDetail'))
+
+// 其他辅助功能
+const HelpCenter = lazy(() => import('./pages/HelpCenter'))
+const ColleagueCircle = lazy(() => import('./pages/ColleagueCircle'))
 
 // 设置 dayjs 中文语言
 dayjs.locale('zh-cn')
@@ -390,6 +471,7 @@ function App() {
           <Route path="/marketing/ai-content" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><AIContentGenerator /></ProtectedRoute>} />
           <Route path="/marketing/social-accounts" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><SocialAccountMatrix /></ProtectedRoute>} />
           <Route path="/marketing/digital-human-live" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><DigitalHumanLive /></ProtectedRoute>} />
+          <Route path="/marketing/fake-live" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><FakeLiveManagement /></ProtectedRoute>} />
           <Route path="/marketing/work-phone" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><WorkPhoneManagement /></ProtectedRoute>} />
           <Route path="/marketing/content-preview" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><ContentPreviewWorkbench /></ProtectedRoute>} />
           {/* SCRM私域 */}
@@ -455,6 +537,73 @@ function App() {
           <Route path="/law-tools" element={<ProtectedRoute><LawToolNav /></ProtectedRoute>} />
           <Route path="/personal-center" element={<ProtectedRoute><PersonalCenter /></ProtectedRoute>} />
           <Route path="/hr/personnel" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'assistant']}><PersonnelManagement /></ProtectedRoute>} />
+          {/* 文档管理模块 */}
+          <Route path="/pdf-viewer" element={<ProtectedRoute><PDFViewer /></ProtectedRoute>} />
+          <Route path="/document-seal" element={<ProtectedRoute><DocumentSeal /></ProtectedRoute>} />
+          <Route path="/volume-catalog" element={<ProtectedRoute><VolumeCatalog /></ProtectedRoute>} />
+          <Route path="/documents/preview" element={<ProtectedRoute><DocumentPreview /></ProtectedRoute>} />
+          <Route path="/documents/share" element={<ProtectedRoute><DocumentShare /></ProtectedRoute>} />
+          {/* 财务核算模块 */}
+          <Route path="/finance/withdraw-schedule" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><WithdrawSchedule /></ProtectedRoute>} />
+          <Route path="/finance/deposit-schedule" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><DepositSchedule /></ProtectedRoute>} />
+          <Route path="/finance/transfer-schedule" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><TransferSchedule /></ProtectedRoute>} />
+          <Route path="/finance/report" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><FinanceReport /></ProtectedRoute>} />
+          <Route path="/finance/account-settlement" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><AccountSettlement /></ProtectedRoute>} />
+          {/* 表格工具模块 */}
+          <Route path="/tables/tax" element={<ProtectedRoute><TaxAllocationTable /></ProtectedRoute>} />
+          <Route path="/tables/monthly" element={<ProtectedRoute><MonthlyExpenseTable /></ProtectedRoute>} />
+          <Route path="/tables/withholding" element={<ProtectedRoute><WithholdingTable /></ProtectedRoute>} />
+          <Route path="/tables/batch-withholding" element={<ProtectedRoute><BatchWithholding /></ProtectedRoute>} />
+          <Route path="/tables/batch-undo" element={<ProtectedRoute><BatchWithholdingUndo /></ProtectedRoute>} />
+          {/* AI功能模块 */}
+          <Route path="/ai/contract-review" element={<ProtectedRoute><ContractReview /></ProtectedRoute>} />
+          <Route path="/ai/legal-research" element={<ProtectedRoute><LegalResearch /></ProtectedRoute>} />
+          {/* 快捷工具模块 */}
+          <Route path="/shortcut/cooperative-source" element={<ProtectedRoute><CooperativeSource /></ProtectedRoute>} />
+          <Route path="/shortcut/difficult-cases" element={<ProtectedRoute><DifficultCases /></ProtectedRoute>} />
+          <Route path="/shortcut/cooperative-firms" element={<ProtectedRoute><CooperativeFirm /></ProtectedRoute>} />
+          <Route path="/shortcut/legal-library" element={<ProtectedRoute><KnowledgeBase /></ProtectedRoute>} />
+          {/* 尽调宝模块 */}
+          <Route path="/due-diligence/bidding/:id" element={<ProtectedRoute><BiddingDetail /></ProtectedRoute>} />
+          <Route path="/due-diligence/annual/:id" element={<ProtectedRoute><AnnualReportDetail /></ProtectedRoute>} />
+          {/* 订单系统模块 */}
+          <Route path="/orders" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><OrderManagement /></ProtectedRoute>} />
+          <Route path="/orders/detail/:id" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><OrderDetail /></ProtectedRoute>} />
+          <Route path="/orders/vip" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><VIPOrder /></ProtectedRoute>} />
+          <Route path="/orders/vip/subscribe" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><VIPSubscription /></ProtectedRoute>} />
+          {/* 财务核算模块（固定费用/工资/个税代扣与撤销冲抵） */}
+          <Route path="/finance/fixed-cost-withholding" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><FixedCostWithholding /></ProtectedRoute>} />
+          <Route path="/finance/salary-fees-withholding" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><SalaryFeesWithholding /></ProtectedRoute>} />
+          <Route path="/finance/income-tax-withholding" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><IncomeTaxWithholding /></ProtectedRoute>} />
+          <Route path="/finance/withholding-offset" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><WithholdingOffset /></ProtectedRoute>} />
+          {/* 财务报表与打印（第二阶段新增） */}
+          <Route path="/finance/account-statistics" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><AccountStatistics /></ProtectedRoute>} />
+          <Route path="/finance/project-revenue" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><ProjectRevenueOverview /></ProtectedRoute>} />
+          <Route path="/finance/income-expenditure-detail/:type" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><IncomeExpenditureDetail /></ProtectedRoute>} />
+          <Route path="/finance/electronic-invoice-print" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><ElectronicInvoicePrint /></ProtectedRoute>} />
+          <Route path="/finance/paper-invoice-print" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><PaperInvoicePrint /></ProtectedRoute>} />
+          {/* 综合审批单据（第二阶段新增） */}
+          <Route path="/approval/finance-withdrawal" element={<ProtectedRoute><FinanceApprovalForm /></ProtectedRoute>} />
+          <Route path="/approval/pay-apply" element={<ProtectedRoute><PayApplyForm /></ProtectedRoute>} />
+          <Route path="/approval/pay-approve" element={<ProtectedRoute><PayApproveForm /></ProtectedRoute>} />
+          <Route path="/approval/repay-apply" element={<ProtectedRoute><RepayApplyForm /></ProtectedRoute>} />
+          <Route path="/approval/repay-approve" element={<ProtectedRoute><RepayApproveForm /></ProtectedRoute>} />
+          <Route path="/approval/invoice-repay" element={<ProtectedRoute><InvoiceRepayApproveForm /></ProtectedRoute>} />
+          {/* 个人中心增强（第二阶段新增） */}
+          <Route path="/profile/online-templates" element={<ProtectedRoute><OnlineTemplate /></ProtectedRoute>} />
+          <Route path="/profile/recent-concerns" element={<ProtectedRoute><RecentConcerns /></ProtectedRoute>} />
+          <Route path="/profile/vip-records" element={<ProtectedRoute><VipRecords /></ProtectedRoute>} />
+          {/* 律师中心模块 */}
+          <Route path="/lawyer-center/rating" element={<ProtectedRoute><LawyerRating /></ProtectedRoute>} />
+          <Route path="/lawyer-center/rating-manage" element={<ProtectedRoute><LawyerRatingManage /></ProtectedRoute>} />
+          <Route path="/lawyer-center/profile/:id" element={<ProtectedRoute><LawyerProfile /></ProtectedRoute>} />
+          <Route path="/lawyer-home/:id" element={<ProtectedRoute><LawyerHome /></ProtectedRoute>} />
+          {/* 消息通知中心（第三阶段新增） */}
+          <Route path="/notifications/publish" element={<ProtectedRoute><NoticePublish /></ProtectedRoute>} />
+          <Route path="/notifications/:id" element={<ProtectedRoute><NoticeDetail /></ProtectedRoute>} />
+          {/* 其他辅助功能 */}
+          <Route path="/help-center" element={<ProtectedRoute><HelpCenter /></ProtectedRoute>} />
+          <Route path="/colleague-circle" element={<ProtectedRoute><ColleagueCircle /></ProtectedRoute>} />
         </Routes>
       </Suspense>
     </Router>

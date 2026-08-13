@@ -44,6 +44,14 @@ import { AdPlatformsModule } from './ad-platforms/ad-platforms.module';
 import { CallRecordsModule } from './call-records/call-records.module';
 import { PublicOpinionModule } from './public-opinion/public-opinion.module';
 import { ReconciliationRulesModule } from './reconciliation-rules/reconciliation-rules.module';
+import { FakeLiveModule } from './fake-live/fake-live.module';
+// 订单系统模块（订单/VIP订阅/支付）
+import { OrderModule } from './order/order.module';
+// 第三阶段新增模块：快捷工具（协作案源/协作律所/疑难案件）/ 律师中心
+import { ShortcutModule } from './shortcut/shortcut.module';
+import { LawyerCenterModule } from './lawyer-center/lawyer-center.module';
+// 案件节点推送规则配置模块
+import { PushRuleModule } from './push-rule/push-rule.module';
 
 @Module({
   imports: [
@@ -103,6 +111,15 @@ import { ReconciliationRulesModule } from './reconciliation-rules/reconciliation
     CallRecordsModule,
     PublicOpinionModule,
     ReconciliationRulesModule,
+    // 伪直播模块
+    FakeLiveModule,
+    // 订单系统模块
+    OrderModule,
+    // 第三阶段新增模块：快捷工具 / 律师中心
+    ShortcutModule,
+    LawyerCenterModule,
+    // 案件节点推送规则配置模块
+    PushRuleModule,
   ],
   providers: [
     // 注册全局限流守卫
