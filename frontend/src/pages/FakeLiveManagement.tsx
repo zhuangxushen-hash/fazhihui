@@ -44,7 +44,11 @@ const statusConfig: Record<string, { color: string; label: string }> = {
   ended: { color: 'gray', label: '已结束' },
 }
 
-export default function FakeLiveManagement() {
+interface FakeLiveManagementProps {
+  hideTabs?: boolean
+}
+
+export default function FakeLiveManagement({ hideTabs = false }: FakeLiveManagementProps) {
   const [activeTab, setActiveTab] = useState('rooms')
   const [roomList, setRoomList] = useState<FakeLiveRoom[]>([])
   const [loading, setLoading] = useState(false)
@@ -292,21 +296,23 @@ export default function FakeLiveManagement() {
 
   return (
     <div>
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        style={{ marginBottom: 24 }}
-        items={[
-          {
-            key: 'rooms',
-            label: (
-              <span>
-                <VideoCameraOutlined /> 直播间管理
-              </span>
-            ),
-          },
-        ]}
-      />
+      {!hideTabs && (
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          style={{ marginBottom: 24 }}
+          items={[
+            {
+              key: 'rooms',
+              label: (
+                <span>
+                  <VideoCameraOutlined /> 直播间管理
+                </span>
+              ),
+            },
+          ]}
+        />
+      )}
 
       {activeTab === 'rooms' && renderRoomList()}
 

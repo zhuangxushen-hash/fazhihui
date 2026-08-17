@@ -45,3 +45,6 @@ vertical_test.mp4
 mini-program/
 web-live/
 test_fake_live_flow.sh
+
+# 财务导出等运行时产物
+backend/exports/

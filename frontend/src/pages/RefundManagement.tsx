@@ -11,6 +11,8 @@ import {
 } from '../api/refund'
 import { formatDateTime } from '../utils/format'
 import { theme } from '../constants/theme'
+// V3.2 合并：阶梯退费（原独立页 RefundTierConfig）并入退费管理
+import RefundTierConfig from './RefundTierConfig'
 
 // 页面标题样式
 const pageH2Style: React.CSSProperties = {
@@ -67,6 +69,8 @@ export default function RefundManagement() {
 
   // 拉取退费列表
   const fetchList = async () => {
+    // 阶梯退费Tab不拉取退费列表
+    if (activeTab === 'tier') return
     setLoading(true)
     try {
       const params: Record<string, unknown> = {}
@@ -223,6 +227,8 @@ export default function RefundManagement() {
     { key: RefundStatus.APPROVED, label: '已通过' },
     { key: RefundStatus.REJECTED, label: '已驳回' },
     { key: RefundStatus.COMPLETED, label: '已完成' },
+    // V3.2 合并：阶梯退费规则与试算
+    { key: 'tier', label: '阶梯退费' },
   ]
 
   return (
@@ -232,21 +238,23 @@ export default function RefundManagement() {
         <Button type="primary" icon={<PlusOutlined />} onClick={handleApply}>发起退费</Button>
       </div>
 
-      {/* 查询条件区 */}
-      <div className="stitch-filter-bar">
-        <Input
-          placeholder="退费单号/客户名搜索"
-          prefix={<SearchOutlined />}
-          style={{ width: 240 }}
-          value={searchKeyword}
-          onChange={(e) => setSearchKeyword(e.target.value)}
-          onPressEnter={fetchList}
-        />
-        <Space>
-          <Button type="primary" icon={<SearchOutlined />} onClick={fetchList}>查询</Button>
-          <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
-        </Space>
-      </div>
+      {/* 查询条件区（阶梯退费Tab隐藏） */}
+      {activeTab !== 'tier' && (
+        <div className="stitch-filter-bar">
+          <Input
+            placeholder="退费单号/客户名搜索"
+            prefix={<SearchOutlined />}
+            style={{ width: 240 }}
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            onPressEnter={fetchList}
+          />
+          <Space>
+            <Button type="primary" icon={<SearchOutlined />} onClick={fetchList}>查询</Button>
+            <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
+          </Space>
+        </div>
+      )}
 
       <Tabs
         activeKey={activeTab}
@@ -254,17 +262,21 @@ export default function RefundManagement() {
         items={tabItems.map(t => ({ key: t.key, label: t.label }))}
       />
 
-      <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
-        <Table<Refund>
-          dataSource={list}
-          columns={columns}
-          loading={loading}
-          rowKey="id"
-          size="small"
-          scroll={{ x: 1600 }}
-          pagination={{ pageSize: 10 }}
-        />
-      </Card>
+      {activeTab === 'tier' ? (
+        <RefundTierConfig />
+      ) : (
+        <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+          <Table<Refund>
+            dataSource={list}
+            columns={columns}
+            loading={loading}
+            rowKey="id"
+            size="small"
+            scroll={{ x: 1600 }}
+            pagination={{ pageSize: 10 }}
+          />
+        </Card>
+      )}
 
       {/* 发起退费弹窗 */}
       <Modal

@@ -20,3 +20,9 @@ export const getRelatedCases = (id: string) => axios.get(`/client-profiles/${id}
 
 // 查询客户关联线索（通过 phone 软关联）
 export const getRelatedLeads = (id: string) => axios.get(`/client-profiles/${id}/related-leads`)
+
+// 13.8 缺口4: 客户关联跟进记录（线索跟进汇总）
+export const getRelatedFollowUps = (id: string) => axios.get(`/client-profiles/${id}/related-follow-ups`)
+
+// 13.8 缺口4: 客户财务往来（关联案件付款记录）
+export const getFinancialRecords = (id: string) => axios.get(`/client-profiles/${id}/financial-records`)

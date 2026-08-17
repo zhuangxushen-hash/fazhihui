@@ -24,6 +24,10 @@ export class ClientProfile {
   @Column({ type: 'varchar', nullable: true, comment: '电话' })
   phone: string;
 
+  // 身份证号（法大大实名认证/电子签证件匹配）
+  @Column({ type: 'varchar', nullable: true, comment: '身份证号（法大大实名认证）' })
+  id_card_no: string;
+
   // 邮箱
   @Column({ type: 'varchar', nullable: true, comment: '邮箱' })
   email: string;

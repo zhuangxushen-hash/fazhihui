@@ -17,8 +17,14 @@ import { CasePushNotification } from './case-push-notification.entity';
 import { ClientConsultation } from './client-consultation.entity';
 import { ServiceRating } from './service-rating.entity';
 import { ClientArchive } from './client-archive.entity';
+import { ClientProfile } from './client-profile.entity';
+// 法大大电子签：客户端签约身份鉴别 + 电子签名
+import { FadadaService } from '../fadada/fadada.service';
 // Phase4 M3: 客户投诉走合规通道，注入合规服务
 import { ComplianceService } from '../compliance/compliance.service';
+// 13.8 缺口2: 咨询转线索，复用 LeadService 创建并自动分配线索（forwardRef 防止循环依赖）
+import { LeadService } from '../lead/lead.service';
+import { LeadSource } from '../types';
 
 // 触发转人工的复杂问题关键词
 const TRANSFER_KEYWORDS = ['投诉', '转人工', '人工', '律师', '无法解决'];
@@ -56,9 +62,16 @@ export class ClientService {
     private adMaterialRepository: Repository<AdMaterial>,
     @InjectRepository(ClientArchive)
     private clientArchiveRepository: Repository<ClientArchive>,
+    @InjectRepository(ClientProfile)
+    private clientProfileRepository: Repository<ClientProfile>,
+    // 法大大电子签：实名认证 + 签署任务
+    private fadadaService: FadadaService,
     // Phase4 M3: 注入合规服务，客户投诉同步走合规通道（forwardRef 防止循环依赖）
     @Inject(forwardRef(() => ComplianceService))
     private complianceService: ComplianceService,
+    // 13.8 缺口2: 注入线索服务，AI咨询转人工时自动创建CRM线索
+    @Inject(forwardRef(() => LeadService))
+    private leadService: LeadService,
   ) {}
 
   async getClientCases(clientId: string): Promise<any[]> {
@@ -275,6 +288,9 @@ export class ClientService {
         }),
       );
       ticketId = ticket.id;
+
+      // 13.8 缺口2: 咨询转线索 — 转人工咨询自动创建CRM线索（复用 LeadService.create，内置7天重复手机号去重并触发自动分配）
+      await this.createLeadFromConsultation(data.client_id, data.question, data.organization_id);
     }
 
     // 保存咨询记录
@@ -298,6 +314,31 @@ export class ClientService {
   }
 
   /**
+   * 13.8 缺口2: 咨询转线索
+   * 转人工时根据C端用户信息自动创建CRM线索，source_keyword 标记来源为"AI咨询转人工"
+   * 复用 LeadService.create：7天内同一手机号重复咨询不会重复建线索（去重），并触发分配规则自动分配销售
+   */
+  private async createLeadFromConsultation(clientId: string, question: string, orgId?: string): Promise<void> {
+    try {
+      const user = await this.userRepository.findOne({ where: { id: clientId } });
+      if (!user?.phone) return;
+      await this.leadService.create(
+        {
+          phone: user.phone,
+          contact_name: user.real_name,
+          source_channel: LeadSource.OTHER,
+          source_keyword: 'AI咨询转人工',
+          case_description: question,
+          organization_id: user.organization_id || orgId || '',
+        },
+        user.organization_id || orgId || '',
+      );
+    } catch (err) {
+      // 建线索失败不影响主流程（工单与咨询记录已保存），静默处理
+    }
+  }
+
+  /**
    * 查询客户咨询记录
    */
   async getConsultationsByClient(clientId: string): Promise<ClientConsultation[]> {
@@ -310,7 +351,9 @@ export class ClientService {
   // ==================== 模块7.4 线上服务大厅 ====================
 
   /**
-   * 线上签约：复用 ContractTemplate 生成签约记录到 SigningCompliance
+   * 线上签约（发起签约意向，两步式）：
+   * - 法大大启用（FADADA_ENABLED=true）：创建 pending 签约记录，走「实名认证 → 电子签」流程
+   * - 法大大未启用（legacy）：保留原直签行为，直接生成已签署记录
    */
   async onlineSign(body: {
     case_id: string;
@@ -318,23 +361,177 @@ export class ClientService {
     lawyer_id: string;
     contract_template_id: string;
     organization_id: string;
-  }): Promise<SigningCompliance> {
+    id_card_no?: string;
+  }): Promise<any> {
     // 校验合同模板存在
     const template = await this.contractTemplateRepository.findOne({ where: { id: body.contract_template_id } });
     if (!template) {
       throw new Error('合同模板不存在');
     }
+    const profile = await this.clientProfileRepository.findOne({ where: { id: body.client_id } });
+    const enabled = this.fadadaService.enabled;
     const signing = this.signingComplianceRepository.create({
       case_id: body.case_id,
       client_id: body.client_id,
       lawyer_id: body.lawyer_id,
       contract_template_id: body.contract_template_id,
-      status: SigningStatus.SIGNED,
+      status: enabled ? SigningStatus.PENDING : SigningStatus.SIGNED,
       contract_content: template.content,
-      signed_time: new Date(),
+      signed_time: enabled ? null : new Date(),
       organization_id: body.organization_id,
+      id_card_no: body.id_card_no || profile?.id_card_no || null,
+      verify_status: enabled ? 'pending' : 'verified',
     });
-    return this.signingComplianceRepository.save(signing);
+    const saved = await this.signingComplianceRepository.save(signing);
+    // 客户身份证号回写客户档案（法大大实名认证/证件匹配用）
+    if (profile && body.id_card_no && !profile.id_card_no) {
+      profile.id_card_no = body.id_card_no;
+      await this.clientProfileRepository.save(profile);
+    }
+    return {
+      ...saved,
+      signing_id: saved.id,
+      enabled,
+      mode: enabled ? this.fadadaService.mode : 'legacy',
+      verify_status: saved.verify_status,
+    };
+  }
+
+  /** 法大大电子签配置（前端引导流程用，不含密钥） */
+  async getSignConfig(): Promise<any> {
+    return {
+      provider: 'fadada',
+      enabled: this.fadadaService.enabled,
+      mode: this.fadadaService.enabled ? this.fadadaService.mode : 'legacy',
+    };
+  }
+
+  /** 获取法大大实名认证链接（身份鉴别第一步） */
+  async getSignVerifyUrl(body: {
+    signing_id: string;
+    client_id: string;
+    user_name?: string;
+    id_card_no?: string;
+    mobile?: string;
+  }): Promise<any> {
+    const signing = await this.findSigning(body.signing_id, body.client_id);
+    const profile = await this.clientProfileRepository.findOne({ where: { id: body.client_id } });
+    if (!profile) {
+      throw new Error('客户档案不存在');
+    }
+    const idCardNo = body.id_card_no || signing.id_card_no || profile.id_card_no || '';
+    if (idCardNo && !profile.id_card_no) {
+      profile.id_card_no = idCardNo;
+      await this.clientProfileRepository.save(profile);
+    }
+    signing.id_card_no = idCardNo || null;
+    signing.verify_status = 'pending';
+    signing.fadada_verify_transaction_id = signing.id;
+    await this.signingComplianceRepository.save(signing);
+    const result = await this.fadadaService.getRealNameAuthUrl({
+      signingId: signing.id,
+      clientUserId: body.client_id,
+      userName: body.user_name || profile.name || profile.contact_name || '客户',
+      idCardNo,
+      mobile: body.mobile || profile.phone || undefined,
+    });
+    return {
+      signing_id: signing.id,
+      verify_url: result.verifyUrl,
+      transaction_id: result.transactionId,
+      mode: result.mode,
+    };
+  }
+
+  /** 模拟模式：本地完成实名认证（仅 mock 模式可用） */
+  async mockVerifySigning(body: { signing_id: string; client_id: string }): Promise<any> {
+    if (this.fadadaService.mode !== 'mock') {
+      throw new Error('仅模拟模式支持本地实名认证');
+    }
+    const signing = await this.findSigning(body.signing_id, body.client_id);
+    signing.verify_status = 'verified';
+    signing.verify_time = new Date();
+    await this.signingComplianceRepository.save(signing);
+    return { signing_id: signing.id, verify_status: signing.verify_status };
+  }
+
+  /** 创建法大大签署任务并返回客户签署链接（身份鉴别通过后调用） */
+  async createSignFlow(body: { signing_id: string; client_id: string }): Promise<any> {
+    const signing = await this.findSigning(body.signing_id, body.client_id);
+    if (this.fadadaService.enabled && signing.verify_status !== 'verified') {
+      throw new Error('客户尚未完成法大大实名认证，无法生成签署链接');
+    }
+    const profile = await this.clientProfileRepository.findOne({ where: { id: body.client_id } });
+    const lawyer = signing.lawyer_id
+      ? await this.userRepository.findOne({ where: { id: signing.lawyer_id } })
+      : null;
+    const template = signing.contract_template_id
+      ? await this.contractTemplateRepository.findOne({ where: { id: signing.contract_template_id } })
+      : null;
+    const result = await this.fadadaService.createSignTask({
+      signingId: signing.id,
+      subject: `法律服务合同签约-${(signing.case_id || '').slice(0, 8)}`,
+      docName: `${template?.name || '法律服务合同'}.pdf`,
+      docContent: signing.contract_content || template?.content || '',
+      client: {
+        clientUserId: signing.client_id,
+        userName: profile?.name || profile?.contact_name || '客户',
+        idCardNo: signing.id_card_no || profile?.id_card_no || undefined,
+        mobile: profile?.phone || undefined,
+      },
+      lawyer: lawyer
+        ? {
+            lawyerUserId: 'LAWYER_' + lawyer.id,
+            name: lawyer.real_name || '承办律师',
+            mobile: lawyer.phone || undefined,
+          }
+        : undefined,
+    });
+    signing.fadada_sign_task_id = result.signTaskId;
+    signing.fadada_actor_id = result.actorId;
+    signing.sign_url = result.signUrl;
+    signing.status = SigningStatus.REVIEWING;
+    await this.signingComplianceRepository.save(signing);
+    return {
+      signing_id: signing.id,
+      sign_url: result.signUrl,
+      sign_task_id: result.signTaskId,
+      mode: result.mode,
+    };
+  }
+
+  /** 模拟模式：本地完成签署（仅 mock 模式可用） */
+  async mockFinishSigning(body: { signing_id: string; client_id: string }): Promise<any> {
+    if (this.fadadaService.mode !== 'mock') {
+      throw new Error('仅模拟模式支持本地完成签署');
+    }
+    const signing = await this.findSigning(body.signing_id, body.client_id);
+    signing.status = SigningStatus.SIGNED;
+    signing.signed_time = new Date();
+    await this.signingComplianceRepository.save(signing);
+    return { signing_id: signing.id, status: signing.status };
+  }
+
+  /** 查询签约状态（前端轮询用） */
+  async getSignStatus(body: { signing_id: string; client_id: string }): Promise<any> {
+    const signing = await this.findSigning(body.signing_id, body.client_id);
+    return {
+      signing_id: signing.id,
+      status: signing.status,
+      verify_status: signing.verify_status,
+      fadada_sign_task_id: signing.fadada_sign_task_id,
+      sign_url: signing.sign_url,
+    };
+  }
+
+  private async findSigning(signingId: string, clientId: string): Promise<SigningCompliance> {
+    const signing = await this.signingComplianceRepository.findOne({
+      where: { id: signingId, client_id: clientId },
+    });
+    if (!signing) {
+      throw new Error('签约记录不存在或无权访问');
+    }
+    return signing;
   }
 
   /**

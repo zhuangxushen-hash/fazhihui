@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Table, Button, Modal, Form, Input, Select, Space, message, Upload, DatePicker, Card, Tag, InputNumber, Switch, Popconfirm } from 'antd'
 import { PlusOutlined, EditOutlined, EyeOutlined, UploadOutlined, SearchOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
-import { generateLetter, closeCaseReport, archiveCase, createCase, CreateCasePayload } from '../api/case'
+import { generateLetter, closeCaseReport, archiveCase, createCase, batchCloseCases, batchArchiveCases, CreateCasePayload } from '../api/case'
 import { formatDate, formatDateTime } from '../utils/format'
 import { theme } from '../constants/theme'
 // === Material Design 3 Style Tokens ===
@@ -176,6 +176,8 @@ export default function CaseManagement() {
   const [detailVisible, setDetailVisible] = useState(false)
   const [assignVisible, setAssignVisible] = useState(false)
   const [statusVisible, setStatusVisible] = useState(false)
+  // 13.8 缺口6: 批量结案/归档选中行
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
   // 案件变更/解约/作废弹窗状态
   const [changeActionVisible, setChangeActionVisible] = useState(false)
   // 当前操作类型：change / terminate / void
@@ -294,6 +296,32 @@ export default function CaseManagement() {
   const handleChangeStatus = (record: Record<string, unknown>) => {
     setCurrentCase(record)
     setStatusVisible(true)
+  }
+
+  // 13.8 缺口6: 批量结案
+  const handleBatchClose = async () => {
+    if (!selectedRowKeys.length) return
+    try {
+      const res = (await batchCloseCases(selectedRowKeys as string[])) as Record<string, unknown>
+      message.success(`批量结案完成：成功 ${res.success} 件，失败 ${res.failed} 件`)
+      setSelectedRowKeys([])
+      fetchData()
+    } catch (error) {
+      message.error('批量结案失败')
+    }
+  }
+
+  // 13.8 缺口6: 批量归档
+  const handleBatchArchive = async () => {
+    if (!selectedRowKeys.length) return
+    try {
+      const res = (await batchArchiveCases(selectedRowKeys as string[])) as Record<string, unknown>
+      message.success(`批量归档完成：成功 ${res.success} 件，失败 ${res.failed} 件`)
+      setSelectedRowKeys([])
+      fetchData()
+    } catch (error) {
+      message.error('批量归档失败')
+    }
   }
 
   const handleSubmitStatus = async (values: Record<string, unknown>) => {
@@ -556,10 +584,32 @@ export default function CaseManagement() {
         </Select>
         <Button type="primary" onClick={handleSearch}>搜索</Button>
         <Button onClick={handleReset}>重置</Button>
+        <Popconfirm
+          title={`确认批量结案选中的 ${selectedRowKeys.length} 个案件？`}
+          onConfirm={handleBatchClose}
+          disabled={!selectedRowKeys.length}
+        >
+          <Button disabled={!selectedRowKeys.length}>批量结案</Button>
+        </Popconfirm>
+        <Popconfirm
+          title={`确认批量归档选中的 ${selectedRowKeys.length} 个案件？`}
+          onConfirm={handleBatchArchive}
+          disabled={!selectedRowKeys.length}
+        >
+          <Button disabled={!selectedRowKeys.length}>批量归档</Button>
+        </Popconfirm>
       </div>
 
       <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
-        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" size="small" scroll={{ x: 2000 }} />
+        <Table
+          dataSource={data}
+          columns={columns}
+          loading={loading}
+          rowKey="id"
+          size="small"
+          scroll={{ x: 2000 }}
+          rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
+        />
       </Card>
 
       <Modal

@@ -82,6 +82,55 @@ export class FinanceService {
     return this.businessFundRepository.save(fund);
   }
 
+  // 13.8 缺口7: 撤销费用（仅有效记录可撤销，撤销后不再计入收支汇总）
+  async voidFee(id: string, reason?: string): Promise<BusinessFund> {
+    const fund = await this.businessFundRepository.findOne({ where: { id } });
+    if (!fund) {
+      throw new NotFoundException('费用记录不存在');
+    }
+    if (fund.status !== 'active') {
+      throw new BadRequestException('该记录已撤销或已红冲，不能重复操作');
+    }
+    fund.status = 'voided';
+    fund.remarks = reason ? `${fund.remarks || ''}（撤销：${reason}）` : fund.remarks;
+    return this.businessFundRepository.save(fund);
+  }
+
+  // 13.8 缺口7: 红冲费用（生成负数冲销记录，原记录标记为已红冲，收支流水可追溯）
+  async redFlushFee(id: string, reason?: string): Promise<{ original: BusinessFund; reversal: BusinessFund }> {
+    const fund = await this.businessFundRepository.findOne({ where: { id } });
+    if (!fund) {
+      throw new NotFoundException('费用记录不存在');
+    }
+    if (fund.status !== 'active') {
+      throw new BadRequestException('该记录已撤销或已红冲，不能重复操作');
+    }
+    fund.status = 'red_flushed';
+    fund.red_flush_reason = reason || '';
+    fund.red_flush_time = new Date();
+    const original = await this.businessFundRepository.save(fund);
+
+    // 生成负数冲销记录（金额取负，方向互换，收支净额归零）
+    const reversal = this.businessFundRepository.create({
+      case_id: fund.case_id,
+      type: fund.type,
+      category: fund.category,
+      amount: -Math.abs(Number(fund.amount) || 0),
+      payer: fund.payee,
+      payee: fund.payer,
+      payment_date: new Date(),
+      payment_method: fund.payment_method,
+      remarks: `红冲：${fund.remarks || ''}${reason ? `（${reason}）` : ''}`,
+      account_status: 'accounted',
+      account_time: new Date(),
+      organization_id: fund.organization_id,
+      status: 'active',
+      reversal_of_id: original.id,
+    });
+    const savedReversal = await this.businessFundRepository.save(reversal);
+    return { original, reversal: savedReversal };
+  }
+
   /**
    * 登记收款（关联应收台账 → 创建支付记录 → 汇总回款到案件 → 触发分润）
    * @param receivableId 应收台账ID

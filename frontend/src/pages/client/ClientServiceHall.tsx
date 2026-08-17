@@ -30,11 +30,17 @@ export default function ClientServiceHall() {
   const [cases, setCases] = useState<any[]>([])
   const [loadingCases, setLoadingCases] = useState(false)
 
-  // 在线签约
+  // 在线签约（法大大电子签：身份鉴别 + 电子签名）
   const [signModalOpen, setSignModalOpen] = useState(false)
   const [signCaseId, setSignCaseId] = useState<string>('')
   const [signing, setSigning] = useState(false)
-  const [signSuccess, setSignSuccess] = useState(false)
+  const [signStep, setSignStep] = useState<'case' | 'verify' | 'sign' | 'done'>('case')
+  const [signingId, setSigningId] = useState<string>('')
+  const [signMode, setSignMode] = useState<'mock' | 'prod' | 'legacy'>('legacy')
+  const [verifyUrl, setVerifyUrl] = useState<string>('')
+  const [signUrl, setSignUrl] = useState<string>('')
+  const [idCardNo, setIdCardNo] = useState<string>('')
+  const pollTimerRef = useRef<any>(null)
 
   // 发票下载
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
@@ -129,16 +135,35 @@ export default function ClientServiceHall() {
   ]
 
   // ===== 在线签约 =====
-  const openSignModal = () => {
+  const clearSignPoll = () => {
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current)
+      pollTimerRef.current = null
+    }
+  }
+
+  const openSignModal = async () => {
     if (cases.length === 0) {
       message.warning('暂无可签约案件，请先创建案件')
       return
     }
     setSignCaseId('')
-    setSignSuccess(false)
+    setSignStep('case')
+    setSigningId('')
+    setVerifyUrl('')
+    setSignUrl('')
+    setIdCardNo('')
+    clearSignPoll()
     setSignModalOpen(true)
+    try {
+      const config = (await axios.post('/client/sign/config')) as { enabled: boolean; mode: string }
+      setSignMode((config?.mode || 'legacy') as any)
+    } catch (error) {
+      setSignMode('legacy')
+    }
   }
 
+  // 第一步：发起签约意向（法大大启用时进入实名认证流程）
   const handleSign = async () => {
     if (!signCaseId) {
       message.error('请选择要签约的案件')
@@ -147,17 +172,128 @@ export default function ClientServiceHall() {
     const selectedCase = cases.find((c) => c.id === signCaseId)
     setSigning(true)
     try {
-      await axios.post('/client/online-sign', {
+      const res = (await axios.post('/client/online-sign', {
         case_id: signCaseId,
         client_id: user.id,
         lawyer_id: selectedCase?.assignee_lawyer_id || '',
         contract_template_id: 'standard-service-contract',
         organization_id: user.organization_id || selectedCase?.organization_id || '',
-      })
-      setSignSuccess(true)
-      message.success('签约成功')
+        id_card_no: idCardNo || undefined,
+      })) as any
+      setSigningId(res?.signing_id || res?.id)
+      if (res?.enabled === false) {
+        setSignStep('done')
+        message.success('签约成功')
+      } else {
+        setSignStep('verify')
+      }
     } catch (error) {
-      message.error('签约失败，请重试')
+      message.error('签约发起失败，请重试')
+    } finally {
+      setSigning(false)
+    }
+  }
+
+  // 第二步：前往法大大完成实名认证（身份鉴别）
+  const handleStartVerify = async () => {
+    if (!signingId) return
+    setSigning(true)
+    try {
+      const res = (await axios.post('/client/sign/verify-url', {
+        signing_id: signingId,
+        client_id: user.id,
+        id_card_no: idCardNo || undefined,
+      })) as any
+      setVerifyUrl(res?.verify_url || '')
+      if (res?.verify_url) {
+        window.open(res.verify_url, '_blank')
+      }
+    } catch (error) {
+      // 错误已由拦截器统一提示
+    } finally {
+      setSigning(false)
+    }
+  }
+
+  // 第二步完成确认：检查实名认证状态
+  const handleVerifyDone = async () => {
+    if (!signingId) return
+    setSigning(true)
+    try {
+      const res = (await axios.post('/client/sign/status', { signing_id: signingId, client_id: user.id })) as any
+      if (res?.verify_status === 'verified') {
+        setSignStep('sign')
+      } else {
+        message.warning('尚未检测到实名认证结果，请先在法大大页面完成认证后重试')
+      }
+    } catch (error) {
+      // 错误已由拦截器统一提示
+    } finally {
+      setSigning(false)
+    }
+  }
+
+  // 第三步：生成法大大电子签签署链接
+  const handleStartSign = async () => {
+    if (!signingId) return
+    setSigning(true)
+    try {
+      const res = (await axios.post('/client/sign/flow', { signing_id: signingId, client_id: user.id })) as any
+      setSignUrl(res?.sign_url || '')
+      if (res?.sign_url) {
+        window.open(res.sign_url, '_blank')
+      }
+      pollSignStatus()
+    } catch (error) {
+      // 错误已由拦截器统一提示
+    } finally {
+      setSigning(false)
+    }
+  }
+
+  // 轮询签署状态（法大大回调更新后自动进入完成页）
+  const pollSignStatus = () => {
+    if (pollTimerRef.current) return
+    let count = 0
+    pollTimerRef.current = setInterval(async () => {
+      count += 1
+      try {
+        const res = (await axios.post('/client/sign/status', { signing_id: signingId, client_id: user.id })) as any
+        if (res?.status === 'signed') {
+          clearSignPoll()
+          setSignStep('done')
+          message.success('签约成功')
+        } else if (count >= 24) {
+          clearSignPoll()
+        }
+      } catch (error) {
+        clearSignPoll()
+      }
+    }, 5000)
+  }
+
+  // 第三步完成确认（mock 模式本地完成签署；prod 模式以法大大回调为准）
+  const handleConfirmSigned = async () => {
+    if (!signingId) return
+    setSigning(true)
+    try {
+      if (signMode === 'mock') {
+        await axios.post('/client/sign/mock-finish', { signing_id: signingId, client_id: user.id })
+        clearSignPoll()
+        setSignStep('done')
+        message.success('签约成功')
+      } else {
+        const res = (await axios.post('/client/sign/status', { signing_id: signingId, client_id: user.id })) as any
+        if (res?.status === 'signed') {
+          clearSignPoll()
+          setSignStep('done')
+          message.success('签约成功')
+        } else {
+          message.info('签署结果确认中，请稍候或稍后查看签约状态')
+        }
+      }
+    } catch (error) {
+      // 错误已由拦截器统一提示
     } finally {
       setSigning(false)
     }
@@ -342,20 +478,79 @@ export default function ClientServiceHall() {
       {/* 在线签约弹窗 */}
       <Modal
         open={signModalOpen}
-        title="在线签约"
-        onCancel={() => setSignModalOpen(false)}
+        title="在线签约（法大大电子签）"
+        onCancel={() => {
+          clearSignPoll()
+          setSignModalOpen(false)
+        }}
         footer={null}
         centered
       >
-        {signSuccess ? (
+        {signStep === 'done' ? (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
             <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
               <CheckCircleOutlined style={{ fontSize: 36, color: 'var(--success)' }} />
             </div>
             <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>签约成功</div>
-            <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>您的法律服务合同已签署完成</div>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>您的法律服务合同已通过法大大完成签署</div>
             <ClientButton btnVariant="primary" btnSize="large" style={{ width: '100%', marginTop: 20 }} onClick={() => setSignModalOpen(false)}>
               完成
+            </ClientButton>
+          </div>
+        ) : signStep === 'verify' ? (
+          <div>
+            <div style={{ background: 'var(--bg-sunken)', padding: 14, borderRadius: 8, border: '1px solid var(--border-light)', marginBottom: 14 }}>
+              <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600, marginBottom: 6 }}>
+                <SafetyCertificateOutlined /> 法大大实名认证（身份鉴别）
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.8 }}>
+                签约前需完成法大大实名认证：请填写身份证号并前往法大大页面完成实名认证，认证结果由法大大平台校验后进入电子签环节。
+              </div>
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>
+                身份证号 <span style={{ color: 'var(--error)' }}>*</span>
+              </label>
+              <Input
+                value={idCardNo}
+                onChange={(e) => setIdCardNo(e.target.value)}
+                placeholder="请输入签约人身份证号"
+                size="large"
+                style={{ width: '100%' }}
+              />
+            </div>
+            <ClientButton btnVariant="primary" btnSize="large" loading={signing} onClick={handleStartVerify} style={{ width: '100%' }}>
+              前往法大大完成实名认证
+            </ClientButton>
+            {verifyUrl && (
+              <ClientButton btnVariant="ghost" btnSize="large" onClick={() => window.open(verifyUrl, '_blank')} style={{ width: '100%', marginTop: 10 }}>
+                重新打开认证页面
+              </ClientButton>
+            )}
+            <ClientButton btnVariant="ghost" btnSize="large" onClick={handleVerifyDone} style={{ width: '100%', marginTop: 10 }}>
+              我已完成实名认证
+            </ClientButton>
+          </div>
+        ) : signStep === 'sign' ? (
+          <div>
+            <div style={{ background: 'var(--bg-sunken)', padding: 14, borderRadius: 8, border: '1px solid var(--border-light)', marginBottom: 14 }}>
+              <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600, marginBottom: 6 }}>
+                <FileTextOutlined /> 法大大电子签
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.8 }}>
+                实名认证已完成，系统将生成法大大签署任务与专属签署链接。请在法大大页面核对合同并完成电子签名，签署完成后将自动确认。
+              </div>
+            </div>
+            <ClientButton btnVariant="primary" btnSize="large" loading={signing} onClick={handleStartSign} style={{ width: '100%' }}>
+              生成法大大签署链接
+            </ClientButton>
+            {signUrl && (
+              <ClientButton btnVariant="ghost" btnSize="large" onClick={() => window.open(signUrl, '_blank')} style={{ width: '100%', marginTop: 10 }}>
+                重新打开签署页面
+              </ClientButton>
+            )}
+            <ClientButton btnVariant="ghost" btnSize="large" onClick={handleConfirmSigned} style={{ width: '100%', marginTop: 10 }}>
+              {signMode === 'mock' ? '我已完成签署（模拟）' : '我已完成签署'}
             </ClientButton>
           </div>
         ) : (
@@ -382,7 +577,7 @@ export default function ClientServiceHall() {
               </div>
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginBottom: 14 }}>
-              点击确认签约即表示您同意签署上述法律服务合同，电子签名具备法律效力。
+              点击确认签约即表示您同意签署上述法律服务合同。签约将使用法大大实名认证与电子签名，电子签名具备法律效力。
             </div>
             <ClientButton btnVariant="primary" btnSize="large" loading={signing} onClick={handleSign} style={{ width: '100%' }}>
               确认签约

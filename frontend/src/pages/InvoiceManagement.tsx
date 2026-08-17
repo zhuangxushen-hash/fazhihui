@@ -13,6 +13,8 @@ import {
 import { formatDate } from '../utils/format'
 import dayjs, { Dayjs } from 'dayjs'
 import { theme } from '../constants/theme'
+// V3.2 合并：电子发票打印（原独立页 ElectronicInvoicePrint）并入发票管理
+import ElectronicInvoicePrint from './ElectronicInvoicePrint'
 // === Material Design 3 Style Tokens ===
 const pageH2Style: React.CSSProperties = {
   fontFamily: "'Noto Serif SC', serif",
@@ -141,6 +143,8 @@ export default function InvoiceManagement() {
   }, [amountWatch, taxAmount])
 
   const fetchList = async () => {
+    // 电子发票打印Tab不拉取发票列表
+    if (activeTab === 'print') return
     setLoading(true)
     try {
       const params: Record<string, unknown> = {
@@ -389,6 +393,8 @@ export default function InvoiceManagement() {
     { key: 'issued', label: '已开具' },
     { key: 'voided', label: '已作废' },
     { key: 'red_flushed', label: '已冲红' },
+    // V3.2 合并：电子发票打印
+    { key: 'print', label: '电子发票打印' },
   ]
 
   return (
@@ -398,40 +404,47 @@ export default function InvoiceManagement() {
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>开票</Button>
       </div>
 
-      <div className="search-bar stitch-filter-bar" style={searchBarStyle}>
-        <Select
-          placeholder="发票类型"
-          style={{ width: 140 }}
-          allowClear
-          value={searchParams.type || undefined}
-          onChange={(value) => setSearchParams({ ...searchParams, type: value || '' })}
-          options={[
-            { value: 'normal', label: '普票' },
-            { value: 'special', label: '专票' },
-            { value: 'electronic', label: '电子发票' },
-          ]}
-        />
-        <Input
-          placeholder="购方名称搜索"
-          prefix={<SearchOutlined />}
-          style={{ width: 200 }}
-          value={searchParams.keyword}
-          onChange={(e) => setSearchParams({ ...searchParams, keyword: e.target.value })}
-          onPressEnter={handleSearch}
-        />
-        <RangePicker
-          value={searchParams.dateRange}
-          onChange={(dates) => setSearchParams({ ...searchParams, dateRange: dates as [Dayjs, Dayjs] | null })}
-        />
-        <Button type="primary" onClick={handleSearch}>搜索</Button>
-        <Button onClick={handleReset}>重置</Button>
-      </div>
+      {/* 查询条件区（电子发票打印Tab隐藏） */}
+      {activeTab !== 'print' && (
+        <div className="search-bar stitch-filter-bar" style={searchBarStyle}>
+          <Select
+            placeholder="发票类型"
+            style={{ width: 140 }}
+            allowClear
+            value={searchParams.type || undefined}
+            onChange={(value) => setSearchParams({ ...searchParams, type: value || '' })}
+            options={[
+              { value: 'normal', label: '普票' },
+              { value: 'special', label: '专票' },
+              { value: 'electronic', label: '电子发票' },
+            ]}
+          />
+          <Input
+            placeholder="购方名称搜索"
+            prefix={<SearchOutlined />}
+            style={{ width: 200 }}
+            value={searchParams.keyword}
+            onChange={(e) => setSearchParams({ ...searchParams, keyword: e.target.value })}
+            onPressEnter={handleSearch}
+          />
+          <RangePicker
+            value={searchParams.dateRange}
+            onChange={(dates) => setSearchParams({ ...searchParams, dateRange: dates as [Dayjs, Dayjs] | null })}
+          />
+          <Button type="primary" onClick={handleSearch}>搜索</Button>
+          <Button onClick={handleReset}>重置</Button>
+        </div>
+      )}
 
       <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems.map(t => ({ key: t.key, label: t.label }))} />
 
-      <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
-        <Table dataSource={list} columns={columns} loading={loading} rowKey="id" size="small" pagination={{ pageSize: 10 }} scroll={{ x: 2000 }} />
-      </Card>
+      {activeTab === 'print' ? (
+        <ElectronicInvoicePrint />
+      ) : (
+        <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
+          <Table dataSource={list} columns={columns} loading={loading} rowKey="id" size="small" pagination={{ pageSize: 10 }} scroll={{ x: 2000 }} />
+        </Card>
+      )}
 
       <Modal
         title="开具发票"

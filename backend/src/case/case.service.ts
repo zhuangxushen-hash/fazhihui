@@ -615,6 +615,44 @@ export class CaseService {
     return { success, failed };
   }
 
+  // 13.8 缺口6: 批量结案（复用单案结案逻辑，单个案件失败计数但不中断）
+  async batchClose(caseIds: string[]): Promise<{ success: number; failed: number }> {
+    let success = 0;
+    let failed = 0;
+    for (const caseId of caseIds) {
+      try {
+        const result = await this.closeCase(caseId);
+        if (result) {
+          success++;
+        } else {
+          failed++;
+        }
+      } catch (err) {
+        failed++;
+      }
+    }
+    return { success, failed };
+  }
+
+  // 13.8 缺口6: 批量归档（复用单案归档逻辑，单个案件失败计数但不中断）
+  async batchArchive(caseIds: string[]): Promise<{ success: number; failed: number }> {
+    let success = 0;
+    let failed = 0;
+    for (const caseId of caseIds) {
+      try {
+        const result = await this.archiveCase(caseId);
+        if (result) {
+          success++;
+        } else {
+          failed++;
+        }
+      } catch (err) {
+        failed++;
+      }
+    }
+    return { success, failed };
+  }
+
   // 提交审批：设置 approval_status 为 pending
   async submitApproval(id: string): Promise<Case | null> {
     await this.caseRepository.update(id, { approval_status: 'pending' });

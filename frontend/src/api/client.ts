@@ -183,6 +183,60 @@ export const onlineSign = (data: {
 }
 
 /**
+ * 法大大电子签配置（不含密钥）
+ * POST /client/sign/config
+ */
+export const getSignConfig = () => {
+  return axios.post('/client/sign/config')
+}
+
+/**
+ * 获取法大大实名认证链接（身份鉴别）
+ * POST /client/sign/verify-url
+ */
+export const getSignVerifyUrl = (data: {
+  signing_id: string
+  client_id: string
+  user_name?: string
+  id_card_no?: string
+  mobile?: string
+}) => {
+  return axios.post('/client/sign/verify-url', data)
+}
+
+/**
+ * 模拟模式：本地完成实名认证
+ * POST /client/sign/mock-verify
+ */
+export const mockVerifySigning = (data: { signing_id: string; client_id: string }) => {
+  return axios.post('/client/sign/mock-verify', data)
+}
+
+/**
+ * 创建法大大签署任务并返回签署链接
+ * POST /client/sign/flow
+ */
+export const createSignFlow = (data: { signing_id: string; client_id: string }) => {
+  return axios.post('/client/sign/flow', data)
+}
+
+/**
+ * 模拟模式：本地完成签署
+ * POST /client/sign/mock-finish
+ */
+export const mockFinishSigning = (data: { signing_id: string; client_id: string }) => {
+  return axios.post('/client/sign/mock-finish', data)
+}
+
+/**
+ * 查询签约状态（轮询用）
+ * POST /client/sign/status
+ */
+export const getSignStatus = (data: { signing_id: string; client_id: string }) => {
+  return axios.post('/client/sign/status', data)
+}
+
+/**
  * 创建服务评价
  * POST /client/service-ratings
  * @param data 评价信息

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Table, Button, Modal, Form, Input, Select, Space, message, Tabs, Card } from 'antd'
-import { PlusOutlined, EyeOutlined, SearchOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { Table, Button, Modal, Form, Input, Select, Space, message, Tabs, Card, Popconfirm } from 'antd'
+import { PlusOutlined, EyeOutlined, SearchOutlined, CheckCircleOutlined, CloseCircleOutlined, RollbackOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
 import { theme } from '../constants/theme'
@@ -74,7 +74,11 @@ const refundStatusLabelMap: Record<string, string> = {
 
 // 发票管理功能已合并至 InvoiceManagement.tsx，相关状态、常量、列定义与接口调用已移除
 
-export default function FinanceManagement() {
+interface FinanceManagementProps {
+  hideTabs?: boolean
+}
+
+export default function FinanceManagement({ hideTabs = false }: FinanceManagementProps) {
   const [activeTab, setActiveTab] = useState('fees')
   const [fees, setFees] = useState<Record<string, unknown>[]>([])
   const [profitShares, setProfitShares] = useState<Record<string, unknown>[]>([])
@@ -192,6 +196,28 @@ export default function FinanceManagement() {
     }
   }
 
+  // 13.8 缺口7: 撤销费用（仅有效记录可撤销）
+  const handleVoidFee = async (record: Record<string, unknown>) => {
+    try {
+      await axios.put(`/finance/fee/${record.id}/void`)
+      message.success('费用已撤销')
+      fetchFees()
+    } catch (error) {
+      message.error('撤销失败')
+    }
+  }
+
+  // 13.8 缺口7: 红冲费用（生成负数冲销记录）
+  const handleRedFlushFee = async (record: Record<string, unknown>) => {
+    try {
+      await axios.post(`/finance/fee/${record.id}/red-flush`)
+      message.success('费用已红冲，并生成冲销记录')
+      fetchFees()
+    } catch (error) {
+      message.error('红冲失败')
+    }
+  }
+
   const handleApproveRefund = async (record: Record<string, unknown>) => {
     try {
       await axios.put(`/finance/refund/${record.id}/approve`, { approved_by: user.id })
@@ -232,6 +258,12 @@ export default function FinanceManagement() {
       // Stitch 语义：未支付用警示橙，已支付用成功绿
       <StatusPill text={paid ? '已支付' : '未支付'} kind={paid ? 'green' : 'orange'} />
     )},
+    // 13.8 缺口7: 记录状态（active有效/voided已撤销/red_flushed已红冲）
+    { title: '记录状态', dataIndex: 'status', key: 'status', render: (status: string) => ({
+      active: <StatusPill text="有效" kind="green" />,
+      voided: <StatusPill text="已撤销" kind="orange" />,
+      red_flushed: <StatusPill text="已红冲" kind="red" />,
+    }[status] || <StatusPill text={status || '有效'} kind="neutral" />) },
     { title: '支付时间', dataIndex: 'paid_at', key: 'paid_at', render: (val: string) => formatDateTime(val) },
     { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
     { title: '操作', key: 'action', render: (_: unknown, record: Record<string, unknown>) => (
@@ -239,6 +271,16 @@ export default function FinanceManagement() {
         <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
         {!record.paid && (
           <Button size="small" type="primary" icon={<CheckCircleOutlined />} onClick={() => handleMarkPaid(record)}>标记支付</Button>
+        )}
+        {(record.status === undefined || record.status === 'active') && (
+          <>
+            <Popconfirm title="确认撤销该费用？撤销后不再计入收支汇总" onConfirm={() => handleVoidFee(record)}>
+              <Button size="small" danger icon={<CloseCircleOutlined />}>撤销</Button>
+            </Popconfirm>
+            <Popconfirm title="确认红冲该费用？将生成负数冲销记录" onConfirm={() => handleRedFlushFee(record)}>
+              <Button size="small" danger icon={<RollbackOutlined />}>红冲</Button>
+            </Popconfirm>
+          </>
         )}
       </Space>
     )},
@@ -360,15 +402,19 @@ export default function FinanceManagement() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div className="page-header" style={{ marginBottom: 0 }}>
-        <h2 style={pageH2Style}>财务管理</h2>
-        {activeTab === 'fees' && (
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAddFee}>创建费用</Button>
-        )}
-        {/* 发票管理已合并到专用发票管理页（InvoiceManagement.tsx） */}
-      </div>
+      {!hideTabs && (
+        <div className="page-header" style={{ marginBottom: 0 }}>
+          <h2 style={pageH2Style}>财务管理</h2>
+          {activeTab === 'fees' && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAddFee}>创建费用</Button>
+          )}
+          {/* 发票管理已合并到专用发票管理页（InvoiceManagement.tsx） */}
+        </div>
+      )}
 
-      <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
+      {!hideTabs && (
+        <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
+      )}
 
       <Modal
         title="创建费用"

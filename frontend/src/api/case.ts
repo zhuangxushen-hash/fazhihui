@@ -131,3 +131,13 @@ export const checkOverdueCases = () => {
 export const batchAssignCases = (data: { case_ids: string[]; lawyer_id: string }) => {
   return axios.post('/cases/batch-assign', data)
 }
+
+// 13.8 缺口6: 批量结案
+export const batchCloseCases = (caseIds: string[]) => {
+  return axios.post('/cases/batch-close', { case_ids: caseIds })
+}
+
+// 13.8 缺口6: 批量归档
+export const batchArchiveCases = (caseIds: string[]) => {
+  return axios.post('/cases/batch-archive', { case_ids: caseIds })
+}

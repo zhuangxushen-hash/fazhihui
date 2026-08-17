@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Card, Table, Button, Input, DatePicker, Row, Col, Statistic, Tag, Space, message, Descriptions, Divider, Select } from 'antd';
+import { Card, Table, Button, Input, DatePicker, Row, Col, Statistic, Tag, Space, message, Descriptions, Divider, Select, Tabs } from 'antd';
 import { SearchOutlined, BarChartOutlined, RiseOutlined, FallOutlined } from '@ant-design/icons';
 import { getCaseProfitAnalysis, getProfitStats } from '../api/finance';
 import { formatDate } from '../utils/format';
 import { theme } from '../constants/theme';
+// V3.2 合并：项目收入明细（原独立页 ProjectRevenueOverview）并入单案利润分析
+import ProjectRevenueOverview from './ProjectRevenueOverview';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -149,6 +151,15 @@ export default function CaseProfitAnalysis() {
 
   return (
     <div>
+      {/* V3.2 合并：单案利润分析 + 项目收入明细 */}
+      <Tabs
+        defaultActiveKey="profit"
+        items={[
+          {
+            key: 'profit',
+            label: '单案利润分析',
+            children: (
+              <>
       {/* 利润概览卡片 */}
       {stats && (
         <Row gutter={[24, 24]} style={{ marginBottom: 24 }}>
@@ -322,6 +333,16 @@ export default function CaseProfitAnalysis() {
           </div>
         </Card>
       )}
+              </>
+            ),
+          },
+          {
+            key: 'revenue',
+            label: '项目收入明细',
+            children: <ProjectRevenueOverview />,
+          },
+        ]}
+      />
     </div>
   );
 }

@@ -9,6 +9,8 @@ import { NotificationService } from '../user/notification.service';
 import { Express } from 'express';
 // Phase4 M9: 邀约录音上传后自动质检，注入合规服务（forwardRef 防止循环依赖）
 import { ComplianceService } from '../compliance/compliance.service';
+// 13.8 缺口3: 邀约到所自动预建商机
+import { OpportunityService } from './opportunity.service';
 
 @Injectable()
 export class InviteTaskService {
@@ -23,6 +25,8 @@ export class InviteTaskService {
     // Phase4 M9: 注入合规服务用于邀约录音自动质检
     @Inject(forwardRef(() => ComplianceService))
     private complianceService: ComplianceService,
+    // 13.8 缺口3: 注入商机服务，邀约"已到所"时自动预建商机草稿
+    private opportunityService: OpportunityService,
   ) {}
 
   // 创建邀约记录
@@ -207,6 +211,11 @@ export class InviteTaskService {
       if (status === InviteTaskStatus.ARRIVED) {
         lead.status = LeadStatus.NEGOTIATING;
         await this.leadRepository.save(lead);
+
+        // 13.8 缺口3: 邀约确认到所后自动预建商机（若该线索已有商机则跳过，异常静默不影响邀约主流程）
+        try {
+          await this.opportunityService.createOpportunity(task.inviter_id, task.lead_id);
+        } catch (err) {}
       } else if (status === InviteTaskStatus.NOT_ARRIVED) {
         lead.status = LeadStatus.FOLLOWING;
         await this.leadRepository.save(lead);

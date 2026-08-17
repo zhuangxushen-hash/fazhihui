@@ -113,7 +113,11 @@ const riskLevelKindMap: Record<string, PillKind> = {
   high: 'red',
 }
 
-export default function SalesComplianceReview() {
+interface SalesComplianceReviewProps {
+  hideTabs?: boolean
+}
+
+export default function SalesComplianceReview({ hideTabs = false }: SalesComplianceReviewProps) {
   const [activeTab, setActiveTab] = useState('pending')
   const [pendingList, setPendingList] = useState<any[]>([])
   const [reviewedList, setReviewedList] = useState<any[]>([])
@@ -324,11 +328,13 @@ export default function SalesComplianceReview() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div className="page-header" style={{ marginBottom: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={pageH2Style}>销售合规审查</h2>
+      {!hideTabs && (
+        <div className="page-header" style={{ marginBottom: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2 style={pageH2Style}>销售合规审查</h2>
+          </div>
         </div>
-      </div>
+      )}
 
       <Card style={{ borderRadius: 16 }}>
         <Tabs

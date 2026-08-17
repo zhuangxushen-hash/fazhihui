@@ -83,20 +83,6 @@ const StatusPill = ({ text, kind }: { text: string; kind: PillKind }) => {
 }
 
 // === Compliance Status Mappings (Preserved) ===
-const marketingStatusKindMap: Record<string, PillKind> = {
-  draft: 'neutral',
-  pending_review: 'orange',
-  approved: 'green',
-  rejected: 'red',
-}
-
-const marketingStatusLabelMap: Record<string, string> = {
-  draft: '草稿',
-  pending_review: '待审核',
-  approved: '已通过',
-  rejected: '已拒绝',
-}
-
 const salesCheckKindMap: Record<string, PillKind> = {
   pass: 'green',
   warning: 'orange',
@@ -135,11 +121,14 @@ const sopStatusLabelMap: Record<string, string> = {
   overdue: '已超时',
 }
 
-export default function ComplianceCenter() {
+interface ComplianceCenterProps {
+  hideTabs?: boolean
+}
+
+export default function ComplianceCenter({ hideTabs = false }: ComplianceCenterProps) {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('overview')
   const [stats, setStats] = useState({ pending: 0, completed: 0, overdue: 0, violation: 0 })
-  const [marketingContents, setMarketingContents] = useState<any[]>([])
   const [salesCompliance, setSalesCompliance] = useState<any[]>([])
   const [signingCompliance, setSigningCompliance] = useState<any[]>([])
   const [caseSOP, setCaseSOP] = useState<any[]>([])
@@ -149,8 +138,7 @@ export default function ComplianceCenter() {
 
   useEffect(() => {
     fetchStats()
-    if (activeTab === 'marketing') fetchMarketingContents()
-    else if (activeTab === 'sales') fetchSalesCompliance()
+    if (activeTab === 'sales') fetchSalesCompliance()
     else if (activeTab === 'signing') fetchSigningCompliance()
     else if (activeTab === 'sop') fetchCaseSOP()
   }, [activeTab])
@@ -171,18 +159,6 @@ export default function ComplianceCenter() {
       })
     } catch (error) {
       // 错误已由拦截器统一处理
-    }
-  }
-
-  const fetchMarketingContents = async () => {
-    setLoading(true)
-    try {
-      const res = await axios.get('/compliance/marketing-content', { params: { org_id: user.organization_id } })
-      setMarketingContents((res as Record<string, unknown>[]) || [])
-    } catch (error) {
-      // 错误已由拦截器统一处理
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -222,19 +198,6 @@ export default function ComplianceCenter() {
     }
   }
 
-  const handleReview = async (record: Record<string, unknown>, status: string) => {
-    try {
-      await axios.put(`/compliance/marketing-content/${record.id}/review`, {
-        reviewer_id: user.id,
-        status,
-      })
-      message.success('审核成功')
-      fetchMarketingContents()
-    } catch (error) {
-      message.error('审核失败')
-    }
-  }
-
   const handleCompleteSOP = async (record: Record<string, unknown>) => {
     try {
       await axios.put(`/compliance/case-sop/${record.id}/complete`, {
@@ -246,32 +209,6 @@ export default function ComplianceCenter() {
       message.error('操作失败')
     }
   }
-
-  const marketingColumns = [
-    { title: '标题', dataIndex: 'title', key: 'title' },
-    { title: '平台', dataIndex: 'platform', key: 'platform', render: (p: string) => {
-      const labels: Record<string, string> = { douyin: '抖音', baidu: '百度', kuaishou: '快手', wechat: '微信', other: '其他' }
-      return labels[p] || p
-    }},
-    { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => (
-      <StatusPill text={marketingStatusLabelMap[status] || status} kind={marketingStatusKindMap[status] || 'neutral'} />
-    )},
-    { title: '合规问题', dataIndex: 'compliance_issues', key: 'compliance_issues', render: (issues: string) => (
-      <StatusPill text={issues ? '有问题' : '通过'} kind={issues ? 'red' : 'green'} />
-    )},
-    { title: '创建时间', dataIndex: 'created_at', key: 'created_at', render: (val: string) => formatDateTime(val) },
-    { title: '审核时间', dataIndex: 'review_time', key: 'review_time', render: (val: string) => formatDateTime(val) },
-    { title: '操作', key: 'action', render: (_: unknown, record: Record<string, unknown>) => (
-      <Space className="stitch-btn-group">
-        {record.status === 'pending_review' && (
-          <>
-            <Button size="small" type="primary" onClick={() => handleReview(record, 'approved')}>通过</Button>
-            <Button type="link" size="small" danger onClick={() => handleReview(record, 'rejected')}>拒绝</Button>
-          </>
-        )}
-      </Space>
-    )},
-  ]
 
   const salesColumns = [
     { title: '线索ID', dataIndex: 'lead_id', key: 'lead_id', width: 120 },
@@ -378,14 +315,17 @@ export default function ComplianceCenter() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div className="page-header" style={{ marginBottom: 0 }}>
-        <h2 style={pageH2Style}>合规中心</h2>
-      </div>
+      {!hideTabs && (
+        <div className="page-header" style={{ marginBottom: 0 }}>
+          <h2 style={pageH2Style}>合规中心</h2>
+        </div>
+      )}
 
       <Card style={{ borderRadius: 16 }}>
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
+        {!hideTabs && (
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
           items={[
             {
               key: 'overview',
@@ -488,19 +428,22 @@ export default function ComplianceCenter() {
               label: (
                 <span>
                   <FileTextOutlined style={{ marginRight: 6 }} />
-                  营销合规
+                  营销内容合规
                 </span>
               ),
               children: (
                 <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
-                  <Table
-                    dataSource={marketingContents}
-                    columns={marketingColumns}
-                    loading={loading}
-                    rowKey="id"
-                    size="small"
-                    scroll={{ x: 1200 }}
-                  />
+                  <div style={{ padding: 24, textAlign: 'center' }}>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: theme.textBase, marginBottom: 8 }}>
+                      营销内容合规审核
+                    </div>
+                    <p style={{ fontSize: 13, color: theme.textSecondary, margin: '0 0 16px' }}>
+                      审核列表与流程已统一至 9.10 内容预审（含 AI 预审结果与人工复核）
+                    </p>
+                    <Button type="primary" onClick={() => navigate('/marketing/content-preview')}>
+                      前往内容预审 <ArrowRightOutlined />
+                    </Button>
+                  </div>
                 </Card>
               ),
             },
@@ -611,6 +554,7 @@ export default function ComplianceCenter() {
             },
           ]}
         />
+        )}
       </Card>
     </div>
   )

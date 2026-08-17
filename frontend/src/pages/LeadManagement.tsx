@@ -17,10 +17,12 @@ export default function LeadManagement() {
   const [data, setData] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
+  const [editVisible, setEditVisible] = useState(false)
   const [detailVisible, setDetailVisible] = useState(false)
   const [followUpVisible, setFollowUpVisible] = useState(false)
   const [statusVisible, setStatusVisible] = useState(false)
   const [form] = Form.useForm()
+  const [editForm] = Form.useForm()
   const [followUpForm] = Form.useForm()
   const [statusForm] = Form.useForm()
   const [currentLead, setCurrentLead] = useState<Record<string, unknown> | null>(null)
@@ -121,6 +123,34 @@ export default function LeadManagement() {
       fetchData()
     } catch (error) {
       message.error('线索添加失败')
+    }
+  }
+
+  // 打开编辑线索弹窗，预填线索基本信息
+  const handleEditLead = (record: Record<string, unknown>) => {
+    setCurrentLead(record)
+    editForm.resetFields()
+    editForm.setFieldsValue({
+      phone: record.phone,
+      contact_name: record.contact_name,
+      case_type: record.case_type,
+      source_channel: record.source_channel,
+      source_keyword: record.source_keyword,
+      case_description: record.case_description,
+    })
+    setEditVisible(true)
+  }
+
+  // 提交线索编辑
+  const handleEditSubmit = async (values: Record<string, unknown>) => {
+    if (!currentLead) return
+    try {
+      await axios.put(`/leads/${currentLead.id}`, values)
+      setEditVisible(false)
+      message.success('线索更新成功')
+      fetchData()
+    } catch (error) {
+      message.error('线索更新失败')
     }
   }
 
@@ -326,6 +356,7 @@ export default function LeadManagement() {
     { title: '操作', key: 'action', render: (_: unknown, record: Record<string, unknown>) => (
       <Space wrap>
         <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
+        <Button size="small" icon={<EditOutlined />} onClick={() => handleEditLead(record)}>编辑</Button>
         <Button size="small" icon={<EditOutlined />} onClick={() => handleChangeStatus(record)}>状态</Button>
         <Button size="small" icon={<SaveOutlined />} onClick={() => handleEditFee(record)}>设置费用</Button>
         <Button size="small" icon={<SafetyCertificateOutlined />} onClick={() => handleConflictCheck(record)}>利冲初查</Button>
@@ -431,6 +462,41 @@ export default function LeadManagement() {
           </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit">提交</Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="编辑线索"
+        open={editVisible}
+        onCancel={() => setEditVisible(false)}
+        footer={null}
+      >
+        <Form onFinish={handleEditSubmit} form={editForm}>
+          <Form.Item name="phone" label="手机号" rules={[{ required: true }]}>
+            <Input className="stitch-input" placeholder="请输入手机号" />
+          </Form.Item>
+          <Form.Item name="contact_name" label="联系人">
+            <Input className="stitch-input" placeholder="请输入联系人姓名" />
+          </Form.Item>
+          <Form.Item name="case_type" label="案由" rules={[{ required: true }]}>
+            <Select className="stitch-input">
+              {caseTypeOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
+            </Select>
+          </Form.Item>
+          <Form.Item name="source_channel" label="来源渠道" rules={[{ required: true }]}>
+            <Select className="stitch-input">
+              {channelOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
+            </Select>
+          </Form.Item>
+          <Form.Item name="source_keyword" label="来源关键词">
+            <Input className="stitch-input" placeholder="请输入来源关键词" />
+          </Form.Item>
+          <Form.Item name="case_description" label="咨询内容">
+            <Input.TextArea className="stitch-input" placeholder="请输入咨询内容" />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">保存</Button>
           </Form.Item>
         </Form>
       </Modal>

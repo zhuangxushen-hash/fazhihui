@@ -73,6 +73,22 @@ export class BusinessFund {
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0, comment: '质保金金额' })
   quality_deposit: number;
 
+  // 13.8 缺口7: 记录状态 active有效 / voided已撤销 / red_flushed已红冲
+  @Column({ type: 'varchar', default: 'active', comment: '记录状态' })
+  status: string;
+
+  // 红冲原因
+  @Column({ type: 'text', nullable: true, comment: '红冲原因' })
+  red_flush_reason: string;
+
+  // 红冲时间
+  @Column({ type: 'datetime', nullable: true, comment: '红冲时间' })
+  red_flush_time: Date;
+
+  // 关联冲销记录ID（红冲负数记录指向原记录）
+  @Column({ type: 'varchar', nullable: true, comment: '关联冲销记录ID' })
+  reversal_of_id: string;
+
   @Column()
   organization_id: string;
 

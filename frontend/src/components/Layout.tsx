@@ -42,16 +42,14 @@ const menuGroups: MenuGroup[] = [
     icon: <DashboardOutlined />,
     label: '数据看板',
     children: [
-      { key: '/', label: '经营总览' },
+      { key: '/overview-management', label: '经营总览' },
       { key: '/dashboard/conversion-funnel', label: '投放转化漏斗' },
       { key: '/dashboard/sales-performance', label: '销售团队绩效' },
       { key: '/dashboard/case-efficiency', label: '办案效能分析' },
-      { key: '/dashboard/finance', label: '财务经营' },
       { key: '/dashboard/compliance-risk', label: '合规风险监控' },
       { key: '/dashboard/custom-report', label: '自定义报表' },
       { key: '/dashboard/hr-efficiency', label: '人效分析' },
       { key: '/dashboard/profit-model', label: '盈利模型' },
-      { key: '/data-screen', label: '数据大屏' },
     ],
   },
   {
@@ -66,7 +64,6 @@ const menuGroups: MenuGroup[] = [
       { key: '/invite-workbench', label: '邀约工作台' },
       { key: '/talk-workbench', label: '谈案工作台' },
       { key: '/talk-sop', label: '谈案SOP' },
-      { key: '/compliance/sales-review', label: '销售合规审查' },
       // 合并原SCRM私域 6项
       { key: '/scrm/live-codes', label: '活码管理' },
       { key: '/scrm/channels', label: '渠道追踪' },
@@ -93,10 +90,9 @@ const menuGroups: MenuGroup[] = [
       { key: '/bids', label: '投标管理' },
       { key: '/due-diligence', label: '尽调宝' },
       { key: '/compliance/export', label: '案件归档' },
-      { key: '/cloud-archive', label: '云归档管理' },
       // 合并原文档管理 2项
       { key: '/documents', label: '我的文档' },
-      { key: '/archive-volumes', label: '归档卷宗' },
+      { key: '/archive-management', label: '归档管理' },
     ],
   },
   {
@@ -105,8 +101,7 @@ const menuGroups: MenuGroup[] = [
     label: '合规风控',
     children: [
       { key: '/compliance', label: '投诉管理' },
-      { key: '/compliance-center', label: '合规风控中心' },
-      { key: '/talk-quality-check', label: '谈案AI质检' },
+      { key: '/compliance-management', label: '合规管理' },
       { key: '/compliance/public-opinion', label: '舆情监控' },
     ],
   },
@@ -116,7 +111,7 @@ const menuGroups: MenuGroup[] = [
     label: '财务分润',
     children: [
       // 财务核心
-      { key: '/finance', label: '财务管理' },
+      { key: '/finance-operation', label: '财务经营' },
       { key: '/finance/income-expenditure', label: '收支综合' },
       // 代扣管理
       { key: '/finance/fixed-cost-withholding', label: '固定费用代扣' },
@@ -125,16 +120,12 @@ const menuGroups: MenuGroup[] = [
       { key: '/finance/withholding-offset', label: '代扣撤销冲抵' },
       // 报表与打印
       { key: '/finance/account-statistics', label: '账户台账' },
-      { key: '/finance/project-revenue', label: '项目收入' },
-      { key: '/finance/electronic-invoice-print', label: '电子发票打印' },
       { key: '/finance/paper-invoice-print', label: '纸质发票打印' },
       // 分润与对账
       { key: '/commission-config', label: '分润配置' },
       { key: '/finance/reconciliation', label: '智能对账' },
-      { key: '/finance/reconciliation-rules', label: '对账规则' },
       // 退费管理
       { key: '/finance/refund', label: '退费管理' },
-      { key: '/finance/refund-tier', label: '阶梯退费' },
       // 业务财务
       { key: '/finance/case-profit', label: '单案利润分析' },
       { key: '/finance/payment-reminder', label: '催款管理' },
@@ -154,8 +145,7 @@ const menuGroups: MenuGroup[] = [
       { key: '/marketing/materials', label: '素材管理' },
       { key: '/marketing/ai-content', label: 'AI内容生成' },
       { key: '/marketing/social-accounts', label: '公域账号' },
-      { key: '/marketing/digital-human-live', label: '数字人直播' },
-      { key: '/marketing/fake-live', label: '伪直播管理' },
+      { key: '/marketing/live-management', label: '直播管理' },
       { key: '/marketing/work-phone', label: '工作手机' },
       { key: '/marketing/content-preview', label: '内容预审' },
     ],
@@ -192,15 +182,14 @@ const menuGroups: MenuGroup[] = [
     children: [
       // 人事管理
       { key: '/hr/personnel', label: '人事管理' },
-      { key: '/hr/leaves', label: '请假管理' },
-      { key: '/hr/attendances', label: '考勤管理' },
+      { key: '/hr/attendance-leave', label: '人事考勤' },
       { key: '/hr/materials', label: '物品管理' },
       { key: '/hr/activities', label: '活动管理' },
       // 个人办公
       { key: '/worklogs', label: '工作日志' },
       { key: '/schedules', label: '日程管理' },
       { key: '/tasks', label: '任务中心' },
-      { key: '/knowledge', label: '知识库' },
+      { key: '/knowledge-management', label: '知识管理' },
       { key: '/diagram-tool', label: '可视化绘图' },
       // 审批与用印
       { key: '/approval-center', label: '审批中心' },
@@ -227,7 +216,7 @@ const menuGroups: MenuGroup[] = [
       { key: '/law-tools', label: '法律工具' },
     ],
   },
-  // 第三阶段新增：快捷工具（协作案源/疑难案件/协作律所/法律文库）
+  // 第三阶段新增：快捷工具（协作案源/疑难案件/协作律所）
   {
     key: 'shortcut',
     icon: <ToolOutlined />,
@@ -236,7 +225,6 @@ const menuGroups: MenuGroup[] = [
       { key: '/shortcut/cooperative-source', label: '协作案源' },
       { key: '/shortcut/difficult-cases', label: '疑难案件' },
       { key: '/shortcut/cooperative-firms', label: '协作律所' },
-      { key: '/shortcut/legal-library', label: '法律文库' },
     ],
   },
   // 第三阶段新增：律师中心（律师评级/评级管理，律师主页为详情页不进菜单）
@@ -294,7 +282,7 @@ type SubMenuRule = Record<string, string[]>
 const roleSubMenuAccess: Record<string, SubMenuRule> = {
   // 数据看板：不同角色看到的看板子项
   dashboard: {
-    '/': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/overview-management': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/dashboard/conversion-funnel': ['super_admin', 'org_admin', 'marketing', 'sales'],
     '/dashboard/sales-performance': ['super_admin', 'org_admin', 'sales'],
     '/dashboard/case-efficiency': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
@@ -303,7 +291,6 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
     '/dashboard/custom-report': ['super_admin', 'org_admin'],
     '/dashboard/hr-efficiency': ['super_admin', 'org_admin'],
     '/dashboard/profit-model': ['super_admin', 'org_admin'],
-    '/data-screen': ['super_admin', 'org_admin'],
   },
   // 线索CRM：销售类角色看全，其他只看客户（含原SCRM私域6项）
   crm: {
@@ -313,7 +300,6 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
     '/invite-workbench': ['super_admin', 'org_admin', 'sales'],
     '/talk-workbench': ['super_admin', 'org_admin', 'sales'],
     '/talk-sop': ['super_admin', 'org_admin', 'sales'],
-    '/compliance/sales-review': ['super_admin', 'org_admin', 'sales'],
     // 合并原SCRM私域 6项
     '/scrm/live-codes': ['super_admin', 'org_admin', 'marketing', 'sales'],
     '/scrm/channels': ['super_admin', 'org_admin', 'marketing', 'sales'],
@@ -335,21 +321,19 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
     '/bids': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
     '/due-diligence': ['super_admin', 'org_admin', 'lawyer'],
     '/compliance/export': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
-    '/cloud-archive': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
     // 合并原文档管理 2项
     '/documents': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
-    '/archive-volumes': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
+    '/archive-management': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
   },
   // 合规风控
   compliance: {
     '/compliance': ['super_admin', 'org_admin', 'lawyer', 'finance', 'sales', 'marketing'],
-    '/compliance-center': ['super_admin', 'org_admin'],
-    '/talk-quality-check': ['super_admin', 'org_admin', 'sales'],
+    '/compliance-management': ['super_admin', 'org_admin', 'sales'],
     '/compliance/public-opinion': ['super_admin', 'org_admin'],
   },
   // 财务分润
   finance: {
-    '/finance': ['super_admin', 'org_admin', 'finance'],
+    '/finance-operation': ['super_admin', 'org_admin', 'finance'],
     '/finance/income-expenditure': ['super_admin', 'org_admin', 'finance'],
     // 财务核算（第一阶段新增）
     '/finance/fixed-cost-withholding': ['super_admin', 'org_admin', 'finance'],
@@ -358,18 +342,14 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
     '/finance/withholding-offset': ['super_admin', 'org_admin', 'finance'],
     // 财务报表与打印（第二阶段新增）
     '/finance/account-statistics': ['super_admin', 'org_admin', 'finance'],
-    '/finance/project-revenue': ['super_admin', 'org_admin', 'finance'],
-    '/finance/electronic-invoice-print': ['super_admin', 'org_admin', 'finance'],
     '/finance/paper-invoice-print': ['super_admin', 'org_admin', 'finance'],
     '/commission-config': ['super_admin', 'org_admin', 'finance'],
     '/finance/reconciliation': ['super_admin', 'org_admin', 'finance'],
-    '/finance/refund-tier': ['super_admin', 'org_admin', 'finance'],
     '/finance/case-profit': ['super_admin', 'org_admin', 'finance'],
     '/finance/payment-reminder': ['super_admin', 'org_admin', 'finance'],
     '/finance/invoices': ['super_admin', 'org_admin', 'finance'],
     '/finance/business-funds': ['super_admin', 'org_admin', 'finance'],
     '/finance/refund': ['super_admin', 'org_admin', 'finance'],
-    '/finance/reconciliation-rules': ['super_admin', 'org_admin', 'finance'],
   },
   // 投放营销
   marketing: {
@@ -380,7 +360,7 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
     '/marketing/materials': ['super_admin', 'org_admin', 'marketing'],
     '/marketing/ai-content': ['super_admin', 'org_admin', 'marketing'],
     '/marketing/social-accounts': ['super_admin', 'org_admin', 'marketing'],
-    '/marketing/digital-human-live': ['super_admin', 'org_admin', 'marketing'],
+    '/marketing/live-management': ['super_admin', 'org_admin', 'marketing'],
     '/marketing/work-phone': ['super_admin', 'org_admin', 'marketing'],
     '/marketing/content-preview': ['super_admin', 'org_admin', 'marketing'],
   },
@@ -404,15 +384,14 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
   hr: {
     // 人事管理
     '/hr/personnel': ['super_admin', 'org_admin', 'assistant'],
-    '/hr/leaves': ['super_admin', 'org_admin', 'assistant'],
-    '/hr/attendances': ['super_admin', 'org_admin', 'assistant'],
+    '/hr/attendance-leave': ['super_admin', 'org_admin', 'assistant'],
     '/hr/materials': ['super_admin', 'org_admin', 'assistant'],
     '/hr/activities': ['super_admin', 'org_admin', 'assistant'],
     // 个人办公
     '/worklogs': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/schedules': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/tasks': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
-    '/knowledge': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'sales'],
+    '/knowledge-management': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'sales'],
     '/diagram-tool': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
     // 审批与用印
     '/approval-center': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'finance', 'sales', 'marketing'],
@@ -432,12 +411,11 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
     '/bid-performances': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
     '/law-tools': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
   },
-  // 快捷工具（第三阶段新增：协作案源/疑难案件/协作律所/法律文库）
+  // 快捷工具（第三阶段新增：协作案源/疑难案件/协作律所）
   shortcut: {
     '/shortcut/cooperative-source': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/shortcut/difficult-cases': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/shortcut/cooperative-firms': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
-    '/shortcut/legal-library': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'sales'],
   },
   // 律师中心（第三阶段新增：律师评级/评级管理）
   'lawyer-center': {

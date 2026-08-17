@@ -109,7 +109,11 @@ const violationTypeLabelMap: Record<string, string> = {
   other: '其他',
 }
 
-export default function TalkQualityCheck() {
+interface TalkQualityCheckProps {
+  hideTabs?: boolean
+}
+
+export default function TalkQualityCheck({ hideTabs = false }: TalkQualityCheckProps) {
   const [activeTab, setActiveTab] = useState('pending')
   const [pendingList, setPendingList] = useState<any[]>([])
   const [processedList, setProcessedList] = useState<any[]>([])
@@ -335,25 +339,28 @@ export default function TalkQualityCheck() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div className="page-header" style={{ marginBottom: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={pageH2Style}>谈案AI质检</h2>
-          {activeTab === 'pending' && (
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={openCheckModal}
-            >
-              AI质检
-            </Button>
-          )}
+      {!hideTabs && (
+        <div className="page-header" style={{ marginBottom: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2 style={pageH2Style}>谈案AI质检</h2>
+            {activeTab === 'pending' && (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={openCheckModal}
+              >
+                AI质检
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       <Card style={{ borderRadius: 16 }}>
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
+        {!hideTabs && (
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
           items={[
             {
               key: 'pending',
@@ -550,6 +557,7 @@ export default function TalkQualityCheck() {
             },
           ]}
         />
+        )}
       </Card>
 
       {/* AI质检对话框 */}

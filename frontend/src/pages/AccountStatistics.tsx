@@ -10,6 +10,7 @@ import {
   Space,
   Statistic,
   message,
+  Tabs,
 } from 'antd'
 import {
   ArrowUpOutlined,
@@ -21,6 +22,8 @@ import { theme } from '../constants/theme'
 import { formatDate } from '../utils/format'
 import { getAccountStatement } from '../api/finance-statement'
 import type { AccountStatementItem } from '../api/finance-statement'
+// V3.2 合并：账户结算（原独立页 AccountSettlement）并入账户台账
+import AccountSettlement from './AccountSettlement'
 
 // 金额格式化
 const fmtMoney = (v: number) => {
@@ -150,6 +153,15 @@ export default function AccountStatistics() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* V3.2 合并：账户台账 + 账户结算 */}
+      <Tabs
+        defaultActiveKey="ledger"
+        items={[
+          {
+            key: 'ledger',
+            label: '账户台账',
+            children: (
+              <>
       {/* 页面标题 */}
       <div>
         <h2 style={{ fontSize: 22, fontWeight: 600, color: theme.textBase, margin: 0 }}>账户台账结算明细表</h2>
@@ -256,6 +268,16 @@ export default function AccountStatistics() {
           }}
         />
       </Card>
+              </>
+            ),
+          },
+          {
+            key: 'settlement',
+            label: '账户结算',
+            children: <AccountSettlement />,
+          },
+        ]}
+      />
     </div>
   )
 }

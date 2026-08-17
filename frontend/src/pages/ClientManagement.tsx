@@ -8,7 +8,10 @@ import {
   deleteClientProfile,
   getRelatedCases,
   getRelatedLeads,
+  getRelatedFollowUps,
+  getFinancialRecords,
 } from '../api/client-profile'
+import axios from '../api/axios'
 import { formatDateTime } from '../utils/format'
 
 // 客户类型映射：individual个人/enterprise企业
@@ -63,6 +66,10 @@ export default function ClientManagement() {
   const [currentClient, setCurrentClient] = useState<Record<string, unknown> | null>(null)
   const [relatedCases, setRelatedCases] = useState<Record<string, unknown>[]>([])
   const [relatedLeads, setRelatedLeads] = useState<Record<string, unknown>[]>([])
+  // 13.8 缺口4: 客户详情新增 Tab（跟进记录/标签分组/财务往来）
+  const [relatedFollowUps, setRelatedFollowUps] = useState<Record<string, unknown>[]>([])
+  const [clientTags, setClientTags] = useState<Record<string, unknown>[]>([])
+  const [financialRecords, setFinancialRecords] = useState<Record<string, unknown>[]>([])
   const [detailLoading, setDetailLoading] = useState(false)
 
   useEffect(() => {
@@ -158,21 +165,51 @@ export default function ClientManagement() {
     setCurrentClient(record)
     setRelatedCases([])
     setRelatedLeads([])
+    setRelatedFollowUps([])
+    setClientTags([])
+    setFinancialRecords([])
     setDetailVisible(true)
     setDetailLoading(true)
     try {
-      const [cases, leads] = await Promise.all([
+      // 13.8 缺口4: 并行拉取案件/线索/跟进记录/标签/财务往来
+      const [cases, leads, followUps, tags, finances] = await Promise.all([
         getRelatedCases(record.id as string),
         getRelatedLeads(record.id as string),
+        getRelatedFollowUps(record.id as string),
+        axios.get(`/scrm/client-tags/relations/client/${record.id}`),
+        getFinancialRecords(record.id as string),
       ])
       setRelatedCases((cases as Record<string, unknown>[]) || [])
       setRelatedLeads((leads as Record<string, unknown>[]) || [])
+      setRelatedFollowUps((followUps as Record<string, unknown>[]) || [])
+      setClientTags(((tags as Record<string, unknown>)?.data || (tags as Record<string, unknown>[]) || []) as Record<string, unknown>[])
+      setFinancialRecords((finances as Record<string, unknown>[]) || [])
     } catch (error) {
       // 错误已由拦截器统一处理
     } finally {
       setDetailLoading(false)
     }
   }
+
+  // 13.8 缺口4: 跟进记录表格列
+  const followUpColumns = [
+    { title: '线索联系人', dataIndex: 'lead_contact_name', key: 'lead_contact_name', render: (v: string) => v || '-' },
+    { title: '线索电话', dataIndex: 'lead_phone', key: 'lead_phone', render: (v: string) => v || '-' },
+    { title: '跟进内容', dataIndex: 'content', key: 'content' },
+    { title: '下次动作', dataIndex: 'next_action', key: 'next_action', render: (v: string) => v || '-' },
+    { title: '跟进时间', dataIndex: 'created_at', key: 'created_at', render: (v: string) => formatDateTime(v) },
+  ]
+
+  // 13.8 缺口4: 财务往来表格列
+  const financeColumns = [
+    { title: '案件ID', dataIndex: 'case_id', key: 'case_id', render: (v: string) => (v || '').slice(0, 8) + '…' },
+    { title: '金额', dataIndex: 'amount', key: 'amount', render: (v: number) => `¥${Number(v || 0).toFixed(2)}` },
+    { title: '支付方式', dataIndex: 'method', key: 'method', render: (v: string) => v || '-' },
+    { title: '状态', dataIndex: 'status', key: 'status', render: (v: string) => ({
+      paid: '已支付', pending: '待支付', failed: '失败', refunded: '已退款',
+    }[v] || v || '-') },
+    { title: '支付时间', dataIndex: 'created_at', key: 'created_at', render: (v: string) => formatDateTime(v) },
+  ]
 
   // 关联案件表格列定义
   const caseColumns = [
@@ -389,6 +426,57 @@ export default function ClientManagement() {
                       <Table
                         dataSource={relatedLeads}
                         columns={leadColumns}
+                        loading={detailLoading}
+                        rowKey="id"
+                        size="small"
+                        pagination={{ pageSize: 5 }}
+                        scroll={{ x: 800 }}
+                      />
+                    </div>
+                  ),
+                },
+                {
+                  key: 'follow-ups',
+                  label: `跟进记录 (${relatedFollowUps.length})`,
+                  children: (
+                    <div className="stitch-table">
+                      <Table
+                        dataSource={relatedFollowUps}
+                        columns={followUpColumns}
+                        loading={detailLoading}
+                        rowKey="id"
+                        size="small"
+                        pagination={{ pageSize: 5 }}
+                        scroll={{ x: 800 }}
+                      />
+                    </div>
+                  ),
+                },
+                {
+                  key: 'tags',
+                  label: `标签分组 (${clientTags.length})`,
+                  children: (
+                    <div style={{ padding: 8 }}>
+                      {clientTags.length ? (
+                        clientTags.map((tag) => (
+                          <Tag key={tag.id as string} color="blue" style={{ marginBottom: 8 }}>
+                            {String(tag.tag_name || '-')}
+                          </Tag>
+                        ))
+                      ) : (
+                        <span style={{ color: '#999' }}>暂无标签</span>
+                      )}
+                    </div>
+                  ),
+                },
+                {
+                  key: 'finances',
+                  label: `财务往来 (${financialRecords.length})`,
+                  children: (
+                    <div className="stitch-table">
+                      <Table
+                        dataSource={financialRecords}
+                        columns={financeColumns}
                         loading={detailLoading}
                         rowKey="id"
                         size="small"

@@ -79,6 +79,18 @@ export const getLeadById = (id: string) => {
   return axios.get(`/leads/${id}`)
 }
 
+// 更新线索基本信息（客户姓名/手机号/案由/来源渠道/来源关键词/咨询内容）
+export const updateLead = (id: string, data: Partial<{
+  contact_name?: string
+  phone?: string
+  case_type?: string
+  source_channel?: string
+  source_keyword?: string
+  case_description?: string
+}>) => {
+  return axios.put(`/leads/${id}`, data)
+}
+
 // 公共线索池查询
 export const getPublicLeads = (params?: { org_id?: string }) => {
   return axios.get('/leads/public', { params })

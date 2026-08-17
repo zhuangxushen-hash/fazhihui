@@ -16,7 +16,11 @@ import { theme } from '../constants/theme'
  * 经营总览 - Material Design 3 风格
  * Bento Grid 布局 + 深藏青表格头 + 暗金强调
  */
-export default function Dashboard() {
+interface DashboardProps {
+  hideTabs?: boolean
+}
+
+export default function Dashboard({ hideTabs = false }: DashboardProps) {
   const [stats, setStats] = useState({
     totalLeads: 0,
     totalCases: 0,
@@ -328,7 +332,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: hideTabs ? 0 : undefined }}>
       {/* === 统计卡片区 (Bento Grid) - Stitch 渐变 KPI 卡片 ===
          渐变背景通过 .kpi-card-* 类（index.css，带 !important）覆盖 Antd Card 白底样式 */}
       <Row gutter={[16, 16]}>

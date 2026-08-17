@@ -389,9 +389,15 @@ const DataScreenContent = () => {
 }
 
 // 大屏入口：检查 token，未登录跳转登录页
-const DataScreen = () => {
+interface DataScreenProps {
+  hideTabs?: boolean
+}
+
+const DataScreen = ({ hideTabs = false }: DataScreenProps) => {
   const token = localStorage.getItem('token')
   if (!token) return <Navigate to="/login" />
+  // hideTabs 参数用于控制是否在聚合页面中显示，此处全屏展示不使用
+  void hideTabs
   return <DataScreenContent />
 }
 

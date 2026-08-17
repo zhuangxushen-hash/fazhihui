@@ -63,6 +63,28 @@ export class LeadController {
     return existing;
   }
 
+  // 更新线索基本信息（客户姓名/手机号/案由/来源渠道/来源关键词/咨询内容）
+  @Put(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() body: Partial<{
+      contact_name?: string;
+      phone?: string;
+      case_type?: CaseType;
+      source_channel?: LeadSource;
+      source_keyword?: string;
+      case_description?: string;
+    }>,
+    @Request() req?: any,
+  ) {
+    const existing = await this.leadService.findById(id);
+    if (!existing) throw new NotFoundException('线索不存在');
+    if (req?.user?.organization_id && existing.organization_id !== req.user.organization_id) {
+      throw new ForbiddenException('无权访问该资源');
+    }
+    return this.leadService.update(id, body);
+  }
+
   @Put(':id/status')
   async updateStatus(
     @Param('id') id: string,

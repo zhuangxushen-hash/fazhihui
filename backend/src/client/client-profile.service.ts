@@ -1,9 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { ClientProfile } from './client-profile.entity';
 import { Case } from '../case/case.entity';
 import { Lead } from '../lead/lead.entity';
+import { FollowUp } from '../lead/follow-up.entity';
+import { PaymentRecord } from '../finance/payment-record.entity';
 
 @Injectable()
 export class ClientProfileService {
@@ -16,6 +18,12 @@ export class ClientProfileService {
     // 注入线索实体仓库，用于按电话关联查询线索
     @InjectRepository(Lead)
     private leadRepository: Repository<Lead>,
+    // 13.8 缺口4: 注入跟进记录仓库，按关联线索手机号汇总客户跟进记录
+    @InjectRepository(FollowUp)
+    private followUpRepository: Repository<FollowUp>,
+    // 13.8 缺口4: 注入付款记录仓库，按关联案件查询客户财务往来
+    @InjectRepository(PaymentRecord)
+    private paymentRecordRepository: Repository<PaymentRecord>,
   ) {}
 
   // 查询客户列表（支持按名称/电话关键字搜索，支持超过X天未联系智能筛选）
@@ -96,5 +104,39 @@ export class ClientProfileService {
       .where('l.phone LIKE :phone', { phone: `%${phone}%` })
       .orderBy('l.updated_at', 'DESC')
       .getMany();
+  }
+
+  // 13.8 缺口4: 查询客户关联跟进记录（通过客户电话匹配线索，再取线索的跟进记录）
+  async getRelatedFollowUps(id: string): Promise<any[]> {
+    const client = await this.findOne(id);
+    const leads = await this.getRelatedLeads(client.phone);
+    if (!leads.length) {
+      return [];
+    }
+    const leadIds = leads.map((l) => l.id);
+    const followUps = await this.followUpRepository.find({
+      where: { lead_id: In(leadIds) },
+      order: { created_at: 'DESC' },
+    });
+    const leadMap = new Map(leads.map((l) => [l.id, l]));
+    return followUps.map((f) => ({
+      ...f,
+      lead_contact_name: leadMap.get(f.lead_id)?.contact_name || null,
+      lead_phone: leadMap.get(f.lead_id)?.phone || null,
+    }));
+  }
+
+  // 13.8 缺口4: 查询客户财务往来（关联案件的付款记录）
+  async getFinancialRecords(id: string): Promise<PaymentRecord[]> {
+    const client = await this.findOne(id);
+    const cases = await this.getRelatedCases(client.name);
+    const caseIds = cases.map((c) => c.id);
+    if (!caseIds.length) {
+      return [];
+    }
+    return this.paymentRecordRepository.find({
+      where: { case_id: In(caseIds) },
+      order: { created_at: 'DESC' },
+    });
   }
 }

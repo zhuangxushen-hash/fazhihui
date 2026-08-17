@@ -17,7 +17,6 @@ const CaseManagement = lazy(() => import('./pages/CaseManagement'))
 const ContractManagement = lazy(() => import('./pages/ContractManagement'))
 const ComplaintManagement = lazy(() => import('./pages/ComplaintManagement'))
 const ComplianceCenter = lazy(() => import('./pages/ComplianceCenter'))
-const FinanceManagement = lazy(() => import('./pages/FinanceManagement'))
 const UserManagement = lazy(() => import('./pages/UserManagement'))
 const ClientHome = lazy(() => import('./pages/client/ClientHome'))
 const ClientCaseList = lazy(() => import('./pages/client/ClientCaseList'))
@@ -36,7 +35,6 @@ const CaseSOPConfig = lazy(() => import('./pages/CaseSOPConfig'))
 const CaseWarningCenter = lazy(() => import('./pages/CaseWarningCenter'))
 const CommissionConfig = lazy(() => import('./pages/CommissionConfig'))
 const Reconciliation = lazy(() => import('./pages/Reconciliation'))
-const RefundTierConfig = lazy(() => import('./pages/RefundTierConfig'))
 const CaseProfitAnalysis = lazy(() => import('./pages/CaseProfitAnalysis'))
 // Phase 3 模块1 投放营销
 const AdAccountManagement = lazy(() => import('./pages/AdAccountManagement'))
@@ -59,11 +57,11 @@ const ChatArchiveManagement = lazy(() => import('./pages/ChatArchiveManagement')
 const ClientServiceHall = lazy(() => import('./pages/client/ClientServiceHall'))
 const ServiceRating = lazy(() => import('./pages/client/ServiceRating'))
 const ClientArchive = lazy(() => import('./pages/client/ClientArchive'))
+const MockFadada = lazy(() => import('./pages/client/MockFadada'))
 // Phase 4 模块8 数据中台
 const ConversionFunnelDashboard = lazy(() => import('./pages/ConversionFunnelDashboard'))
 const SalesPerformanceDashboard = lazy(() => import('./pages/SalesPerformanceDashboard'))
 const CaseEfficiencyDashboard = lazy(() => import('./pages/CaseEfficiencyDashboard'))
-const FinanceDashboard = lazy(() => import('./pages/FinanceDashboard'))
 const ComplianceRiskDashboard = lazy(() => import('./pages/ComplianceRiskDashboard'))
 const CustomReport = lazy(() => import('./pages/CustomReport'))
 const ComplianceExport = lazy(() => import('./pages/ComplianceExport'))
@@ -83,7 +81,6 @@ const PermissionManagement = lazy(() => import('./pages/PermissionManagement'))
 const DeploymentConfig = lazy(() => import('./pages/DeploymentConfig'))
 const BrandCustomization = lazy(() => import('./pages/BrandCustomization'))
 const IntegrationManagement = lazy(() => import('./pages/IntegrationManagement'))
-const CloudArchiveManagement = lazy(() => import('./pages/CloudArchiveManagement'))
 const ApprovalCenter = lazy(() => import('./pages/ApprovalCenter'))
 // 可视化绘图 + 数据大屏
 const DiagramTool = lazy(() => import('./pages/DiagramTool'))
@@ -94,7 +91,6 @@ const ConflictCheck = lazy(() => import('./pages/ConflictCheck'))
 const WorkLogManagement = lazy(() => import('./pages/WorkLogManagement'))
 const ScheduleManagement = lazy(() => import('./pages/ScheduleManagement'))
 const TaskCenter = lazy(() => import('./pages/TaskCenter'))
-const KnowledgeBase = lazy(() => import('./pages/KnowledgeBase'))
 const PaymentReminderManagement = lazy(() => import('./pages/PaymentReminderManagement'))
 const InvoiceManagement = lazy(() => import('./pages/InvoiceManagement'))
 const BusinessFundManagement = lazy(() => import('./pages/BusinessFundManagement'))
@@ -103,13 +99,17 @@ const DueDiligenceTool = lazy(() => import('./pages/DueDiligenceTool'))
 const PropertyPreservationManagement = lazy(() => import('./pages/PropertyPreservationManagement'))
 const LeaveManagement = lazy(() => import('./pages/LeaveManagement'))
 const AttendanceManagement = lazy(() => import('./pages/AttendanceManagement'))
+const AttendanceLeaveManagement = lazy(() => import('./pages/AttendanceLeaveManagement'))
+const LiveManagement = lazy(() => import('./pages/LiveManagement'))
+const ComplianceManagement = lazy(() => import('./pages/ComplianceManagement'))
+const FinanceOperation = lazy(() => import('./pages/FinanceOperation'))
+const OverviewManagement = lazy(() => import('./pages/OverviewManagement'))
 const HRMaterialManagement = lazy(() => import('./pages/HRMaterialManagement'))
 const ActivityManagement = lazy(() => import('./pages/ActivityManagement'))
 // 金助理对齐：新增页面（综合查询/统计分析/收支综合/归档卷宗/内部项目/AI导航/文档管理/投标业绩库/法律工具/个人中心/人事管理）
 const ComprehensiveQuery = lazy(() => import('./pages/ComprehensiveQuery'))
 const StatisticalAnalysis = lazy(() => import('./pages/StatisticalAnalysis'))
 const IncomeExpenditure = lazy(() => import('./pages/IncomeExpenditure'))
-const ArchiveVolumeManagement = lazy(() => import('./pages/ArchiveVolumeManagement'))
 const InternalProject = lazy(() => import('./pages/InternalProject'))
 const AINavigation = lazy(() => import('./pages/AINavigation'))
 const DocumentManagement = lazy(() => import('./pages/DocumentManagement'))
@@ -123,7 +123,6 @@ const PublicOpinionMonitor = lazy(() => import('./pages/PublicOpinionMonitor'))
 const RefundManagement = lazy(() => import('./pages/RefundManagement'))
 const AuditLogManagement = lazy(() => import('./pages/AuditLogManagement'))
 const OrganizationManagement = lazy(() => import('./pages/OrganizationManagement'))
-const ReconciliationRuleConfig = lazy(() => import('./pages/ReconciliationRuleConfig'))
 // 第三批新增页面：C端推送规则配置/营销内容预审工作台
 const PushRuleConfig = lazy(() => import('./pages/PushRuleConfig'))
 const ContentPreviewWorkbench = lazy(() => import('./pages/ContentPreviewWorkbench'))
@@ -131,7 +130,6 @@ const ContentPreviewWorkbench = lazy(() => import('./pages/ContentPreviewWorkben
 // 文档管理模块新增
 const PDFViewer = lazy(() => import('./pages/PDFViewer'))
 const DocumentSeal = lazy(() => import('./pages/DocumentSeal'))
-const VolumeCatalog = lazy(() => import('./pages/VolumeCatalog'))
 const DocumentPreview = lazy(() => import('./pages/DocumentPreview'))
 const DocumentShare = lazy(() => import('./pages/DocumentShare'))
 
@@ -140,7 +138,6 @@ const WithdrawSchedule = lazy(() => import('./pages/WithdrawSchedule'))
 const DepositSchedule = lazy(() => import('./pages/DepositSchedule'))
 const TransferSchedule = lazy(() => import('./pages/TransferSchedule'))
 const FinanceReport = lazy(() => import('./pages/FinanceReport'))
-const AccountSettlement = lazy(() => import('./pages/AccountSettlement'))
 
 // 表格工具模块
 const TaxAllocationTable = lazy(() => import('./pages/TaxAllocationTable'))
@@ -151,7 +148,12 @@ const BatchWithholdingUndo = lazy(() => import('./pages/BatchWithholdingUndo'))
 
 // AI功能模块
 const ContractReview = lazy(() => import('./pages/ContractReview'))
-const LegalResearch = lazy(() => import('./pages/LegalResearch'))
+
+// 知识管理聚合页面（合并知识库和法律文库）
+const KnowledgeManagement = lazy(() => import('./pages/KnowledgeManagement'))
+
+// 归档管理聚合页面（合并云归档/归档卷宗/卷宗目录）
+const ArchiveManagement = lazy(() => import('./pages/ArchiveManagement'))
 
 // 快捷工具模块
 const CooperativeSource = lazy(() => import('./pages/CooperativeSource'))
@@ -176,9 +178,7 @@ const WithholdingOffset = lazy(() => import('./pages/WithholdingOffset'))
 
 // 财务报表与打印（第二阶段新增：账户台账/项目收入/收支详情/发票打印）
 const AccountStatistics = lazy(() => import('./pages/AccountStatistics'))
-const ProjectRevenueOverview = lazy(() => import('./pages/ProjectRevenueOverview'))
 const IncomeExpenditureDetail = lazy(() => import('./pages/IncomeExpenditureDetail'))
-const ElectronicInvoicePrint = lazy(() => import('./pages/ElectronicInvoicePrint'))
 const PaperInvoicePrint = lazy(() => import('./pages/PaperInvoicePrint'))
 
 // 综合审批单据（第二阶段新增：财务提款/支付/报销/成本票）
@@ -419,11 +419,12 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/client/login" element={<ClientLogin />} />
           {/* 数据看板 */}
+          <Route path="/overview-management" element={<ProtectedRoute><OverviewManagement /></ProtectedRoute>} />
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/dashboard/conversion-funnel" element={<ProtectedRoute><ConversionFunnelDashboard /></ProtectedRoute>} />
           <Route path="/dashboard/sales-performance" element={<ProtectedRoute><SalesPerformanceDashboard /></ProtectedRoute>} />
           <Route path="/dashboard/case-efficiency" element={<ProtectedRoute><CaseEfficiencyDashboard /></ProtectedRoute>} />
-          <Route path="/dashboard/finance" element={<ProtectedRoute><FinanceDashboard /></ProtectedRoute>} />
+          <Route path="/dashboard/finance" element={<Navigate to="/finance-operation" replace />} />
           <Route path="/dashboard/compliance-risk" element={<ProtectedRoute><ComplianceRiskDashboard /></ProtectedRoute>} />
           <Route path="/dashboard/custom-report" element={<ProtectedRoute><CustomReport /></ProtectedRoute>} />
           <Route path="/dashboard/hr-efficiency" element={<ProtectedRoute><HRDashboard /></ProtectedRoute>} />
@@ -435,6 +436,7 @@ function App() {
           <Route path="/invite-workbench" element={<ProtectedRoute><InviteWorkbench /></ProtectedRoute>} />
           <Route path="/talk-workbench" element={<ProtectedRoute><TalkWorkbench /></ProtectedRoute>} />
           <Route path="/talk-sop" element={<ProtectedRoute><TalkSOPConfig /></ProtectedRoute>} />
+          <Route path="/compliance-management" element={<ProtectedRoute><ComplianceManagement /></ProtectedRoute>} />
           <Route path="/talk-quality-check" element={<ProtectedRoute><TalkQualityCheck /></ProtectedRoute>} />
           {/* 案件办案 */}
           <Route path="/cases" element={<ProtectedRoute><CaseManagement /></ProtectedRoute>} />
@@ -451,16 +453,19 @@ function App() {
           <Route path="/compliance/sales-review" element={<ProtectedRoute><SalesComplianceReview /></ProtectedRoute>} />
           <Route path="/compliance/public-opinion" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><PublicOpinionMonitor /></ProtectedRoute>} />
           {/* 财务分润 */}
-          <Route path="/finance" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><FinanceManagement /></ProtectedRoute>} />
+          <Route path="/finance-operation" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><FinanceOperation /></ProtectedRoute>} />
+          <Route path="/finance" element={<Navigate to="/finance-operation" replace />} />
           <Route path="/commission-config" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><CommissionConfig /></ProtectedRoute>} />
           <Route path="/finance/reconciliation" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><Reconciliation /></ProtectedRoute>} />
-          <Route path="/finance/refund-tier" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><RefundTierConfig /></ProtectedRoute>} />
+          {/* V3.2 合并：阶梯退费并入退费管理 */}
+          <Route path="/finance/refund-tier" element={<Navigate to="/finance/refund" replace />} />
           <Route path="/finance/case-profit" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><CaseProfitAnalysis /></ProtectedRoute>} />
           <Route path="/finance/payment-reminder" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><PaymentReminderManagement /></ProtectedRoute>} />
           <Route path="/finance/invoices" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><InvoiceManagement /></ProtectedRoute>} />
           <Route path="/finance/business-funds" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><BusinessFundManagement /></ProtectedRoute>} />
           <Route path="/finance/refund" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><RefundManagement /></ProtectedRoute>} />
-          <Route path="/finance/reconciliation-rules" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><ReconciliationRuleConfig /></ProtectedRoute>} />
+          {/* V3.2 合并：对账规则配置并入智能对账 */}
+          <Route path="/finance/reconciliation-rules" element={<Navigate to="/finance/reconciliation" replace />} />
           <Route path="/service-ratings" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><ServiceRatingManagement /></ProtectedRoute>} />
           {/* 投放营销 */}
           <Route path="/marketing/ad-accounts" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><AdAccountManagement /></ProtectedRoute>} />
@@ -470,6 +475,7 @@ function App() {
           <Route path="/marketing/materials" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><MaterialManagement /></ProtectedRoute>} />
           <Route path="/marketing/ai-content" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><AIContentGenerator /></ProtectedRoute>} />
           <Route path="/marketing/social-accounts" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><SocialAccountMatrix /></ProtectedRoute>} />
+          <Route path="/marketing/live-management" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><LiveManagement /></ProtectedRoute>} />
           <Route path="/marketing/digital-human-live" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><DigitalHumanLive /></ProtectedRoute>} />
           <Route path="/marketing/fake-live" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><FakeLiveManagement /></ProtectedRoute>} />
           <Route path="/marketing/work-phone" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'marketing']}><WorkPhoneManagement /></ProtectedRoute>} />
@@ -495,7 +501,9 @@ function App() {
           <Route path="/system/audit-logs" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><AuditLogManagement /></ProtectedRoute>} />
           <Route path="/system/organizations" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><OrganizationManagement /></ProtectedRoute>} />
           <Route path="/system/push-rules" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><PushRuleConfig /></ProtectedRoute>} />
-          <Route path="/cloud-archive" element={<ProtectedRoute><CloudArchiveManagement /></ProtectedRoute>} />
+          {/* V3.2 合并：云归档/归档卷宗/卷宗目录 三合一为归档管理 */}
+          <Route path="/archive-management" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'lawyer', 'assistant']}><ArchiveManagement /></ProtectedRoute>} />
+          <Route path="/cloud-archive" element={<Navigate to="/archive-management" replace />} />
           <Route path="/approval-center" element={<ProtectedRoute><ApprovalCenter /></ProtectedRoute>} />
           {/* 可视化绘图 + 数据大屏 */}
           <Route path="/diagram-tool" element={<ProtectedRoute><DiagramTool /></ProtectedRoute>} />
@@ -506,10 +514,11 @@ function App() {
           <Route path="/worklogs" element={<ProtectedRoute><WorkLogManagement /></ProtectedRoute>} />
           <Route path="/schedules" element={<ProtectedRoute><ScheduleManagement /></ProtectedRoute>} />
           <Route path="/tasks" element={<ProtectedRoute><TaskCenter /></ProtectedRoute>} />
-          <Route path="/knowledge" element={<ProtectedRoute><KnowledgeBase /></ProtectedRoute>} />
+          <Route path="/knowledge" element={<Navigate to="/knowledge-management" replace />} />
           <Route path="/bids" element={<ProtectedRoute><BidManagement /></ProtectedRoute>} />
           <Route path="/due-diligence" element={<ProtectedRoute><DueDiligenceTool /></ProtectedRoute>} />
           {/* HR人力资源 */}
+          <Route path="/hr/attendance-leave" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'assistant']}><AttendanceLeaveManagement /></ProtectedRoute>} />
           <Route path="/hr/leaves" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'assistant']}><LeaveManagement /></ProtectedRoute>} />
           <Route path="/hr/attendances" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'assistant']}><AttendanceManagement /></ProtectedRoute>} />
           <Route path="/hr/materials" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'assistant']}><HRMaterialManagement /></ProtectedRoute>} />
@@ -524,12 +533,13 @@ function App() {
           <Route path="/client/service-hall" element={<ClientProtectedRoute><ClientServiceHall /></ClientProtectedRoute>} />
           <Route path="/client/service-rating" element={<ClientProtectedRoute><ServiceRating /></ClientProtectedRoute>} />
           <Route path="/client/archive" element={<ClientProtectedRoute><ClientArchive /></ClientProtectedRoute>} />
+          <Route path="/client/mock-fadada" element={<ClientProtectedRoute><MockFadada /></ClientProtectedRoute>} />
           <Route path="/client/profile" element={<ClientProtectedRoute><ClientProfile /></ClientProtectedRoute>} />
           {/* 金助理对齐：新增路由 */}
           <Route path="/comprehensive/query" element={<ProtectedRoute><ComprehensiveQuery /></ProtectedRoute>} />
           <Route path="/statistical-analysis" element={<ProtectedRoute><StatisticalAnalysis /></ProtectedRoute>} />
           <Route path="/finance/income-expenditure" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><IncomeExpenditure /></ProtectedRoute>} />
-          <Route path="/archive-volumes" element={<ProtectedRoute><ArchiveVolumeManagement /></ProtectedRoute>} />
+          <Route path="/archive-volumes" element={<Navigate to="/archive-management" replace />} />
           <Route path="/internal-projects" element={<ProtectedRoute><InternalProject /></ProtectedRoute>} />
           <Route path="/ai-nav" element={<ProtectedRoute><AINavigation /></ProtectedRoute>} />
           <Route path="/documents" element={<ProtectedRoute><DocumentManagement /></ProtectedRoute>} />
@@ -540,7 +550,7 @@ function App() {
           {/* 文档管理模块 */}
           <Route path="/pdf-viewer" element={<ProtectedRoute><PDFViewer /></ProtectedRoute>} />
           <Route path="/document-seal" element={<ProtectedRoute><DocumentSeal /></ProtectedRoute>} />
-          <Route path="/volume-catalog" element={<ProtectedRoute><VolumeCatalog /></ProtectedRoute>} />
+          <Route path="/volume-catalog" element={<Navigate to="/archive-management" replace />} />
           <Route path="/documents/preview" element={<ProtectedRoute><DocumentPreview /></ProtectedRoute>} />
           <Route path="/documents/share" element={<ProtectedRoute><DocumentShare /></ProtectedRoute>} />
           {/* 财务核算模块 */}
@@ -548,7 +558,8 @@ function App() {
           <Route path="/finance/deposit-schedule" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><DepositSchedule /></ProtectedRoute>} />
           <Route path="/finance/transfer-schedule" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><TransferSchedule /></ProtectedRoute>} />
           <Route path="/finance/report" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><FinanceReport /></ProtectedRoute>} />
-          <Route path="/finance/account-settlement" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><AccountSettlement /></ProtectedRoute>} />
+          {/* V3.2 合并：账户结算并入账户台账 */}
+          <Route path="/finance/account-settlement" element={<Navigate to="/finance/account-statistics" replace />} />
           {/* 表格工具模块 */}
           <Route path="/tables/tax" element={<ProtectedRoute><TaxAllocationTable /></ProtectedRoute>} />
           <Route path="/tables/monthly" element={<ProtectedRoute><MonthlyExpenseTable /></ProtectedRoute>} />
@@ -557,12 +568,14 @@ function App() {
           <Route path="/tables/batch-undo" element={<ProtectedRoute><BatchWithholdingUndo /></ProtectedRoute>} />
           {/* AI功能模块 */}
           <Route path="/ai/contract-review" element={<ProtectedRoute><ContractReview /></ProtectedRoute>} />
-          <Route path="/ai/legal-research" element={<ProtectedRoute><LegalResearch /></ProtectedRoute>} />
+          <Route path="/ai/legal-research" element={<Navigate to="/knowledge-management" replace />} />
+          {/* 知识管理聚合页面（合并知识库和法律文库） */}
+          <Route path="/knowledge-management" element={<ProtectedRoute><KnowledgeManagement /></ProtectedRoute>} />
           {/* 快捷工具模块 */}
           <Route path="/shortcut/cooperative-source" element={<ProtectedRoute><CooperativeSource /></ProtectedRoute>} />
           <Route path="/shortcut/difficult-cases" element={<ProtectedRoute><DifficultCases /></ProtectedRoute>} />
           <Route path="/shortcut/cooperative-firms" element={<ProtectedRoute><CooperativeFirm /></ProtectedRoute>} />
-          <Route path="/shortcut/legal-library" element={<ProtectedRoute><KnowledgeBase /></ProtectedRoute>} />
+          <Route path="/shortcut/legal-library" element={<Navigate to="/knowledge-management" replace />} />
           {/* 尽调宝模块 */}
           <Route path="/due-diligence/bidding/:id" element={<ProtectedRoute><BiddingDetail /></ProtectedRoute>} />
           <Route path="/due-diligence/annual/:id" element={<ProtectedRoute><AnnualReportDetail /></ProtectedRoute>} />
@@ -578,9 +591,11 @@ function App() {
           <Route path="/finance/withholding-offset" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><WithholdingOffset /></ProtectedRoute>} />
           {/* 财务报表与打印（第二阶段新增） */}
           <Route path="/finance/account-statistics" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><AccountStatistics /></ProtectedRoute>} />
-          <Route path="/finance/project-revenue" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><ProjectRevenueOverview /></ProtectedRoute>} />
+          {/* V3.2 合并：项目收入明细并入单案利润分析 */}
+          <Route path="/finance/project-revenue" element={<Navigate to="/finance/case-profit" replace />} />
           <Route path="/finance/income-expenditure-detail/:type" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><IncomeExpenditureDetail /></ProtectedRoute>} />
-          <Route path="/finance/electronic-invoice-print" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><ElectronicInvoicePrint /></ProtectedRoute>} />
+          {/* V3.2 合并：电子发票打印并入发票管理 */}
+          <Route path="/finance/electronic-invoice-print" element={<Navigate to="/finance/invoices" replace />} />
           <Route path="/finance/paper-invoice-print" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><PaperInvoicePrint /></ProtectedRoute>} />
           {/* 综合审批单据（第二阶段新增） */}
           <Route path="/approval/finance-withdrawal" element={<ProtectedRoute><FinanceApprovalForm /></ProtectedRoute>} />

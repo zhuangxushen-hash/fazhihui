@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan, DataSource } from 'typeorm';
 import { Lead } from './lead.entity';
@@ -91,6 +91,40 @@ export class LeadService {
 
   async updateStatus(id: string, status: LeadStatus): Promise<Lead> {
     await this.leadRepository.update(id, { status });
+    return this.leadRepository.findOne({ where: { id } });
+  }
+
+  /**
+   * 更新线索基本信息（客户姓名/手机号/案由/来源渠道/来源关键词/咨询内容）
+   * 手机号变更时校验唯一性：若其他线索已使用该手机号则拒绝，避免重复线索
+   */
+  async update(id: string, updateData: {
+    contact_name?: string;
+    phone?: string;
+    case_type?: CaseType;
+    source_channel?: LeadSource;
+    source_keyword?: string;
+    case_description?: string;
+  }): Promise<Lead> {
+    const lead = await this.leadRepository.findOne({ where: { id } });
+    if (!lead) {
+      throw new NotFoundException('线索不存在');
+    }
+    if (updateData.phone && updateData.phone !== lead.phone) {
+      const duplicated = await this.leadRepository.findOne({ where: { phone: updateData.phone } });
+      if (duplicated && duplicated.id !== id) {
+        throw new ConflictException('该手机号已存在其他线索，请勿重复录入');
+      }
+    }
+    // 仅更新传入字段，避免未传字段被覆盖为 NULL
+    const patch: Partial<Lead> = {};
+    if (updateData.contact_name !== undefined) patch.contact_name = updateData.contact_name;
+    if (updateData.phone !== undefined) patch.phone = updateData.phone;
+    if (updateData.case_type !== undefined) patch.case_type = updateData.case_type;
+    if (updateData.source_channel !== undefined) patch.source_channel = updateData.source_channel;
+    if (updateData.source_keyword !== undefined) patch.source_keyword = updateData.source_keyword;
+    if (updateData.case_description !== undefined) patch.case_description = updateData.case_description;
+    await this.leadRepository.update(id, patch);
     return this.leadRepository.findOne({ where: { id } });
   }
 

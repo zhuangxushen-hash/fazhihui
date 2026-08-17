@@ -23,7 +23,11 @@ const statusColorMap: Record<string, string> = {
   leave: 'stitch-tag stitch-tag-primary',
 }
 
-export default function AttendanceManagement() {
+interface AttendanceManagementProps {
+  hideTabs?: boolean
+}
+
+export default function AttendanceManagement({ hideTabs = false }: AttendanceManagementProps) {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('mine')
@@ -138,9 +142,11 @@ export default function AttendanceManagement() {
 
   return (
     <div>
-      <div className="page-header">
-        <h2>考勤管理</h2>
-      </div>
+      {!hideTabs && (
+        <div className="page-header">
+          <h2>考勤管理</h2>
+        </div>
+      )}
 
       {/* 打卡区域 */}
       <Card style={{ marginBottom: 16 }}>
@@ -179,10 +185,12 @@ export default function AttendanceManagement() {
         </Col>
       </Row>
 
-      <Tabs activeKey={activeTab} onChange={setActiveTab} items={[
-        { key: 'mine', label: '我的考勤' },
-        { key: 'all', label: '团队考勤' },
-      ]} />
+      {!hideTabs && (
+        <Tabs activeKey={activeTab} onChange={setActiveTab} items={[
+          { key: 'mine', label: '我的考勤' },
+          { key: 'all', label: '团队考勤' },
+        ]} />
+      )}
 
       {/* 筛选条件区域 */}
       <Card className="stitch-filter-bar" style={{ marginBottom: 16 }}>

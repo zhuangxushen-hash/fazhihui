@@ -71,4 +71,16 @@ export class ClientProfileController {
     const client = await this.clientProfileService.findOne(id);
     return this.clientProfileService.getRelatedLeads(client.phone);
   }
+
+  // 13.8 缺口4: 查询客户关联跟进记录（线索跟进汇总）
+  @Get(':id/related-follow-ups')
+  getRelatedFollowUps(@Param('id') id: string) {
+    return this.clientProfileService.getRelatedFollowUps(id);
+  }
+
+  // 13.8 缺口4: 查询客户财务往来（关联案件付款记录）
+  @Get(':id/financial-records')
+  getFinancialRecords(@Param('id') id: string) {
+    return this.clientProfileService.getFinancialRecords(id);
+  }
 }

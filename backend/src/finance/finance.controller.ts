@@ -59,6 +59,30 @@ export class FinanceController {
     return this.financeService.markAsPaid(id);
   }
 
+  // 13.8 缺口7: 撤销费用（仅有效记录可撤销）
+  @Put('fee/:id/void')
+  async voidFee(@Param('id') id: string, @Body() body: { reason?: string }, @Request() req?: any) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.financeService.findBusinessFundById(id);
+    if (!existing) throw new NotFoundException('费用记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
+    return this.financeService.voidFee(id, body?.reason);
+  }
+
+  // 13.8 缺口7: 红冲费用（生成负数冲销记录）
+  @Post('fee/:id/red-flush')
+  async redFlushFee(@Param('id') id: string, @Body() body: { reason?: string }, @Request() req?: any) {
+    const organizationId = req?.user?.organization_id;
+    const existing = await this.financeService.findBusinessFundById(id);
+    if (!existing) throw new NotFoundException('费用记录不存在');
+    if (organizationId && existing.organization_id !== organizationId) {
+      throw new ForbiddenException('无权访问该资源');
+    }
+    return this.financeService.redFlushFee(id, body?.reason);
+  }
+
   @Post('profit-share')
   calculateProfitShare(
     @Body() body: {

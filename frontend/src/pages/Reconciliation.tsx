@@ -5,6 +5,8 @@ import dayjs from 'dayjs';
 import { getReconciliations, runReconciliation, getReconciliationStats } from '../api/finance';
 import { formatDate } from '../utils/format';
 import { theme } from '../constants/theme';
+// V3.2 合并：对账规则配置（原独立页 ReconciliationRuleConfig）并入智能对账
+import ReconciliationRuleConfig from './ReconciliationRuleConfig';
 
 const { RangePicker } = DatePicker;
 
@@ -290,6 +292,7 @@ export default function Reconciliation() {
           { key: 'list', label: '对账列表', children: renderListTab() },
           { key: 'create', label: '创建对账', children: renderCreateTab() },
           { key: 'stats', label: '对账统计', children: renderStatsTab() },
+          { key: 'rules', label: '对账规则配置', children: <ReconciliationRuleConfig /> },
         ]}
       />
     </div>

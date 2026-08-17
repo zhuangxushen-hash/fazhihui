@@ -55,7 +55,11 @@ const statusConfig: Record<string, { color: string; label: string; badge: string
   scheduled: { color: 'blue', label: '待开播', badge: 'warning' },
 }
 
-export default function DigitalHumanLive() {
+interface DigitalHumanLiveProps {
+  hideTabs?: boolean
+}
+
+export default function DigitalHumanLive({ hideTabs = false }: DigitalHumanLiveProps) {
   const [activeTab, setActiveTab] = useState('list')
   const [liveList, setLiveList] = useState<any[]>([])
   const [stats, setStats] = useState<any>({})
@@ -704,37 +708,39 @@ export default function DigitalHumanLive() {
 
   return (
     <div>
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        style={{ marginBottom: 24 }}
-        items={[
-          {
-            key: 'list',
-            label: (
-              <span>
-                <VideoCameraOutlined /> 直播列表
-              </span>
-            ),
-          },
-          {
-            key: 'create',
-            label: (
-              <span>
-                <PlusOutlined /> 创建直播
-              </span>
-            ),
-          },
-          {
-            key: 'stats',
-            label: (
-              <span>
-                <FundOutlined /> 直播统计
-              </span>
-            ),
-          },
-        ]}
-      />
+      {!hideTabs && (
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          style={{ marginBottom: 24 }}
+          items={[
+            {
+              key: 'list',
+              label: (
+                <span>
+                  <VideoCameraOutlined /> 直播列表
+                </span>
+              ),
+            },
+            {
+              key: 'create',
+              label: (
+                <span>
+                  <PlusOutlined /> 创建直播
+                </span>
+              ),
+            },
+            {
+              key: 'stats',
+              label: (
+                <span>
+                  <FundOutlined /> 直播统计
+                </span>
+              ),
+            },
+          ]}
+        />
+      )}
 
       {activeTab === 'list' && renderLiveList()}
       {activeTab === 'create' && renderCreateForm()}

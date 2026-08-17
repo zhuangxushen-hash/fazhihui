@@ -41,7 +41,11 @@ const typeLabelMap: Record<string, string> = {
   other: '其他',
 }
 
-export default function LeaveManagement() {
+interface LeaveManagementProps {
+  hideTabs?: boolean
+}
+
+export default function LeaveManagement({ hideTabs = false }: LeaveManagementProps) {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
@@ -214,10 +218,12 @@ export default function LeaveManagement() {
 
   return (
     <div>
-      <div className="page-header">
-        <h2>请假管理</h2>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>发起请假</Button>
-      </div>
+      {!hideTabs && (
+        <div className="page-header">
+          <h2>请假管理</h2>
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>发起请假</Button>
+        </div>
+      )}
 
       <div className="search-bar stitch-filter-bar">
         <Select
@@ -235,11 +241,13 @@ export default function LeaveManagement() {
         </div>
       </div>
 
-      <Tabs activeKey={activeTab} onChange={setActiveTab} items={[
-        { key: 'mine', label: '我的请假' },
-        { key: 'all', label: '全部请假' },
-        { key: 'pending', label: '待我审批' },
-      ]} />
+      {!hideTabs && (
+        <Tabs activeKey={activeTab} onChange={setActiveTab} items={[
+          { key: 'mine', label: '我的请假' },
+          { key: 'all', label: '全部请假' },
+          { key: 'pending', label: '待我审批' },
+        ]} />
+      )}
 
       <div className="stitch-table">
         <Table dataSource={data} columns={columns} loading={loading} rowKey="id" scroll={{ x: 1400 }} />

@@ -302,6 +302,46 @@ export class CaseController {
     return this.caseService.batchAssign(body.case_ids, body.lawyer_id);
   }
 
+  // 13.8 缺口6: 批量结案（将多个案件批量结案）
+  @Post('batch-close')
+  async batchClose(
+    @Body() body: { case_ids: string[] },
+    @Request() req?: any,
+  ) {
+    if (!body?.case_ids?.length) {
+      throw new NotFoundException('请选择要结案的案件');
+    }
+    const organizationId = req?.user?.organization_id;
+    for (const caseId of body.case_ids) {
+      const existing = await this.caseService.findById(caseId);
+      if (!existing) throw new NotFoundException(`案件 ${caseId} 不存在`);
+      if (organizationId && existing.organization_id !== organizationId) {
+        throw new ForbiddenException(`无权访问案件 ${caseId}`);
+      }
+    }
+    return this.caseService.batchClose(body.case_ids);
+  }
+
+  // 13.8 缺口6: 批量归档（将多个案件批量归档）
+  @Post('batch-archive')
+  async batchArchive(
+    @Body() body: { case_ids: string[] },
+    @Request() req?: any,
+  ) {
+    if (!body?.case_ids?.length) {
+      throw new NotFoundException('请选择要归档的案件');
+    }
+    const organizationId = req?.user?.organization_id;
+    for (const caseId of body.case_ids) {
+      const existing = await this.caseService.findById(caseId);
+      if (!existing) throw new NotFoundException(`案件 ${caseId} 不存在`);
+      if (organizationId && existing.organization_id !== organizationId) {
+        throw new ForbiddenException(`无权访问案件 ${caseId}`);
+      }
+    }
+    return this.caseService.batchArchive(body.case_ids);
+  }
+
   // 提交审批
   @Post(':id/submit-approval')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.LAWYER)

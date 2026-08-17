@@ -3159,6 +3159,23 @@ export class SeedsModule implements OnModuleInit {
         });
       }
     }
+    // 标准法律服务委托合同：客户端在线签约默认模板（固定ID，与前端硬编码一致）
+    const standardTemplate = await this.contractTemplateRepository.findOne({
+      where: { id: 'standard-service-contract' },
+    });
+    if (!standardTemplate) {
+      await this.contractTemplateRepository.save({
+        id: 'standard-service-contract',
+        name: '标准法律服务委托合同',
+        case_type: 'other',
+        content:
+          '甲方（委托人）与乙方（受托律师事务所）就法律服务委托事宜达成如下协议：\n第一条 服务内容：乙方指派律师为甲方提供法律服务，包括法律咨询、文书起草、诉讼/仲裁代理等。\n第二条 服务费用：以案件实际约定金额为准，支付方式以双方协商为准。\n第三条 权利义务：甲方应如实提供案件相关信息，乙方应勤勉尽责维护甲方合法权益。\n第四条 合同期限：自双方完成电子签署之日起生效，至委托事项办结之日止。',
+        version: 1,
+        is_approved: true,
+        created_by: adminUser?.id,
+        organization_id: orgId,
+      });
+    }
   }
 
   // 投诉工单种子数据

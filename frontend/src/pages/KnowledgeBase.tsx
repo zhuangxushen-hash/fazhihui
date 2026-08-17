@@ -122,8 +122,13 @@ const JudgmentTypeTag = ({ type }: { type: string }) => {
   return <Tag color={cfg.color}>{cfg.label}</Tag>
 }
 
-export default function KnowledgeBase() {
-  const [activeTab, setActiveTab] = useState('articles')
+interface KnowledgeBaseProps {
+  initialTab?: string
+  hideTabs?: boolean
+}
+
+export default function KnowledgeBase({ initialTab = 'articles', hideTabs = false }: KnowledgeBaseProps) {
+  const [activeTab, setActiveTab] = useState(initialTab)
 
   // ===== 文章状态 =====
   const [articles, setArticles] = useState<any[]>([])
@@ -865,13 +870,27 @@ export default function KnowledgeBase() {
     },
   ]
 
+  // 根据 hideTabs 模式渲染内容
+  const renderContent = () => {
+    // 查找当前激活Tab的内容
+    const currentTab = tabItems.find((tab) => tab.key === activeTab)
+    if (!currentTab) return null
+    return currentTab.children
+  }
+
   return (
     <div>
-      <div style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: 0 }}>知识库</h2>
-      </div>
+      {!hideTabs && (
+        <div style={{ marginBottom: 16 }}>
+          <h2 style={{ margin: 0 }}>知识库</h2>
+        </div>
+      )}
 
-      <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
+      {hideTabs ? (
+        renderContent()
+      ) : (
+        <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
+      )}
 
       {/* ============ 新增/编辑文章弹窗 ============ */}
       <Modal

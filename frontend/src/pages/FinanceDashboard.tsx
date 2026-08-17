@@ -69,7 +69,11 @@ const fmtMoney = (v: number, withSymbol = true) => {
   return withSymbol ? `¥${formatted}` : formatted
 }
 
-export default function FinanceDashboard() {
+interface FinanceDashboardProps {
+  hideTabs?: boolean
+}
+
+export default function FinanceDashboard({ hideTabs = false }: FinanceDashboardProps) {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
 
   const [dateRange, setDateRange] = useState<string[]>([])
@@ -196,10 +200,12 @@ export default function FinanceDashboard() {
         }
       `}</style>
 
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 28, fontWeight: 700, color: '#1d1d1f', letterSpacing: -0.4 }}>财务经营数据看板</div>
-        <div style={{ fontSize: 14, color: '#6e6e73', marginTop: 4 }}>营收、回款、成本、利润的多维度财务分析</div>
-      </div>
+      {!hideTabs && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 28, fontWeight: 700, color: '#1d1d1f', letterSpacing: -0.4 }}>财务经营数据看板</div>
+          <div style={{ fontSize: 14, color: '#6e6e73', marginTop: 4 }}>营收、回款、成本、利润的多维度财务分析</div>
+        </div>
+      )}
 
       <Card className="stitch-filter-bar" style={{ ...cardStyle, marginBottom: 16 }} styles={{ body: { padding: 16 } }}>
         <Space wrap size={[12, 12]}>

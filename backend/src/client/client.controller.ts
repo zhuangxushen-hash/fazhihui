@@ -118,6 +118,48 @@ export class ClientController {
     return this.clientService.onlineSign(body);
   }
 
+  // 法大大电子签配置（C端 POST，不含密钥）
+  @Post('sign/config')
+  getSignConfig() {
+    return this.clientService.getSignConfig();
+  }
+
+  // 获取法大大实名认证链接（身份鉴别第一步）
+  @Post('sign/verify-url')
+  getSignVerifyUrl(@Body() body: {
+    signing_id: string;
+    client_id: string;
+    user_name?: string;
+    id_card_no?: string;
+    mobile?: string;
+  }) {
+    return this.clientService.getSignVerifyUrl(body);
+  }
+
+  // 模拟模式：本地完成实名认证（仅 mock 模式可用）
+  @Post('sign/mock-verify')
+  mockVerifySigning(@Body() body: { signing_id: string; client_id: string }) {
+    return this.clientService.mockVerifySigning(body);
+  }
+
+  // 创建法大大签署任务并返回客户签署链接
+  @Post('sign/flow')
+  createSignFlow(@Body() body: { signing_id: string; client_id: string }) {
+    return this.clientService.createSignFlow(body);
+  }
+
+  // 模拟模式：本地完成签署（仅 mock 模式可用）
+  @Post('sign/mock-finish')
+  mockFinishSigning(@Body() body: { signing_id: string; client_id: string }) {
+    return this.clientService.mockFinishSigning(body);
+  }
+
+  // 查询签约状态（前端轮询用）
+  @Post('sign/status')
+  getSignStatus(@Body() body: { signing_id: string; client_id: string }) {
+    return this.clientService.getSignStatus(body);
+  }
+
   // 下载电子发票（C端 POST）
   @Post('payments/:id/invoice')
   downloadInvoice(
