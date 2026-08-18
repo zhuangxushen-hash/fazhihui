@@ -137,9 +137,133 @@ export class Contract {
   @Column({ type: 'varchar', nullable: true, comment: '审批人ID' })
   approver_id: string;
 
-  // 交回状态：not_returned待交回/returned已交回/na无需
+  // 合同交回状态：not_returned待交回/returned已交回/na无需
   @Column({ type: 'varchar', default: 'not_returned', comment: '合同交回状态' })
   return_status: string;
+
+  // 协办人
+  @Column({ type: 'varchar', nullable: true, comment: '协办人' })
+  co_handler: string;
+
+  // 主办人
+  @Column({ type: 'varchar', nullable: true, comment: '主办人' })
+  handler: string;
+
+  // 服务费
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true, comment: '服务费' })
+  fee_amount: number;
+
+  // 已收金额
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0, comment: '已收金额' })
+  paid_amount: number;
+
+  // 未收金额
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0, comment: '未收金额' })
+  unpaid_amount: number;
+
+  // 收款状态：not_paid未收款/partial_paid部分收款/fully_paid已收齐
+  @Column({ type: 'varchar', default: 'not_paid', comment: '收款状态' })
+  payment_status: string;
+
+  // 返还状态：no_refund无退款/partial_refund部分退款/refunded已退款
+  @Column({ type: 'varchar', default: 'no_refund', comment: '返还状态' })
+  refund_status: string;
+
+  // 接收日期
+  @Column({ type: 'date', nullable: true, comment: '接收日期' })
+  receive_date: Date;
+
+  // 原件是否已接收
+  @Column({ type: 'boolean', default: false, comment: '原件是否已接收' })
+  original_received: boolean;
+
+  // 合同分类
+  @Column({ type: 'varchar', nullable: true, comment: '合同分类' })
+  contract_category: string;
+
+  // 合同来源
+  @Column({ type: 'varchar', nullable: true, comment: '合同来源' })
+  contract_source: string;
+
+  // 胜诉费比例
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true, comment: '胜诉费比例' })
+  success_fee_ratio: number;
+
+  // 业务类型：fixed固定收费/risk风险收费/hybrid混合收费
+  @Column({ type: 'varchar', nullable: true, comment: '业务类型' })
+  fee_type: string;
+
+  // 计费周期：hourly按小时/monthly按月/case_based按案件
+  @Column({ type: 'varchar', nullable: true, comment: '计费周期' })
+  billing_cycle: string;
+
+  // 付款方式：one_time一次性/installment分期/milestone里程碑
+  @Column({ type: 'varchar', nullable: true, comment: '付款方式' })
+  payment_method: string;
+
+  // 分期数
+  @Column({ type: 'integer', nullable: true, comment: '分期数' })
+  installment_count: number;
+
+  // 每期金额
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true, comment: '每期金额' })
+  installment_amount: number;
+
+  // 退款金额
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true, comment: '退款金额' })
+  refund_amount: number;
+
+  // 退款原因
+  @Column({ type: 'text', nullable: true, comment: '退款原因' })
+  refund_reason: string;
+
+  // 退款日期
+  @Column({ type: 'date', nullable: true, comment: '退款日期' })
+  refund_date: Date;
+
+  // 解约日期
+  @Column({ type: 'date', nullable: true, comment: '解约日期' })
+  termination_date: Date;
+
+  // 解约原因
+  @Column({ type: 'text', nullable: true, comment: '解约原因' })
+  termination_reason: string;
+
+  // 作废原因
+  @Column({ type: 'text', nullable: true, comment: '作废原因' })
+  void_reason: string;
+
+  // 作废日期
+  @Column({ type: 'date', nullable: true, comment: '作废日期' })
+  void_date: Date;
+
+  // 更正次数
+  @Column({ type: 'integer', default: 0, comment: '更正次数' })
+  correction_count: number;
+
+  // 最后更正日期
+  @Column({ type: 'datetime', nullable: true, comment: '最后更正日期' })
+  last_correction_date: Date;
+
+  // 关联线索ID
+  @Column({ type: 'varchar', nullable: true, comment: '关联线索ID' })
+  related_lead_id: string;
+
+  // 开票状态
+  @Column({ type: 'varchar', nullable: true, comment: '开票状态' })
+  invoice_status: string;
+
+  // 开票金额
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true, comment: '开票金额' })
+  invoice_amount: number;
+
+  // 税额
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true, comment: '税额' })
+  tax_amount: number;
+
+  // 净额（不含税）
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true, comment: '净额' })
+  net_amount: number;
 
   // 是否已结清（根据应收台账判断）
   @Column({ type: 'boolean', default: false, comment: '是否已结清（实收=应收时true）' })

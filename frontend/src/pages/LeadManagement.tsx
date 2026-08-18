@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, InputNumber, Alert } from 'antd'
-import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, HistoryOutlined, SaveOutlined, SwapOutlined, SafetyCertificateOutlined, WarningOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
+import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, InputNumber, Alert, DatePicker, Popconfirm } from 'antd'
+import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, HistoryOutlined, SaveOutlined, SwapOutlined, SafetyCertificateOutlined, WarningOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { checkConflict, ConflictCheckRecord } from '../api/conflictCheck'
 import { formatDateTime } from '../utils/format'
+import dayjs from 'dayjs'
 import { theme } from '../constants/theme'
 
 // 转化状态中文映射（color 字段存放 stitch-tag 变体类名）
@@ -51,10 +53,10 @@ export default function LeadManagement() {
   const [conflictLeadIds, setConflictLeadIds] = useState<Set<string>>(new Set())
 
   const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const navigate = useNavigate()
 
   useEffect(() => {
     fetchData()
-    // 公共线索池已合并入 LeadPool 专项页，此处移除依赖 leadType
   }, [])
 
   const fetchData = async () => {
@@ -90,10 +92,20 @@ export default function LeadManagement() {
     if (!currentLead) return
     setConverting(true)
     try {
-      await axios.post(`/leads/${currentLead.id}/convert`, values)
+      const res = (await axios.post(`/leads/${currentLead.id}/convert`, values)) as Record<string, unknown>
       setConvertVisible(false)
       message.success('线索转化案件成功')
       fetchData()
+      const caseId = (res?.data as Record<string, unknown>)?.id || (res as Record<string, unknown>)?.id
+      if (caseId) {
+        Modal.confirm({
+          title: '转化成功',
+          content: '案件已创建，是否跳转到案件详情？',
+          okText: '查看案件',
+          cancelText: '留在当前页',
+          onOk: () => navigate('/cases'),
+        })
+      }
     } catch (error) {
       message.error('线索转化案件失败')
     } finally {
@@ -137,6 +149,19 @@ export default function LeadManagement() {
       source_channel: record.source_channel,
       source_keyword: record.source_keyword,
       case_description: record.case_description,
+      unit_name: record.unit_name,
+      business_summary: record.business_summary,
+      team: record.team,
+      handler: record.handler,
+      assignee: record.assignee,
+      province: record.province,
+      city: record.city,
+      amount: record.amount,
+      contact_address: record.contact_address,
+      intent_level: record.intent_level,
+      contact_result: record.contact_result,
+      business_source: record.business_source,
+      register_date: record.register_date ? dayjs(record.register_date as string) : null,
     })
     setEditVisible(true)
   }
@@ -233,6 +258,17 @@ export default function LeadManagement() {
     }
   }
 
+  // 删除线索
+  const handleDelete = async (record: Record<string, unknown>) => {
+    try {
+      await axios.delete(`/leads/${record.id}`)
+      message.success('线索删除成功')
+      fetchData()
+    } catch (error) {
+      message.error('线索删除失败')
+    }
+  }
+
   // 打开利冲初查弹窗，预填线索联系人和电话
   const handleConflictCheck = (record: Record<string, unknown>) => {
     setConflictLead(record)
@@ -285,6 +321,17 @@ export default function LeadManagement() {
     { value: 'traffic', label: '交通事故' },
     { value: 'labor', label: '劳动争议' },
     { value: 'debt', label: '债务逾期' },
+    { value: 'criminal', label: '刑事案件' },
+    { value: 'administrative', label: '行政案件' },
+    { value: 'non_litigation', label: '非诉专项' },
+    { value: 'consulting', label: '咨询代书' },
+    { value: 'ip', label: '知识产权' },
+    { value: 'company', label: '公司法' },
+    { value: 'real_estate', label: '房产纠纷' },
+    { value: 'contract', label: '合同纠纷' },
+    { value: 'inheritance', label: '继承纠纷' },
+    { value: 'equity', label: '股权纠纷' },
+    { value: 'investment', label: '投融资' },
     { value: 'other', label: '其他' },
   ]
 
@@ -293,28 +340,148 @@ export default function LeadManagement() {
     { value: 'baidu', label: '百度' },
     { value: 'kuaishou', label: '快手' },
     { value: 'wechat', label: '微信' },
+    { value: 'xiaohongshu', label: '小红书' },
+    { value: 'zhihu', label: '知乎' },
+    { value: 'laike', label: '来科' },
+    { value: 'phone', label: '电话营销' },
+    { value: 'referral', label: '转介绍' },
     { value: 'other', label: '其他' },
+  ]
+
+  // 新增枚举选项
+  const intentLevelOptions = [
+    { value: 'high', label: '高' },
+    { value: 'medium', label: '中' },
+    { value: 'low', label: '低' },
+  ]
+
+  const contactResultOptions = [
+    { value: 'not_contacted', label: '未接洽' },
+    { value: 'contacting', label: '接洽中' },
+    { value: 'deal_closed', label: '已成交' },
+    { value: 'abandoned', label: '已放弃' },
+    { value: 'converted', label: '已转化' },
+  ]
+
+  const businessSourceOptions = [
+    { value: 'online_consult', label: '网络咨询' },
+    { value: 'old_customer_referral', label: '老客户推荐' },
+    { value: 'phone_marketing', label: '电话营销' },
+    { value: 'offline_promotion', label: '线下推广' },
+    { value: 'friend_intro', label: '朋友介绍' },
+    { value: 'industry_exhibition', label: '行业展会' },
+    { value: 'association_recommend', label: '协会推荐' },
+    { value: 'search_engine', label: '搜索引擎' },
+    { value: 'social_media', label: '社交媒体' },
+    { value: 'direct_visit', label: '直接来访' },
+    { value: 'legal_aid', label: '法律援助' },
+    { value: 'court_referral', label: '法院转介' },
+  ]
+
+  const teamOptions = [
+    { value: 'litigation_1', label: '诉讼一部' },
+    { value: 'litigation_2', label: '诉讼二部' },
+    { value: 'litigation_3', label: '诉讼三部' },
+    { value: 'non_litigation', label: '非诉部' },
+    { value: 'legal_consulting', label: '法律顾问部' },
+    { value: 'criminal_defense', label: '刑事辩护部' },
+    { value: 'ip', label: '知识产权部' },
+    { value: 'labor', label: '劳动法务部' },
+    { value: 'marriage_family', label: '婚姻家事部' },
+    { value: 'company_finance', label: '公司金融部' },
   ]
 
   const columns = [
     { title: '线索ID', dataIndex: 'id', key: 'id', width: 120 },
     { title: '手机号', dataIndex: 'phone', key: 'phone', width: 120 },
-    { title: '联系人', dataIndex: 'contact_name', key: 'contact_name' },
-    { title: '案由', dataIndex: 'case_type', key: 'case_type', render: (type: string) => ({
+    { title: '联系人', dataIndex: 'contact_name', key: 'contact_name', width: 100 },
+    { title: '单位名称', dataIndex: 'unit_name', key: 'unit_name', width: 150, ellipsis: true },
+    { title: '案由', dataIndex: 'case_type', key: 'case_type', width: 100, render: (type: string) => ({
       marriage: '婚姻家事',
       traffic: '交通事故',
       labor: '劳动争议',
       debt: '债务逾期',
+      criminal: '刑事案件',
+      administrative: '行政案件',
+      non_litigation: '非诉专项',
+      consulting: '咨询代书',
+      ip: '知识产权',
+      company: '公司法',
+      real_estate: '房产纠纷',
+      contract: '合同纠纷',
+      inheritance: '继承纠纷',
+      equity: '股权纠纷',
+      investment: '投融资',
       other: '其他',
-    }[type]) },
-    { title: '来源渠道', dataIndex: 'source_channel', key: 'source_channel', render: (channel: string) => ({
+    }[type] || type) },
+    { title: '业务摘要', dataIndex: 'business_summary', key: 'business_summary', width: 180, ellipsis: true },
+    { title: '所属团队', dataIndex: 'team', key: 'team', width: 100, render: (team: string) => {
+      const teamMap: Record<string, string> = {
+        litigation_1: '诉讼一部',
+        litigation_2: '诉讼二部',
+        litigation_3: '诉讼三部',
+        non_litigation: '非诉部',
+        legal_consulting: '法律顾问部',
+        criminal_defense: '刑事辩护部',
+        ip: '知识产权部',
+        labor: '劳动法务部',
+        marriage_family: '婚姻家事部',
+        company_finance: '公司金融部',
+      }
+      return teamMap[team] || team || '-'
+    }},
+    { title: '主办人', dataIndex: 'handler', key: 'handler', width: 100 },
+    { title: '金额(元)', dataIndex: 'amount', key: 'amount', width: 100, render: (amount: number) => amount ? `¥${amount.toLocaleString()}` : '-' },
+    { title: '意向等级', dataIndex: 'intent_level', key: 'intent_level', width: 90, render: (level: string) => {
+      const levelMap: Record<string, { label: string; className: string }> = {
+        high: { label: '高', className: 'stitch-tag stitch-tag-error' },
+        medium: { label: '中', className: 'stitch-tag stitch-tag-gold' },
+        low: { label: '低', className: 'stitch-tag stitch-tag-info' },
+      }
+      const info = levelMap[level]
+      return info ? <Tag className={info.className}>{info.label}</Tag> : '-'
+    }},
+    { title: '接洽结果', dataIndex: 'contact_result', key: 'contact_result', width: 100, render: (result: string) => {
+      const resultMap: Record<string, { label: string; className: string }> = {
+        not_contacted: { label: '未接洽', className: 'stitch-tag stitch-tag-default' },
+        contacting: { label: '接洽中', className: 'stitch-tag stitch-tag-info' },
+        deal_closed: { label: '已成交', className: 'stitch-tag stitch-tag-success' },
+        abandoned: { label: '已放弃', className: 'stitch-tag stitch-tag-error' },
+        converted: { label: '已转化', className: 'stitch-tag stitch-tag-primary' },
+      }
+      const info = resultMap[result]
+      return info ? <Tag className={info.className}>{info.label}</Tag> : '-'
+    }},
+    { title: '来源渠道', dataIndex: 'source_channel', key: 'source_channel', width: 100, render: (channel: string) => ({
       douyin: '抖音',
       baidu: '百度',
       kuaishou: '快手',
       wechat: '微信',
+      xiaohongshu: '小红书',
+      zhihu: '知乎',
+      laike: '来科',
+      phone: '电话营销',
+      referral: '转介绍',
       other: '其他',
-    }[channel]) },
-    { title: '服务费用', dataIndex: 'service_fee', key: 'service_fee', render: (fee: number) => fee ? `¥${fee.toFixed(2)}` : '-' },
+    }[channel] || channel) },
+    { title: '业务来源', dataIndex: 'business_source', key: 'business_source', width: 100, render: (source: string) => {
+      const sourceMap: Record<string, string> = {
+        online_consult: '网络咨询',
+        old_customer_referral: '老客户推荐',
+        phone_marketing: '电话营销',
+        offline_promotion: '线下推广',
+        friend_intro: '朋友介绍',
+        industry_exhibition: '行业展会',
+        association_recommend: '协会推荐',
+        search_engine: '搜索引擎',
+        social_media: '社交媒体',
+        direct_visit: '直接来访',
+        legal_aid: '法律援助',
+        court_referral: '法院转介',
+      }
+      return sourceMap[source] || source || '-'
+    }},
+    { title: '服务费用', dataIndex: 'service_fee', key: 'service_fee', width: 100, render: (fee: number) => fee ? `¥${fee.toFixed(2)}` : '-' },
     { title: '状态', dataIndex: 'status', key: 'status', render: (status: string, record: Record<string, unknown>) => {
       // colors 映射存放 stitch-tag 变体类名
       const colors: Record<string, string> = {
@@ -366,6 +533,9 @@ export default function LeadManagement() {
         {record.status === 'new' && (
           <Button size="small" type="primary" onClick={() => handleAssign(record)}>分配</Button>
         )}
+        <Popconfirm title="确定删除此线索？" onConfirm={() => handleDelete(record)} okText="确定" cancelText="取消">
+          <Button size="small" danger icon={<DeleteOutlined />}>删除</Button>
+        </Popconfirm>
       </Space>
     )},
   ]
@@ -437,25 +607,72 @@ export default function LeadManagement() {
         onCancel={() => setModalVisible(false)}
         footer={null}
       >
-        <Form onFinish={handleSubmit}>
+        <Form onFinish={handleSubmit} layout="vertical">
           <Form.Item name="phone" label="手机号" rules={[{ required: true }]}>
             <Input className="stitch-input" placeholder="请输入手机号" />
           </Form.Item>
           <Form.Item name="contact_name" label="联系人">
             <Input className="stitch-input" placeholder="请输入联系人姓名" />
           </Form.Item>
+          <Form.Item name="unit_name" label="单位名称">
+            <Input className="stitch-input" placeholder="请输入单位名称" />
+          </Form.Item>
           <Form.Item name="case_type" label="案由" rules={[{ required: true }]}>
             <Select className="stitch-input">
               {caseTypeOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
             </Select>
+          </Form.Item>
+          <Form.Item name="team" label="所属团队">
+            <Select className="stitch-input" placeholder="请选择所属团队" allowClear>
+              {teamOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
+            </Select>
+          </Form.Item>
+          <Form.Item name="handler" label="主办人">
+            <Input className="stitch-input" placeholder="请输入主办人" />
+          </Form.Item>
+          <Form.Item name="assignee" label="业务员">
+            <Input className="stitch-input" placeholder="请输入业务员" />
           </Form.Item>
           <Form.Item name="source_channel" label="来源渠道" rules={[{ required: true }]}>
             <Select className="stitch-input">
               {channelOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
             </Select>
           </Form.Item>
+          <Form.Item name="business_source" label="业务来源">
+            <Select className="stitch-input" placeholder="请选择业务来源" allowClear>
+              {businessSourceOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
+            </Select>
+          </Form.Item>
           <Form.Item name="source_keyword" label="来源关键词">
             <Input className="stitch-input" placeholder="请输入来源关键词" />
+          </Form.Item>
+          <Form.Item name="intent_level" label="意向等级">
+            <Select className="stitch-input" placeholder="请选择意向等级" allowClear>
+              {intentLevelOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
+            </Select>
+          </Form.Item>
+          <Form.Item name="contact_result" label="接洽结果">
+            <Select className="stitch-input" placeholder="请选择接洽结果" allowClear>
+              {contactResultOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
+            </Select>
+          </Form.Item>
+          <Form.Item name="province" label="省份">
+            <Input className="stitch-input" placeholder="请输入省份" />
+          </Form.Item>
+          <Form.Item name="city" label="城市">
+            <Input className="stitch-input" placeholder="请输入城市" />
+          </Form.Item>
+          <Form.Item name="contact_address" label="联系地址">
+            <Input className="stitch-input" placeholder="请输入联系地址" />
+          </Form.Item>
+          <Form.Item name="amount" label="金额">
+            <InputNumber className="stitch-input" style={{ width: '100%' }} min={0} placeholder="请输入金额" />
+          </Form.Item>
+          <Form.Item name="register_date" label="登记日期">
+            <DatePicker className="stitch-input" style={{ width: '100%' }} placeholder="请选择登记日期" />
+          </Form.Item>
+          <Form.Item name="business_summary" label="业务摘要">
+            <Input.TextArea className="stitch-input" placeholder="请输入业务摘要" rows={3} />
           </Form.Item>
           <Form.Item name="case_description" label="咨询内容">
             <Input.TextArea className="stitch-input" placeholder="请输入咨询内容" />
@@ -472,25 +689,72 @@ export default function LeadManagement() {
         onCancel={() => setEditVisible(false)}
         footer={null}
       >
-        <Form onFinish={handleEditSubmit} form={editForm}>
+        <Form onFinish={handleEditSubmit} form={editForm} layout="vertical">
           <Form.Item name="phone" label="手机号" rules={[{ required: true }]}>
             <Input className="stitch-input" placeholder="请输入手机号" />
           </Form.Item>
           <Form.Item name="contact_name" label="联系人">
             <Input className="stitch-input" placeholder="请输入联系人姓名" />
           </Form.Item>
+          <Form.Item name="unit_name" label="单位名称">
+            <Input className="stitch-input" placeholder="请输入单位名称" />
+          </Form.Item>
           <Form.Item name="case_type" label="案由" rules={[{ required: true }]}>
             <Select className="stitch-input">
               {caseTypeOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
             </Select>
+          </Form.Item>
+          <Form.Item name="team" label="所属团队">
+            <Select className="stitch-input" placeholder="请选择所属团队" allowClear>
+              {teamOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
+            </Select>
+          </Form.Item>
+          <Form.Item name="handler" label="主办人">
+            <Input className="stitch-input" placeholder="请输入主办人" />
+          </Form.Item>
+          <Form.Item name="assignee" label="业务员">
+            <Input className="stitch-input" placeholder="请输入业务员" />
           </Form.Item>
           <Form.Item name="source_channel" label="来源渠道" rules={[{ required: true }]}>
             <Select className="stitch-input">
               {channelOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
             </Select>
           </Form.Item>
+          <Form.Item name="business_source" label="业务来源">
+            <Select className="stitch-input" placeholder="请选择业务来源" allowClear>
+              {businessSourceOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
+            </Select>
+          </Form.Item>
           <Form.Item name="source_keyword" label="来源关键词">
             <Input className="stitch-input" placeholder="请输入来源关键词" />
+          </Form.Item>
+          <Form.Item name="intent_level" label="意向等级">
+            <Select className="stitch-input" placeholder="请选择意向等级" allowClear>
+              {intentLevelOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
+            </Select>
+          </Form.Item>
+          <Form.Item name="contact_result" label="接洽结果">
+            <Select className="stitch-input" placeholder="请选择接洽结果" allowClear>
+              {contactResultOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
+            </Select>
+          </Form.Item>
+          <Form.Item name="province" label="省份">
+            <Input className="stitch-input" placeholder="请输入省份" />
+          </Form.Item>
+          <Form.Item name="city" label="城市">
+            <Input className="stitch-input" placeholder="请输入城市" />
+          </Form.Item>
+          <Form.Item name="contact_address" label="联系地址">
+            <Input className="stitch-input" placeholder="请输入联系地址" />
+          </Form.Item>
+          <Form.Item name="amount" label="金额">
+            <InputNumber className="stitch-input" style={{ width: '100%' }} min={0} placeholder="请输入金额" />
+          </Form.Item>
+          <Form.Item name="register_date" label="登记日期">
+            <DatePicker className="stitch-input" style={{ width: '100%' }} placeholder="请选择登记日期" />
+          </Form.Item>
+          <Form.Item name="business_summary" label="业务摘要">
+            <Input.TextArea className="stitch-input" placeholder="请输入业务摘要" rows={3} />
           </Form.Item>
           <Form.Item name="case_description" label="咨询内容">
             <Input.TextArea className="stitch-input" placeholder="请输入咨询内容" />

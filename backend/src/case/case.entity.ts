@@ -144,6 +144,86 @@ export class Case {
   @Column({ type: 'varchar', nullable: true, comment: '关联合同ID' })
   contract_id: string;
 
+  // 关联线索ID（线索转案件路径回写）
+  @Column({ type: 'varchar', nullable: true, comment: '关联线索ID' })
+  related_lead_id: string;
+
+  // 原告/申请人
+  @Column({ type: 'varchar', nullable: true, comment: '原告/申请人' })
+  plaintiff: string;
+
+  // 原告代理人
+  @Column({ type: 'varchar', nullable: true, comment: '原告代理人' })
+  plaintiff_agent: string;
+
+  // 被告/被申请人
+  @Column({ type: 'varchar', nullable: true, comment: '被告/被申请人' })
+  defendant: string;
+
+  // 被告代理人
+  @Column({ type: 'varchar', nullable: true, comment: '被告代理人' })
+  defendant_agent: string;
+
+  // 案件性质
+  @Column({ type: 'varchar', nullable: true, comment: '案件性质' })
+  case_nature: string;
+
+  // 案号
+  @Column({ type: 'varchar', nullable: true, comment: '案号' })
+  case_number: string;
+
+  // 协办人
+  @Column({ type: 'varchar', nullable: true, comment: '协办人' })
+  co_handler: string;
+
+  // 主办人
+  @Column({ type: 'varchar', nullable: true, comment: '主办人' })
+  handler: string;
+
+  // 案件进度（0-100）
+  @Column({ type: 'integer', default: 0, comment: '案件进度' })
+  progress: number;
+
+  // 下一步
+  @Column({ type: 'varchar', nullable: true, comment: '下一步' })
+  next_step: string;
+
+  // 下一步截止日期
+  @Column({ type: 'datetime', nullable: true, comment: '下一步截止日期' })
+  next_step_deadline: Date;
+
+  // 胜诉率
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true, comment: '胜诉率' })
+  success_rate: number;
+
+  // 业务类型：fixed固定收费/risk风险收费/hybrid混合收费
+  @Column({ type: 'varchar', nullable: true, comment: '业务类型' })
+  fee_type: string;
+
+  // 计费周期：hourly按小时/monthly按月/case_based按案件
+  @Column({ type: 'varchar', nullable: true, comment: '计费周期' })
+  billing_cycle: string;
+
+  // 付款方式：one_time一次性/installment/分期/milestone里程碑
+  @Column({ type: 'varchar', nullable: true, comment: '付款方式' })
+  payment_method: string;
+
+  // 法院级别
+  @Column({ type: 'varchar', nullable: true, comment: '法院级别' })
+  court_level: string;
+
+  // 上诉法院
+  @Column({ type: 'varchar', nullable: true, comment: '上诉法院' })
+  appeal_level: string;
+
+  // 再审法院
+  @Column({ type: 'varchar', nullable: true, comment: '再审法院' })
+  retrial_level: string;
+
+  // 执行法院
+  @Column({ type: 'varchar', nullable: true, comment: '执行法院' })
+  enforcement_level: string;
+
   // 关联商机ID（商机转案件路径回写）
   @Column({ type: 'varchar', nullable: true, comment: '关联商机ID' })
   opportunity_id: string;

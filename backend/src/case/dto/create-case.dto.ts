@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsDateString, IsBoolean, IsEnum } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsDateString, IsBoolean, IsEnum, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CaseType } from '../../types';
 
@@ -87,4 +87,91 @@ export class CreateCaseDto {
   @IsOptional()
   @IsString()
   organization_id?: string;
+
+  // 新增字段
+  @IsOptional()
+  @IsString()
+  lead_id?: string;
+
+  @IsOptional()
+  @IsString()
+  contact_address?: string;
+
+  @IsOptional()
+  @IsString()
+  case_number?: string;
+
+  @IsOptional()
+  @IsString()
+  case_nature?: string;
+
+  @IsOptional()
+  @IsString()
+  court_level?: string;
+
+  @IsOptional()
+  @IsString()
+  appeal_level?: string;
+
+  @IsOptional()
+  @IsString()
+  retrial_level?: string;
+
+  @IsOptional()
+  @IsString()
+  enforcement_level?: string;
+
+  @IsOptional()
+  @IsString()
+  plaintiff?: string;
+
+  @IsOptional()
+  @IsString()
+  plaintiff_agent?: string;
+
+  @IsOptional()
+  @IsString()
+  defendant?: string;
+
+  @IsOptional()
+  @IsString()
+  defendant_agent?: string;
+
+  @IsOptional()
+  @IsString()
+  fee_type?: string;
+
+  @IsOptional()
+  @IsString()
+  billing_cycle?: string;
+
+  @IsOptional()
+  @IsString()
+  payment_method?: string;
+
+  @IsOptional()
+  @IsString()
+  handler?: string;
+
+  @IsOptional()
+  @IsString()
+  co_handler?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  progress?: number;
+
+  @IsOptional()
+  @IsString()
+  next_step?: string;
+
+  @IsOptional()
+  @IsDateString()
+  next_step_deadline?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  success_rate?: number;
 }

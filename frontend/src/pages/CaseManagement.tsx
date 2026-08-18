@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Table, Button, Modal, Form, Input, Select, Space, message, Upload, DatePicker, Card, Tag, InputNumber, Switch, Popconfirm } from 'antd'
-import { PlusOutlined, EditOutlined, EyeOutlined, UploadOutlined, SearchOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
+import { Table, Button, Modal, Form, Input, Select, Space, message, Upload, DatePicker, Card, Tag, InputNumber, Switch, Popconfirm, Progress } from 'antd'
+import dayjs from 'dayjs'
+import { PlusOutlined, EditOutlined, EyeOutlined, UploadOutlined, SearchOutlined, DeleteOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { generateLetter, closeCaseReport, archiveCase, createCase, batchCloseCases, batchArchiveCases, CreateCasePayload } from '../api/case'
 import { formatDate, formatDateTime } from '../utils/format'
@@ -171,22 +173,20 @@ const stageTagClassMap: Record<string, string> = {
 
 export default function CaseManagement() {
   const [data, setData] = useState<Record<string, unknown>[]>([])
+  const [leads, setLeads] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [detailVisible, setDetailVisible] = useState(false)
   const [assignVisible, setAssignVisible] = useState(false)
   const [statusVisible, setStatusVisible] = useState(false)
-  // 13.8 缺口6: 批量结案/归档选中行
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
-  // 案件变更/解约/作废弹窗状态
   const [changeActionVisible, setChangeActionVisible] = useState(false)
-  // 当前操作类型：change / terminate / void
   const [changeActionType, setChangeActionType] = useState<string>('')
-  // 出函弹窗状态
   const [letterVisible, setLetterVisible] = useState(false)
   const [currentCase, setCurrentCase] = useState<Record<string, unknown> | null>(null)
   const [documents, setDocuments] = useState<Record<string, unknown>[]>([])
   const [lawyers, setLawyers] = useState<Record<string, unknown>[]>([])
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useState({
     case_no: '',
     client_name: '',
@@ -202,7 +202,16 @@ export default function CaseManagement() {
   useEffect(() => {
     fetchData()
     fetchLawyers()
+    fetchLeads()
   }, [])
+
+  const fetchLeads = async () => {
+    try {
+      const res = (await axios.get('/leads', { params: { org_id: user.organization_id } })) as Record<string, unknown>
+      setLeads((res?.data || []) as Record<string, unknown>[])
+    } catch (error) {
+    }
+  }
 
   const fetchData = async () => {
     setLoading(true)
@@ -296,6 +305,17 @@ export default function CaseManagement() {
   const handleChangeStatus = (record: Record<string, unknown>) => {
     setCurrentCase(record)
     setStatusVisible(true)
+  }
+
+  // 删除案件
+  const handleDelete = async (record: Record<string, unknown>) => {
+    try {
+      await axios.delete(`/cases/${record.id}`)
+      message.success('案件删除成功')
+      fetchData()
+    } catch (error) {
+      message.error('案件删除失败')
+    }
   }
 
   // 13.8 缺口6: 批量结案
@@ -460,10 +480,49 @@ export default function CaseManagement() {
     { value: 'closed', label: '已结案' },
   ]
 
+  const caseNatureOptions = [
+    { value: 'civil', label: '民事' },
+    { value: 'criminal', label: '刑事' },
+    { value: 'admin', label: '行政' },
+    { value: 'commercial', label: '商事' },
+    { value: 'other', label: '其他' },
+  ]
+
+  const feeTypeOptions = [
+    { value: 'fixed', label: '固定收费' },
+    { value: 'risk', label: '风险收费' },
+    { value: 'hybrid', label: '混合收费' },
+  ]
+
+  const billingCycleOptions = [
+    { value: 'hourly', label: '按小时' },
+    { value: 'monthly', label: '按月' },
+    { value: 'case_based', label: '按案件' },
+  ]
+
+  const paymentMethodOptions = [
+    { value: 'one_time', label: '一次性' },
+    { value: 'installment', label: '分期' },
+    { value: 'milestone', label: '里程碑' },
+  ]
+
+  const courtLevelOptions = [
+    { value: 'basic', label: '基层' },
+    { value: 'intermediate', label: '中级' },
+    { value: 'high', label: '高级' },
+    { value: 'supreme', label: '最高' },
+  ]
+
   const columns = [
     { title: '案件编号', dataIndex: 'case_no', key: 'case_no', width: 140 },
     { title: '案件名称', dataIndex: 'case_name', key: 'case_name' },
     { title: '客户姓名', dataIndex: 'client_name', key: 'client_name' },
+    { title: '关联线索', dataIndex: 'lead_id', key: 'lead_id', render: (leadId: string) => {
+      const lead = leads.find(l => String(l.id) === String(leadId))
+      if (!lead) return '-'
+      const display = String(lead.phone || lead.contact_name || '')
+      return display || '-'
+    }},
     { title: '案由', dataIndex: 'case_type', key: 'case_type', render: (type: string) => ({
       marriage: '婚姻家事',
       traffic: '交通事故',
@@ -474,8 +533,13 @@ export default function CaseManagement() {
     { title: '案件大类', dataIndex: 'case_category', key: 'case_category', render: (cat: string) => (
       <Tag className={caseCategoryTagClassMap[cat] || 'stitch-tag'}>{caseCategoryLabelMap[cat] || '-'}</Tag>
     )},
+    { title: '案件性质', dataIndex: 'case_nature', key: 'case_nature', render: (val: string) => ({
+      civil: '民事', criminal: '刑事', admin: '行政', commercial: '商事', other: '其他',
+    }[val] || '-') },
     { title: '主办律师', dataIndex: 'lawyer_name', key: 'lawyer_name' },
+    { title: '协办人', dataIndex: 'co_handler', key: 'co_handler' },
     { title: '对方当事人', dataIndex: 'opposing_party', key: 'opposing_party' },
+    { title: '联系地址', dataIndex: 'contact_address', key: 'contact_address' },
     { title: '受理法院', dataIndex: 'court', key: 'court' },
     { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => (
       <StatusPill text={caseStatusLabelMap[status] || '-'} kind={caseStatusKindMap[status] || 'neutral'} />
@@ -483,6 +547,10 @@ export default function CaseManagement() {
     { title: '案件阶段', dataIndex: 'stage', key: 'stage', render: (stage: string) => (
       <Tag className={stageTagClassMap[stage] || 'stitch-tag'}>{stageLabelMap[stage] || '-'}</Tag>
     )},
+    { title: '进度', dataIndex: 'progress', key: 'progress', render: (val: number) => (
+      <Progress percent={val || 0} size="small" />
+    )},
+    { title: '下一步', dataIndex: 'next_step', key: 'next_step' },
     { title: '风险等级', dataIndex: 'risk_level', key: 'risk_level', render: (level: string) => (
       <StatusPill text={riskLabelMap[level] || '-'} kind={riskKindMap[level] || 'neutral'} />
     )},
@@ -510,6 +578,7 @@ export default function CaseManagement() {
           {!record.assignee_lawyer_id && (
             <Button size="small" type="primary" onClick={() => handleAssignLawyer(record)}>分配律师</Button>
           )}
+          <Button type="link" size="small" onClick={() => navigate('/contracts')}>创建合同</Button>
           <Button type="link" size="small" onClick={() => handleGenerateLetter(record)}>出函</Button>
           {canCloseReport && (
             <Popconfirm title="确认生成结案报告？" onConfirm={() => handleCloseCaseReport(record)}>
@@ -528,6 +597,9 @@ export default function CaseManagement() {
               <Button type="link" size="small" danger onClick={() => handleChangeAction(record, 'void')}>作废</Button>
             </>
           )}
+          <Popconfirm title="确定删除此案件？" onConfirm={() => handleDelete(record)} okText="确定" cancelText="取消">
+            <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
+          </Popconfirm>
         </Space>
       )
     }},
@@ -607,7 +679,7 @@ export default function CaseManagement() {
           loading={loading}
           rowKey="id"
           size="small"
-          scroll={{ x: 2000 }}
+          scroll={{ x: 3200 }}
           rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
         />
       </Card>
@@ -634,24 +706,70 @@ export default function CaseManagement() {
               {clientTypeOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
             </Select>
           </Form.Item>
+          <Form.Item name="lead_id" label="关联线索">
+            <Select placeholder="请选择关联线索" allowClear showSearch optionFilterProp="children">
+              {leads.map(lead => (
+                <Select.Option key={lead.id as React.Key} value={lead.id as string}>
+                  {String(lead.phone || '')} - {String(lead.contact_name || lead.unit_name || '')}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item name="contact_address" label="联系地址">
+            <Input placeholder="请输入联系地址" />
+          </Form.Item>
           <Form.Item name="case_type" label="案由" rules={[{ required: true }]}>
             <Select>
               {caseTypeOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
             </Select>
+          </Form.Item>
+          <Form.Item name="case_number" label="案号">
+            <Input placeholder="请输入案号" />
           </Form.Item>
           <Form.Item name="case_category" label="案件大类">
             <Select>
               {caseCategoryOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
             </Select>
           </Form.Item>
+          <Form.Item name="case_nature" label="案件性质">
+            <Select>
+              {caseNatureOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
+            </Select>
+          </Form.Item>
           <Form.Item name="court" label="受理法院">
             <Input placeholder="请输入受理法院" />
+          </Form.Item>
+          <Form.Item name="court_level" label="法院级别">
+            <Select>
+              {courtLevelOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
+            </Select>
+          </Form.Item>
+          <Form.Item name="appeal_level" label="上诉法院">
+            <Input placeholder="请输入上诉法院" />
+          </Form.Item>
+          <Form.Item name="retrial_level" label="再审法院">
+            <Input placeholder="请输入再审法院" />
+          </Form.Item>
+          <Form.Item name="enforcement_level" label="执行法院">
+            <Input placeholder="请输入执行法院" />
           </Form.Item>
           <Form.Item name="opposing_party" label="对方当事人">
             <Input placeholder="请输入对方当事人" />
           </Form.Item>
           <Form.Item name="opposing_agent" label="对方代理人">
             <Input placeholder="请输入对方代理人" />
+          </Form.Item>
+          <Form.Item name="plaintiff" label="原告/申请人">
+            <Input placeholder="请输入原告/申请人" />
+          </Form.Item>
+          <Form.Item name="plaintiff_agent" label="原告代理人">
+            <Input placeholder="请输入原告代理人" />
+          </Form.Item>
+          <Form.Item name="defendant" label="被告/被申请人">
+            <Input placeholder="请输入被告/被申请人" />
+          </Form.Item>
+          <Form.Item name="defendant_agent" label="被告代理人">
+            <Input placeholder="请输入被告代理人" />
           </Form.Item>
           <Form.Item name="court_room" label="审判庭地点">
             <Input placeholder="请输入审判庭地点" />
@@ -662,8 +780,37 @@ export default function CaseManagement() {
           <Form.Item name="amount" label="涉案金额">
             <Input placeholder="请输入涉案金额" />
           </Form.Item>
+          <Form.Item name="fee_type" label="业务类型">
+            <Select>
+              {feeTypeOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
+            </Select>
+          </Form.Item>
+          <Form.Item name="billing_cycle" label="计费周期">
+            <Select>
+              {billingCycleOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
+            </Select>
+          </Form.Item>
+          <Form.Item name="payment_method" label="付款方式">
+            <Select>
+              {paymentMethodOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
+            </Select>
+          </Form.Item>
           <Form.Item name="quality_deposit" label="质保金（元）">
             <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="请输入质保金" />
+          </Form.Item>
+          <Form.Item name="handler" label="主办人">
+            <Select placeholder="请选择主办人">
+              {lawyers.map(lawyer => (
+                <Select.Option key={lawyer.id as React.Key} value={lawyer.id as string}>{lawyer.real_name as React.ReactNode}</Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item name="co_handler" label="协办人">
+            <Select placeholder="请选择协办人">
+              {lawyers.map(lawyer => (
+                <Select.Option key={lawyer.id as React.Key} value={lawyer.id as string}>{lawyer.real_name as React.ReactNode}</Select.Option>
+              ))}
+            </Select>
           </Form.Item>
           <Form.Item name="filing_date" label="立案日期">
             <DatePicker style={{ width: '100%' }} />
@@ -678,6 +825,18 @@ export default function CaseManagement() {
             <Select>
               {stageOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
             </Select>
+          </Form.Item>
+          <Form.Item name="progress" label="进度">
+            <InputNumber min={0} max={100} style={{ width: '100%' }} placeholder="请输入进度（0-100）" />
+          </Form.Item>
+          <Form.Item name="next_step" label="下一步">
+            <Input placeholder="请输入下一步计划" />
+          </Form.Item>
+          <Form.Item name="next_step_deadline" label="下一步截止日期">
+            <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="success_rate" label="胜诉率(%)">
+            <InputNumber min={0} max={100} style={{ width: '100%' }} placeholder="请输入胜诉率（0-100）" />
           </Form.Item>
           <Form.Item name="description" label="案件描述">
             <Input.TextArea placeholder="请输入案件描述" rows={4} />
@@ -701,8 +860,18 @@ export default function CaseManagement() {
           <div>
             <div className="detail-grid">
               <div className="detail-item"><span className="detail-label">案件编号</span><span className="detail-value">{String(c.case_no ?? '')}</span></div>
+              <div className="detail-item"><span className="detail-label">案件名称</span><span className="detail-value">{String(c.case_name ?? '')}</span></div>
               <div className="detail-item"><span className="detail-label">客户姓名</span><span className="detail-value">{String(c.client_name ?? '')}</span></div>
+              <div className="detail-item"><span className="detail-label">关联线索</span><span className="detail-value">
+                {(() => {
+                  const lead = leads.find(l => String(l.id) === String(c.lead_id))
+                  if (!lead) return '-'
+                  const display = String(lead.phone || lead.contact_name || '')
+                  return <a onClick={() => navigate('/leads')}>{display || '-'}</a>
+                })()}
+              </span></div>
               <div className="detail-item"><span className="detail-label">客户手机号</span><span className="detail-value">{String(c.client_phone || '-')}</span></div>
+              <div className="detail-item"><span className="detail-label">联系地址</span><span className="detail-value">{String(c.contact_address || '-')}</span></div>
               <div className="detail-item"><span className="detail-label">案由</span><span className="detail-value">{({
                   marriage: '婚姻家事',
                   traffic: '交通事故',
@@ -710,16 +879,44 @@ export default function CaseManagement() {
                   debt: '债务逾期',
                   other: '其他',
                 }[c.case_type as string])}</span></div>
+              <div className="detail-item"><span className="detail-label">案件性质</span><span className="detail-value">{({
+                  civil: '民事', criminal: '刑事', admin: '行政', commercial: '商事', other: '其他',
+                }[c.case_nature as string] || '-')}</span></div>
+              <div className="detail-item"><span className="detail-label">案号</span><span className="detail-value">{String(c.case_number || '-')}</span></div>
               <div className="detail-item"><span className="detail-label">主办律师</span><span className="detail-value">{String(c.lawyer_name || '-')}</span></div>
+              <div className="detail-item"><span className="detail-label">协办人</span><span className="detail-value">{String(c.co_handler || '-')}</span></div>
+              <div className="detail-item"><span className="detail-label">原告/申请人</span><span className="detail-value">{String(c.plaintiff || '-')}</span></div>
+              <div className="detail-item"><span className="detail-label">原告代理人</span><span className="detail-value">{String(c.plaintiff_agent || '-')}</span></div>
+              <div className="detail-item"><span className="detail-label">被告/被申请人</span><span className="detail-value">{String(c.defendant || '-')}</span></div>
+              <div className="detail-item"><span className="detail-label">被告代理人</span><span className="detail-value">{String(c.defendant_agent || '-')}</span></div>
               <div className="detail-item"><span className="detail-label">受理法院</span><span className="detail-value">{String(c.court || '-')}</span></div>
+              <div className="detail-item"><span className="detail-label">法院级别</span><span className="detail-value">{({
+                  basic: '基层', intermediate: '中级', high: '高级', supreme: '最高',
+                }[c.court_level as string] || '-')}</span></div>
+              <div className="detail-item"><span className="detail-label">上诉法院</span><span className="detail-value">{String(c.appeal_level || '-')}</span></div>
+              <div className="detail-item"><span className="detail-label">再审法院</span><span className="detail-value">{String(c.retrial_level || '-')}</span></div>
+              <div className="detail-item"><span className="detail-label">执行法院</span><span className="detail-value">{String(c.enforcement_level || '-')}</span></div>
               <div className="detail-item"><span className="detail-label">涉案金额</span><span className="detail-value">{String(c.amount || '-')}</span></div>
+              <div className="detail-item"><span className="detail-label">业务类型</span><span className="detail-value">{({
+                  fixed: '固定收费', risk: '风险收费', hybrid: '混合收费',
+                }[c.fee_type as string] || '-')}</span></div>
+              <div className="detail-item"><span className="detail-label">计费周期</span><span className="detail-value">{({
+                  hourly: '按小时', monthly: '按月', case_based: '按案件',
+                }[c.billing_cycle as string] || '-')}</span></div>
+              <div className="detail-item"><span className="detail-label">付款方式</span><span className="detail-value">{({
+                  one_time: '一次性', installment: '分期', milestone: '里程碑',
+                }[c.payment_method as string] || '-')}</span></div>
+              <div className="detail-item"><span className="detail-label">进度</span><span className="detail-value">
+                <Progress percent={Number(c.progress) || 0} size="small" />
+              </span></div>
+              <div className="detail-item"><span className="detail-label">下一步</span><span className="detail-value">{String(c.next_step || '-')}</span></div>
               <div className="detail-item"><span className="detail-label">状态</span><span className="detail-value">
                 <StatusPill text={caseStatusLabelMap[c.status as string] || '-'} kind={caseStatusKindMap[c.status as string] || 'neutral'} />
               </span></div>
-              <div className="detail-item"><span className="detail-label">立案日期</span><span className="detail-value">{formatDate(c.filing_date as string)}</span></div>
-              <div className="detail-item"><span className="detail-label">预计结案</span><span className="detail-value">{formatDate(c.expected_close_date as string)}</span></div>
-              <div className="detail-item"><span className="detail-label">创建时间</span><span className="detail-value">{formatDateTime(c.created_at as string)}</span></div>
-              <div className="detail-item"><span className="detail-label">更新时间</span><span className="detail-value">{formatDateTime(c.updated_at as string)}</span></div>
+              <div className="detail-item"><span className="detail-label">立案日期</span><span className="detail-value">{c.filing_date ? dayjs(c.filing_date as string).format('YYYY-MM-DD') : '-'}</span></div>
+              <div className="detail-item"><span className="detail-label">预计结案</span><span className="detail-value">{c.expected_close_date ? dayjs(c.expected_close_date as string).format('YYYY-MM-DD') : '-'}</span></div>
+              <div className="detail-item"><span className="detail-label">创建时间</span><span className="detail-value">{c.created_at ? dayjs(c.created_at as string).format('YYYY-MM-DD HH:mm:ss') : '-'}</span></div>
+              <div className="detail-item"><span className="detail-label">更新时间</span><span className="detail-value">{c.updated_at ? dayjs(c.updated_at as string).format('YYYY-MM-DD HH:mm:ss') : '-'}</span></div>
             </div>
             <div style={{ marginBottom: 24 }}>
               <div style={sectionTitleStyle}>案件描述</div>

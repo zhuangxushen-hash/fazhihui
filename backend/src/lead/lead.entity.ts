@@ -83,4 +83,56 @@ export class Lead {
   // 转化状态：not_converted未转化/converting转化中/converted已转化
   @Column({ type: 'varchar', default: 'not_converted', comment: '转化状态' })
   conversion_status: string;
+
+  // 单位名称
+  @Column({ type: 'varchar', nullable: true, comment: '单位名称' })
+  unit_name: string;
+
+  // 业务摘要
+  @Column({ type: 'text', nullable: true, comment: '业务摘要' })
+  business_summary: string;
+
+  // 所属团队
+  @Column({ type: 'varchar', nullable: true, comment: '所属团队' })
+  team: string;
+
+  // 主办人
+  @Column({ type: 'varchar', nullable: true, comment: '主办人' })
+  handler: string;
+
+  // 省份
+  @Column({ type: 'varchar', nullable: true, comment: '省份' })
+  province: string;
+
+  // 城市
+  @Column({ type: 'varchar', nullable: true, comment: '城市' })
+  city: string;
+
+  // 联系地址
+  @Column({ type: 'varchar', nullable: true, comment: '联系地址' })
+  contact_address: string;
+
+  // 预估金额
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true, comment: '预估金额' })
+  amount: number;
+
+  // 意向等级：high高/medium中/low低
+  @Column({ type: 'varchar', nullable: true, comment: '意向等级' })
+  intent_level: string;
+
+  // 接洽结果：not_contacted未接洽/contacting接洽中/deal_closed已成交/abandoned已放弃/converted已转化
+  @Column({ type: 'varchar', nullable: true, comment: '接洽结果' })
+  contact_result: string;
+
+  // 业务员
+  @Column({ type: 'varchar', nullable: true, comment: '业务员' })
+  assignee: string;
+
+  // 业务来源
+  @Column({ type: 'varchar', nullable: true, comment: '业务来源' })
+  business_source: string;
+
+  // 登记日期
+  @Column({ type: 'date', nullable: true, comment: '登记日期' })
+  register_date: Date;
 }

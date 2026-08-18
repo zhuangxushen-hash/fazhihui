@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Table, Button, Modal, Form, Input, Select, InputNumber, DatePicker, Space, message, Tag, Tabs, Card, Popconfirm } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, ReloadOutlined, EyeOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
@@ -280,8 +281,83 @@ const sealApplyMethodOptions = [
   { value: 'both', label: '双章' },
 ]
 
+// 合同分类下拉
+const contractCategoryOptions = [
+  { value: 'entrust', label: '委托合同' },
+  { value: 'consultant', label: '顾问合同' },
+  { value: 'service', label: '服务合同' },
+  { value: 'other', label: '其他' },
+]
+
+// 合同来源下拉
+const contractSourceOptions = [
+  { value: 'customer_consult', label: '客户咨询' },
+  { value: 'lead_convert', label: '线索转化' },
+  { value: 'old_client_renew', label: '老客户续签' },
+  { value: 'other', label: '其他' },
+]
+
+// 业务类型下拉
+const feeTypeOptions = [
+  { value: 'fixed', label: '固定收费' },
+  { value: 'risk', label: '风险收费' },
+  { value: 'hybrid', label: '混合收费' },
+]
+
+// 计费周期下拉
+const billingCycleOptions = [
+  { value: 'hourly', label: '按小时' },
+  { value: 'monthly', label: '按月' },
+  { value: 'per_case', label: '按案件' },
+]
+
+// 付款方式下拉
+const paymentMethodOptions = [
+  { value: 'one_time', label: '一次性' },
+  { value: 'installment', label: '分期' },
+  { value: 'milestone', label: '里程碑' },
+]
+
+// 收款状态下拉
+const paymentStatusOptions = [
+  { value: 'unpaid', label: '未收款' },
+  { value: 'partial', label: '部分收款' },
+  { value: 'paid', label: '已收齐' },
+]
+
+const paymentStatusLabelMap: Record<string, string> = {
+  unpaid: '未收款',
+  partial: '部分收款',
+  paid: '已收齐',
+}
+
+const paymentStatusColorMap: Record<string, string> = {
+  unpaid: 'red',
+  partial: 'orange',
+  paid: 'green',
+}
+
+// 返还状态下拉
+const refundStatusOptions = [
+  { value: 'none', label: '无退款' },
+  { value: 'partial', label: '部分退款' },
+  { value: 'refunded', label: '已退款' },
+]
+
+const refundStatusLabelMap: Record<string, string> = {
+  none: '无退款',
+  partial: '部分退款',
+  refunded: '已退款',
+}
+
+const refundStatusColorMap: Record<string, string> = {
+  none: 'default',
+  partial: 'orange',
+  refunded: 'red',
+}
+
 // 颜色映射保留作为参考，实际渲染已使用 Stitch 变体映射
-void [stageColorMap, originalStatusColorMap, sealStatusColorMap, sealUsageStatusColorMap, approvalStatusColorMap, returnStatusColorMap]
+void [stageColorMap, originalStatusColorMap, sealStatusColorMap, sealUsageStatusColorMap, approvalStatusColorMap, returnStatusColorMap, paymentStatusOptions, refundStatusOptions]
 
 export default function ContractManagement() {
   const [data, setData] = useState<Record<string, unknown>[]>([])
@@ -291,6 +367,9 @@ export default function ContractManagement() {
   const [editingContract, setEditingContract] = useState<Record<string, unknown> | null>(null)
   const [detailVisible, setDetailVisible] = useState(false)
   const [currentContract, setCurrentContract] = useState<Record<string, unknown> | null>(null)
+  const [leads, setLeads] = useState<Record<string, unknown>[]>([])
+  const [cases, setCases] = useState<Record<string, unknown>[]>([])
+  const navigate = useNavigate()
   const [activeStage, setActiveStage] = useState('')
   const [activeMainTab, setActiveMainTab] = useState('contract')
   const [activeReturnTab, setActiveReturnTab] = useState('')
@@ -357,8 +436,26 @@ export default function ContractManagement() {
 
   useEffect(() => {
     fetchData()
+    fetchLeads()
+    fetchCases()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeMainTab, activeReturnTab])
+
+  const fetchLeads = async () => {
+    try {
+      const res = (await axios.get('/leads', { params: { org_id: user.organization_id } })) as Record<string, unknown>
+      setLeads((res?.data || []) as Record<string, unknown>[])
+    } catch (error) {
+    }
+  }
+
+  const fetchCases = async () => {
+    try {
+      const res = (await axios.get('/cases', { params: { org_id: user.organization_id } })) as Record<string, unknown>
+      setCases((res?.data || []) as Record<string, unknown>[])
+    } catch (error) {
+    }
+  }
 
   // Tab 切换
   const handleTabChange = (key: string) => {
@@ -541,6 +638,7 @@ export default function ContractManagement() {
       sign_date: record.sign_date ? dayjs(record.sign_date as string) : undefined,
       start_date: record.start_date ? dayjs(record.start_date as string) : undefined,
       end_date: record.end_date ? dayjs(record.end_date as string) : undefined,
+      receive_date: record.receive_date ? dayjs(record.receive_date as string) : undefined,
     })
     setModalVisible(true)
   }
@@ -560,11 +658,22 @@ export default function ContractManagement() {
         end_date: values.end_date ? dayjs(values.end_date as string).format('YYYY-MM-DD') : undefined,
         remarks: values.remarks,
         organization_id: user.organization_id,
-        // 新增字段
         opposing_party: values.opposing_party,
         allocation_ratio: values.allocation_ratio,
         quality_deposit: values.quality_deposit,
         original_status: values.original_status,
+        contract_category: values.contract_category,
+        contract_source: values.contract_source,
+        template_id: values.template_id,
+        fee_type: values.fee_type,
+        billing_cycle: values.billing_cycle,
+        payment_method: values.payment_method,
+        installment_count: values.installment_count,
+        installment_amount: values.installment_amount,
+        handler: values.handler,
+        co_handler: values.co_handler,
+        related_lead_id: values.related_lead_id,
+        receive_date: values.receive_date ? dayjs(values.receive_date as string).format('YYYY-MM-DD') : undefined,
       }
       if (editingContract) {
         await updateContract(editingContract.id as string, payload)
@@ -827,9 +936,24 @@ export default function ContractManagement() {
       width: 100,
       render: (type: string) => <Tag color={typeColorMap[type] || 'default'}>{typeLabelMap[type] || type}</Tag>,
     },
+    {
+      title: '业务类型',
+      dataIndex: 'contract_category',
+      key: 'contract_category',
+      width: 100,
+      render: (v: string) => v || '-',
+    },
     { title: '客户名称', dataIndex: 'client_name', key: 'client_name', width: 120 },
     { title: '客户电话', dataIndex: 'client_phone', key: 'client_phone', width: 130, render: (v: string) => v || '-' },
+    { title: '关联案件', dataIndex: 'case_name', key: 'case_name', width: 120, render: (v: string) => v || '-' },
+    { title: '关联线索', dataIndex: 'related_lead_id', key: 'related_lead_id', width: 130, render: (leadId: string) => {
+      const lead = leads.find(l => String(l.id) === String(leadId))
+      if (!lead) return '-'
+      return String(lead.phone || lead.contact_name || '-')
+    }},
     { title: '对方当事人', dataIndex: 'opposing_party', key: 'opposing_party', width: 120, render: (v: string) => v || '-' },
+    { title: '主办人', dataIndex: 'handler', key: 'handler', width: 100, render: (v: string) => v || '-' },
+    { title: '协办人', dataIndex: 'co_handler', key: 'co_handler', width: 100, render: (v: string) => v || '-' },
     {
       title: '审批状态',
       dataIndex: 'approval_status',
@@ -887,6 +1011,45 @@ export default function ContractManagement() {
       align: 'right' as const,
       render: (val: unknown) => val != null ? `¥${Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-',
     },
+    {
+      title: '应收金额',
+      dataIndex: 'fee_amount',
+      key: 'fee_amount',
+      width: 120,
+      align: 'right' as const,
+      render: (val: unknown) => val != null ? `¥${Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-',
+    },
+    {
+      title: '已收金额',
+      dataIndex: 'paid_amount',
+      key: 'paid_amount',
+      width: 120,
+      align: 'right' as const,
+      render: (val: unknown) => val != null ? `¥${Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-',
+    },
+    {
+      title: '待收金额',
+      dataIndex: 'unpaid_amount',
+      key: 'unpaid_amount',
+      width: 120,
+      align: 'right' as const,
+      render: (val: unknown) => val != null ? `¥${Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-',
+    },
+    {
+      title: '收款状态',
+      dataIndex: 'payment_status',
+      key: 'payment_status',
+      width: 100,
+      render: (s: string) => <Tag color={paymentStatusColorMap[s] || 'default'}>{paymentStatusLabelMap[s] || s || '-'}</Tag>,
+    },
+    {
+      title: '返还状态',
+      dataIndex: 'refund_status',
+      key: 'refund_status',
+      width: 100,
+      render: (s: string) => <Tag color={refundStatusColorMap[s] || 'default'}>{refundStatusLabelMap[s] || s || '-'}</Tag>,
+    },
+    { title: '接收日期', dataIndex: 'receive_date', key: 'receive_date', width: 120, render: (v: string) => formatDate(v) },
     { title: '签订日期', dataIndex: 'sign_date', key: 'sign_date', width: 120, render: (v: string) => formatDate(v) },
     {
       title: '阶段',
@@ -998,7 +1161,7 @@ export default function ContractManagement() {
             loading={loading}
             rowKey="id"
             size="small"
-            scroll={{ x: 2600 }}
+            scroll={{ x: 4200 }}
             pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条`, total }}
           />
         </div>
@@ -1023,8 +1186,14 @@ export default function ContractManagement() {
           <Form.Item name="type" label="合同类型" rules={[{ required: true, message: '请选择合同类型' }]} initialValue="entrust">
             <Select options={typeOptions} placeholder="请选择合同类型" />
           </Form.Item>
-          <Form.Item name="case_id" label="关联案件">
-            <Input placeholder="请输入关联案件ID（可空）" />
+          <Form.Item name="contract_category" label="合同分类">
+            <Select options={contractCategoryOptions} placeholder="请选择合同分类" />
+          </Form.Item>
+          <Form.Item name="contract_source" label="合同来源">
+            <Select options={contractSourceOptions} placeholder="请选择合同来源" />
+          </Form.Item>
+          <Form.Item name="template_id" label="模板选择">
+            <Select placeholder="请选择合同模板" allowClear />
           </Form.Item>
           <Form.Item name="client_name" label="客户名称" rules={[{ required: true, message: '请输入客户名称' }]}>
             <Input placeholder="请输入客户名称" />
@@ -1032,10 +1201,63 @@ export default function ContractManagement() {
           <Form.Item name="client_phone" label="客户电话">
             <Input placeholder="请输入客户电话（可空）" />
           </Form.Item>
+          <Form.Item name="case_id" label="关联案件">
+            <Select placeholder="请选择关联案件" allowClear showSearch optionFilterProp="children">
+              {cases.map(c => (
+                <Select.Option key={c.id as React.Key} value={c.id as string}>
+                  {String(c.case_no || '')} - {String(c.case_name || '')}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item name="related_lead_id" label="关联线索">
+            <Select placeholder="请选择关联线索" allowClear showSearch optionFilterProp="children">
+              {leads.map(lead => (
+                <Select.Option key={lead.id as React.Key} value={lead.id as string}>
+                  {String(lead.phone || '')} - {String(lead.contact_name || lead.unit_name || '')}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item name="fee_type" label="业务类型">
+            <Select options={feeTypeOptions} placeholder="请选择业务类型" />
+          </Form.Item>
+          <Form.Item name="billing_cycle" label="计费周期">
+            <Select options={billingCycleOptions} placeholder="请选择计费周期" />
+          </Form.Item>
+          <Form.Item name="payment_method" label="付款方式">
+            <Select options={paymentMethodOptions} placeholder="请选择付款方式" />
+          </Form.Item>
+          <Form.Item
+            noStyle
+            shouldUpdate={(prev, cur) => prev.payment_method !== cur.payment_method}
+          >
+            {({ getFieldValue }) =>
+              getFieldValue('payment_method') === 'installment' ? (
+                <>
+                  <Form.Item name="installment_count" label="分期数">
+                    <InputNumber min={1} style={{ width: '100%' }} placeholder="请输入分期数" />
+                  </Form.Item>
+                  <Form.Item name="installment_amount" label="每期金额">
+                    <InputNumber min={0} precision={2} style={{ width: '100%' }} placeholder="请输入每期金额" />
+                  </Form.Item>
+                </>
+              ) : null
+            }
+          </Form.Item>
           <Form.Item name="amount" label="合同金额">
             <InputNumber placeholder="请输入合同金额" style={{ width: '100%' }} min={0} precision={2} />
           </Form.Item>
+          <Form.Item name="handler" label="主办人">
+            <Select placeholder="请选择主办人" allowClear />
+          </Form.Item>
+          <Form.Item name="co_handler" label="协办人">
+            <Select placeholder="请选择协办人" allowClear />
+          </Form.Item>
           <Form.Item name="sign_date" label="签订日期">
+            <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="receive_date" label="接收日期">
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="start_date" label="开始日期">
@@ -1044,19 +1266,27 @@ export default function ContractManagement() {
           <Form.Item name="end_date" label="结束日期">
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
-          {/* 对方当事人 */}
           <Form.Item name="opposing_party" label="对方当事人">
             <Input placeholder="请输入对方当事人（可空）" />
           </Form.Item>
-          {/* 分配比例 */}
+          <Form.Item name="fee_amount" label="应收金额">
+            <InputNumber placeholder="请输入应收金额" style={{ width: '100%' }} min={0} precision={2} />
+          </Form.Item>
+          <Form.Item name="payment_status" label="收款状态">
+            <Select options={paymentStatusOptions} placeholder="请选择收款状态" />
+          </Form.Item>
+          <Form.Item name="refund_amount" label="退款金额">
+            <InputNumber placeholder="请输入退款金额" style={{ width: '100%' }} min={0} precision={2} />
+          </Form.Item>
+          <Form.Item name="refund_status" label="返还状态">
+            <Select options={refundStatusOptions} placeholder="请选择返还状态" />
+          </Form.Item>
           <Form.Item name="allocation_ratio" label="分配比例" tooltip="JSON格式，如 [{&quot;role&quot;:&quot;律师&quot;,&quot;ratio&quot;:0.7}]">
             <Input.TextArea rows={3} placeholder='请输入JSON格式，如 [{"role":"律师","ratio":0.7}]' />
           </Form.Item>
-          {/* 质保金 */}
           <Form.Item name="quality_deposit" label="质保金（元）">
             <InputNumber placeholder="请输入质保金" style={{ width: '100%' }} min={0} precision={2} />
           </Form.Item>
-          {/* 原件状态 */}
           <Form.Item name="original_status" label="原件状态" initialValue="not_received">
             <Select options={originalStatusOptions} placeholder="请选择原件状态" />
           </Form.Item>
@@ -1082,14 +1312,43 @@ export default function ContractManagement() {
               <div><span style={{ color: theme.textTertiary }}>合同编号：</span>{String(c.contract_no || '')}</div>
               <div><span style={{ color: theme.textTertiary }}>合同标题：</span>{String(c.title || '')}</div>
               <div><span style={{ color: theme.textTertiary }}>类型：</span><Tag color={typeColorMap[c.type as string]}>{typeLabelMap[c.type as string]}</Tag></div>
+              <div><span style={{ color: theme.textTertiary }}>业务类型：</span>{String(c.contract_category || '-')}</div>
+              <div><span style={{ color: theme.textTertiary }}>合同来源：</span>{String(c.contract_source || '-')}</div>
               <div><span style={{ color: theme.textTertiary }}>阶段：</span><Tag className={stageStitchMap[c.stage as string] || 'stitch-tag stitch-tag-primary'}>{stageLabelMap[c.stage as string]}</Tag></div>
               <div><span style={{ color: theme.textTertiary }}>客户名称：</span>{String(c.client_name || '')}</div>
               <div><span style={{ color: theme.textTertiary }}>客户电话：</span>{String(c.client_phone || '-')}</div>
+              <div><span style={{ color: theme.textTertiary }}>关联案件：</span>
+              {(() => {
+                const foundCase = cases.find((cs: Record<string, unknown>) => String(cs.id) === String(c.case_id))
+                if (foundCase) {
+                  return <a onClick={() => navigate('/cases')}>{String(c.case_name || foundCase.case_no || c.case_id || '-')}</a>
+                }
+                return String(c.case_name || c.case_id || '-')
+              })()}
+            </div>
+            <div><span style={{ color: theme.textTertiary }}>关联线索：</span>
+              {(() => {
+                const foundLead = leads.find((ld: Record<string, unknown>) => String(ld.id) === String(c.related_lead_id))
+                if (foundLead) {
+                  return <a onClick={() => navigate('/leads')}>{String(foundLead.phone || foundLead.contact_name || '-')}</a>
+                }
+                return String(c.related_lead_id || '-')
+              })()}
+            </div>
+              <div><span style={{ color: theme.textTertiary }}>主办人：</span>{String(c.handler || '-')}</div>
+              <div><span style={{ color: theme.textTertiary }}>协办人：</span>{String(c.co_handler || '-')}</div>
               <div><span style={{ color: theme.textTertiary }}>合同金额：</span>¥{Number(c.amount || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-              <div><span style={{ color: theme.textTertiary }}>关联案件：</span>{String(c.case_id || '-')}</div>
+              <div><span style={{ color: theme.textTertiary }}>应收金额：</span>¥{Number(c.fee_amount || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              <div><span style={{ color: theme.textTertiary }}>已收金额：</span>¥{Number(c.paid_amount || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              <div><span style={{ color: theme.textTertiary }}>待收金额：</span>¥{Number(c.unpaid_amount || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              <div><span style={{ color: theme.textTertiary }}>收款状态：</span><Tag color={paymentStatusColorMap[c.payment_status as string] || 'default'}>{paymentStatusLabelMap[c.payment_status as string] || '-'}</Tag></div>
+              <div><span style={{ color: theme.textTertiary }}>返还状态：</span><Tag color={refundStatusColorMap[c.refund_status as string] || 'default'}>{refundStatusLabelMap[c.refund_status as string] || '-'}</Tag></div>
               <div><span style={{ color: theme.textTertiary }}>签订日期：</span>{formatDate(c.sign_date as string)}</div>
+              <div><span style={{ color: theme.textTertiary }}>接收日期：</span>{formatDate(c.receive_date as string)}</div>
               <div><span style={{ color: theme.textTertiary }}>开始日期：</span>{formatDate(c.start_date as string)}</div>
               <div><span style={{ color: theme.textTertiary }}>结束日期：</span>{formatDate(c.end_date as string)}</div>
+              <div><span style={{ color: theme.textTertiary }}>计费周期：</span>{String(c.billing_cycle || '-')}</div>
+              <div><span style={{ color: theme.textTertiary }}>付款方式：</span>{String(c.payment_method || '-')}</div>
               <div><span style={{ color: theme.textTertiary }}>状态：</span><Tag className={c.status === 'active' ? 'stitch-tag stitch-tag-success' : 'stitch-tag stitch-tag-primary'}>{statusLabelMap[c.status as string]}</Tag></div>
               <div><span style={{ color: theme.textTertiary }}>审批状态：</span><Tag className={approvalStatusStitchMap[c.approval_status as string] || 'stitch-tag stitch-tag-primary'}>{approvalStatusLabelMap[c.approval_status as string] || '草稿'}</Tag></div>
               <div><span style={{ color: theme.textTertiary }}>用印方式：</span>{c.seal_apply_method ? (sealApplyMethodLabelMap[c.seal_apply_method as string] || String(c.seal_apply_method)) : '-'}</div>

@@ -34,6 +34,27 @@ export interface Case {
   risk_level?: string
   is_overdue?: boolean
   change_status?: string
+  // 补充字段 - 参考项目案件管理
+  plaintiff?: string
+  plaintiff_agent?: string
+  defendant?: string
+  defendant_agent?: string
+  case_nature?: string
+  case_number?: string
+  co_handler?: string
+  progress?: number
+  next_step?: string
+  next_step_deadline?: string
+  contract_id?: string
+  related_lead_id?: string
+  success_rate?: number
+  fee_type?: 'fixed' | 'risk' | 'hybrid'
+  billing_cycle?: 'hourly' | 'monthly' | 'case_based'
+  payment_method?: 'one_time' | 'installment' | 'milestone'
+  court_level?: string
+  appeal_level?: string
+  retrial_level?: string
+  enforcement_level?: string
 }
 
 export type CreateCasePayload = {
@@ -58,6 +79,27 @@ export type CreateCasePayload = {
   stage?: string
   description?: string
   organization_id: string
+  // 补充字段
+  plaintiff?: string
+  plaintiff_agent?: string
+  defendant?: string
+  defendant_agent?: string
+  case_nature?: string
+  case_number?: string
+  co_handler?: string
+  progress?: number
+  next_step?: string
+  next_step_deadline?: string
+  contract_id?: string
+  related_lead_id?: string
+  success_rate?: number
+  fee_type?: 'fixed' | 'risk' | 'hybrid'
+  billing_cycle?: 'hourly' | 'monthly' | 'case_based'
+  payment_method?: 'one_time' | 'installment' | 'milestone'
+  court_level?: string
+  appeal_level?: string
+  retrial_level?: string
+  enforcement_level?: string
 }
 
 export const createCase = (data: CreateCasePayload) => {

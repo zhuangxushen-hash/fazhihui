@@ -1,5 +1,90 @@
 import axios from './axios'
 
+// 合同接口定义
+export interface Contract {
+  id: string
+  contract_no: string
+  contract_name?: string
+  case_id?: string
+  case_name?: string
+  client_name: string
+  client_id?: string
+  contract_type?: string
+  contract_amount?: number
+  fee_amount?: number
+  paid_amount?: number
+  unpaid_amount?: number
+  payment_status?: string
+  refund_status?: string
+  co_handler?: string
+  handler?: string
+  sign_date?: string
+  start_date?: string
+  end_date?: string
+  receive_date?: string
+  original_received?: boolean
+  status?: string
+  review_status?: string
+  organization_id: string
+  created_at: string
+  updated_at?: string
+  remarks?: string
+  // 补充字段 - 参考项目合同管理
+  contract_category?: string
+  contract_source?: string
+  template_id?: string
+  success_fee_ratio?: number
+  fee_type?: 'fixed' | 'risk' | 'hybrid'
+  billing_cycle?: 'hourly' | 'monthly' | 'case_based'
+  payment_method?: 'one_time' | 'installment' | 'milestone'
+  installment_count?: number
+  installment_amount?: number
+  refund_amount?: number
+  refund_reason?: string
+  refund_date?: string
+  termination_date?: string
+  termination_reason?: string
+  void_reason?: string
+  void_date?: string
+  correction_count?: number
+  last_correction_date?: string
+  related_lead_id?: string
+  invoice_status?: string
+  invoice_amount?: number
+  tax_amount?: number
+  net_amount?: number
+}
+
+export type CreateContractPayload = {
+  contract_no: string
+  contract_name?: string
+  case_id?: string
+  client_name: string
+  client_id?: string
+  contract_type?: string
+  contract_amount?: number
+  fee_amount?: number
+  payment_status?: string
+  co_handler?: string
+  handler?: string
+  sign_date?: string
+  start_date?: string
+  end_date?: string
+  organization_id: string
+  // 补充字段
+  contract_category?: string
+  contract_source?: string
+  template_id?: string
+  success_fee_ratio?: number
+  fee_type?: 'fixed' | 'risk' | 'hybrid'
+  billing_cycle?: 'hourly' | 'monthly' | 'case_based'
+  payment_method?: 'one_time' | 'installment' | 'milestone'
+  installment_count?: number
+  installment_amount?: number
+  related_lead_id?: string
+  remarks?: string
+}
+
 // 查询合同列表
 export const getContracts = (params?: any) => axios.get('/contracts', { params })
 

@@ -12,6 +12,20 @@ export interface Lead {
   case_description?: string
   created_at: string
   organization_id: string
+  // 补充字段 - 参考项目线索管理
+  unit_name?: string
+  business_summary?: string
+  team?: string
+  handler?: string
+  province?: string
+  city?: string
+  amount?: number
+  contact_address?: string
+  intent_level?: 'high' | 'medium' | 'low'
+  contact_result?: 'not_contacted' | 'contacting' | 'deal_closed' | 'abandoned' | 'converted'
+  assignee?: string
+  business_source?: string
+  register_date?: string
 }
 
 export interface User {
@@ -79,7 +93,7 @@ export const getLeadById = (id: string) => {
   return axios.get(`/leads/${id}`)
 }
 
-// 更新线索基本信息（客户姓名/手机号/案由/来源渠道/来源关键词/咨询内容）
+// 更新线索基本信息（客户姓名/手机号/案由/来源渠道/来源关键词/咨询内容等）
 export const updateLead = (id: string, data: Partial<{
   contact_name?: string
   phone?: string
@@ -87,6 +101,20 @@ export const updateLead = (id: string, data: Partial<{
   source_channel?: string
   source_keyword?: string
   case_description?: string
+  // 补充字段
+  unit_name?: string
+  business_summary?: string
+  team?: string
+  handler?: string
+  province?: string
+  city?: string
+  amount?: number
+  contact_address?: string
+  intent_level?: 'high' | 'medium' | 'low'
+  contact_result?: 'not_contacted' | 'contacting' | 'deal_closed' | 'abandoned' | 'converted'
+  assignee?: string
+  business_source?: string
+  register_date?: string
 }>) => {
   return axios.put(`/leads/${id}`, data)
 }
