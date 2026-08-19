@@ -1236,32 +1236,18 @@ export class DashboardService {
    * 维度：channel/case_type/lawyer/team/month
    * 指标：case_count/revenue/cost/profit
    */
-  async generateReport(templateId: string, filters?: any): Promise<any> {
-    const template = await this.reportTemplateRepository.findOne({ where: { id: templateId } });
-    if (!template) {
-      throw new Error('报表模板不存在');
-    }
-
-    const dimensions: string[] = JSON.parse(template.dimensions || '[]');
-    const metrics: string[] = JSON.parse(template.metrics || '[]');
-
-    // 确定时间范围
-    let startDate: Date | undefined;
-    let endDate: Date | undefined;
-    if (filters?.start_date) {
-      startDate = new Date(filters.start_date);
-    } else if (template.time_range === 'custom' && template.custom_start_date) {
-      startDate = template.custom_start_date;
-    } else {
-      const days = template.time_range === '7d' ? 7 : template.time_range === '90d' ? 90 : 30;
-      startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    }
-    if (filters?.end_date) {
-      endDate = new Date(filters.end_date);
-    } else if (template.time_range === 'custom' && template.custom_end_date) {
-      endDate = template.custom_end_date;
-    }
-
+  /**
+   * 生成报表核心查询（动态维度+指标）
+   * 维度：channel/case_type/lawyer/team/month
+   * 指标：case_count/revenue/cost/profit
+   */
+  private async runReportQuery(
+    organizationId: string,
+    dimensions: string[],
+    metrics: string[],
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<any[]> {
     // 构建 Case 查询
     const qb = this.caseRepository.createQueryBuilder('case');
 
@@ -1273,7 +1259,7 @@ export class DashboardService {
       qb.leftJoin(User, 'user', 'user.id = case.assignee_lawyer_id');
     }
 
-    qb.where('case.organization_id = :orgId', { orgId: template.organization_id });
+    qb.where('case.organization_id = :orgId', { orgId: organizationId });
     if (startDate) {
       qb.andWhere('case.created_at >= :startDate', { startDate });
     }
@@ -1359,10 +1345,99 @@ export class DashboardService {
       return newRow;
     });
 
+    return resultData;
+  }
+
+  /**
+   * 生成报表数据（基于已保存模板）
+   */
+  async generateReport(templateId: string, filters?: any): Promise<any> {
+    const template = await this.reportTemplateRepository.findOne({ where: { id: templateId } });
+    if (!template) {
+      throw new Error('报表模板不存在');
+    }
+
+    const dimensions: string[] = JSON.parse(template.dimensions || '[]');
+    const metrics: string[] = JSON.parse(template.metrics || '[]');
+
+    // 确定时间范围
+    let startDate: Date | undefined;
+    let endDate: Date | undefined;
+    if (filters?.start_date) {
+      startDate = new Date(filters.start_date);
+    } else if (template.time_range === 'custom' && template.custom_start_date) {
+      startDate = template.custom_start_date;
+    } else {
+      const days = template.time_range === '7d' ? 7 : template.time_range === '90d' ? 90 : 30;
+      startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    }
+    if (filters?.end_date) {
+      endDate = new Date(filters.end_date);
+    } else if (template.time_range === 'custom' && template.custom_end_date) {
+      endDate = template.custom_end_date;
+    }
+
+    const resultData = await this.runReportQuery(
+      template.organization_id,
+      dimensions,
+      metrics,
+      startDate,
+      endDate,
+    );
+
     return {
       template: {
         id: template.id,
         name: template.name,
+        dimensions,
+        metrics,
+      },
+      time_range: { start_date: startDate, end_date: endDate },
+      data: resultData,
+    };
+  }
+
+  /**
+   * 生成报表数据（前端一键生成，无需已保存模板）
+   * 兼容不传 template_id、直接按维度/指标/时间范围生成的调用
+   */
+  async generateReportFromConfig(config: {
+    org_id: string;
+    name?: string;
+    dimensions?: string[];
+    metrics?: string[];
+    time_range?: string;
+    start_date?: string;
+    end_date?: string;
+  }): Promise<any> {
+    const dimensions = config.dimensions || ['month'];
+    const metrics = config.metrics || ['case_count'];
+
+    // 确定时间范围
+    let startDate: Date | undefined;
+    let endDate: Date | undefined;
+    if (config.start_date) {
+      startDate = new Date(config.start_date);
+    } else if (config.time_range && config.time_range !== 'custom') {
+      const days = config.time_range === '7d' ? 7 : config.time_range === '90d' ? 90 : 30;
+      startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    }
+    if (config.end_date) {
+      endDate = new Date(config.end_date);
+    }
+
+    const resultData = await this.runReportQuery(
+      config.org_id,
+      dimensions,
+      metrics,
+      startDate,
+      endDate,
+    );
+
+    return {
+      template: {
+        id: null,
+        name: config.name || '自定义报表',
         dimensions,
         metrics,
       },

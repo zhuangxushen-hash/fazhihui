@@ -206,8 +206,13 @@ export class DashboardController {
 
   /** 生成报表数据 */
   @Post('reports/generate')
-  generateReport(@Body() body: { template_id: string; filters?: any }) {
-    return this.dashboardService.generateReport(body.template_id, body.filters);
+  generateReport(@Body() body: any) {
+    // 基于已保存模板生成
+    if (body.template_id) {
+      return this.dashboardService.generateReport(body.template_id, body.filters);
+    }
+    // 前端一键生成：无模板，直接按维度/指标/时间范围生成
+    return this.dashboardService.generateReportFromConfig(body);
   }
 
   /** 导出 Excel */

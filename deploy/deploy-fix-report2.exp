@@ -1,0 +1,8 @@
+#!/usr/bin/expect -f
+set timeout 600
+set password "s\`3}2KG~n@D?N\$P"
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "cd /home/ubuntu/fazhihui/backend && npm install pdfkit@^0.17.2 @fddnpm/fasc-openapi-node-sdk@^5.4.7 2>&1 | tail -n 8 && echo '=== 重新构建 ===' && npm run build 2>&1 | tail -n 6 && echo '=== 重启PM2 ===' && pm2 restart all 2>&1 | tail -n 2 && sleep 3 && pm2 list 2>&1 | grep -E 'prod-backend|test-backend'"
+expect {
+    -re "password:|Password:" { send "$password\r"; exp_continue }
+    eof
+}

@@ -1,0 +1,18 @@
+#!/usr/bin/expect -f
+set timeout 90
+set password "s\`3}2KG~n@D?N\$P"
+set server "ubuntu@1.12.57.22"
+
+# 上传修复脚本
+spawn scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /Users/season/AI编程/法律咨询/全链产品/deploy/fix-org-schema.js "$server:/home/ubuntu/fazhihui/fix-org-schema.js"
+expect {
+    -re "password:|Password:" { send "$password\r"; expect eof }
+    timeout { puts "TIMEOUT scp"; exit 1 }
+}
+
+# 停生产 → 补列 → 启动生产 → 验证
+spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$server" "cd /home/ubuntu/fazhihui && echo '=== 停止生产 ===' && pm2 stop prod-backend 2>&1 | tail -n 1 && echo '=== 补列 ===' && node fix-org-schema.js fazhihui_prod.sqlite && echo '=== 启动生产 ===' && pm2 start prod-backend 2>&1 | tail -n 1 && sleep 6 && echo '=== 端口监听 ===' && (ss -tlnp 2>/dev/null | grep -E ':3001' || echo '未监听3001') && echo '=== 生产登录 ===' && curl -s -o /dev/null -w '登录HTTP:%{http_code}\n' -X POST http://localhost:3001/api/auth/login -H 'Content-Type: application/json' -d '{\"phone\":\"15820275356\",\"password\":\"zxs123456\"}' --max-time 10 && pm2 list 2>&1 | grep prod-backend"
+expect {
+    -re "password:|Password:" { send "$password\r"; exp_continue }
+    eof
+}
