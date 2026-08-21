@@ -52,6 +52,8 @@ import { ShortcutModule } from './shortcut/shortcut.module';
 import { LawyerCenterModule } from './lawyer-center/lawyer-center.module';
 // 案件节点推送规则配置模块
 import { PushRuleModule } from './push-rule/push-rule.module';
+// C 端短信提醒模块（创蓝短信）
+import { SmsModule } from './sms/sms.module';
 // 法大大电子签（客户端签约身份鉴别 + 电子签名）
 import { FadadaModule } from './fadada/fadada.module';
 
@@ -122,6 +124,8 @@ import { FadadaModule } from './fadada/fadada.module';
     LawyerCenterModule,
     // 案件节点推送规则配置模块
     PushRuleModule,
+    // C 端短信提醒模块
+    SmsModule,
     FadadaModule,
   ],
   providers: [

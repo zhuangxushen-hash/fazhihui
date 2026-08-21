@@ -442,7 +442,6 @@ export class OpportunityService {
         client_phone: lead.phone,
         referrer: lead.referrer || opportunity.referrer,
         source_detail: lead.lead_source_detail,
-        case_name: (lead.contact_name ? lead.contact_name + '案' : undefined),
       });
 
       const savedCase = await manager.save(Case, caseEntity);

@@ -1,5 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn,
-  UpdateDateColumn
+  UpdateDateColumn, DeleteDateColumn
 } from 'typeorm';
 
 // 印章类型：official公章 / financial财务章 / contract合同章 / personal法人章
@@ -42,4 +42,8 @@ export class Seal {
 
   @UpdateDateColumn()
   updated_at: Date;
+
+  // 软删除时间（DeleteDateColumn 查询默认过滤已删除记录）
+  @DeleteDateColumn({ nullable: true })
+  deleted_at: Date;
 }

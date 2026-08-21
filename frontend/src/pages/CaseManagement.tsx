@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Table, Button, Modal, Form, Input, Select, Space, message, Upload, DatePicker, Card, Tag, InputNumber, Switch, Popconfirm, Progress } from 'antd'
-import dayjs from 'dayjs'
-import { PlusOutlined, EditOutlined, EyeOutlined, UploadOutlined, SearchOutlined, DeleteOutlined } from '@ant-design/icons'
+import { Table, Button, Modal, Form, Input, Select, Space, message, DatePicker, Card, Tag, InputNumber, Switch, Popconfirm, Progress } from 'antd'
+import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, DeleteOutlined, ExportOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { generateLetter, closeCaseReport, archiveCase, createCase, batchCloseCases, batchArchiveCases, CreateCasePayload } from '../api/case'
-import { formatDate, formatDateTime } from '../utils/format'
+import { getClientProfiles } from '../api/client-profile'
+import { formatDate } from '../utils/format'
 import { theme } from '../constants/theme'
 // === Material Design 3 Style Tokens ===
 const pageH2Style: React.CSSProperties = {
@@ -32,23 +32,6 @@ const searchBarStyle: React.CSSProperties = {
 const tableCardStyle: React.CSSProperties = {
   borderRadius: 16,
   overflow: 'hidden',
-}
-
-const infoBlockStyle: React.CSSProperties = {
-  background: '#f3f3f5',
-  padding: 16,
-  borderRadius: 8,
-  fontSize: 13,
-  color: theme.textSecondary,
-  lineHeight: 1.7,
-}
-
-const sectionTitleStyle: React.CSSProperties = {
-  fontFamily: "'Noto Serif SC', serif",
-  fontSize: 15,
-  fontWeight: 600,
-  color: theme.textBase,
-  marginBottom: 8,
 }
 
 // === MD3 Status Pill (Soft Background Style) ===
@@ -145,6 +128,7 @@ const caseCategoryLabelMap: Record<string, string> = {
   criminal: '刑事',
   admin: '行政',
   consultant: '顾问',
+  non_litigation: '非诉',
 }
 
 // 案件大类 Tag 的 stitch-tag 变体映射
@@ -171,12 +155,19 @@ const stageTagClassMap: Record<string, string> = {
   closed: 'stitch-tag stitch-tag-success',
 }
 
+// 客户类型映射：individual个人/enterprise企业
+const typeLabelMap: Record<string, string> = {
+  individual: '个人',
+  enterprise: '企业',
+}
+
 export default function CaseManagement() {
   const [data, setData] = useState<Record<string, unknown>[]>([])
   const [leads, setLeads] = useState<Record<string, unknown>[]>([])
+  const [clientProfiles, setClientProfiles] = useState<Record<string, any>[]>([])
+  const [selectedClientId, setSelectedClientId] = useState<string | undefined>()
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
-  const [detailVisible, setDetailVisible] = useState(false)
   const [assignVisible, setAssignVisible] = useState(false)
   const [statusVisible, setStatusVisible] = useState(false)
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
@@ -184,8 +175,8 @@ export default function CaseManagement() {
   const [changeActionType, setChangeActionType] = useState<string>('')
   const [letterVisible, setLetterVisible] = useState(false)
   const [currentCase, setCurrentCase] = useState<Record<string, unknown> | null>(null)
-  const [documents, setDocuments] = useState<Record<string, unknown>[]>([])
   const [lawyers, setLawyers] = useState<Record<string, unknown>[]>([])
+  const [form] = Form.useForm()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useState({
     case_no: '',
@@ -194,6 +185,8 @@ export default function CaseManagement() {
     case_type: '',
     days_no_maintain: '' as string | number,
   })
+  // 案由自定义选项（支持用户输入新案由）
+  const [customCaseTypeOptions, setCustomCaseTypeOptions] = useState<Array<{ value: string; label: string }>>([])
 
   
 
@@ -203,7 +196,31 @@ export default function CaseManagement() {
     fetchData()
     fetchLawyers()
     fetchLeads()
+    fetchClientProfiles()
   }, [])
+
+  const fetchClientProfiles = async () => {
+    try {
+      const res: any = await getClientProfiles({ org_id: user.organization_id, page_size: 100 })
+      setClientProfiles((res?.data?.list || res?.data || []) as Record<string, any>[])
+    } catch (error) {
+      setClientProfiles([])
+    }
+  }
+
+  // 从客户库选择当事人（个人/企业均可），自动带出名称/手机号/客户类型
+  const handleClientSelect = (clientId: string) => {
+    setSelectedClientId(clientId)
+    const cp = clientProfiles.find((c) => String(c.id) === String(clientId))
+    if (cp) {
+      form.setFieldsValue({
+        client_id: cp.id,
+        client_name: cp.name,
+        client_phone: cp.phone,
+        client_type: cp.type || 'individual',
+      })
+    }
+  }
 
   const fetchLeads = async () => {
     try {
@@ -250,6 +267,66 @@ export default function CaseManagement() {
     fetchData()
   }
 
+  // 导出案件列表为 CSV
+  const handleExport = () => {
+    if (!data.length) {
+      message.warning('没有可导出的数据')
+      return
+    }
+    const headers = ['案件编号', '案件名称', '客户姓名', '关联线索', '案由', '案件大类', '主办律师', '协办人', '对方当事人', '联系地址', '受理法院', '状态', '案件阶段', '进度', '下一步', '风险等级', '是否超时', '案件状态', '立案日期']
+    const caseTypeLabel = (type: string) => ({
+      marriage: '婚姻家事',
+      traffic: '交通事故',
+      labor: '劳动争议',
+      debt: '债务逾期',
+      gezhai: '个债',
+      execution: '执行',
+      other: '其他',
+    }[type] || type || '')
+    const caseCategoryLabel = (cat: string) => caseCategoryLabelMap[cat] || cat || ''
+    const statusLabel = (s: string) => caseStatusLabelMap[s] || s || ''
+    const stageLabel = (s: string) => stageLabelMap[s] || s || ''
+    const riskLabel = (l: string) => riskLabelMap[l] || l || ''
+    const rows = data.map((item) => {
+      const lead = leads.find(l => String(l.id) === String(item.lead_id))
+      const leadDisplay = lead ? String(lead.phone || lead.contact_name || '') : ''
+      const changeStatus = String(item.change_status || 'normal')
+      const overdue = Boolean(item.is_overdue)
+      return [
+        item.case_no || '',
+        item.case_name || '',
+        item.client_name || '',
+        leadDisplay,
+        caseTypeLabel(String(item.case_type || '')),
+        caseCategoryLabel(String(item.case_category || '')),
+        item.lawyer_name || '',
+        item.co_handler || '',
+        item.opposing_party || '',
+        item.contact_address || '',
+        item.court || '',
+        statusLabel(String(item.status || '')),
+        stageLabel(String(item.stage || '')),
+        String(item.progress || 0) + '%',
+        item.next_step || '',
+        riskLabel(String(item.risk_level || '')),
+        overdue ? '已超时' : '正常',
+        caseChangeStatusLabelMap[changeStatus] || '正常',
+        formatDate(String(item.filing_date || '')) || '',
+      ]
+    })
+    const csv = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n')
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `案件列表_${new Date().toISOString().slice(0, 10)}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+    message.success('导出成功')
+  }
+
   const handleAddCase = () => {
     setModalVisible(true)
   }
@@ -261,8 +338,14 @@ export default function CaseManagement() {
       if (payload.filing_date && typeof payload.filing_date === 'object' && 'format' in (payload.filing_date as object)) {
         payload.filing_date = (payload.filing_date as { format: (f: string) => string }).format('YYYY-MM-DD')
       }
-      if (payload.expected_close_date && typeof payload.expected_close_date === 'object' && 'format' in (payload.expected_close_date as object)) {
-        payload.expected_close_date = (payload.expected_close_date as { format: (f: string) => string }).format('YYYY-MM-DD')
+      if (payload.hearing_date && typeof payload.hearing_date === 'object' && 'format' in (payload.hearing_date as object)) {
+        payload.hearing_date = (payload.hearing_date as { format: (f: string) => string }).format('YYYY-MM-DD')
+      }
+      if (payload.evidence_deadline && typeof payload.evidence_deadline === 'object' && 'format' in (payload.evidence_deadline as object)) {
+        payload.evidence_deadline = (payload.evidence_deadline as { format: (f: string) => string }).format('YYYY-MM-DD')
+      }
+      if (payload.appeal_deadline && typeof payload.appeal_deadline === 'object' && 'format' in (payload.appeal_deadline as object)) {
+        payload.appeal_deadline = (payload.appeal_deadline as { format: (f: string) => string }).format('YYYY-MM-DD')
       }
       await createCase(payload as CreateCasePayload)
       setModalVisible(false)
@@ -272,17 +355,6 @@ export default function CaseManagement() {
       const detail = error?.response?.data?.message || '案件创建失败，请重试'
       message.error(detail)
     }
-  }
-
-  const handleViewDetail = async (record: Record<string, unknown>) => {
-    setCurrentCase(record)
-    try {
-      const res = await axios.get(`/cases/${record.id}/documents`)
-      setDocuments((res as Record<string, unknown>[]) || [])
-    } catch (error) {
-      setDocuments([])
-    }
-    setDetailVisible(true)
   }
 
   const handleAssignLawyer = (record: Record<string, unknown>) => {
@@ -421,27 +493,6 @@ export default function CaseManagement() {
     }
   }
 
-  const handleUploadDocument = async (file: File) => {
-    if (!currentCase) return false
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('case_id', currentCase.id as string)
-    formData.append('uploader_id', user.id as string)
-    formData.append('doc_type', 'other')
-
-    try {
-      await axios.post('/documents/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-      message.success('文件上传成功')
-      const res = await axios.get(`/cases/${currentCase.id}/documents`)
-      setDocuments((res as Record<string, unknown>[]) || [])
-    } catch (error) {
-      message.error('文件上传失败')
-    }
-    return false
-  }
-
   const statusOptions = [
     { value: 'pending_assign', label: '待分配' },
     { value: 'processing', label: '处理中' },
@@ -458,14 +509,35 @@ export default function CaseManagement() {
     { value: 'traffic', label: '交通事故' },
     { value: 'labor', label: '劳动争议' },
     { value: 'debt', label: '债务逾期' },
+    { value: 'gezhai', label: '个债' },
+    { value: 'execution', label: '执行' },
     { value: 'other', label: '其他' },
   ]
+
+  // 合并预设选项和自定义选项
+  const allCaseTypeOptions = [...caseTypeOptions, ...customCaseTypeOptions]
+
+  // 处理案由搜索和新增
+  const handleCaseTypeSearch = (input: string) => {
+    if (input && !allCaseTypeOptions.find(o => o.label === input || o.value === input)) {
+      const newOption = { value: input, label: input }
+      setCustomCaseTypeOptions(prev => [...prev, newOption])
+    }
+  }
+
+  const handleCaseTypeChange = (value: string) => {
+    if (value && !allCaseTypeOptions.find(o => o.value === value)) {
+      const newOption = { value, label: value }
+      setCustomCaseTypeOptions(prev => [...prev, newOption])
+    }
+  }
 
   const caseCategoryOptions = [
     { value: 'civil', label: '民事' },
     { value: 'criminal', label: '刑事' },
     { value: 'admin', label: '行政' },
     { value: 'consultant', label: '顾问' },
+    { value: 'non_litigation', label: '非诉' },
   ]
 
   const clientTypeOptions = [
@@ -478,14 +550,6 @@ export default function CaseManagement() {
     { value: 'processing', label: '办案' },
     { value: 'closing', label: '结案' },
     { value: 'closed', label: '已结案' },
-  ]
-
-  const caseNatureOptions = [
-    { value: 'civil', label: '民事' },
-    { value: 'criminal', label: '刑事' },
-    { value: 'admin', label: '行政' },
-    { value: 'commercial', label: '商事' },
-    { value: 'other', label: '其他' },
   ]
 
   const feeTypeOptions = [
@@ -506,16 +570,11 @@ export default function CaseManagement() {
     { value: 'milestone', label: '里程碑' },
   ]
 
-  const courtLevelOptions = [
-    { value: 'basic', label: '基层' },
-    { value: 'intermediate', label: '中级' },
-    { value: 'high', label: '高级' },
-    { value: 'supreme', label: '最高' },
-  ]
-
   const columns = [
     { title: '案件编号', dataIndex: 'case_no', key: 'case_no', width: 140 },
-    { title: '案件名称', dataIndex: 'case_name', key: 'case_name' },
+    { title: '案件名称', dataIndex: 'case_name', key: 'case_name', render: (name: string, record: Record<string, unknown>) => (
+      <a onClick={() => navigate(`/cases/${record.id}`)} style={{ color: theme.primary }}>{name || '-'}</a>
+    )},
     { title: '客户姓名', dataIndex: 'client_name', key: 'client_name' },
     { title: '关联线索', dataIndex: 'lead_id', key: 'lead_id', render: (leadId: string) => {
       const lead = leads.find(l => String(l.id) === String(leadId))
@@ -528,14 +587,13 @@ export default function CaseManagement() {
       traffic: '交通事故',
       labor: '劳动争议',
       debt: '债务逾期',
+      gezhai: '个债',
+      execution: '执行',
       other: '其他',
     }[type]) },
     { title: '案件大类', dataIndex: 'case_category', key: 'case_category', render: (cat: string) => (
       <Tag className={caseCategoryTagClassMap[cat] || 'stitch-tag'}>{caseCategoryLabelMap[cat] || '-'}</Tag>
     )},
-    { title: '案件性质', dataIndex: 'case_nature', key: 'case_nature', render: (val: string) => ({
-      civil: '民事', criminal: '刑事', admin: '行政', commercial: '商事', other: '其他',
-    }[val] || '-') },
     { title: '主办律师', dataIndex: 'lawyer_name', key: 'lawyer_name' },
     { title: '协办人', dataIndex: 'co_handler', key: 'co_handler' },
     { title: '对方当事人', dataIndex: 'opposing_party', key: 'opposing_party' },
@@ -562,7 +620,6 @@ export default function CaseManagement() {
       return <StatusPill text={caseChangeStatusLabelMap[finalStatus] || '正常'} kind={caseChangeStatusKindMap[finalStatus] || 'neutral'} />
     }},
     { title: '立案日期', dataIndex: 'filing_date', key: 'filing_date', render: (val: string) => formatDate(val) },
-    { title: '预计结案', dataIndex: 'expected_close_date', key: 'expected_close_date', render: (val: string) => formatDate(val) },
     { title: '操作', key: 'action', width: 420, render: (_: unknown, record: Record<string, unknown>) => {
       // 当案件处于 normal（正常）状态时，显示变更/解约/作废按钮
       const changeStatus = record.change_status || 'normal'
@@ -573,7 +630,7 @@ export default function CaseManagement() {
       const canArchive = stage === 'closing'
       return (
         <Space wrap className="stitch-btn-group">
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
+          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => navigate(`/cases/${record.id}`)}>详情</Button>
           <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleChangeStatus(record)}>状态</Button>
           {!record.assignee_lawyer_id && (
             <Button size="small" type="primary" onClick={() => handleAssignLawyer(record)}>分配律师</Button>
@@ -637,13 +694,18 @@ export default function CaseManagement() {
         </Select>
         <Select
           placeholder="案由筛选"
-          style={{ width: 150 }}
+          style={{ width: 180 }}
           allowClear
+          showSearch
           value={searchParams.case_type || undefined}
-          onChange={(value) => setSearchParams({ ...searchParams, case_type: value || '' })}
-        >
-          {caseTypeOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
-        </Select>
+          onChange={(value) => { setSearchParams({ ...searchParams, case_type: value || '' }); handleCaseTypeChange(value) }}
+          onSearch={handleCaseTypeSearch}
+          filterOption={(input, option) =>
+            (option?.label as unknown as string)?.toLowerCase().includes(input.toLowerCase()) ||
+            (option?.value as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+          }
+          options={allCaseTypeOptions}
+        />
         <Select
           placeholder="智能筛选"
           style={{ width: 180 }}
@@ -670,6 +732,7 @@ export default function CaseManagement() {
         >
           <Button disabled={!selectedRowKeys.length}>批量归档</Button>
         </Popconfirm>
+        <Button icon={<ExportOutlined />} onClick={handleExport}>导出</Button>
       </div>
 
       <Card className="stitch-table" style={tableCardStyle} styles={{ body: { padding: 0 } }}>
@@ -692,17 +755,29 @@ export default function CaseManagement() {
         width={600}
       >
         <Form onFinish={handleSubmit}>
-          <Form.Item name="case_name" label="案件名称">
-            <Input placeholder="请输入案件名称" />
+          <Form.Item name="client_id" label="当事人（从客户库选择）">
+            <Select
+              placeholder="请选择客户（支持个人/企业）"
+              allowClear
+              showSearch
+              optionFilterProp="children"
+              onChange={handleClientSelect}
+            >
+              {clientProfiles.map(cp => (
+                <Select.Option key={cp.id as React.Key} value={cp.id as string}>
+                  {String(cp.name || '')}（{typeLabelMap[cp.type] || '个人'}）- {String(cp.phone || '无电话')}
+                </Select.Option>
+              ))}
+            </Select>
           </Form.Item>
           <Form.Item name="client_name" label="客户姓名" rules={[{ required: true }]}>
-            <Input placeholder="请输入客户姓名" />
+            <Input placeholder="请输入客户姓名" disabled={!!selectedClientId} />
           </Form.Item>
           <Form.Item name="client_phone" label="客户手机号">
-            <Input placeholder="请输入客户手机号" />
+            <Input placeholder="请输入客户手机号" disabled={!!selectedClientId} />
           </Form.Item>
           <Form.Item name="client_type" label="客户类型">
-            <Select>
+            <Select disabled={!!selectedClientId}>
               {clientTypeOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
             </Select>
           </Form.Item>
@@ -718,12 +793,23 @@ export default function CaseManagement() {
           <Form.Item name="contact_address" label="联系地址">
             <Input placeholder="请输入联系地址" />
           </Form.Item>
-          <Form.Item name="case_type" label="案由" rules={[{ required: true }]}>
-            <Select>
-              {caseTypeOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
-            </Select>
+          <Form.Item name="case_name" label="案件名称">
+            <Input placeholder="请输入案件名称" />
           </Form.Item>
-          <Form.Item name="case_number" label="案号">
+          <Form.Item name="case_type" label="案由" rules={[{ required: true }]}>
+            <Select
+              showSearch
+              placeholder="请选择或输入案由"
+              onSearch={handleCaseTypeSearch}
+              onChange={(value) => handleCaseTypeChange(value)}
+              filterOption={(input, option) =>
+                (option?.label as unknown as string)?.toLowerCase().includes(input.toLowerCase()) ||
+                (option?.value as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+              }
+              options={allCaseTypeOptions}
+            />
+          </Form.Item>
+          <Form.Item name="case_number" label="法院案号">
             <Input placeholder="请输入案号" />
           </Form.Item>
           <Form.Item name="case_category" label="案件大类">
@@ -731,30 +817,20 @@ export default function CaseManagement() {
               {caseCategoryOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
             </Select>
           </Form.Item>
-          <Form.Item name="case_nature" label="案件性质">
-            <Select>
-              {caseNatureOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
-            </Select>
-          </Form.Item>
-          <Form.Item name="court" label="受理法院">
-            <Input placeholder="请输入受理法院" />
-          </Form.Item>
-          <Form.Item name="court_level" label="法院级别">
-            <Select>
-              {courtLevelOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
-            </Select>
-          </Form.Item>
-          <Form.Item name="appeal_level" label="上诉法院">
-            <Input placeholder="请输入上诉法院" />
-          </Form.Item>
-          <Form.Item name="retrial_level" label="再审法院">
-            <Input placeholder="请输入再审法院" />
-          </Form.Item>
-          <Form.Item name="enforcement_level" label="执行法院">
-            <Input placeholder="请输入执行法院" />
-          </Form.Item>
-          <Form.Item name="opposing_party" label="对方当事人">
+          <Form.Item name="opposing_party" label="对方当事人" rules={[{
+              validator: (_: unknown, value: string) => {
+                if (!value && form.getFieldValue('opposing_party_type')) {
+                  return Promise.reject(new Error('请填写对方当事人'))
+                }
+                return Promise.resolve()
+              },
+            }]}>
             <Input placeholder="请输入对方当事人" />
+          </Form.Item>
+          <Form.Item name="opposing_party_type" label="对方当事人类型">
+            <Select placeholder="请选择对方当事人类型" allowClear>
+              {clientTypeOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
+            </Select>
           </Form.Item>
           <Form.Item name="opposing_agent" label="对方代理人">
             <Input placeholder="请输入对方代理人" />
@@ -815,7 +891,13 @@ export default function CaseManagement() {
           <Form.Item name="filing_date" label="立案日期">
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item name="expected_close_date" label="预计结案日期">
+          <Form.Item name="hearing_date" label="开庭日期">
+            <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="evidence_deadline" label="举证期限">
+            <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="appeal_deadline" label="上诉期限">
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="is_confidential" label="涉密" valuePropName="checked">
@@ -835,9 +917,6 @@ export default function CaseManagement() {
           <Form.Item name="next_step_deadline" label="下一步截止日期">
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item name="success_rate" label="胜诉率(%)">
-            <InputNumber min={0} max={100} style={{ width: '100%' }} placeholder="请输入胜诉率（0-100）" />
-          </Form.Item>
           <Form.Item name="description" label="案件描述">
             <Input.TextArea placeholder="请输入案件描述" rows={4} />
           </Form.Item>
@@ -845,126 +924,6 @@ export default function CaseManagement() {
             <Button type="primary" htmlType="submit">提交</Button>
           </Form.Item>
         </Form>
-      </Modal>
-
-      <Modal
-        title="案件详情"
-        open={detailVisible}
-        onCancel={() => setDetailVisible(false)}
-        footer={null}
-        width={800}
-      >
-        {currentCase && (() => {
-          const c = currentCase as Record<string, unknown>
-          return (
-          <div>
-            <div className="detail-grid">
-              <div className="detail-item"><span className="detail-label">案件编号</span><span className="detail-value">{String(c.case_no ?? '')}</span></div>
-              <div className="detail-item"><span className="detail-label">案件名称</span><span className="detail-value">{String(c.case_name ?? '')}</span></div>
-              <div className="detail-item"><span className="detail-label">客户姓名</span><span className="detail-value">{String(c.client_name ?? '')}</span></div>
-              <div className="detail-item"><span className="detail-label">关联线索</span><span className="detail-value">
-                {(() => {
-                  const lead = leads.find(l => String(l.id) === String(c.lead_id))
-                  if (!lead) return '-'
-                  const display = String(lead.phone || lead.contact_name || '')
-                  return <a onClick={() => navigate('/leads')}>{display || '-'}</a>
-                })()}
-              </span></div>
-              <div className="detail-item"><span className="detail-label">客户手机号</span><span className="detail-value">{String(c.client_phone || '-')}</span></div>
-              <div className="detail-item"><span className="detail-label">联系地址</span><span className="detail-value">{String(c.contact_address || '-')}</span></div>
-              <div className="detail-item"><span className="detail-label">案由</span><span className="detail-value">{({
-                  marriage: '婚姻家事',
-                  traffic: '交通事故',
-                  labor: '劳动争议',
-                  debt: '债务逾期',
-                  other: '其他',
-                }[c.case_type as string])}</span></div>
-              <div className="detail-item"><span className="detail-label">案件性质</span><span className="detail-value">{({
-                  civil: '民事', criminal: '刑事', admin: '行政', commercial: '商事', other: '其他',
-                }[c.case_nature as string] || '-')}</span></div>
-              <div className="detail-item"><span className="detail-label">案号</span><span className="detail-value">{String(c.case_number || '-')}</span></div>
-              <div className="detail-item"><span className="detail-label">主办律师</span><span className="detail-value">{String(c.lawyer_name || '-')}</span></div>
-              <div className="detail-item"><span className="detail-label">协办人</span><span className="detail-value">{String(c.co_handler || '-')}</span></div>
-              <div className="detail-item"><span className="detail-label">原告/申请人</span><span className="detail-value">{String(c.plaintiff || '-')}</span></div>
-              <div className="detail-item"><span className="detail-label">原告代理人</span><span className="detail-value">{String(c.plaintiff_agent || '-')}</span></div>
-              <div className="detail-item"><span className="detail-label">被告/被申请人</span><span className="detail-value">{String(c.defendant || '-')}</span></div>
-              <div className="detail-item"><span className="detail-label">被告代理人</span><span className="detail-value">{String(c.defendant_agent || '-')}</span></div>
-              <div className="detail-item"><span className="detail-label">受理法院</span><span className="detail-value">{String(c.court || '-')}</span></div>
-              <div className="detail-item"><span className="detail-label">法院级别</span><span className="detail-value">{({
-                  basic: '基层', intermediate: '中级', high: '高级', supreme: '最高',
-                }[c.court_level as string] || '-')}</span></div>
-              <div className="detail-item"><span className="detail-label">上诉法院</span><span className="detail-value">{String(c.appeal_level || '-')}</span></div>
-              <div className="detail-item"><span className="detail-label">再审法院</span><span className="detail-value">{String(c.retrial_level || '-')}</span></div>
-              <div className="detail-item"><span className="detail-label">执行法院</span><span className="detail-value">{String(c.enforcement_level || '-')}</span></div>
-              <div className="detail-item"><span className="detail-label">涉案金额</span><span className="detail-value">{String(c.amount || '-')}</span></div>
-              <div className="detail-item"><span className="detail-label">业务类型</span><span className="detail-value">{({
-                  fixed: '固定收费', risk: '风险收费', hybrid: '混合收费',
-                }[c.fee_type as string] || '-')}</span></div>
-              <div className="detail-item"><span className="detail-label">计费周期</span><span className="detail-value">{({
-                  hourly: '按小时', monthly: '按月', case_based: '按案件',
-                }[c.billing_cycle as string] || '-')}</span></div>
-              <div className="detail-item"><span className="detail-label">付款方式</span><span className="detail-value">{({
-                  one_time: '一次性', installment: '分期', milestone: '里程碑',
-                }[c.payment_method as string] || '-')}</span></div>
-              <div className="detail-item"><span className="detail-label">进度</span><span className="detail-value">
-                <Progress percent={Number(c.progress) || 0} size="small" />
-              </span></div>
-              <div className="detail-item"><span className="detail-label">下一步</span><span className="detail-value">{String(c.next_step || '-')}</span></div>
-              <div className="detail-item"><span className="detail-label">状态</span><span className="detail-value">
-                <StatusPill text={caseStatusLabelMap[c.status as string] || '-'} kind={caseStatusKindMap[c.status as string] || 'neutral'} />
-              </span></div>
-              <div className="detail-item"><span className="detail-label">立案日期</span><span className="detail-value">{c.filing_date ? dayjs(c.filing_date as string).format('YYYY-MM-DD') : '-'}</span></div>
-              <div className="detail-item"><span className="detail-label">预计结案</span><span className="detail-value">{c.expected_close_date ? dayjs(c.expected_close_date as string).format('YYYY-MM-DD') : '-'}</span></div>
-              <div className="detail-item"><span className="detail-label">创建时间</span><span className="detail-value">{c.created_at ? dayjs(c.created_at as string).format('YYYY-MM-DD HH:mm:ss') : '-'}</span></div>
-              <div className="detail-item"><span className="detail-label">更新时间</span><span className="detail-value">{c.updated_at ? dayjs(c.updated_at as string).format('YYYY-MM-DD HH:mm:ss') : '-'}</span></div>
-            </div>
-            <div style={{ marginBottom: 24 }}>
-              <div style={sectionTitleStyle}>案件描述</div>
-              <div className="info-block" style={infoBlockStyle}>
-                {String(c.description || '-')}
-              </div>
-            </div>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                <div style={sectionTitleStyle}>案件文档</div>
-                <Upload
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                  showUploadList={false}
-                  beforeUpload={handleUploadDocument}
-                >
-                  <Button icon={<UploadOutlined />}>上传文档</Button>
-                </Upload>
-              </div>
-              <div style={{ maxHeight: 300, overflow: 'auto' }}>
-                {documents.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: theme.textTertiary, padding: 24, fontSize: 13 }}>暂无文档</div>
-                ) : (
-                  documents.map((doc) => {
-                    const d = doc as Record<string, unknown>
-                    return (
-                    <div key={d.id as React.Key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderBottom: '1px solid #e2e2e4' }}>
-                      <div>
-                        <div style={{ fontWeight: 600, color: theme.textBase, fontSize: 13 }}>{String(d.file_name ?? '')}</div>
-                        <div style={{ fontSize: 12, color: theme.textTertiary, marginTop: 2 }}>
-                          {({
-                            complaint: '起诉状',
-                            evidence: '证据材料',
-                            judgment: '判决书',
-                            contract: '合同',
-                            other: '其他',
-                          }[d.doc_type as string])} - {formatDateTime(d.created_at as string)}
-                        </div>
-                      </div>
-                      <Button type="link" size="small" onClick={() => window.open(`/api/documents/${d.id}/download`)}>下载</Button>
-                    </div>
-                    )
-                  })
-                )}
-              </div>
-            </div>
-          </div>
-          )
-        })()}
       </Modal>
 
       <Modal

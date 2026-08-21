@@ -106,7 +106,7 @@ export class ComprehensiveService {
         .createQueryBuilder('entity')
         .where('entity.organization_id = :orgId', { orgId: params.organization_id })
         .andWhere('entity.stage != :stage', { stage: 'intake' })
-        .andWhere(params.keyword ? 'entity.case_name LIKE :kw' : '1=1', { kw: `%${params.keyword}%` })
+        .andWhere(params.keyword ? '(entity.case_no LIKE :kw OR entity.client_name LIKE :kw)' : '1=1', { kw: `%${params.keyword}%` })
         .orderBy('entity.updated_at', 'DESC')
         .skip((page - 1) * pageSize)
         .take(pageSize)

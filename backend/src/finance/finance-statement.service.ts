@@ -116,7 +116,7 @@ export class FinanceStatementService {
       .createQueryBuilder('c')
       .where('c.organization_id = :orgId', { orgId });
     if (filters.keyword) {
-      caseQb.andWhere('(c.case_no LIKE :kw OR c.case_name LIKE :kw)', { kw: `%${filters.keyword}%` });
+      caseQb.andWhere('(c.case_no LIKE :kw OR c.client_name LIKE :kw)', { kw: `%${filters.keyword}%` });
     }
     caseQb.orderBy('c.created_at', 'DESC');
     const [cases, total] = await caseQb.clone().skip(skip).take(pageSize).getManyAndCount();
@@ -147,7 +147,7 @@ export class FinanceStatementService {
       data.push({
         case_id: c.id,
         case_no: c.case_no,
-        case_name: c.case_name,
+        case_name: c.client_name ? `${c.client_name}案` : c.case_no,
         contract_amount: receivable ? Number(receivable.contract_amount || 0) : 0,
         received_amount: Math.round(receivedAmount * 100) / 100,
         total_income: Math.round(totalIncome * 100) / 100,

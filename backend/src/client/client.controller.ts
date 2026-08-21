@@ -114,6 +114,12 @@ export class ClientController {
     lawyer_id: string;
     contract_template_id: string;
     organization_id: string;
+    id_card_no?: string;
+    // 企业签约：主体类型 person/corp + 企业信息（corp 时）
+    subject_type?: string;
+    corp_name?: string;
+    corp_ident_no?: string;
+    legal_rep_name?: string;
   }) {
     return this.clientService.onlineSign(body);
   }
@@ -124,7 +130,7 @@ export class ClientController {
     return this.clientService.getSignConfig();
   }
 
-  // 获取法大大实名认证链接（身份鉴别第一步）
+  // 获取法大大实名认证链接（身份鉴别第一步，个人/企业分流）
   @Post('sign/verify-url')
   getSignVerifyUrl(@Body() body: {
     signing_id: string;
@@ -132,6 +138,10 @@ export class ClientController {
     user_name?: string;
     id_card_no?: string;
     mobile?: string;
+    // 企业实名认证信息（签约主体为企业时传入）
+    corp_name?: string;
+    corp_ident_no?: string;
+    legal_rep_name?: string;
   }) {
     return this.clientService.getSignVerifyUrl(body);
   }

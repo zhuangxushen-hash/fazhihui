@@ -362,6 +362,11 @@ export class ClientService {
     contract_template_id: string;
     organization_id: string;
     id_card_no?: string;
+    // 企业签约：主体类型 person/corp + 企业信息（corp 时）
+    subject_type?: string;
+    corp_name?: string;
+    corp_ident_no?: string;
+    legal_rep_name?: string;
   }): Promise<any> {
     // 校验合同模板存在
     const template = await this.contractTemplateRepository.findOne({ where: { id: body.contract_template_id } });
@@ -370,6 +375,7 @@ export class ClientService {
     }
     const profile = await this.clientProfileRepository.findOne({ where: { id: body.client_id } });
     const enabled = this.fadadaService.enabled;
+    const isCorp = body.subject_type === 'corp';
     const signing = this.signingComplianceRepository.create({
       case_id: body.case_id,
       client_id: body.client_id,
@@ -379,7 +385,12 @@ export class ClientService {
       contract_content: template.content,
       signed_time: enabled ? null : new Date(),
       organization_id: body.organization_id,
+      // 个人签名主要证件；企业签名使用企业信息
+      subject_type: isCorp ? 'corp' : 'person',
       id_card_no: body.id_card_no || profile?.id_card_no || null,
+      corp_name: body.corp_name || null,
+      corp_ident_no: body.corp_ident_no || null,
+      legal_rep_name: body.legal_rep_name || null,
       verify_status: enabled ? 'pending' : 'verified',
     });
     const saved = await this.signingComplianceRepository.save(signing);
@@ -406,28 +417,60 @@ export class ClientService {
     };
   }
 
-  /** 获取法大大实名认证链接（身份鉴别第一步） */
+  /** 获取法大大实名认证链接（身份鉴别第一步，按签约主体类型分流：个人/企业） */
   async getSignVerifyUrl(body: {
     signing_id: string;
     client_id: string;
     user_name?: string;
     id_card_no?: string;
     mobile?: string;
+    // 企业认证信息（签约主体为企业时传入）
+    corp_name?: string;
+    corp_ident_no?: string;
+    legal_rep_name?: string;
   }): Promise<any> {
     const signing = await this.findSigning(body.signing_id, body.client_id);
     const profile = await this.clientProfileRepository.findOne({ where: { id: body.client_id } });
     if (!profile) {
       throw new Error('客户档案不存在');
     }
+    const isCorp = signing.subject_type === 'corp';
+    // 个人证件号（个人认证主体，或企业认证时的经办人证件）
     const idCardNo = body.id_card_no || signing.id_card_no || profile.id_card_no || '';
-    if (idCardNo && !profile.id_card_no) {
-      profile.id_card_no = idCardNo;
-      await this.clientProfileRepository.save(profile);
+    // 回写企业信息到签署记录（企业实名认证/签署主体匹配用）
+    if (isCorp) {
+      if (body.corp_name) signing.corp_name = body.corp_name;
+      if (body.corp_ident_no) signing.corp_ident_no = body.corp_ident_no;
+      if (body.legal_rep_name) signing.legal_rep_name = body.legal_rep_name;
+    } else {
+      if (idCardNo && !profile.id_card_no) {
+        profile.id_card_no = idCardNo;
+        await this.clientProfileRepository.save(profile);
+      }
+      signing.id_card_no = idCardNo || null;
     }
-    signing.id_card_no = idCardNo || null;
     signing.verify_status = 'pending';
     signing.fadada_verify_transaction_id = signing.id;
     await this.signingComplianceRepository.save(signing);
+    // 企业签约 -> 企业实名认证；个人签约 -> 个人实名认证
+    if (isCorp) {
+      const result = await this.fadadaService.getCorpAuthUrl({
+        signingId: signing.id,
+        corpName: signing.corp_name || body.corp_name || '',
+        corpIdentNo: signing.corp_ident_no || body.corp_ident_no || '',
+        legalRepName: body.legal_rep_name || signing.legal_rep_name || undefined,
+        agentName: body.user_name || profile.name || profile.contact_name || undefined,
+        agentIdCardNo: idCardNo || undefined,
+        agentMobile: body.mobile || profile.phone || undefined,
+      });
+      return {
+        signing_id: signing.id,
+        verify_url: result.verifyUrl,
+        transaction_id: result.transactionId,
+        mode: result.mode,
+        subject_type: 'corp',
+      };
+    }
     const result = await this.fadadaService.getRealNameAuthUrl({
       signingId: signing.id,
       clientUserId: body.client_id,
@@ -440,6 +483,7 @@ export class ClientService {
       verify_url: result.verifyUrl,
       transaction_id: result.transactionId,
       mode: result.mode,
+      subject_type: 'person',
     };
   }
 
@@ -473,6 +517,18 @@ export class ClientService {
       subject: `法律服务合同签约-${(signing.case_id || '').slice(0, 8)}`,
       docName: `${template?.name || '法律服务合同'}.pdf`,
       docContent: signing.contract_content || template?.content || '',
+      subjectType: signing.subject_type === 'corp' ? 'corp' : 'person',
+      corp:
+        signing.subject_type === 'corp'
+          ? {
+              corpName: signing.corp_name || '',
+              corpIdentNo: signing.corp_ident_no || '',
+              legalRepName: signing.legal_rep_name || undefined,
+              agentName: profile?.name || profile?.contact_name || undefined,
+              agentIdCardNo: signing.id_card_no || profile?.id_card_no || undefined,
+              agentMobile: profile?.phone || undefined,
+            }
+          : undefined,
       client: {
         clientUserId: signing.client_id,
         userName: profile?.name || profile?.contact_name || '客户',

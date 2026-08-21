@@ -633,7 +633,7 @@ export default function KnowledgeBase({ initialTab = 'articles', hideTabs = fals
       ellipsis: true,
     },
     {
-      title: '案号',
+      title: '案件编号',
       dataIndex: 'case_no',
       key: 'case_no',
       width: 180,
@@ -825,7 +825,7 @@ export default function KnowledgeBase({ initialTab = 'articles', hideTabs = fals
           <div className="stitch-filter-bar" style={{ background: theme.white, padding: 16, borderRadius: 8, marginBottom: 16 }}>
             <Form form={caseSearch} layout="inline" style={{ gap: 8 }}>
               <Form.Item name="keyword" label="关键词">
-                <Input placeholder="案件名称/案号/摘要" allowClear style={{ width: 220 }} />
+                <Input placeholder="案件名称/案件编号/摘要" allowClear style={{ width: 220 }} />
               </Form.Item>
               <Form.Item name="court" label="法院">
                 <Input placeholder="法院名称" allowClear style={{ width: 180 }} />
@@ -1097,8 +1097,8 @@ export default function KnowledgeBase({ initialTab = 'articles', hideTabs = fals
           >
             <Input placeholder="请输入案件名称" />
           </Form.Item>
-          <Form.Item name="case_no" label="案号">
-            <Input placeholder="请输入案号" />
+          <Form.Item name="case_no" label="案件编号">
+            <Input placeholder="请输入案件编号" />
           </Form.Item>
           <Form.Item name="court" label="法院">
             <Input placeholder="请输入法院名称" />
@@ -1142,7 +1142,7 @@ export default function KnowledgeBase({ initialTab = 'articles', hideTabs = fals
               <Space size={[8, 8]} wrap>
                 <JudgmentTypeTag type={caseDetail.judgment_type} />
                 {caseDetail.case_no && (
-                  <span style={{ color: '#888' }}>案号：{caseDetail.case_no}</span>
+                  <span style={{ color: '#888' }}>案件编号：{caseDetail.case_no}</span>
                 )}
                 {caseDetail.court && (
                   <span style={{ color: '#888' }}>法院：{caseDetail.court}</span>

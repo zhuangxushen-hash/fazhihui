@@ -22,6 +22,10 @@ export class Document {
   @Column({ type: 'text', nullable: true })
   description: string;
 
+  // 附件类型（如：成交合同、律师函，支持自定义）
+  @Column({ type: 'varchar', nullable: true, comment: '附件类型' })
+  doc_type: string;
+
   @Column({ default: false })
   is_ai_generated: boolean;
 

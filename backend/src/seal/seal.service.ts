@@ -81,12 +81,12 @@ export class SealService {
     return this.sealRepository.findOne({ where: { id } });
   }
 
-  // 删除印章（同时删除关联的用印申请和盖章记录，使用事务保证一致性）
+  // 删除印章（软删除关联的用印申请和盖章记录，使用事务保证一致性；保留数据可回滚）
   async deleteSeal(id: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
-      await manager.delete(SealApplication, { seal_id: id });
-      await manager.delete(SealRecord, { seal_id: id });
-      await manager.delete(Seal, id);
+      await manager.softDelete(SealApplication, { seal_id: id });
+      await manager.softDelete(SealRecord, { seal_id: id });
+      await manager.softDelete(Seal, id);
     });
   }
 

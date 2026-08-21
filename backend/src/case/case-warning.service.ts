@@ -237,8 +237,9 @@ export class CaseWarningService {
           }
         }
 
-        if (caseEntity.expected_close_date) {
-          const target = new Date(caseEntity.expected_close_date);
+        // 开庭日期（真实节点，不再是预计结案日期）
+        if (caseEntity.hearing_date) {
+          const target = new Date(caseEntity.hearing_date);
           target.setHours(0, 0, 0, 0);
           const daysDiff = Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
           const rule = this.warningRules.find(r => r.type === WarningType.HEARING_DATE);
@@ -249,6 +250,50 @@ export class CaseWarningService {
             candidates.push({
               case_id: caseEntity.id,
               warning_type: WarningType.HEARING_DATE,
+              target_date: target,
+              advance_days: daysDiff,
+              level,
+              description: `${rule.description}（剩余${daysDiff}天）`,
+              status: daysDiff < 0 ? WarningStatus.OVERDUE : WarningStatus.PENDING,
+            });
+          }
+        }
+
+        // 举证期限（真实节点）
+        if (caseEntity.evidence_deadline) {
+          const target = new Date(caseEntity.evidence_deadline);
+          target.setHours(0, 0, 0, 0);
+          const daysDiff = Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          const rule = this.warningRules.find(r => r.type === WarningType.EVIDENCE_PERIOD);
+          if (rule && rule.advanceDays.includes(daysDiff)) {
+            let level = rule.level;
+            if (daysDiff <= 1) level = WarningLevel.URGENT;
+            else if (daysDiff <= 3) level = WarningLevel.WARNING;
+            candidates.push({
+              case_id: caseEntity.id,
+              warning_type: WarningType.EVIDENCE_PERIOD,
+              target_date: target,
+              advance_days: daysDiff,
+              level,
+              description: `${rule.description}（剩余${daysDiff}天）`,
+              status: daysDiff < 0 ? WarningStatus.OVERDUE : WarningStatus.PENDING,
+            });
+          }
+        }
+
+        // 上诉期限（真实节点）
+        if (caseEntity.appeal_deadline) {
+          const target = new Date(caseEntity.appeal_deadline);
+          target.setHours(0, 0, 0, 0);
+          const daysDiff = Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          const rule = this.warningRules.find(r => r.type === WarningType.APPEAL_PERIOD);
+          if (rule && rule.advanceDays.includes(daysDiff)) {
+            let level = rule.level;
+            if (daysDiff <= 1) level = WarningLevel.URGENT;
+            else if (daysDiff <= 3) level = WarningLevel.WARNING;
+            candidates.push({
+              case_id: caseEntity.id,
+              warning_type: WarningType.APPEAL_PERIOD,
               target_date: target,
               advance_days: daysDiff,
               level,
@@ -315,7 +360,7 @@ export class CaseWarningService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // 检查案件截止时间
+    // 检查案件截止时间（诉讼时效）
     if (caseEntity.deadline) {
       count += await this.checkAndGenerateWarning(
         caseEntity,
@@ -324,12 +369,30 @@ export class CaseWarningService {
       );
     }
 
-    // 检查预期结案时间
-    if (caseEntity.expected_close_date) {
+    // 开庭日期（真实节点）
+    if (caseEntity.hearing_date) {
       count += await this.checkAndGenerateWarning(
         caseEntity,
         WarningType.HEARING_DATE,
-        caseEntity.expected_close_date,
+        caseEntity.hearing_date,
+      );
+    }
+
+    // 举证期限（真实节点）
+    if (caseEntity.evidence_deadline) {
+      count += await this.checkAndGenerateWarning(
+        caseEntity,
+        WarningType.EVIDENCE_PERIOD,
+        caseEntity.evidence_deadline,
+      );
+    }
+
+    // 上诉期限（真实节点）
+    if (caseEntity.appeal_deadline) {
+      count += await this.checkAndGenerateWarning(
+        caseEntity,
+        WarningType.APPEAL_PERIOD,
+        caseEntity.appeal_deadline,
       );
     }
 

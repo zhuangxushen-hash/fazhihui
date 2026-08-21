@@ -15,6 +15,8 @@ import { ComplianceModule } from '../compliance/compliance.module';
 import { ClientModule } from '../client/client.module';
 // Phase5 M8: 案件核心操作审计日志需注入 AuditModule
 import { AuditModule } from '../audit/audit.module';
+// C 端短信提醒模块
+import { SmsModule } from '../sms/sms.module';
 
 // 控制器
 import { CaseTaskController } from './case-task.controller';
@@ -80,6 +82,8 @@ import { ConflictCheck } from './conflict-check.entity';
     forwardRef(() => ClientModule),
     // Phase5 M8: 注入审计模块用于案件核心操作记录审计日志
     AuditModule,
+    // C 端短信提醒模块（供案件节点触发短信）
+    SmsModule,
   ],
   providers: [
     // 保留原有服务

@@ -1,7 +1,11 @@
-import { Controller, Get, Post, Put, Body, Param, Query, UseGuards, Request, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, NotFoundException, ForbiddenException, UseInterceptors, UploadedFile, BadRequestException, Res } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
+import * as fs from 'fs';
 import { CaseService } from './case.service';
 import { LegalDocumentService } from './legal-document.service';
 import { CreateCaseDto } from './dto/create-case.dto';
+import { UpdateCaseDto } from './dto/update-case.dto';
 import { CaseStatus, CaseType, UserRole} from '../types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -94,6 +98,34 @@ export class CaseController {
     return existing;
   }
 
+  // 删除案件（软删除，保留数据可回滚）
+  @Delete(':id')
+  async remove(@Param('id') id: string, @Request() req?: any) {
+    await this.caseService.softDelete(id, req?.user);
+    return { success: true };
+  }
+
+  // 案件详情聚合（概要/当事人/团队/时间节点/费用/文档）
+  @Get(':id/detail')
+  async findDetail(@Param('id') id: string, @Request() req?: any) {
+    const existing = await this.caseService.findById(id);
+    if (!existing) throw new NotFoundException('案件不存在');
+    if (req?.user?.organization_id && existing.organization_id !== req.user.organization_id) {
+      throw new ForbiddenException('无权访问该资源');
+    }
+    return this.caseService.findDetail(id);
+  }
+
+  // 详情编辑更新（参考金助理案件编辑能力）
+  @Put(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateCaseDto,
+    @Request() req?: any,
+  ) {
+    return this.caseService.update(id, dto, req?.user);
+  }
+
   @Put(':id/status')
   async updateStatus(
     @Param('id') id: string,
@@ -158,6 +190,40 @@ export class CaseController {
       throw new ForbiddenException('无权访问该资源');
     }
     return this.caseService.getDocuments(id);
+  }
+
+  // 案件文档真实文件上传（multipart）：保存文件并创建文档记录
+  @Post(':id/documents/upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadDocumentFile(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body: { doc_type?: string; name?: string },
+    @Request() req?: any,
+  ) {
+    const existing = await this.caseService.findById(id);
+    if (!existing) throw new NotFoundException('案件不存在');
+    if (req?.user?.organization_id && existing.organization_id !== req.user.organization_id) {
+      throw new ForbiddenException('无权访问该资源');
+    }
+    if (!file) {
+      throw new BadRequestException('未上传文件');
+    }
+    return this.caseService.uploadDocumentFile(id, file, req?.user?.id, body.doc_type, body.name);
+  }
+
+  // 案件文档下载（回流保存的本地文件）
+  @Get(':id/documents/:docId/download')
+  async downloadDocument(
+    @Param('id') id: string,
+    @Param('docId') docId: string,
+    @Res() res: Response,
+  ) {
+    const fileInfo = await this.caseService.getDocumentForDownload(docId);
+    res.setHeader('Content-Type', fileInfo.mime);
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileInfo.name)}"`);
+    const fileStream = fs.createReadStream(fileInfo.path);
+    fileStream.pipe(res);
   }
 
   @Post(':id/close')

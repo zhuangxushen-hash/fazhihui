@@ -72,8 +72,17 @@ export class Case {
   @Column({ nullable: true })
   filing_date: Date;
 
-  @Column({ nullable: true })
-  expected_close_date: Date;
+  // 开庭日期（真实节点，用于开庭预警）
+  @Column({ type: 'date', nullable: true, comment: '开庭日期' })
+  hearing_date: Date;
+
+  // 举证期限（真实节点，用于举证期限预警）
+  @Column({ type: 'date', nullable: true, comment: '举证期限' })
+  evidence_deadline: Date;
+
+  // 上诉期限（真实节点，用于上诉期限预警）
+  @Column({ type: 'date', nullable: true, comment: '上诉期限' })
+  appeal_deadline: Date;
 
   @Column({ type: 'varchar', default: 'low' })
   risk_level: string;
@@ -116,9 +125,17 @@ export class Case {
   @Column({ type: 'varchar', nullable: true, comment: '对方当事人' })
   opposing_party: string;
 
+  // 对方当事人类型：individual个人/enterprise企业
+  @Column({ type: 'varchar', nullable: true, comment: '对方当事人类型' })
+  opposing_party_type: string;
+
   // 对方代理人
   @Column({ type: 'varchar', nullable: true, comment: '对方代理人' })
   opposing_agent: string;
+
+  // 多人当事人JSON数组（text，SQLite无JSON类型）：[{name, phone, type(individual/enterprise)}]
+  @Column({ type: 'text', nullable: true, comment: '多人当事人详情JSON' })
+  participants: string;
 
   // 审判庭地点
   @Column({ type: 'varchar', nullable: true, comment: '审判庭地点' })
@@ -164,10 +181,6 @@ export class Case {
   @Column({ type: 'varchar', nullable: true, comment: '被告代理人' })
   defendant_agent: string;
 
-  // 案件性质
-  @Column({ type: 'varchar', nullable: true, comment: '案件性质' })
-  case_nature: string;
-
   // 案号
   @Column({ type: 'varchar', nullable: true, comment: '案号' })
   case_number: string;
@@ -192,10 +205,6 @@ export class Case {
   @Column({ type: 'datetime', nullable: true, comment: '下一步截止日期' })
   next_step_deadline: Date;
 
-  // 胜诉率
-  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true, comment: '胜诉率' })
-  success_rate: number;
-
   // 业务类型：fixed固定收费/risk风险收费/hybrid混合收费
   @Column({ type: 'varchar', nullable: true, comment: '业务类型' })
   fee_type: string;
@@ -207,6 +216,14 @@ export class Case {
   // 付款方式：one_time一次性/installment/分期/milestone里程碑
   @Column({ type: 'varchar', nullable: true, comment: '付款方式' })
   payment_method: string;
+
+  // 收款状态：not_collected未收款/partial已部分收款/full已全额收款/cancelled已取消收款/not_required无需收款（参考金助理收款状态）
+  @Column({ type: 'varchar', nullable: true, comment: '收款状态' })
+  payment_status: string;
+
+  // 合同交回状态：not_returned未交回/returned已交回/partial已部分交回（参考金助理合同交回状态）
+  @Column({ type: 'varchar', nullable: true, comment: '合同交回状态' })
+  contract_return_status: string;
 
   // 法院级别
   @Column({ type: 'varchar', nullable: true, comment: '法院级别' })

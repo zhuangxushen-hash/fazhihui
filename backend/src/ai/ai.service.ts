@@ -116,7 +116,7 @@ ${d.court || 'XX人民法院'}
 ${new Date().toISOString().split('T')[0]}`,
       evidence: (d) => `证据清单
 
-案号：${d.case_no || 'XXXX'}
+案件编号：${d.case_no || 'XXXX'}
 
 |序号|证据名称|证据来源|证明内容|
 |---|---|---|---|

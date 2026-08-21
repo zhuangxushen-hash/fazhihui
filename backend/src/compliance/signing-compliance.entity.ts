@@ -61,9 +61,25 @@ export class SigningCompliance {
   risk_disclosure_time: Date;
 
   // ========== 法大大电子签（身份鉴别 + 电子签名） ==========
-  // 客户身份证号（实名认证/签署主体证件匹配）
+  // 签约主体类型：person 个人 / corp 企业（企业时走企业实名认证，以企业主体签署）
+  @Column({ type: 'varchar', default: 'person', comment: '签约主体类型 person/corp' })
+  subject_type: string;
+
+  // 客户身份证号（个人实名认证/签署主体证件匹配）
   @Column({ type: 'varchar', nullable: true })
   id_card_no: string;
+
+  // 企业名称（企业实名认证/签署主体匹配）
+  @Column({ type: 'varchar', nullable: true, comment: '企业名称' })
+  corp_name: string;
+
+  // 企业统一社会信用代码
+  @Column({ type: 'varchar', nullable: true, comment: '企业统一社会信用代码' })
+  corp_ident_no: string;
+
+  // 企业法定代表人姓名（企业实名认证用）
+  @Column({ type: 'varchar', nullable: true, comment: '企业法定代表人' })
+  legal_rep_name: string;
 
   // 实名认证状态：none 未认证 / pending 认证中 / verified 已认证 / failed 认证失败
   @Column({ type: 'varchar', default: 'none' })

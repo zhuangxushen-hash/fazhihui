@@ -99,7 +99,6 @@ export class ContractService {
         const caseData: any = {};
         if (saved.amount) caseData.fee_amount = Number(saved.amount);
         if (saved.amount) caseData.service_fee = Number(saved.amount);
-        if (saved.title) caseData.case_name = saved.title;
         if (saved.client_name) caseData.client_name = saved.client_name;
         if (saved.client_phone) caseData.client_phone = saved.client_phone;
         if (saved.lead_lawyer_id) caseData.assignee_lawyer_id = saved.lead_lawyer_id;
@@ -285,7 +284,6 @@ export class ContractService {
         const caseData: any = {};
         if (saved.amount) caseData.fee_amount = Number(saved.amount);
         if (saved.amount) caseData.service_fee = Number(saved.amount);
-        if (saved.title) caseData.case_name = saved.title;
         if (saved.client_name) caseData.client_name = saved.client_name;
         if (saved.client_phone) caseData.client_phone = saved.client_phone;
         if (saved.lead_lawyer_id) caseData.assignee_lawyer_id = saved.lead_lawyer_id;

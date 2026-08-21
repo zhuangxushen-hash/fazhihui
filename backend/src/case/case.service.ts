@@ -18,6 +18,12 @@ import { AuditService } from '../audit/audit.service';
 // Phase5 L1: 结案自动生成法律文书需注入法律文书服务
 import { LegalDocumentService } from './legal-document.service';
 import { CreateCaseDto } from './dto/create-case.dto';
+import { UpdateCaseDto } from './dto/update-case.dto';
+// C 端短信提醒服务：案件关键节点触发短信通知当事人
+import { SmsService } from '../sms/sms.service';
+import * as fs from 'fs';
+import * as path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class CaseService {
@@ -46,6 +52,8 @@ export class CaseService {
     private auditService: AuditService,
     // Phase5 L1: 注入法律文书服务，结案后自动生成结案报告文书
     private legalDocumentService: LegalDocumentService,
+    // C 端短信提醒：案件节点触发短信通知当事人
+    private smsService: SmsService,
   ) {}
 
   private readonly logger = new Logger(CaseService.name);
@@ -124,6 +132,21 @@ export class CaseService {
     }
   }
 
+  /**
+   * 触发 C 端短信提醒（失败静默处理，不影响业务主流程）
+   * @param caseId 案件ID
+   * @param nodeType 短信节点类型（对应 SmsService 中 SMS_NODES 的 key）
+   * @param params 额外模板变量（可选）
+   */
+  private async triggerSms(caseId: string, nodeType: string, params?: Record<string, string>): Promise<void> {
+    try {
+      await this.smsService.sendCaseSms({ caseId, nodeType, params });
+    } catch (e) {
+      // 短信发送失败不影响案件主流程
+      this.logger.error(`触发 C 端短信失败 caseId=${caseId} nodeType=${nodeType}`, (e as Error)?.message || e);
+    }
+  }
+
   async create(dto: CreateCaseDto, organizationId?: string): Promise<Case> {
     // 0. organization_id 空值守卫
     if (!organizationId) {
@@ -132,22 +155,25 @@ export class CaseService {
 
     // 1. 构建实体（案件编号由系统自动生成，不再依赖前端传入）
     const caseEntity = this.caseRepository.create({
-      case_name: dto.case_name,
       client_name: dto.client_name,
       client_phone: dto.client_phone,
       client_id: dto.client_id,
       client_type: dto.client_type,
       case_type: dto.case_type as CaseType,
       case_category: dto.case_category,
+      case_name: dto.case_name,
       court: dto.court,
       opposing_party: dto.opposing_party,
+      opposing_party_type: dto.opposing_party_type,
       opposing_agent: dto.opposing_agent,
       court_room: dto.court_room,
       case_source: dto.case_source,
       amount: dto.amount,
       quality_deposit: dto.quality_deposit,
       filing_date: dto.filing_date ? new Date(dto.filing_date) : undefined,
-      expected_close_date: dto.expected_close_date ? new Date(dto.expected_close_date) : undefined,
+      hearing_date: dto.hearing_date ? new Date(dto.hearing_date) : undefined,
+      evidence_deadline: dto.evidence_deadline ? new Date(dto.evidence_deadline) : undefined,
+      appeal_deadline: dto.appeal_deadline ? new Date(dto.appeal_deadline) : undefined,
       is_confidential: dto.is_confidential,
       stage: dto.stage,
       description: dto.description,
@@ -203,7 +229,7 @@ export class CaseService {
       if (similarResult.data && similarResult.data.length > 0) {
         const topSimilar = similarResult.data.slice(0, 3);
         const similarSection = topSimilar
-          .map((c) => `- ${c.case_no || c.case_name || c.id}（相似度:${c.similarity}）`)
+          .map((c) => `- ${c.case_no || c.client_name || c.id}（相似度:${c.similarity}）`)
           .join('\n');
         const similarText = `\n\n【相关类案】\n${similarSection}`;
         const originDesc = savedCase.description || '';
@@ -230,13 +256,16 @@ export class CaseService {
       factors.push('涉案金额较大(>50万)');
     }
     
-    if (caseEntity.expected_close_date) {
-      const deadline = new Date(caseEntity.expected_close_date);
+    // 临近关键真实期限节点（开庭/举证/上诉）按 15 天内判定风险
+    const nodeDates = [caseEntity.hearing_date, caseEntity.evidence_deadline, caseEntity.appeal_deadline]
+      .filter((d): d is Date => !!d && !isNaN(new Date(d).getTime()));
+    const nearNode = nodeDates.some((d) => {
       const now = new Date();
-      const diffDays = Math.floor((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      if (diffDays < 15) {
-        factors.push('临近期限(<15天)');
-      }
+      const diffDays = Math.floor((new Date(d).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      return diffDays >= 0 && diffDays < 15;
+    });
+    if (nearNode) {
+      factors.push('临近期限(<15天)');
     }
     
     if (['criminal', 'admin'].includes(caseEntity.case_category)) {
@@ -353,6 +382,83 @@ export class CaseService {
     return { ...item, lawyer_name };
   }
 
+  // 详情编辑更新（参考金助理案件编辑能力）：仅更新传入的可编辑字段，保留现有更新逻辑
+  async update(id: string, dto: UpdateCaseDto, user?: any): Promise<Case> {
+    const existing = await this.caseRepository.findOne({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException('案件不存在');
+    }
+    if (user?.organization_id && existing.organization_id !== user.organization_id) {
+      throw new BadRequestException('无权操作该资源');
+    }
+
+    // 组织可更新字段，仅覆盖传入值（undefined 跳过，避免误清空）
+    // 使用宽松键类型避免 keyof 联合类型索引赋值为 never 的类型推导问题
+    const patch: Record<string, any> = {};
+    const fields: (keyof UpdateCaseDto)[] = [
+      'client_name', 'client_phone', 'client_type', 'case_type', 'case_category', 'case_name',
+      'court', 'court_room', 'court_level', 'opposing_party', 'opposing_party_type',
+      'opposing_agent', 'participants', 'case_source', 'source_detail', 'referrer',
+      'description', 'handler', 'co_handler', 'assistant_lawyer_ids', 'team_id', 'next_step', 'next_step_deadline',
+      'progress', 'filing_date', 'hearing_date', 'evidence_deadline', 'appeal_deadline',
+      'case_number', 'amount', 'fee_amount', 'service_fee', 'quality_deposit',
+      'fee_type', 'billing_cycle', 'payment_method', 'payment_status', 'contract_return_status', 'is_confidential',
+    ];
+    for (const key of fields) {
+      const value = dto[key];
+      if (value === undefined) continue;
+      if (key === 'next_step_deadline' || key === 'filing_date' || key === 'hearing_date'
+        || key === 'evidence_deadline' || key === 'appeal_deadline') {
+        // 日期字段：将字符串/时间戳转换为 Date，空值置为 null
+        patch[key] = value ? new Date(value as string | number) : null;
+      } else {
+        patch[key] = value;
+      }
+    }
+
+    const updated = await this.caseRepository.save({ ...existing, ...patch });
+    // 更新后重新评估风险等级（基于最新期限节点）
+    try {
+      const { risk_level, risk_notes } = this.analyzeRisk(updated);
+      await this.caseRepository.update(updated.id, { risk_level, risk_notes });
+    } catch (err) {
+      this.logger.error('更新案件风险等级失败', err);
+    }
+    // 审计日志（失败静默不影响主流程）
+    try {
+      await this.logCaseAudit({
+        userId: user?.id,
+        action: '编辑案件',
+        resourceType: 'Case',
+        resourceId: id,
+        detail: JSON.stringify({ case_id: id, case_no: existing.case_no, operator_id: user?.id || null }),
+      });
+    } catch (err) {}
+    return this.findById(id);
+  }
+
+  // 软删除案件：mark deleted_at，保留数据可回滚
+  async softDelete(id: string, user?: any): Promise<void> {
+    const existing = await this.caseRepository.findOne({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException('案件不存在');
+    }
+    if (user?.organization_id && existing.organization_id !== user.organization_id) {
+      throw new BadRequestException('无权删除该资源');
+    }
+    await this.caseRepository.softDelete(id);
+    // 删除审计日志（异常静默不影响主流程）
+    try {
+      await this.logCaseAudit({
+        userId: user?.id,
+        action: '删除案件',
+        resourceType: 'Case',
+        resourceId: id,
+        detail: JSON.stringify({ case_id: id, case_no: existing.case_no, operator_id: user?.id || null }),
+      });
+    } catch (err) {}
+  }
+
   async updateStatus(id: string, status: CaseStatus): Promise<Case> {
     await this.caseRepository.update(id, { status });
     return this.caseRepository.findOne({ where: { id } });
@@ -378,8 +484,204 @@ export class CaseService {
     return this.documentRepository.save(document);
   }
 
+  // 案件文档真实文件上传：保存文件到本地 uploads/documents/{caseId}，并创建文档记录
+  async uploadDocumentFile(
+    caseId: string,
+    file: Express.Multer.File,
+    userId: string,
+    docType?: string,
+    name?: string,
+  ): Promise<Document> {
+    const uploadDir = path.join(process.cwd(), 'uploads', 'documents', caseId);
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    const fileName = `${uuidv4()}_${file.originalname}`;
+    const filePath = path.join(uploadDir, fileName);
+    fs.writeFileSync(filePath, file.buffer);
+
+    const document = this.documentRepository.create({
+      name: name || (docType ? `${docType}` : file.originalname),
+      file_path: filePath,
+      file_type: file.mimetype,
+      size: file.size,
+      description: '',
+      doc_type: docType || null,
+      case_id: caseId,
+      uploaded_by_id: userId,
+    });
+    return this.documentRepository.save(document);
+  }
+
+  // 查询单条案件文档（用于下载），返回本地文件信息
+  async getDocumentForDownload(docId: string): Promise<{ path: string; name: string; mime: string }> {
+    const doc = await this.documentRepository.findOne({ where: { id: docId } });
+    if (!doc) {
+      throw new NotFoundException('文档不存在');
+    }
+    if (!fs.existsSync(doc.file_path)) {
+      throw new NotFoundException('文档文件不存在');
+    }
+    return { path: doc.file_path, name: doc.name, mime: doc.file_type || 'application/octet-stream' };
+  }
+
   async getDocuments(caseId: string): Promise<Document[]> {
     return this.documentRepository.find({ where: { case_id: caseId }, order: { updated_at: 'DESC' } });
+  }
+
+  // 解析多人当事人JSON文本为数组，缺失/非法返回空数组
+  private parseParticipants(raw?: string | null): Array<{ name: string; phone: string; type: string }> {
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((p) => p && typeof p === 'object' && p.name);
+    } catch {
+      return [];
+    }
+  }
+
+  // 解析协助律师ID数组JSON文本为字符串数组（参考金助理协办多人能力）
+  private parseAssistantLawyerIds(raw?: string | null): string[] {
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map((x) => String(x)).filter(Boolean);
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * 案件详情聚合（金助理项目详情风格）：
+   * 简要：案件概要、当事人、团队、时间节点、费用、文档
+   */
+  async findDetail(id: string): Promise<any> {
+    const caseEntity = await this.caseRepository.findOne({ where: { id } });
+    if (!caseEntity) throw new NotFoundException('案件不存在');
+
+    // 主办律师姓名
+    let assignee_name: string | null = null;
+    if (caseEntity.assignee_lawyer_id) {
+      const lawyer = await this.userRepository.findOne({ where: { id: caseEntity.assignee_lawyer_id } });
+      assignee_name = lawyer?.real_name || null;
+    }
+
+    // 团队：主办人/协办人姓名 + 协助律师（多人）
+    const parsedAssistantIds = this.parseAssistantLawyerIds(caseEntity.assistant_lawyer_ids);
+    const teamUserIds = [caseEntity.handler, caseEntity.co_handler, ...parsedAssistantIds].filter(Boolean) as string[];
+    const teamUsers = teamUserIds.length
+      ? await this.userRepository.find({ where: { id: In(teamUserIds) } })
+      : [];
+    const nameOf = (userId?: string) => {
+      if (!userId) return null;
+      const u = teamUsers.find((tu) => tu.id === userId);
+      return u?.real_name || null;
+    };
+
+    // 费用：应收合同金额
+    let contract_amount: number | null = null;
+    try {
+      const receivable = await this.receivableRepository.findOne({
+        where: { case_id: id } as any,
+        order: { created_at: 'DESC' },
+      });
+      contract_amount = receivable ? Number(receivable.contract_amount || 0) : null;
+    } catch {
+      contract_amount = null;
+    }
+
+    // 已收款金额（该案件所有支付记录之和）
+    let collected_amount = Number(caseEntity.fee_collected || 0);
+
+    return {
+      id: caseEntity.id,
+      case_no: caseEntity.case_no,
+      case_number: caseEntity.case_number,
+      case_type: caseEntity.case_type,
+      case_name: caseEntity.case_name,
+      case_category: caseEntity.case_category,
+      stage: caseEntity.stage,
+      status: caseEntity.status,
+      approval_status: caseEntity.approval_status,
+      risk_level: caseEntity.risk_level,
+      risk_notes: caseEntity.risk_notes,
+      description: caseEntity.description,
+      // 当事人
+      party: {
+        client_id: caseEntity.client_id,
+        client_name: caseEntity.client_name,
+        client_phone: caseEntity.client_phone,
+        client_type: caseEntity.client_type,
+        plaintiff: caseEntity.plaintiff,
+        plaintiff_agent: caseEntity.plaintiff_agent,
+        defendant: caseEntity.defendant,
+        defendant_agent: caseEntity.defendant_agent,
+        opposing_party: caseEntity.opposing_party,
+        opposing_party_type: caseEntity.opposing_party_type,
+        opposing_agent: caseEntity.opposing_agent,
+        // 多人当事人（JSON文本解析，参考金助理多当事人能力）
+        participants: this.parseParticipants(caseEntity.participants),
+      },
+      // 团队
+      team: {
+        assignee_lawyer_id: caseEntity.assignee_lawyer_id,
+        assignee_name,
+        handler: caseEntity.handler,
+        handler_name: nameOf(caseEntity.handler),
+        co_handler: caseEntity.co_handler,
+        co_handler_name: nameOf(caseEntity.co_handler),
+        // 多人协办律师（ID数组 + 姓名数组，参考金助理协办多人能力）
+        assistant_lawyer_ids: parsedAssistantIds,
+        assistant_lawyer_names: parsedAssistantIds.map((uid) => nameOf(uid)).filter(Boolean),
+        team_id: caseEntity.team_id,
+      },
+      // 时间节点
+      timeline: {
+        filing_date: caseEntity.filing_date,
+        hearing_date: caseEntity.hearing_date,
+        evidence_deadline: caseEntity.evidence_deadline,
+        appeal_deadline: caseEntity.appeal_deadline,
+        next_step_deadline: caseEntity.next_step_deadline,
+        deadline: caseEntity.deadline,
+        created_at: caseEntity.created_at,
+        updated_at: caseEntity.updated_at,
+      },
+      // 费用
+      finance: {
+        fee_amount: caseEntity.fee_amount,
+        amount: caseEntity.amount,
+        service_fee: caseEntity.service_fee,
+        contract_amount,
+        fee_collected: caseEntity.fee_collected,
+        collected_amount,
+        invoiced_amount: caseEntity.invoiced_amount,
+        settled_amount: caseEntity.settled_amount,
+        quality_deposit: caseEntity.quality_deposit,
+      },
+      // 案件基本属性
+      meta: {
+        court: caseEntity.court,
+        court_room: caseEntity.court_room,
+        court_level: caseEntity.court_level,
+        case_source: caseEntity.case_source,
+        source_detail: caseEntity.source_detail,
+        referrer: caseEntity.referrer,
+        is_confidential: caseEntity.is_confidential,
+        fee_type: caseEntity.fee_type,
+        billing_cycle: caseEntity.billing_cycle,
+        payment_method: caseEntity.payment_method,
+        // 收款状态与合同交回状态（参考金助理）
+        payment_status: caseEntity.payment_status,
+        contract_return_status: caseEntity.contract_return_status,
+        progress: caseEntity.progress,
+        next_step: caseEntity.next_step,
+        contract_id: caseEntity.contract_id,
+      },
+      // 文档
+      documents: await this.getDocuments(id),
+    };
   }
 
   async closeCase(id: string): Promise<Case> {
@@ -436,6 +738,11 @@ export class CaseService {
     try {
       await this.legalDocumentService.generateDocument('closing_report', { case_id: id });
     } catch (err) {}
+
+    // 个债一销节点3：合同代理已结案（B 端点击结案），触发 C 端短信（失败不影响结案主流程）
+    if (result) {
+      this.triggerSms(id, 'contract_closed');
+    }
 
     return result;
   }
@@ -523,12 +830,18 @@ export class CaseService {
   }
 
   /**
-   * 出函：根据类型生成出庭函/所函（模拟生成）
-   * type: court_letter 出庭函 / firm_letter 所函
+   * 出函：根据类型生成出庭函/所函/律师函（模拟生成）
+   * type: court_letter 出庭函 / firm_letter 所函 / lawyer_letter 律师函
    */
   async generateLetter(id: string, type: string): Promise<{ success: boolean; type: string; case_id: string; case_name: string; generated_at: string }> {
     const caseEntity = await this.caseRepository.findOne({ where: { id } });
-    const caseName = caseEntity?.case_name || caseEntity?.case_no || id;
+    const caseName = caseEntity?.case_no || caseEntity?.client_name || id;
+
+    // 个债一销节点2：完成律师函撰写时触发 C 端短信（失败不影响出函主流程）
+    if (type === 'lawyer_letter' || type === 'legal_letter') {
+      this.triggerSms(id, 'lawyer_letter');
+    }
+
     return {
       success: true,
       type,
@@ -582,6 +895,12 @@ export class CaseService {
       } catch (err) {}
 
       return manager.findOne(Case, { where: { id } });
+    }).then((result) => {
+      // 案件办结结案通知（全流程结束），触发 C 端短信（失败不影响结案主流程）
+      if (result) {
+        this.triggerSms(id, 'closed');
+      }
+      return result;
     });
   }
 
@@ -661,7 +980,9 @@ export class CaseService {
 
   // 审批通过：设置 approval_status 为 approved，记录审批信息，若阶段为 intake 则自动转为 processing
   async approve(id: string, approverId: string, comment?: string): Promise<Case | null> {
-    return await this.dataSource.transaction(async (manager) => {
+    // 记录收案节点是否在本次审批激活（收案立项完成后触发 C 端短信）
+    let intakeToProcessing = false;
+    const result = await this.dataSource.transaction(async (manager) => {
       const caseEntity = await manager.findOne(Case, { where: { id } });
       if (!caseEntity) return null;
 
@@ -674,6 +995,7 @@ export class CaseService {
 
       if (caseEntity.stage === 'intake') {
         updateData.stage = 'processing';
+        intakeToProcessing = true;
       }
 
       await manager.update(Case, id, updateData);
@@ -688,6 +1010,13 @@ export class CaseService {
 
       return manager.findOne(Case, { where: { id } });
     });
+
+    // 收案立项完成（审批通过，从收案转入办案阶段），触发 C 端短信（失败不影响审批主流程）
+    if (intakeToProcessing && result) {
+      this.triggerSms(id, 'filing');
+    }
+
+    return result;
   }
 
   // 审批驳回：设置 approval_status 为 rejected，记录审批信息，stage 不变

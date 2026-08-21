@@ -31,6 +31,8 @@ export default function LeadManagement() {
   const [followUps, setFollowUps] = useState<Record<string, unknown>[]>([])
   const [editingFee, setEditingFee] = useState(false)
   const [feeValue, setFeeValue] = useState(0)
+  // 案由自定义选项（支持用户输入新案由）
+  const [customCaseTypeOptions, setCustomCaseTypeOptions] = useState<Array<{ value: string; label: string }>>([])
   const [searchParams, setSearchParams] = useState({
     phone: '',
     status: '',
@@ -335,6 +337,26 @@ export default function LeadManagement() {
     { value: 'other', label: '其他' },
   ]
 
+  // 合并预设选项和自定义选项
+  const allCaseTypeOptions = [...caseTypeOptions, ...customCaseTypeOptions]
+
+  // 处理案由搜索和新增
+  const handleCaseTypeSearch = (input: string) => {
+    // 如果输入不在现有选项中，添加为自定义选项
+    if (input && !allCaseTypeOptions.find(o => o.label === input || o.value === input)) {
+      const newOption = { value: input, label: input }
+      setCustomCaseTypeOptions(prev => [...prev, newOption])
+    }
+  }
+
+  const handleCaseTypeChange = (value: string) => {
+    // 如果选择了自定义值，确保它在选项列表中
+    if (value && !allCaseTypeOptions.find(o => o.value === value)) {
+      const newOption = { value, label: value }
+      setCustomCaseTypeOptions(prev => [...prev, newOption])
+    }
+  }
+
   const channelOptions = [
     { value: 'douyin', label: '抖音' },
     { value: 'baidu', label: '百度' },
@@ -566,13 +588,18 @@ export default function LeadManagement() {
         </Select>
         <Select
           placeholder="案由筛选"
-          style={{ width: 150 }}
+          style={{ width: 180 }}
           allowClear
+          showSearch
           value={searchParams.case_type || undefined}
-          onChange={(value) => setSearchParams({ ...searchParams, case_type: value || '' })}
-        >
-          {caseTypeOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
-        </Select>
+          onChange={(value) => { setSearchParams({ ...searchParams, case_type: value || '' }); handleCaseTypeChange(value) }}
+          onSearch={handleCaseTypeSearch}
+          filterOption={(input, option) =>
+            (option?.label as unknown as string)?.toLowerCase().includes(input.toLowerCase()) ||
+            (option?.value as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+          }
+          options={allCaseTypeOptions}
+        />
         <Select
           placeholder="渠道筛选"
           style={{ width: 150 }}
@@ -598,7 +625,7 @@ export default function LeadManagement() {
       </div>
 
       <div className="stitch-table">
-        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" scroll={{ x: 1600 }} />
+        <Table dataSource={data} columns={columns} loading={loading} rowKey="id" scroll={{ x: 'max-content' }} />
       </div>
 
       <Modal
@@ -618,9 +645,18 @@ export default function LeadManagement() {
             <Input className="stitch-input" placeholder="请输入单位名称" />
           </Form.Item>
           <Form.Item name="case_type" label="案由" rules={[{ required: true }]}>
-            <Select className="stitch-input">
-              {caseTypeOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
-            </Select>
+            <Select
+              className="stitch-input"
+              showSearch
+              placeholder="请选择或输入案由"
+              onSearch={handleCaseTypeSearch}
+              onChange={(value) => handleCaseTypeChange(value)}
+              filterOption={(input, option) =>
+                (option?.label as unknown as string)?.toLowerCase().includes(input.toLowerCase()) ||
+                (option?.value as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+              }
+              options={allCaseTypeOptions}
+            />
           </Form.Item>
           <Form.Item name="team" label="所属团队">
             <Select className="stitch-input" placeholder="请选择所属团队" allowClear>
@@ -700,9 +736,18 @@ export default function LeadManagement() {
             <Input className="stitch-input" placeholder="请输入单位名称" />
           </Form.Item>
           <Form.Item name="case_type" label="案由" rules={[{ required: true }]}>
-            <Select className="stitch-input">
-              {caseTypeOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
-            </Select>
+            <Select
+              className="stitch-input"
+              showSearch
+              placeholder="请选择或输入案由"
+              onSearch={handleCaseTypeSearch}
+              onChange={(value) => handleCaseTypeChange(value)}
+              filterOption={(input, option) =>
+                (option?.label as unknown as string)?.toLowerCase().includes(input.toLowerCase()) ||
+                (option?.value as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+              }
+              options={allCaseTypeOptions}
+            />
           </Form.Item>
           <Form.Item name="team" label="所属团队">
             <Select className="stitch-input" placeholder="请选择所属团队" allowClear>
@@ -927,9 +972,6 @@ export default function LeadManagement() {
         footer={null}
       >
         <Form onFinish={handleConvertSubmit} form={convertForm}>
-          <Form.Item name="case_no" label="案件编号">
-            <Input className="stitch-input" placeholder="选填，如不填将自动生成" />
-          </Form.Item>
           <Form.Item name="assignee_lawyer_id" label="承办律师ID">
             <Input className="stitch-input" placeholder="选填，可后续分配" />
           </Form.Item>

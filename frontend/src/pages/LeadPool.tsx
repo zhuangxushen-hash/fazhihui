@@ -51,6 +51,8 @@ export default function LeadPoolPage() {
     start_date: '',
     end_date: '',
   })
+  // 案由自定义选项（支持用户输入新案由）
+  const [customCaseTypeOptions, setCustomCaseTypeOptions] = useState<Array<{ value: string; label: string }>>([])
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 20,
@@ -58,6 +60,35 @@ export default function LeadPoolPage() {
 
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const isAdmin = user.role === 'super_admin' || user.role === 'org_admin'
+
+  // 案由选项列表
+  const caseTypeOptions = [
+    { value: 'marriage', label: '婚姻家事' },
+    { value: 'traffic', label: '交通事故' },
+    { value: 'labor', label: '劳动争议' },
+    { value: 'debt', label: '债务逾期' },
+    { value: 'gezhai', label: '个债' },
+    { value: 'execution', label: '执行' },
+    { value: 'other', label: '其他' },
+  ]
+
+  // 合并预设选项和自定义选项
+  const allCaseTypeOptions = [...caseTypeOptions, ...customCaseTypeOptions]
+
+  // 处理案由搜索和新增
+  const handleCaseTypeSearch = (input: string) => {
+    if (input && !allCaseTypeOptions.find(o => o.label === input || o.value === input)) {
+      const newOption = { value: input, label: input }
+      setCustomCaseTypeOptions(prev => [...prev, newOption])
+    }
+  }
+
+  const handleCaseTypeChange = (value: string) => {
+    if (value && !allCaseTypeOptions.find(o => o.value === value)) {
+      const newOption = { value, label: value }
+      setCustomCaseTypeOptions(prev => [...prev, newOption])
+    }
+  }
 
   useEffect(() => {
     fetchData()
@@ -365,18 +396,19 @@ export default function LeadPoolPage() {
           </Select>
 
           <Select
-            placeholder="案件类型"
+            placeholder="案由筛选"
             allowClear
-            style={{ width: 150 }}
+            showSearch
+            style={{ width: 180 }}
             value={filters.case_type || undefined}
-            onChange={(value) => setFilters({ ...filters, case_type: value || '' })}
-          >
-            <Select.Option value={CaseType.MARRIAGE}>婚姻家事</Select.Option>
-            <Select.Option value={CaseType.TRAFFIC}>交通事故</Select.Option>
-            <Select.Option value={CaseType.LABOR}>劳动纠纷</Select.Option>
-            <Select.Option value={CaseType.DEBT}>债务纠纷</Select.Option>
-            <Select.Option value={CaseType.OTHER}>其他</Select.Option>
-          </Select>
+            onChange={(value) => { setFilters({ ...filters, case_type: value || '' }); handleCaseTypeChange(value) }}
+            onSearch={handleCaseTypeSearch}
+            filterOption={(input, option) =>
+              (option?.label as unknown as string)?.toLowerCase().includes(input.toLowerCase()) ||
+              (option?.value as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+            }
+            options={allCaseTypeOptions}
+          />
 
           <Select
             placeholder="回收原因"

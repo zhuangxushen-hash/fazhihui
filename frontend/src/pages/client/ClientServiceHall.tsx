@@ -40,6 +40,12 @@ export default function ClientServiceHall() {
   const [verifyUrl, setVerifyUrl] = useState<string>('')
   const [signUrl, setSignUrl] = useState<string>('')
   const [idCardNo, setIdCardNo] = useState<string>('')
+  // 签约主体类型：individual 个人 / corp 企业（企业时走企业实名认证）
+  const [subjectType, setSubjectType] = useState<'individual' | 'corp'>('individual')
+  // 企业签约信息（主体为企业时填写）
+  const [corpName, setCorpName] = useState<string>('')
+  const [corpIdentNo, setCorpIdentNo] = useState<string>('')
+  const [legalRepName, setLegalRepName] = useState<string>('')
   const pollTimerRef = useRef<any>(null)
 
   // 发票下载
@@ -153,6 +159,10 @@ export default function ClientServiceHall() {
     setVerifyUrl('')
     setSignUrl('')
     setIdCardNo('')
+    setSubjectType('individual')
+    setCorpName('')
+    setCorpIdentNo('')
+    setLegalRepName('')
     clearSignPoll()
     setSignModalOpen(true)
     try {
@@ -178,7 +188,11 @@ export default function ClientServiceHall() {
         lawyer_id: selectedCase?.assignee_lawyer_id || '',
         contract_template_id: 'standard-service-contract',
         organization_id: user.organization_id || selectedCase?.organization_id || '',
-        id_card_no: idCardNo || undefined,
+        id_card_no: subjectType === 'individual' ? idCardNo || undefined : undefined,
+        subject_type: subjectType === 'corp' ? 'corp' : 'person',
+        corp_name: subjectType === 'corp' ? corpName || undefined : undefined,
+        corp_ident_no: subjectType === 'corp' ? corpIdentNo || undefined : undefined,
+        legal_rep_name: subjectType === 'corp' ? legalRepName || undefined : undefined,
       })) as any
       setSigningId(res?.signing_id || res?.id)
       if (res?.enabled === false) {
@@ -202,7 +216,10 @@ export default function ClientServiceHall() {
       const res = (await axios.post('/client/sign/verify-url', {
         signing_id: signingId,
         client_id: user.id,
-        id_card_no: idCardNo || undefined,
+        id_card_no: subjectType === 'individual' ? idCardNo || undefined : undefined,
+        corp_name: subjectType === 'corp' ? corpName || undefined : undefined,
+        corp_ident_no: subjectType === 'corp' ? corpIdentNo || undefined : undefined,
+        legal_rep_name: subjectType === 'corp' ? legalRepName || undefined : undefined,
       })) as any
       setVerifyUrl(res?.verify_url || '')
       if (res?.verify_url) {
@@ -504,23 +521,36 @@ export default function ClientServiceHall() {
                 <SafetyCertificateOutlined /> 法大大实名认证（身份鉴别）
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-                签约前需完成法大大实名认证：请填写身份证号并前往法大大页面完成实名认证，认证结果由法大大平台校验后进入电子签环节。
+                {subjectType === 'corp'
+                  ? '签约主体为企业，需前往法大大页面完成企业实名认证（企业名称 + 统一社会信用代码，经办人配合人脸/手机号核验），认证结果由法大大平台校验后进入电子签环节。'
+                  : '签约前需完成法大大实名认证：请填写身份证号并前往法大大页面完成实名认证，认证结果由法大大平台校验后进入电子签环节。'}
               </div>
             </div>
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>
-                身份证号 <span style={{ color: 'var(--error)' }}>*</span>
-              </label>
-              <Input
-                value={idCardNo}
-                onChange={(e) => setIdCardNo(e.target.value)}
-                placeholder="请输入签约人身份证号"
-                size="large"
-                style={{ width: '100%' }}
-              />
-            </div>
+            {subjectType === 'corp' ? (
+              <div style={{ background: 'var(--bg-sunken)', padding: 14, borderRadius: 8, border: '1px solid var(--border-light)', marginBottom: 14 }}>
+                <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600, marginBottom: 6 }}>企业信息</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.9 }}>
+                  <div><strong>企业名称：</strong>{corpName || '-'}</div>
+                  <div><strong>统一社会信用代码：</strong>{corpIdentNo || '-'}</div>
+                  <div><strong>法定代表人：</strong>{legalRepName || '-'}</div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>
+                  身份证号 <span style={{ color: 'var(--error)' }}>*</span>
+                </label>
+                <Input
+                  value={idCardNo}
+                  onChange={(e) => setIdCardNo(e.target.value)}
+                  placeholder="请输入签约人身份证号"
+                  size="large"
+                  style={{ width: '100%' }}
+                />
+              </div>
+            )}
             <ClientButton btnVariant="primary" btnSize="large" loading={signing} onClick={handleStartVerify} style={{ width: '100%' }}>
-              前往法大大完成实名认证
+              前往法大大完成{subjectType === 'corp' ? '企业' : ''}实名认证
             </ClientButton>
             {verifyUrl && (
               <ClientButton btnVariant="ghost" btnSize="large" onClick={() => window.open(verifyUrl, '_blank')} style={{ width: '100%', marginTop: 10 }}>
@@ -579,6 +609,71 @@ export default function ClientServiceHall() {
             <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginBottom: 14 }}>
               点击确认签约即表示您同意签署上述法律服务合同。签约将使用法大大实名认证与电子签名，电子签名具备法律效力。
             </div>
+            {/* 签约主体类型：个人 / 企业（企业走企业实名认证） */}
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>签约主体 <span style={{ color: 'var(--error)' }}>*</span></label>
+              <Select
+                value={subjectType}
+                onChange={(v: 'individual' | 'corp') => setSubjectType(v)}
+                style={{ width: '100%' }}
+                size="large"
+                options={[
+                  { value: 'individual', label: '个人' },
+                  { value: 'corp', label: '企业' },
+                ]}
+              />
+            </div>
+            {subjectType === 'individual' ? (
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>
+                  身份证号 <span style={{ color: 'var(--error)' }}>*</span>
+                </label>
+                <Input
+                  value={idCardNo}
+                  onChange={(e) => setIdCardNo(e.target.value)}
+                  placeholder="请输入签约人身份证号"
+                  size="large"
+                  style={{ width: '100%' }}
+                />
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>
+                    企业名称 <span style={{ color: 'var(--error)' }}>*</span>
+                  </label>
+                  <Input
+                    value={corpName}
+                    onChange={(e) => setCorpName(e.target.value)}
+                    placeholder="请输入企业全称"
+                    size="large"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>
+                    统一社会信用代码 <span style={{ color: 'var(--error)' }}>*</span>
+                  </label>
+                  <Input
+                    value={corpIdentNo}
+                    onChange={(e) => setCorpIdentNo(e.target.value)}
+                    placeholder="请输入统一社会信用代码"
+                    size="large"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>法定代表人</label>
+                  <Input
+                    value={legalRepName}
+                    onChange={(e) => setLegalRepName(e.target.value)}
+                    placeholder="请输入法定代表人姓名（选填）"
+                    size="large"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </div>
+            )}
             <ClientButton btnVariant="primary" btnSize="large" loading={signing} onClick={handleSign} style={{ width: '100%' }}>
               确认签约
             </ClientButton>

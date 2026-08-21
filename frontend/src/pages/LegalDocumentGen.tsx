@@ -82,6 +82,8 @@ export default function LegalDocumentGen() {
 
   const [searchKeyword, setSearchKeyword] = useState('')
   const [searchCaseType, setSearchCaseType] = useState<string>('')
+  // 案由自定义选项（支持用户输入新案由）
+  const [customCaseTypeOptions, setCustomCaseTypeOptions] = useState<Array<{ value: string; label: string }>>([])
 
   // 自动生成委托合同相关状态
   const [cases, setCases] = useState<any[]>([])
@@ -97,6 +99,24 @@ export default function LegalDocumentGen() {
   const [batchLoading, setBatchLoading] = useState(false)
 
   const user = JSON.parse(localStorage.getItem('user') || '{}')
+
+  // 合并预设选项和自定义选项
+  const allCaseTypeOptions = [...caseTypeOptions, ...customCaseTypeOptions]
+
+  // 处理案由搜索和新增
+  const handleCaseTypeSearch = (input: string) => {
+    if (input && !allCaseTypeOptions.find(o => o.label === input || o.value === input)) {
+      const newOption = { value: input, label: input }
+      setCustomCaseTypeOptions(prev => [...prev, newOption])
+    }
+  }
+
+  const handleCaseTypeChange = (value: string) => {
+    if (value && !allCaseTypeOptions.find(o => o.value === value)) {
+      const newOption = { value, label: value }
+      setCustomCaseTypeOptions(prev => [...prev, newOption])
+    }
+  }
 
   useEffect(() => {
     fetchTemplates()
@@ -381,13 +401,18 @@ export default function LegalDocumentGen() {
         />
         <Select
           placeholder="案由筛选"
-          style={{ width: 150 }}
+          style={{ width: 180 }}
           allowClear
+          showSearch
           value={searchCaseType || undefined}
-          onChange={(value) => setSearchCaseType(value || '')}
-        >
-          {caseTypeOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
-        </Select>
+          onChange={(value) => { setSearchCaseType(value || ''); handleCaseTypeChange(value) }}
+          onSearch={handleCaseTypeSearch}
+          filterOption={(input, option) =>
+            (option?.label as unknown as string)?.toLowerCase().includes(input.toLowerCase()) ||
+            (option?.value as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+          }
+          options={allCaseTypeOptions}
+        />
         <Button type="primary" onClick={fetchTemplates}>搜索</Button>
         <Button onClick={() => { setSearchKeyword(''); setSearchCaseType(''); fetchTemplates() }}>重置</Button>
         <div style={{ flex: 1 }} />
@@ -740,9 +765,17 @@ export default function LegalDocumentGen() {
               </Select>
             </Form.Item>
             <Form.Item name="case_type" label="适用案由" style={{ flex: 1 }}>
-              <Select placeholder="请选择适用案由">
-                {caseTypeOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
-              </Select>
+              <Select
+                placeholder="请选择或输入适用案由"
+                showSearch
+                onSearch={handleCaseTypeSearch}
+                onChange={(value) => handleCaseTypeChange(value)}
+                filterOption={(input, option) =>
+                  (option?.label as unknown as string)?.toLowerCase().includes(input.toLowerCase()) ||
+                  (option?.value as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+                }
+                options={allCaseTypeOptions}
+              />
             </Form.Item>
           </div>
           <Form.Item

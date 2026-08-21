@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const isProd = env.NODE_ENV === 'production'
   const frontendPort = Number(env.FRONTEND_PORT) || (isProd ? 5174 : 5173)
-  const backendPort = Number(env.BACKEND_PORT) || (isProd ? 3001 : 3000)
+  const backendPort = Number(env.BACKEND_PORT) || (isProd ? 3001 : 3100)
 
   return {
     plugins: [react({

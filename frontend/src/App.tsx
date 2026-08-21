@@ -14,6 +14,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'))
 const LeadManagement = lazy(() => import('./pages/LeadManagement'))
 const ClientManagement = lazy(() => import('./pages/ClientManagement'))
 const CaseManagement = lazy(() => import('./pages/CaseManagement'))
+const CaseDetail = lazy(() => import('./pages/CaseDetail'))
 const ContractManagement = lazy(() => import('./pages/ContractManagement'))
 const ComplaintManagement = lazy(() => import('./pages/ComplaintManagement'))
 const ComplianceCenter = lazy(() => import('./pages/ComplianceCenter'))
@@ -440,6 +441,7 @@ function App() {
           <Route path="/talk-quality-check" element={<ProtectedRoute><TalkQualityCheck /></ProtectedRoute>} />
           {/* 案件办案 */}
           <Route path="/cases" element={<ProtectedRoute><CaseManagement /></ProtectedRoute>} />
+          <Route path="/cases/:id" element={<ProtectedRoute><CaseDetail /></ProtectedRoute>} />
           <Route path="/case-sop" element={<ProtectedRoute><CaseSOPConfig /></ProtectedRoute>} />
           <Route path="/case-warning" element={<ProtectedRoute><CaseWarningCenter /></ProtectedRoute>} />
           <Route path="/legal-documents" element={<ProtectedRoute><LegalDocumentGen /></ProtectedRoute>} />

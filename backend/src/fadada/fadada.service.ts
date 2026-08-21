@@ -17,6 +17,17 @@ export interface SigningClientInfo {
   mobile?: string;
 }
 
+/** 企业实名认证/企业签署主体的企业信息 */
+export interface SigningCorpInfo {
+  corpName: string;
+  corpIdentNo: string;
+  legalRepName?: string;
+  // 经办人信息（企业实名认证页面带入，为空则需经办人在页面填写）
+  agentName?: string;
+  agentIdCardNo?: string;
+  agentMobile?: string;
+}
+
 export interface FadadaConfigDto {
   enabled: boolean;
   mode: FadadaMode;
@@ -155,6 +166,56 @@ export class FadadaService {
   }
 
   /**
+   * 获取企业实名认证链接（身份鉴别-企业认证）
+   * - prod：法大大企业授权认证页（企业名称/信用代码实名 + 经办人授权）
+   * - mock：本地模拟认证页（复用个人认证入口，标识 corp）
+   */
+  async getCorpAuthUrl(info: SigningCorpInfo & { signingId: string }): Promise<{
+    verifyUrl: string;
+    transactionId: string;
+    mode: FadadaMode;
+  }> {
+    if (!this.enabled) {
+      throw new Error('法大大电子签未启用（FADADA_ENABLED=false）');
+    }
+    if (this.mode === 'mock') {
+      return {
+        verifyUrl: `/client/mock-fadada?mode=verify&signing_id=${info.signingId}`,
+        transactionId: info.signingId,
+        mode: 'mock',
+      };
+    }
+    this.assertProdReady();
+    const res = await this.euiClient.getCorpAuthUrl({
+      clientCorpId: 'CORP_' + info.signingId,
+      clientUserId: 'OPR_' + info.signingId,
+      accountName: info.agentMobile || undefined,
+      corpIdentInfo: {
+        corpName: info.corpName,
+        corpIdentType: sdk.CorpIdentTypeEnum.CORP,
+        corpIdentNo: info.corpIdentNo,
+        legalRepName: info.legalRepName || undefined,
+        corpIdentMethod: ['legalRep', 'agent'],
+      },
+      oprIdentInfo: {
+        userName: info.agentName || undefined,
+        userIdentType: sdk.IdentTypeEnum.ID_CARD,
+        userIdentNo: info.agentIdCardNo || undefined,
+        mobile: info.agentMobile || undefined,
+        oprIdentMethod: ['face', 'mobile'],
+      },
+      authScopes: ['ident_info', 'signtask_info', 'signtask_init', 'signtask_file'],
+      redirectUrl: this.redirectUrl || undefined,
+    });
+    const data = res?.data?.data;
+    const eUrl = data?.eUrl;
+    if (!eUrl) {
+      throw new Error('法大大企业实名认证链接获取失败：' + (res?.data?.msg || '未知错误'));
+    }
+    return { verifyUrl: eUrl, transactionId: info.signingId, mode: 'prod' };
+  }
+
+  /**
    * 创建法大大签署任务并返回客户专属签署链接
    * - prod：上传合同 PDF → 创建签署任务 → 提交任务 → 获取客户签署链接
    * - mock：返回本地模拟签署页
@@ -165,6 +226,10 @@ export class FadadaService {
     docName: string;
     docContent: string;
     client: SigningClientInfo;
+    // 签约主体类型：person 个人签名 / corp 企业签名（企业时以企业主体作为客户参与方）
+    subjectType?: 'person' | 'corp';
+    // 企业主体信息（subjectType=corp 时必填）
+    corp?: SigningCorpInfo;
     lawyer?: { lawyerUserId: string; name: string; mobile?: string };
   }): Promise<{ signTaskId: string; actorId: string; signUrl: string; mode: FadadaMode }> {
     if (!this.enabled) {
@@ -181,28 +246,47 @@ export class FadadaService {
     this.assertProdReady();
     const pdf = await this.generateContractPdf(params.docName, params.docContent);
     const docFileId = await this.uploadPdf(pdf, params.docName);
-    const actors: any[] = [
-      {
-        actor: {
-          actorId: 'client',
-          actorType: sdk.ActorTypeEnum.PERSON,
-          actorName: params.client.userName,
-          permissions: [sdk.Permissions.SIGN],
-          actorOpenId: params.client.clientUserId,
-          identNameForMatch: params.client.userName,
-          certNoForMatch: params.client.idCardNo,
-          accountName: params.client.mobile || undefined,
-          clientUserId: params.client.clientUserId,
-          notification: { sendNotification: false },
-        },
-        signConfigInfo: {
-          verifyMethods: ['face', 'sms'],
-          identifiedView: true,
-          readingToEnd: true,
-          signerSignMethod: 'standard',
-        },
-      },
-    ];
+    const isCorp = params.subjectType === 'corp';
+    const clientActor = isCorp
+      ? {
+          actor: {
+            actorId: 'client',
+            actorType: sdk.ActorTypeEnum.CORP,
+            actorName: params.corp?.corpName || params.client.userName,
+            permissions: [sdk.Permissions.SIGN],
+            actorOpenId: 'CORP_' + params.signingId,
+            identNameForMatch: params.corp?.corpName,
+            certNoForMatch: params.corp?.corpIdentNo,
+            notification: { sendNotification: false },
+          },
+          signConfigInfo: {
+            verifyMethods: ['corp'],
+            identifiedView: true,
+            readingToEnd: true,
+            signerSignMethod: 'standard',
+          },
+        }
+      : {
+          actor: {
+            actorId: 'client',
+            actorType: sdk.ActorTypeEnum.PERSON,
+            actorName: params.client.userName,
+            permissions: [sdk.Permissions.SIGN],
+            actorOpenId: params.client.clientUserId,
+            identNameForMatch: params.client.userName,
+            certNoForMatch: params.client.idCardNo,
+            accountName: params.client.mobile || undefined,
+            clientUserId: params.client.clientUserId,
+            notification: { sendNotification: false },
+          },
+          signConfigInfo: {
+            verifyMethods: ['face', 'sms'],
+            identifiedView: true,
+            readingToEnd: true,
+            signerSignMethod: 'standard',
+          },
+        };
+    const actors: any[] = [clientActor];
     if (params.lawyer) {
       actors.push({
         actor: {

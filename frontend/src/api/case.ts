@@ -3,7 +3,6 @@ import axios from './axios'
 export interface Case {
   id: string
   case_no: string
-  case_name?: string
   client_name: string
   client_phone?: string
   client_id?: string
@@ -12,13 +11,16 @@ export interface Case {
   case_category?: string
   court?: string
   opposing_party?: string
+  opposing_party_type?: string
   opposing_agent?: string
   court_room?: string
   case_source?: string
   amount?: number
   quality_deposit?: number
   filing_date?: string
-  expected_close_date?: string
+  hearing_date?: string
+  evidence_deadline?: string
+  appeal_deadline?: string
   is_confidential?: boolean
   stage?: string
   description?: string
@@ -39,7 +41,7 @@ export interface Case {
   plaintiff_agent?: string
   defendant?: string
   defendant_agent?: string
-  case_nature?: string
+  
   case_number?: string
   co_handler?: string
   progress?: number
@@ -47,7 +49,6 @@ export interface Case {
   next_step_deadline?: string
   contract_id?: string
   related_lead_id?: string
-  success_rate?: number
   fee_type?: 'fixed' | 'risk' | 'hybrid'
   billing_cycle?: 'hourly' | 'monthly' | 'case_based'
   payment_method?: 'one_time' | 'installment' | 'milestone'
@@ -59,7 +60,6 @@ export interface Case {
 
 export type CreateCasePayload = {
   case_no: string
-  case_name?: string
   client_name: string
   client_phone?: string
   client_id?: string
@@ -68,13 +68,16 @@ export type CreateCasePayload = {
   case_category?: string
   court?: string
   opposing_party?: string
+  opposing_party_type?: string
   opposing_agent?: string
   court_room?: string
   case_source?: string
   amount?: number
   quality_deposit?: number
   filing_date?: string
-  expected_close_date?: string
+  hearing_date?: string
+  evidence_deadline?: string
+  appeal_deadline?: string
   is_confidential?: boolean
   stage?: string
   description?: string
@@ -84,7 +87,7 @@ export type CreateCasePayload = {
   plaintiff_agent?: string
   defendant?: string
   defendant_agent?: string
-  case_nature?: string
+  
   case_number?: string
   co_handler?: string
   progress?: number
@@ -92,7 +95,6 @@ export type CreateCasePayload = {
   next_step_deadline?: string
   contract_id?: string
   related_lead_id?: string
-  success_rate?: number
   fee_type?: 'fixed' | 'risk' | 'hybrid'
   billing_cycle?: 'hourly' | 'monthly' | 'case_based'
   payment_method?: 'one_time' | 'installment' | 'milestone'
@@ -119,6 +121,21 @@ export const getCases = (params: {
 
 export const getCaseById = (id: string) => {
   return axios.get(`/cases/${id}`)
+}
+
+// 案件详情聚合数据（概要/当事人/团队/时间节点/费用/文档）
+export const getCaseDetail = (id: string) => {
+  return axios.get(`/cases/${id}/detail`)
+}
+
+// 详情页编辑保存（参考金助理案件编辑能力）
+export const updateCaseDetail = (id: string, data: Record<string, unknown>) => {
+  return axios.put(`/cases/${id}`, data)
+}
+
+// 删除案件（软删除）
+export const deleteCase = (id: string) => {
+  return axios.delete(`/cases/${id}`)
 }
 
 export const updateCaseStatus = (id: string, status: string) => {

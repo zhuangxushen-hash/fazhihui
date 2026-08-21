@@ -7,10 +7,6 @@ export class CreateCaseDto {
   @IsString()
   case_no?: string;
 
-  @IsOptional()
-  @IsString()
-  case_name?: string;
-
   @IsNotEmpty()
   @IsString()
   client_name: string;
@@ -35,6 +31,11 @@ export class CreateCaseDto {
   @IsString()
   case_category?: string;
 
+  // 案件名称（区别于案由 case_type）
+  @IsOptional()
+  @IsString()
+  case_name?: string;
+
   @IsOptional()
   @IsString()
   court?: string;
@@ -42,6 +43,10 @@ export class CreateCaseDto {
   @IsOptional()
   @IsString()
   opposing_party?: string;
+
+  @IsOptional()
+  @IsString()
+  opposing_party_type?: string;
 
   @IsOptional()
   @IsString()
@@ -67,9 +72,20 @@ export class CreateCaseDto {
   @IsDateString()
   filing_date?: string;
 
+  // 开庭日期（真实节点，用于开庭预警）
   @IsOptional()
   @IsDateString()
-  expected_close_date?: string;
+  hearing_date?: string;
+
+  // 举证期限（真实节点，用于举证期限预警）
+  @IsOptional()
+  @IsDateString()
+  evidence_deadline?: string;
+
+  // 上诉期限（真实节点，用于上诉期限预警）
+  @IsOptional()
+  @IsDateString()
+  appeal_deadline?: string;
 
   @IsOptional()
   @IsBoolean()
@@ -100,10 +116,6 @@ export class CreateCaseDto {
   @IsOptional()
   @IsString()
   case_number?: string;
-
-  @IsOptional()
-  @IsString()
-  case_nature?: string;
 
   @IsOptional()
   @IsString()
@@ -169,9 +181,4 @@ export class CreateCaseDto {
   @IsOptional()
   @IsDateString()
   next_step_deadline?: string;
-
-  @IsOptional()
-  @IsNumber()
-  @Type(() => Number)
-  success_rate?: number;
 }
