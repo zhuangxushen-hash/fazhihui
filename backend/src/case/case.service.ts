@@ -483,6 +483,11 @@ export class CaseService {
   }
 
   async updateStatus(id: string, status: CaseStatus): Promise<Case> {
+    // 状态手动改为"已结案"时，复用 closeCase 统一触发结案短信等完整结案流程
+    if (status === CaseStatus.CLOSED) {
+      return this.closeCase(id);
+    }
+    // 其余状态保持原有简单更新逻辑
     await this.caseRepository.update(id, { status });
     return this.caseRepository.findOne({ where: { id } });
   }

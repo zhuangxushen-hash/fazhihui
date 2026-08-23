@@ -38,6 +38,7 @@ import {
   rollbackDocumentVersion,
   getDocuments,
   createDocument,
+  updateDocument,
   deleteDocument,
 } from '../api/document'
 import type { DocumentVersionItem, DocumentItem } from '../api/document'
@@ -93,6 +94,10 @@ export default function DocumentManagement() {
   // 新建文档弹窗
   const [createModalVisible, setCreateModalVisible] = useState(false)
   const [createForm] = Form.useForm()
+  // 编辑文档弹窗
+  const [editModalVisible, setEditModalVisible] = useState(false)
+  const [editingDoc, setEditingDoc] = useState<Record<string, unknown> | null>(null)
+  const [editForm] = Form.useForm()
   // 律所资料文件夹树选中
   const [selectedFolder, setSelectedFolder] = useState<string>('firm-root')
   // 版本历史弹窗
@@ -204,13 +209,33 @@ export default function DocumentManagement() {
     })
   }
 
-  // 编辑
+  // 编辑：回填文档旧数据到表单后打开编辑弹窗
   const handleEdit = (record: Record<string, unknown>) => {
-    Modal.info({
-      title: '编辑文档',
-      content: `编辑文档：${record.name}`,
-      okText: '关闭',
+    setEditingDoc(record)
+    editForm.setFieldsValue({
+      name: record.name,
+      description: record.description,
+      category: record.category,
     })
+    setEditModalVisible(true)
+  }
+
+  // 提交编辑：调用已有更新接口保存
+  const handleEditSubmit = async (values: Record<string, unknown>) => {
+    const docId = (editingDoc?.id as string) || (editingDoc?.key as string)
+    if (!docId) return
+    try {
+      await updateDocument(docId, values as Parameters<typeof updateDocument>[1])
+      message.success('文档更新成功')
+      setEditModalVisible(false)
+      if (activeMenu === 'company-doc') {
+        fetchCompanyData(companyKeyword)
+      } else {
+        fetchData()
+      }
+    } catch (error) {
+      message.error('文档更新失败')
+    }
   }
 
   // 下载
@@ -547,6 +572,28 @@ export default function DocumentManagement() {
           {renderMain()}
         </div>
       </div>
+
+      {/* 编辑文档弹窗 */}
+      <Modal
+        title="编辑文档"
+        open={editModalVisible}
+        onCancel={() => setEditModalVisible(false)}
+        onOk={() => editForm.submit()}
+        okText="确定"
+        cancelText="取消"
+      >
+        <Form form={editForm} onFinish={handleEditSubmit} layout="vertical" style={{ marginTop: 8 }}>
+          <Form.Item name="name" label="文档名称" rules={[{ required: true, message: '请输入文档名称' }]}>
+            <Input placeholder="请输入文档名称" />
+          </Form.Item>
+          <Form.Item name="category" label="文档分类">
+            <Input placeholder="请输入文档分类" />
+          </Form.Item>
+          <Form.Item name="description" label="文档描述">
+            <Input.TextArea rows={3} placeholder="请输入文档描述" />
+          </Form.Item>
+        </Form>
+      </Modal>
 
       {/* 新建文档弹窗 */}
       <Modal
