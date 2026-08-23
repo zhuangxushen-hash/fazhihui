@@ -16,11 +16,15 @@ export class DocumentItemService {
 
   // 创建文档
   async create(data: Partial<DocumentItem>): Promise<DocumentItem> {
-    const doc = this.documentRepository.create(data);
+    // 未指定归属范围时默认个人文档
+    const doc = this.documentRepository.create({
+      ...data,
+      scope: data.scope || 'personal',
+    });
     return this.documentRepository.save(doc);
   }
 
-  // 分页查询文档列表，支持 name/category/case_id 筛选
+  // 分页查询文档列表，支持 name/category/case_id/scope 筛选
   async findList(params: {
     organization_id: string;
     page?: number;
@@ -28,6 +32,7 @@ export class DocumentItemService {
     name?: string;
     category?: string;
     case_id?: string;
+    scope?: string;
   }): Promise<{ list: DocumentItem[]; total: number; page: number; pageSize: number }> {
     const page = Number(params.page) > 0 ? Number(params.page) : 1;
     const pageSize = Number(params.pageSize) > 0 ? Number(params.pageSize) : 10;
@@ -43,6 +48,9 @@ export class DocumentItemService {
     }
     if (params.case_id) {
       where.case_id = params.case_id;
+    }
+    if (params.scope) {
+      where.scope = params.scope;
     }
     const [list, total] = await this.documentRepository.findAndCount({
       where,

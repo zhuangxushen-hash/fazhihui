@@ -54,8 +54,14 @@ import { LawyerCenterModule } from './lawyer-center/lawyer-center.module';
 import { PushRuleModule } from './push-rule/push-rule.module';
 // C 端短信提醒模块（创蓝短信）
 import { SmsModule } from './sms/sms.module';
+// 个人工作台模块
+import { WorkbenchModule } from './workbench/workbench.module';
+// 更新动态模块
+import { UpdateDynamicModule } from './update-dynamic/update-dynamic.module';
 // 法大大电子签（客户端签约身份鉴别 + 电子签名）
 import { FadadaModule } from './fadada/fadada.module';
+// 编号规则配置模块（按组织配置案件/合同/法律文书/归档编号规则）
+import { NumberRuleModule } from './number-rule/number-rule.module';
 
 @Module({
   imports: [
@@ -126,7 +132,13 @@ import { FadadaModule } from './fadada/fadada.module';
     PushRuleModule,
     // C 端短信提醒模块
     SmsModule,
+    // 个人工作台模块
+    WorkbenchModule,
+    // 更新动态模块
+    UpdateDynamicModule,
     FadadaModule,
+    // 编号规则配置模块
+    NumberRuleModule,
   ],
   providers: [
     // 注册全局限流守卫

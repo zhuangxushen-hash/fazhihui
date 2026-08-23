@@ -37,6 +37,7 @@ export class DocumentItemController {
     @Query('name') name: string,
     @Query('category') category: string,
     @Query('case_id') case_id: string,
+    @Query('scope') scope: string,
     @Request() req: any,
   ) {
     return this.documentService.findList({
@@ -46,6 +47,7 @@ export class DocumentItemController {
       name,
       category,
       case_id,
+      scope,
     });
   }
 

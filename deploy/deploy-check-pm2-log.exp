@@ -1,9 +1,0 @@
-#!/usr/bin/expect -f
-set timeout 90
-set password "s\`3}2KG~n@D?N\$P"
-
-spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "tail -80 /home/ubuntu/.pm2/logs/test-backend-error.log | grep -B2 -A20 -i 'talk-sop\|progress\|Error' | tail -50"
-expect {
-    -re "password:|Password:" { send "$password\r"; exp_continue }
-    eof
-}

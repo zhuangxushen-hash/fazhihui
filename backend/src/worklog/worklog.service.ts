@@ -6,6 +6,9 @@ import { Schedule } from '../schedule/schedule.entity';
 import { UserService } from '../user/user.service';
 import { TaskService } from '../task/task.service';
 import { Task } from '../task/task.entity';
+// 工时打印：按用户分组聚合工时明细，需要关联用户姓名与案件信息
+import { User } from '../user/user.entity';
+import { Case } from '../case/case.entity';
 // Phase4 M10: 工作日志审批通过后回写案件人力成本，引入 CaseCost 实体
 import { CaseCost, CostType } from '../finance/case-cost.entity';
 
@@ -330,6 +333,95 @@ export class WorklogService {
       by_user: Array.from(userMap.values()),
       by_case: Array.from(caseMap.values()),
       by_month: Array.from(monthMap.values()).sort((a, b) => (a.month < b.month ? 1 : -1)),
+    };
+  }
+
+  // 工时打印数据：按时间段筛选工时记录，按用户分组聚合，供打印工时表使用
+  async getPrintData(orgId: string, params: WorklogQueryParams = {}): Promise<any> {
+    const qb = this.worklogRepository
+      .createQueryBuilder('w')
+      .leftJoin(User, 'u', 'u.id = w.user_id')
+      .leftJoin(Case, 'c', 'c.id = w.case_id')
+      .select([
+        'w.id AS id',
+        'w.user_id AS user_id',
+        'w.work_date AS work_date',
+        'w.content AS content',
+        'w.work_hours AS work_hours',
+        'w.billable AS billable',
+        'w.status AS status',
+        'w.log_type AS log_type',
+        'w.case_id AS case_id',
+        'u.real_name AS user_name',
+        'c.case_name AS case_name',
+        'c.case_no AS case_no',
+        'c.client_name AS client_name',
+      ])
+      .where('w.organization_id = :orgId', { orgId });
+
+    if (params.user_id) {
+      qb.andWhere('w.user_id = :userId', { userId: params.user_id });
+    }
+    if (params.status) {
+      qb.andWhere('w.status = :status', { status: params.status });
+    }
+    if (params.startDate) {
+      qb.andWhere('w.work_date >= :startDate', { startDate: params.startDate });
+    }
+    if (params.endDate) {
+      qb.andWhere('w.work_date <= :endDate', { endDate: params.endDate });
+    }
+
+    qb.orderBy('w.user_id', 'ASC').addOrderBy('w.work_date', 'ASC');
+    const rows = await qb.getRawMany();
+
+    // 按用户分组聚合
+    const userMap = new Map<string, any>();
+    for (const r of rows) {
+      const uid = r.user_id || 'unknown';
+      if (!userMap.has(uid)) {
+        userMap.set(uid, {
+          user_id: uid,
+          user_name: r.user_name || '未知',
+          total_hours: 0,
+          billable_hours: 0,
+          items: [],
+        });
+      }
+      const u = userMap.get(uid);
+      const hours = Number(r.work_hours || 0);
+      u.total_hours += hours;
+      if (r.billable) u.billable_hours += hours;
+      u.items.push({
+        id: r.id,
+        work_date: r.work_date,
+        content: r.content,
+        work_hours: hours,
+        billable: !!r.billable,
+        status: r.status,
+        case_name: r.case_name || '',
+        case_no: r.case_no || '',
+        client_name: r.client_name || '',
+      });
+    }
+
+    const users = Array.from(userMap.values());
+    for (const u of users) {
+      u.total_hours = Math.round(u.total_hours * 10) / 10;
+      u.billable_hours = Math.round(u.billable_hours * 10) / 10;
+    }
+
+    // 汇总统计
+    const totalHours = users.reduce((s, u) => s + u.total_hours, 0);
+    const totalBillable = users.reduce((s, u) => s + u.billable_hours, 0);
+
+    return {
+      start_date: params.startDate || '',
+      end_date: params.endDate || '',
+      total_hours: Math.round(totalHours * 10) / 10,
+      total_billable: Math.round(totalBillable * 10) / 10,
+      user_count: users.length,
+      users,
     };
   }
 

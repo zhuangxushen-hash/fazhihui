@@ -12,6 +12,9 @@ import { AuditService } from '../audit/audit.service';
 import { User } from '../user/user.entity';
 // Phase5 L2: 合同审批通过后自动生成委托合同需注入法律文书服务
 import { LegalDocumentService } from '../case/legal-document.service';
+// 编号规则服务（合同号按组织规则生成）
+import { NumberRuleService } from '../number-rule/number-rule.service';
+import { NumberType } from '../number-rule/number-rule.entity';
 
 // 合同类型常量
 export const ContractType = {
@@ -55,9 +58,11 @@ export class ContractService {
     private auditService: AuditService,
     // Phase5 L2: 注入法律文书服务用于合同审批通过后自动生成委托合同
     private legalDocumentService: LegalDocumentService,
+    // 编号规则服务（合同号按组织规则生成）
+    private numberRuleService: NumberRuleService,
   ) {}
 
-  // 自动生成合同编号: HT-YYYYMMDD-随机6位
+  // 自动生成合同编号: HT-YYYYMMDD-随机6位（无规则配置时的回退方案）
   private generateContractNo(): string {
     const now = new Date();
     const y = now.getFullYear();
@@ -67,10 +72,46 @@ export class ContractService {
     return `HT-${y}${m}${d}-${rand}`;
   }
 
+  // 按编号规则生成合同号；未配置规则时返回 null
+  private async generateContractNoByRule(contractData: Partial<Contract>): Promise<string | null> {
+    const orgId = contractData.organization_id;
+    if (!orgId) return null;
+
+    // 业务类型：优先按关联案件分类，无案件时按合同类型映射
+    let bizType = '';
+    let deptCode: string | null = null;
+    if (contractData.case_id) {
+      const c = await this.caseRepository.findOne({ where: { id: contractData.case_id } });
+      if (c) {
+        bizType = NumberRuleService.mapCategoryToBizType(c.case_category);
+        // 部门代码：从案件主办律师所属部门解析
+        if (c.assignee_lawyer_id) {
+          const lawyer = await this.userRepository.findOne({ where: { id: c.assignee_lawyer_id } });
+          if (lawyer?.department) {
+            deptCode = await this.numberRuleService.resolveDeptCode(orgId, lawyer.department);
+          }
+        }
+      }
+    }
+    if (!bizType) {
+      bizType = NumberRuleService.mapContractTypeToBizType(contractData.type);
+    }
+    if (!bizType) return null;
+
+    return this.numberRuleService.generateNumber(orgId, {
+      numberType: NumberType.CONTRACT,
+      bizType,
+      deptCode,
+      caseId: contractData.case_id,
+    });
+  }
+
   // 创建合同
   async create(contractData: Partial<Contract>): Promise<Contract> {
     if (!contractData.contract_no) {
-      contractData.contract_no = this.generateContractNo();
+      // 优先按组织编号规则生成，未配置规则时回退随机编号
+      const ruleNo = await this.generateContractNoByRule(contractData);
+      contractData.contract_no = ruleNo || this.generateContractNo();
     }
     if (!contractData.stage) {
       contractData.stage = ContractStageEnum.DRAFTING;

@@ -13,6 +13,8 @@ import { LegalDocument } from '../case/legal-document.entity';
 import { Case } from '../case/case.entity';
 // Phase5 M8: 审计日志需查询操作人用户名，注入 User 实体
 import { User } from '../user/user.entity';
+// 编号规则配置模块（合同号按组织规则生成）
+import { NumberRuleModule } from '../number-rule/number-rule.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { User } from '../user/user.entity';
     forwardRef(() => SealModule),
     // Phase5 M8: 注入审计模块用于合同核心操作记录审计日志
     AuditModule,
+    // 编号规则模块
+    NumberRuleModule,
   ],
   providers: [ContractService, LegalDocumentService],
   controllers: [ContractController],

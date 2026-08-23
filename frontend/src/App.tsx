@@ -90,6 +90,7 @@ const DataScreen = lazy(() => import('./pages/DataScreen'))
 const SealManagement = lazy(() => import('./pages/SealManagement'))
 const ConflictCheck = lazy(() => import('./pages/ConflictCheck'))
 const WorkLogManagement = lazy(() => import('./pages/WorkLogManagement'))
+const WorklogPrint = lazy(() => import('./pages/WorklogPrint'))
 const ScheduleManagement = lazy(() => import('./pages/ScheduleManagement'))
 const TaskCenter = lazy(() => import('./pages/TaskCenter'))
 const PaymentReminderManagement = lazy(() => import('./pages/PaymentReminderManagement'))
@@ -127,12 +128,21 @@ const OrganizationManagement = lazy(() => import('./pages/OrganizationManagement
 // 第三批新增页面：C端推送规则配置/营销内容预审工作台
 const PushRuleConfig = lazy(() => import('./pages/PushRuleConfig'))
 const ContentPreviewWorkbench = lazy(() => import('./pages/ContentPreviewWorkbench'))
+// 编号规则配置页面（案件/合同/法律文书/归档编号规则）
+const NumberRuleConfig = lazy(() => import('./pages/NumberRuleConfig'))
 
 // 文档管理模块新增
 const PDFViewer = lazy(() => import('./pages/PDFViewer'))
 const DocumentSeal = lazy(() => import('./pages/DocumentSeal'))
 const DocumentPreview = lazy(() => import('./pages/DocumentPreview'))
 const DocumentShare = lazy(() => import('./pages/DocumentShare'))
+
+// 个人工作台
+const PersonalWorkbench = lazy(() => import('./pages/PersonalWorkbench'))
+const UpdateDynamic = lazy(() => import('./pages/UpdateDynamic'))
+
+// 项目收款台账
+const ProjectCollection = lazy(() => import('./pages/ProjectCollection'))
 
 // 财务核算模块新增
 const WithdrawSchedule = lazy(() => import('./pages/WithdrawSchedule'))
@@ -420,6 +430,8 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/client/login" element={<ClientLogin />} />
           {/* 数据看板 */}
+          <Route path="/workbench" element={<ProtectedRoute><PersonalWorkbench /></ProtectedRoute>} />
+          <Route path="/update-dynamic" element={<ProtectedRoute><UpdateDynamic /></ProtectedRoute>} />
           <Route path="/overview-management" element={<ProtectedRoute><OverviewManagement /></ProtectedRoute>} />
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/dashboard/conversion-funnel" element={<ProtectedRoute><ConversionFunnelDashboard /></ProtectedRoute>} />
@@ -456,6 +468,7 @@ function App() {
           <Route path="/compliance/public-opinion" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><PublicOpinionMonitor /></ProtectedRoute>} />
           {/* 财务分润 */}
           <Route path="/finance-operation" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><FinanceOperation /></ProtectedRoute>} />
+          <Route path="/finance/project-collection" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><ProjectCollection /></ProtectedRoute>} />
           <Route path="/finance" element={<Navigate to="/finance-operation" replace />} />
           <Route path="/commission-config" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><CommissionConfig /></ProtectedRoute>} />
           <Route path="/finance/reconciliation" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'finance']}><Reconciliation /></ProtectedRoute>} />
@@ -503,6 +516,7 @@ function App() {
           <Route path="/system/audit-logs" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><AuditLogManagement /></ProtectedRoute>} />
           <Route path="/system/organizations" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><OrganizationManagement /></ProtectedRoute>} />
           <Route path="/system/push-rules" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><PushRuleConfig /></ProtectedRoute>} />
+          <Route path="/system/number-rules" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><NumberRuleConfig /></ProtectedRoute>} />
           {/* V3.2 合并：云归档/归档卷宗/卷宗目录 三合一为归档管理 */}
           <Route path="/archive-management" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'lawyer', 'assistant']}><ArchiveManagement /></ProtectedRoute>} />
           <Route path="/cloud-archive" element={<Navigate to="/archive-management" replace />} />
@@ -514,6 +528,7 @@ function App() {
           <Route path="/seals" element={<ProtectedRoute><SealManagement /></ProtectedRoute>} />
           <Route path="/conflict-check" element={<ProtectedRoute><ConflictCheck /></ProtectedRoute>} />
           <Route path="/worklogs" element={<ProtectedRoute><WorkLogManagement /></ProtectedRoute>} />
+          <Route path="/worklog-print" element={<ProtectedRoute><WorklogPrint /></ProtectedRoute>} />
           <Route path="/schedules" element={<ProtectedRoute><ScheduleManagement /></ProtectedRoute>} />
           <Route path="/tasks" element={<ProtectedRoute><TaskCenter /></ProtectedRoute>} />
           <Route path="/knowledge" element={<Navigate to="/knowledge-management" replace />} />

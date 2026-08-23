@@ -24,6 +24,10 @@ export const rejectWorklog = (id: string, data: any) => axios.put(`/worklogs/${i
 // 工时统计
 export const getWorklogStats = (params: any) => axios.get('/worklogs/stats', { params })
 
+// 工时打印数据：按时间段筛选工时记录，按用户分组聚合
+export const getWorklogPrint = (params: { user_id?: string; status?: string; startDate?: string; endDate?: string }) =>
+  axios.get('/worklogs/print', { params })
+
 // 日程转工作日志：根据日程ID生成一条工作日志
 export const convertFromSchedule = (scheduleId: string) =>
   axios.post(`/worklogs/convert-schedule/${scheduleId}`)

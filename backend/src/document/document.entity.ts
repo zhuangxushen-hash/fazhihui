@@ -51,6 +51,10 @@ export class DocumentItem {
   @Column({ type: 'text', nullable: true })
   description: string;
 
+  // 文档归属范围：personal个人 / company公司共享
+  @Column({ type: 'varchar', default: 'personal', comment: '文档归属范围' })
+  scope: string;
+
   @CreateDateColumn({ type: 'datetime' })
   created_at: Date;
 

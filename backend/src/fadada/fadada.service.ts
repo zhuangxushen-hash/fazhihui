@@ -7,6 +7,8 @@ import axios from 'axios';
 import PDFDocument = require('pdfkit');
 import * as sdk from '@fddnpm/fasc-openapi-node-sdk';
 import { SigningCompliance, SigningStatus } from '../compliance/signing-compliance.entity';
+// C 端短信提醒：法大大电子签完成后触发收案立项短信
+import { SmsService } from '../sms/sms.service';
 
 export type FadadaMode = 'mock' | 'prod';
 
@@ -52,7 +54,21 @@ export class FadadaService {
     private configService: ConfigService,
     @InjectRepository(SigningCompliance)
     private signingComplianceRepository: Repository<SigningCompliance>,
+    // C 端短信提醒：法大大电子签完成后触发收案立项短信
+    private smsService: SmsService,
   ) {}
+
+  /**
+   * 触发 C 端短信（失败不影响电子签回调主流程）
+   */
+  private async triggerSms(caseId: string, nodeType: string): Promise<void> {
+    try {
+      await this.smsService.sendCaseSms({ caseId, nodeType });
+    } catch (e) {
+      // 短信发送失败不影响电子签回调主流程
+      this.logger.error(`触发 C 端短信失败 caseId=${caseId} nodeType=${nodeType}`, (e as Error)?.message || e);
+    }
+  }
 
   get enabled(): boolean {
     return this.configService.get('FADADA_ENABLED') === 'true';
@@ -389,6 +405,10 @@ export class FadadaService {
             }
             await this.signingComplianceRepository.save(target);
             this.logger.log(`签署状态回调已更新签约记录 ${target.id}: status=${target.status}`);
+            // 法大大电子签完成：客户签约完成，触发收案立项短信（失败不影响回调主流程）
+            if (target.status === SigningStatus.SIGNED && target.case_id) {
+              this.triggerSms(target.case_id, 'filing');
+            }
           }
         }
         return { handled: true, eventId };

@@ -62,6 +62,24 @@ export class WorklogController {
     });
   }
 
+  // 工时打印数据：按时间段筛选工时记录，按用户分组聚合（注意：此路由需在 :id 路由之前声明）
+  @Get('print')
+  getPrintData(
+    @Query('user_id') userId: string,
+    @Query('status') status: string,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Request() req: any,
+  ) {
+    const orgId = req?.user?.organization_id;
+    return this.worklogService.getPrintData(orgId, {
+      user_id: userId,
+      status,
+      startDate,
+      endDate,
+    });
+  }
+
   // 查询我的工作日志（按当前登录用户）
   @Get('mine')
   findByUser(

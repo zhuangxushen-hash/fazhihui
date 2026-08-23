@@ -45,6 +45,9 @@ import { FinancialAccountingController } from './financial-accounting.controller
 // 财务报表模块（账户台账/项目收入/发票打印）
 import { FinanceStatementService } from './finance-statement.service';
 import { FinanceStatementController } from './finance-statement.controller';
+// 项目收款台账模块
+import { ProjectCollectionService } from './project-collection.service';
+import { ProjectCollectionController } from './project-collection.controller';
 
 @Module({
   imports: [
@@ -103,6 +106,8 @@ import { FinanceStatementController } from './finance-statement.controller';
     FinancialAccountingService,
     // 财务报表服务
     FinanceStatementService,
+    // 项目收款台账服务
+    ProjectCollectionService,
   ],
   controllers: [
     // 保留原有控制器
@@ -117,6 +122,8 @@ import { FinanceStatementController } from './finance-statement.controller';
     FinancialAccountingController,
     // 财务报表控制器
     FinanceStatementController,
+    // 项目收款台账控制器
+    ProjectCollectionController,
   ],
   // Phase5: 导出 CommissionService，供 CaseModule 案件结案时计算佣金使用
   exports: [CommissionService],

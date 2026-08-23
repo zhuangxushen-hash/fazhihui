@@ -42,6 +42,8 @@ const menuGroups: MenuGroup[] = [
     icon: <DashboardOutlined />,
     label: '数据看板',
     children: [
+      { key: '/workbench', label: '个人工作台' },
+      { key: '/update-dynamic', label: '更新动态' },
       { key: '/overview-management', label: '经营总览' },
       { key: '/dashboard/conversion-funnel', label: '投放转化漏斗' },
       { key: '/dashboard/sales-performance', label: '销售团队绩效' },
@@ -112,6 +114,7 @@ const menuGroups: MenuGroup[] = [
     children: [
       // 财务核心
       { key: '/finance-operation', label: '财务经营' },
+      { key: '/finance/project-collection', label: '项目收款台账' },
       { key: '/finance/income-expenditure', label: '收支综合' },
       // 代扣管理
       { key: '/finance/fixed-cost-withholding', label: '固定费用代扣' },
@@ -162,6 +165,7 @@ const menuGroups: MenuGroup[] = [
       // 组织架构
       { key: '/system/organizations', label: '组织管理' },
       { key: '/system/push-rules', label: '推送规则' },
+      { key: '/system/number-rules', label: '编号规则' },
       // 消息与通知
       { key: '/notifications', label: '消息通知' },
       { key: '/notifications/publish', label: '发布通知' },
@@ -187,6 +191,7 @@ const menuGroups: MenuGroup[] = [
       { key: '/hr/activities', label: '活动管理' },
       // 个人办公
       { key: '/worklogs', label: '工作日志' },
+      { key: '/worklog-print', label: '工时打印' },
       { key: '/schedules', label: '日程管理' },
       { key: '/tasks', label: '任务中心' },
       { key: '/knowledge-management', label: '知识管理' },
@@ -282,6 +287,8 @@ type SubMenuRule = Record<string, string[]>
 const roleSubMenuAccess: Record<string, SubMenuRule> = {
   // 数据看板：不同角色看到的看板子项
   dashboard: {
+    '/workbench': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/update-dynamic': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/overview-management': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/dashboard/conversion-funnel': ['super_admin', 'org_admin', 'marketing', 'sales'],
     '/dashboard/sales-performance': ['super_admin', 'org_admin', 'sales'],
@@ -334,6 +341,7 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
   // 财务分润
   finance: {
     '/finance-operation': ['super_admin', 'org_admin', 'finance'],
+    '/finance/project-collection': ['super_admin', 'org_admin', 'finance'],
     '/finance/income-expenditure': ['super_admin', 'org_admin', 'finance'],
     // 财务核算（第一阶段新增）
     '/finance/fixed-cost-withholding': ['super_admin', 'org_admin', 'finance'],
@@ -379,6 +387,7 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
     '/system/audit-logs': ['super_admin', 'org_admin'],
     '/system/organizations': ['super_admin', 'org_admin'],
     '/system/push-rules': ['super_admin', 'org_admin'],
+    '/system/number-rules': ['super_admin', 'org_admin'],
   },
   // 人事行政
   hr: {
@@ -389,6 +398,7 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
     '/hr/activities': ['super_admin', 'org_admin', 'assistant'],
     // 个人办公
     '/worklogs': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/worklog-print': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/schedules': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/tasks': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/knowledge-management': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'sales'],

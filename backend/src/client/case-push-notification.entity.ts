@@ -27,9 +27,9 @@ export class CasePushNotification {
   @JoinColumn({ name: 'case_id' })
   case: Case;
 
-  // 客户ID
-  @Column({ type: 'varchar', nullable: false })
-  client_id: string;
+  // 客户ID（案件可能只填当事人手机号、未绑定客户账号，允许为空）
+  @Column({ type: 'varchar', nullable: true })
+  client_id: string | null;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'client_id' })

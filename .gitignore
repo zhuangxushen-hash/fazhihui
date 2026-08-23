@@ -48,3 +48,9 @@ test_fake_live_flow.sh
 
 # 财务导出等运行时产物
 backend/exports/
+
+# 部署辅助脚本（含服务器凭据，仅本地使用，不提交）
+deploy/*.exp
+
+# 运行时上传文件
+backend/uploads/

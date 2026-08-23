@@ -23,11 +23,11 @@ interface SmsNodeConfig {
  * 模板正文文案以【XX律所】开头，变量顺序与 params 数组一一对应
  */
 const SMS_NODES: Record<string, SmsNodeConfig> = {
-  // 1. 案件委托受理 / 收案立项完成
+  // 1. 案件委托受理 / 收案立项完成（模板 1022609373：固定文案，无变量，仅作通知）
   filing: {
     envKey: 'CHUANGLAN_TMPL_FILING',
     label: '收案立项',
-    params: ['案由', '案件编号', '律师姓名'],
+    params: [],
   },
   // 1.2/2. 完成律师函撰写（律师 B 端上传材料）
   lawyer_letter: {
@@ -229,10 +229,11 @@ export class SmsService {
     }
 
     // 若未配置短信凭据，客户端内部会跳过并返回 false，这里仍记录一条推送以便追踪
+    // client_id 允许为空：案件可能只填了当事人手机号、未绑定客户账号，此时存 NULL（不违反 NOT NULL 与外键约束）
     const record = await this.pushNotificationRepository.save(
       this.pushNotificationRepository.create({
         case_id: caseEntity.id,
-        client_id: caseEntity.client_id,
+        client_id: caseEntity.client_id || null,
         node_type: opts.nodeType,
         push_content: `[短信-${node.label}] ${node.params.map((k) => `${k}:${params[k] || ''}`).join(' | ')}`,
         push_channel: 'sms',

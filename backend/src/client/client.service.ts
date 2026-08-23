@@ -1,4 +1,4 @@
-import { Injectable, Inject, forwardRef, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, forwardRef, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Case } from '../case/case.entity';
@@ -25,6 +25,8 @@ import { ComplianceService } from '../compliance/compliance.service';
 // 13.8 缺口2: 咨询转线索，复用 LeadService 创建并自动分配线索（forwardRef 防止循环依赖）
 import { LeadService } from '../lead/lead.service';
 import { LeadSource } from '../types';
+// C 端短信提醒：客户签约完成后触发收案立项短信
+import { SmsService } from '../sms/sms.service';
 
 // 触发转人工的复杂问题关键词
 const TRANSFER_KEYWORDS = ['投诉', '转人工', '人工', '律师', '无法解决'];
@@ -72,7 +74,23 @@ export class ClientService {
     // 13.8 缺口2: 注入线索服务，AI咨询转人工时自动创建CRM线索
     @Inject(forwardRef(() => LeadService))
     private leadService: LeadService,
+    // C 端短信提醒：客户签约完成后触发收案立项短信
+    private smsService: SmsService,
   ) {}
+
+  private readonly logger = new Logger(ClientService.name);
+
+  /**
+   * 触发 C 端短信（失败不影响签约主流程）
+   */
+  private async triggerSms(caseId: string, nodeType: string): Promise<void> {
+    try {
+      await this.smsService.sendCaseSms({ caseId, nodeType });
+    } catch (e) {
+      // 短信发送失败不影响签约主流程
+      this.logger.error(`触发 C 端短信失败 caseId=${caseId} nodeType=${nodeType}`, (e as Error)?.message || e);
+    }
+  }
 
   async getClientCases(clientId: string): Promise<any[]> {
     const cases = await this.caseRepository.find({ where: { client_id: clientId }, order: { created_at: 'DESC' } });
@@ -399,6 +417,10 @@ export class ClientService {
       profile.id_card_no = body.id_card_no;
       await this.clientProfileRepository.save(profile);
     }
+    // 法大大未启用（legacy 直签）：签约直接完成，触发收案立项短信（失败不影响签约）
+    if (!enabled) {
+      this.triggerSms(body.case_id, 'filing');
+    }
     return {
       ...saved,
       signing_id: saved.id,
@@ -565,6 +587,8 @@ export class ClientService {
     signing.status = SigningStatus.SIGNED;
     signing.signed_time = new Date();
     await this.signingComplianceRepository.save(signing);
+    // 模拟完成签署：客户签约完成，触发收案立项短信（失败不影响签约）
+    this.triggerSms(signing.case_id, 'filing');
     return { signing_id: signing.id, status: signing.status };
   }
 

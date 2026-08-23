@@ -14,6 +14,7 @@ export interface DocumentItem {
   uploader_id: string
   organization_id: string
   description?: string
+  scope?: string
   created_at: string
   updated_at: string
 }
@@ -39,6 +40,7 @@ export const getDocuments = (params: {
   name?: string
   category?: string
   case_id?: string
+  scope?: string
 }) => {
   return axios.get<{ list: DocumentItem[]; total: number }>('/documents', { params })
 }

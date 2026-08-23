@@ -21,6 +21,9 @@ import { CreateCaseDto } from './dto/create-case.dto';
 import { UpdateCaseDto } from './dto/update-case.dto';
 // C 端短信提醒服务：案件关键节点触发短信通知当事人
 import { SmsService } from '../sms/sms.service';
+// 编号规则服务（案件/法律文书/归档编号按组织规则生成）
+import { NumberRuleService } from '../number-rule/number-rule.service';
+import { NumberType } from '../number-rule/number-rule.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
@@ -54,6 +57,8 @@ export class CaseService {
     private legalDocumentService: LegalDocumentService,
     // C 端短信提醒：案件节点触发短信通知当事人
     private smsService: SmsService,
+    // 编号规则服务：案件/法律文书/归档编号按组织规则生成
+    private numberRuleService: NumberRuleService,
   ) {}
 
   private readonly logger = new Logger(CaseService.name);
@@ -100,6 +105,23 @@ export class CaseService {
     }
     
     throw new InternalServerErrorException('无法生成唯一的案件编号');
+  }
+
+  /**
+   * 按组织编号规则生成案件编号；未配置启用规则时返回 null
+   * @param caseEntity 案件实体（取 case_category 映射业务类型）
+   * @param orgId 组织ID
+   * @param manager 事务管理器（案件创建在事务内，避免 sqlite 嵌套事务）
+   */
+  private async generateCaseNoByRule(caseEntity: Case, orgId: string, manager: any): Promise<string | null> {
+    const bizType = NumberRuleService.mapCategoryToBizType(caseEntity.case_category);
+    if (!bizType) return null;
+    // 案件创建时通常尚未分配承办律师，部门代码留空走默认规则
+    return this.numberRuleService.generateNumber(
+      orgId,
+      { numberType: NumberType.CASE, bizType },
+      manager,
+    );
   }
 
   /**
@@ -189,8 +211,9 @@ export class CaseService {
 
     try {
       await this.dataSource.transaction(async (manager) => {
-        // 案件编号始终由系统自动生成，确保唯一性
-        caseEntity.case_no = await this.generateCaseNo(manager);
+        // 案件编号：优先按组织编号规则生成，未配置规则时回退系统默认 AJ-编号，确保唯一性
+        const ruleNo = await this.generateCaseNoByRule(caseEntity, organizationId, manager);
+        caseEntity.case_no = ruleNo || (await this.generateCaseNo(manager));
 
         savedCase = await manager.save(Case, caseEntity);
 
@@ -510,7 +533,19 @@ export class CaseService {
       case_id: caseId,
       uploaded_by_id: userId,
     });
-    return this.documentRepository.save(document);
+    const saved = await this.documentRepository.save(document);
+
+    // 上传成交合同时，触发案件委托受理短信提醒（模板 1022609373）
+    if (docType === '成交合同') {
+      this.triggerSms(caseId, 'filing');
+    }
+
+    // 上传律师函附件时，触发律师函撰写短信提醒（模板 1022636729）
+    if (docType === '律师函') {
+      this.triggerSms(caseId, 'lawyer_letter');
+    }
+
+    return saved;
   }
 
   // 查询单条案件文档（用于下载），返回本地文件信息
@@ -833,13 +868,27 @@ export class CaseService {
    * 出函：根据类型生成出庭函/所函/律师函（模拟生成）
    * type: court_letter 出庭函 / firm_letter 所函 / lawyer_letter 律师函
    */
-  async generateLetter(id: string, type: string): Promise<{ success: boolean; type: string; case_id: string; case_name: string; generated_at: string }> {
+  async generateLetter(id: string, type: string): Promise<{ success: boolean; type: string; case_id: string; case_name: string; document_no: string; generated_at: string }> {
     const caseEntity = await this.caseRepository.findOne({ where: { id } });
     const caseName = caseEntity?.case_no || caseEntity?.client_name || id;
 
-    // 个债一销节点2：完成律师函撰写时触发 C 端短信（失败不影响出函主流程）
-    if (type === 'lawyer_letter' || type === 'legal_letter') {
-      this.triggerSms(id, 'lawyer_letter');
+    // 法律文书编号：按组织规则生成（支持案件挂接/独立编号），未配置规则时不返回编号
+    let documentNo = '';
+    try {
+      const orgId = caseEntity?.organization_id;
+      if (orgId) {
+        const bizType = this.mapLetterTypeToBizType(type);
+        if (bizType) {
+          const ruleNo = await this.numberRuleService.generateNumber(orgId, {
+            numberType: NumberType.LEGAL_DOCUMENT,
+            bizType,
+            caseId: id,
+          });
+          documentNo = ruleNo || '';
+        }
+      }
+    } catch (e) {
+      // 编号生成失败不影响出函主流程
     }
 
     return {
@@ -847,8 +896,33 @@ export class CaseService {
       type,
       case_id: id,
       case_name: caseName,
+      document_no: documentNo,
       generated_at: new Date().toISOString(),
     };
+  }
+
+  // 出函类型 -> 法律文书编号业务类型
+  private mapLetterTypeToBizType(type: string): string {
+    const map: Record<string, string> = {
+      lawyer_letter: '律师函',
+      legal_letter: '律师函',
+      firm_letter: '所函',
+      court_letter: '出庭函',
+    };
+    return map[type] || type || '';
+  }
+
+  // 按组织编号规则生成归档编号；未配置启用规则时返回 null
+  private async generateArchiveNoByRule(caseEntity: Case, manager: any): Promise<string | null> {
+    const orgId = caseEntity.organization_id;
+    if (!orgId) return null;
+    const bizType = NumberRuleService.mapCategoryToBizType(caseEntity.case_category);
+    if (!bizType) return null;
+    return this.numberRuleService.generateNumber(
+      orgId,
+      { numberType: NumberType.ARCHIVE, bizType, caseId: caseEntity.id },
+      manager,
+    );
   }
 
   /**
@@ -867,7 +941,12 @@ export class CaseService {
       const caseEntity = await manager.findOne(Case, { where: { id } });
       if (!caseEntity) return null;
 
-      await manager.update(Case, id, { stage: 'closed' });
+      // 归档编号：按组织规则生成（未配置规则时保持原值）
+      const archiveNo = await this.generateArchiveNoByRule(caseEntity, manager);
+      await manager.update(Case, id, {
+        stage: 'closed',
+        archive_no: archiveNo || caseEntity.archive_no || null,
+      });
 
       if (caseEntity.contract_id) {
         const contract = await manager.findOne(Contract, { where: { id: caseEntity.contract_id } });
@@ -980,8 +1059,6 @@ export class CaseService {
 
   // 审批通过：设置 approval_status 为 approved，记录审批信息，若阶段为 intake 则自动转为 processing
   async approve(id: string, approverId: string, comment?: string): Promise<Case | null> {
-    // 记录收案节点是否在本次审批激活（收案立项完成后触发 C 端短信）
-    let intakeToProcessing = false;
     const result = await this.dataSource.transaction(async (manager) => {
       const caseEntity = await manager.findOne(Case, { where: { id } });
       if (!caseEntity) return null;
@@ -995,7 +1072,6 @@ export class CaseService {
 
       if (caseEntity.stage === 'intake') {
         updateData.stage = 'processing';
-        intakeToProcessing = true;
       }
 
       await manager.update(Case, id, updateData);
@@ -1010,11 +1086,6 @@ export class CaseService {
 
       return manager.findOne(Case, { where: { id } });
     });
-
-    // 收案立项完成（审批通过，从收案转入办案阶段），触发 C 端短信（失败不影响审批主流程）
-    if (intakeToProcessing && result) {
-      this.triggerSms(id, 'filing');
-    }
 
     return result;
   }

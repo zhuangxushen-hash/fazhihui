@@ -28,6 +28,8 @@ import { ComplianceModule } from '../compliance/compliance.module';
 import { LeadModule } from '../lead/lead.module';
 // 法大大电子签：客户端签约身份鉴别 + 电子签名
 import { FadadaModule } from '../fadada/fadada.module';
+// C 端短信提醒：客户签约完成后触发收案立项短信
+import { SmsModule } from '../sms/sms.module';
 
 @Module({
   imports: [
@@ -58,6 +60,8 @@ import { FadadaModule } from '../fadada/fadada.module';
     // 13.8 缺口2: 咨询转线索复用 LeadModule 的 LeadService
     forwardRef(() => LeadModule),
     FadadaModule,
+    // C 端短信提醒：客户签约完成后触发收案立项短信
+    SmsModule,
   ],
   providers: [ClientService, ClientProfileService],
   controllers: [ClientController, ClientProfileController],

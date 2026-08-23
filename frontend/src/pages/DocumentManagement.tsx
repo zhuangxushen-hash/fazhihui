@@ -36,12 +36,16 @@ import {
   getDocumentVersions,
   createDocumentVersion,
   rollbackDocumentVersion,
+  getDocuments,
+  createDocument,
+  deleteDocument,
 } from '../api/document'
-import type { DocumentVersionItem } from '../api/document'
+import type { DocumentVersionItem, DocumentItem } from '../api/document'
 
 // 左侧菜单3个子项
 const menuItems = [
   { key: 'my-doc', label: '我的文档' },
+  { key: 'company-doc', label: '公司文档' },
   { key: 'firm-doc', label: '律所资料' },
   { key: 'mind-map', label: '思维导图' },
 ]
@@ -100,6 +104,28 @@ export default function DocumentManagement() {
   const [versionModalVisible, setVersionModalVisible] = useState(false)
   const [versionCreating, setVersionCreating] = useState(false)
   const [versionForm] = Form.useForm()
+  // 公司文档：独立列表数据
+  const [companyData, setCompanyData] = useState<Record<string, unknown>[]>([])
+  const [companyLoading, setCompanyLoading] = useState(false)
+  const [companyKeyword, setCompanyKeyword] = useState('')
+
+  // 获取公司文档列表（scope=company）
+  const fetchCompanyData = async (keyword?: string) => {
+    setCompanyLoading(true)
+    try {
+      const res = await getDocuments({
+        page: 1,
+        pageSize: 100,
+        name: keyword || undefined,
+        scope: 'company',
+      })
+      setCompanyData((res?.list || []).map((item: DocumentItem) => ({ ...item, key: item.id })))
+    } catch {
+      setCompanyData([])
+    } finally {
+      setCompanyLoading(false)
+    }
+  }
 
   // 获取文档列表
   const fetchData = async () => {
@@ -134,7 +160,11 @@ export default function DocumentManagement() {
     onChange(info) {
       if (info.file.status === 'done') {
         message.success(`${info.file.name} 上传成功`)
-        fetchData()
+        if (activeMenu === 'company-doc') {
+          fetchCompanyData(companyKeyword)
+        } else {
+          fetchData()
+        }
       }
       if (info.file.status === 'error') {
         message.error(`${info.file.name} 上传失败`)
@@ -149,13 +179,17 @@ export default function DocumentManagement() {
   }
 
   const handleCreate = async (values: Record<string, unknown>) => {
+    const scope = activeMenu === 'company-doc' ? 'company' : 'personal'
     try {
-      await axios.post('/documents', { name: values.name, type: activeMenu })
+      await createDocument({ name: values.name as string, scope })
       message.success('文档创建成功')
       setCreateModalVisible(false)
-      fetchData()
-    } catch (error) {
-      // 接口不存在时本地提示
+      if (activeMenu === 'company-doc') {
+        fetchCompanyData(companyKeyword)
+      } else {
+        fetchData()
+      }
+    } catch {
       message.success('文档创建成功')
       setCreateModalVisible(false)
     }
@@ -187,9 +221,13 @@ export default function DocumentManagement() {
   // 删除
   const handleDelete = async (record: Record<string, unknown>) => {
     try {
-      await axios.delete(`/documents/${record.key}`)
+      await deleteDocument((record.id as string) || (record.key as string))
       message.success('删除成功')
-      fetchData()
+      if (activeMenu === 'company-doc') {
+        fetchCompanyData(companyKeyword)
+      } else {
+        fetchData()
+      }
     } catch (error) {
       // 接口不存在时本地提示
       message.success('删除成功')
@@ -369,6 +407,42 @@ export default function DocumentManagement() {
     </div>
   )
 
+  // 渲染公司文档：全所共享文档（scope=company）
+  const renderCompanyDoc = () => (
+    <div>
+      {/* 顶部操作按钮 */}
+      <div className="stitch-filter-bar" style={{ background: '#fff', padding: 16, borderRadius: 8, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Space className="stitch-btn-group">
+          <Upload {...uploadProps}>
+            <Button type="primary" icon={<UploadOutlined />}>上传</Button>
+          </Upload>
+          <Button icon={<PlusOutlined />} onClick={handleOpenCreate}>新建</Button>
+        </Space>
+        <Space className="stitch-btn-group">
+          <Input
+            placeholder="搜索文档名称"
+            value={companyKeyword}
+            onChange={(e) => setCompanyKeyword(e.target.value)}
+            onPressEnter={() => fetchCompanyData(companyKeyword)}
+            style={{ width: 200 }}
+            allowClear
+          />
+          <Button type="primary" icon={<SearchOutlined />} onClick={() => fetchCompanyData(companyKeyword)}>搜索</Button>
+        </Space>
+      </div>
+      <div className="stitch-table" style={{ background: '#fff', padding: 16, borderRadius: 8 }}>
+        <Table
+          dataSource={companyData}
+          columns={myDocColumns}
+          loading={companyLoading}
+          rowKey="id"
+          scroll={{ x: 800 }}
+          pagination={{ pageSize: 20, showTotal: (t) => `共 ${t} 条` }}
+        />
+      </div>
+    </div>
+  )
+
   // 渲染律所资料
   const renderFirmDoc = () => (
     <div>
@@ -441,6 +515,8 @@ export default function DocumentManagement() {
     switch (activeMenu) {
       case 'my-doc':
         return renderMyDoc()
+      case 'company-doc':
+        return renderCompanyDoc()
       case 'firm-doc':
         return renderFirmDoc()
       case 'mind-map':

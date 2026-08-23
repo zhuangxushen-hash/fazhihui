@@ -1,9 +1,0 @@
-#!/usr/bin/expect -f
-set timeout 90
-set password "s\`3}2KG~n@D?N\$P"
-
-spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@1.12.57.22 "cd /home/ubuntu/fazhihui && pm2 describe test-backend | grep -E 'out log|error log'; echo '=== error log 最近错误 ===' && ls -la /home/ubuntu/fazhihui/backend/logs/ 2>/dev/null; find /home/ubuntu/fazhihui -name '*error*.log' -newer /home/ubuntu/fazhihui/start-server.js 2>/dev/null | head -5"
-expect {
-    -re "password:|Password:" { send "$password\r"; exp_continue }
-    eof
-}

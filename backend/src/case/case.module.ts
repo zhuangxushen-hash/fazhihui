@@ -17,6 +17,8 @@ import { ClientModule } from '../client/client.module';
 import { AuditModule } from '../audit/audit.module';
 // C 端短信提醒模块
 import { SmsModule } from '../sms/sms.module';
+// 编号规则配置模块（案件/法律文书/归档编号按组织规则生成）
+import { NumberRuleModule } from '../number-rule/number-rule.module';
 
 // 控制器
 import { CaseTaskController } from './case-task.controller';
@@ -84,6 +86,8 @@ import { ConflictCheck } from './conflict-check.entity';
     AuditModule,
     // C 端短信提醒模块（供案件节点触发短信）
     SmsModule,
+    // 编号规则配置模块（供案件/文书/归档编号生成）
+    NumberRuleModule,
   ],
   providers: [
     // 保留原有服务

@@ -39,7 +39,7 @@ export class ChuanlanSmsClient {
     const timestamp = String(Math.floor(Date.now() / 1000));
     const nonce = this.randomNonce();
 
-    // 将变量对象映射为 param1..paramN，保证与模板变量顺序一致
+    // 将变量对象映射为 param1..paramN，保证与模板变量顺序一致；模板无变量时传空字符串
     const paramObj: Record<string, string> = {};
     if (opts.params) {
       let index = 1;
@@ -56,7 +56,7 @@ export class ChuanlanSmsClient {
       timestamp,
       phoneNumbers: opts.phone,
       templateId: opts.templateId,
-      templateParamJson: JSON.stringify([paramObj]),
+      templateParamJson: Object.keys(paramObj).length > 0 ? JSON.stringify([paramObj]) : '',
       report: 'true',
       uid: opts.uid || '',
       extend: '',

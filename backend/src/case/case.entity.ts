@@ -113,6 +113,10 @@ export class Case {
   @Column({ type: 'varchar', nullable: true, comment: '案件名称' })
   case_name: string;
 
+  // 归档编号（按组织编号规则生成，归档时写入）
+  @Column({ type: 'varchar', nullable: true, comment: '归档编号' })
+  archive_no: string;
+
   // 案件大类：civil民事/criminal刑事/admin行政/consultant顾问
   @Column({ type: 'varchar', default: 'civil', comment: '案件大类' })
   case_category: string;
