@@ -724,7 +724,7 @@ export class CaseService {
     };
   }
 
-  async closeCase(id: string): Promise<Case> {
+  async closeCase(id: string, skipSms = false): Promise<Case> {
     const result = await this.dataSource.transaction(async (manager) => {
       const caseEntity = await manager.findOne(Case, { where: { id } });
       if (!caseEntity) return null;
@@ -779,8 +779,9 @@ export class CaseService {
       await this.legalDocumentService.generateDocument('closing_report', { case_id: id });
     } catch (err) {}
 
-    // 个债一销节点3：合同代理已结案（B 端点击结案），触发 C 端短信（失败不影响结案主流程）
-    if (result) {
+    // 个债一销节点3：合同代理已结案，触发 C 端短信（失败不影响结案主流程）
+    // 默认触发；批量结案传入 skipSms=true 时不另发短信
+    if (result && !skipSms) {
       this.triggerSms(id, 'contract_closed');
     }
 
@@ -1018,13 +1019,13 @@ export class CaseService {
     return { success, failed };
   }
 
-  // 13.8 缺口6: 批量结案（复用单案结案逻辑，单个案件失败计数但不中断）
+  // 13.8 缺口6: 批量结案（复用单案结案逻辑，单个案件失败计数但不中断；批量结案不另发结案短信）
   async batchClose(caseIds: string[]): Promise<{ success: number; failed: number }> {
     let success = 0;
     let failed = 0;
     for (const caseId of caseIds) {
       try {
-        const result = await this.closeCase(caseId);
+        const result = await this.closeCase(caseId, true);
         if (result) {
           success++;
         } else {
