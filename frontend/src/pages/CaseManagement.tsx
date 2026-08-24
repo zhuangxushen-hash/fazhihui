@@ -273,7 +273,7 @@ export default function CaseManagement() {
       message.warning('没有可导出的数据')
       return
     }
-    const headers = ['案件编号', '案件名称', '客户姓名', '关联线索', '案由', '案件大类', '主办律师', '协办人', '对方当事人', '联系地址', '受理法院', '状态', '案件阶段', '进度', '下一步', '风险等级', '是否超时', '案件状态', '立案日期']
+    const headers = ['案件编号', '案件名称', '客户姓名', '关联线索', '案由', '案件大类', '主办律师', '协办人', '对方当事人', '联系地址', '受理法院', '状态', '案件阶段', '进度', '下一步', '风险等级', '是否超时', '案件状态', '立案日期', '联系电话', '法院案号', '开庭日期', '举证期限', '上诉期限', '涉案金额', '委托费', '服务费', '质保金', '业务类型', '计费周期', '付款方式', '收款状态', '合同交回状态', '案件来源', '来源明细', '转介绍人', '案件描述']
     const caseTypeLabel = (type: string) => ({
       marriage: '婚姻家事',
       traffic: '交通事故',
@@ -287,6 +287,22 @@ export default function CaseManagement() {
     const statusLabel = (s: string) => caseStatusLabelMap[s] || s || ''
     const stageLabel = (s: string) => stageLabelMap[s] || s || ''
     const riskLabel = (l: string) => riskLabelMap[l] || l || ''
+    // 导出补充字段的标签映射
+    const feeTypeLabelMap: Record<string, string> = { fixed: '固定收费', risk: '风险收费', hybrid: '混合收费' }
+    const billingCycleLabelMap: Record<string, string> = { hourly: '按小时', monthly: '按月', case_based: '按案件' }
+    const paymentMethodLabelMap: Record<string, string> = { one_time: '一次性', installment: '分期', milestone: '里程碑' }
+    const paymentStatusLabelMap: Record<string, string> = {
+      not_collected: '未收款',
+      partial: '已部分收款',
+      full: '已全额收款',
+      cancelled: '已取消收款',
+      not_required: '无需收款',
+    }
+    const contractReturnStatusLabelMap: Record<string, string> = {
+      not_returned: '未交回',
+      returned: '已交回',
+      partial: '已部分交回',
+    }
     const rows = data.map((item) => {
       const lead = leads.find(l => String(l.id) === String(item.lead_id))
       const leadDisplay = lead ? String(lead.phone || lead.contact_name || '') : ''
@@ -312,6 +328,24 @@ export default function CaseManagement() {
         overdue ? '已超时' : '正常',
         caseChangeStatusLabelMap[changeStatus] || '正常',
         formatDate(String(item.filing_date || '')) || '',
+        item.client_phone || '',
+        item.case_number || '',
+        formatDate(String(item.hearing_date || '')) || '',
+        formatDate(String(item.evidence_deadline || '')) || '',
+        formatDate(String(item.appeal_deadline || '')) || '',
+        item.amount != null ? String(item.amount) : '',
+        item.fee_amount != null ? String(item.fee_amount) : '',
+        item.service_fee != null ? String(item.service_fee) : '',
+        item.quality_deposit != null ? String(item.quality_deposit) : '',
+        feeTypeLabelMap[String(item.fee_type || '')] || String(item.fee_type || ''),
+        billingCycleLabelMap[String(item.billing_cycle || '')] || String(item.billing_cycle || ''),
+        paymentMethodLabelMap[String(item.payment_method || '')] || String(item.payment_method || ''),
+        paymentStatusLabelMap[String(item.payment_status || '')] || '',
+        contractReturnStatusLabelMap[String(item.contract_return_status || '')] || '',
+        item.case_source || '',
+        item.source_detail || '',
+        item.referrer || '',
+        item.description || '',
       ]
     })
     const csv = [headers, ...rows]
