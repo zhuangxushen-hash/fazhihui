@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Table, Button, Modal, Form, Input, Select, Space, message, DatePicker, Card, Tag, InputNumber, Switch, Popconfirm, Progress } from 'antd'
+import { Table, Button, Modal, Form, Input, Select, Space, message, DatePicker, Card, Tag, InputNumber, Switch, Popconfirm, Progress, AutoComplete } from 'antd'
 import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, DeleteOutlined, ExportOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { generateLetter, closeCaseReport, archiveCase, createCase, batchCloseCases, batchArchiveCases, CreateCasePayload } from '../api/case'
-import { getClientProfiles } from '../api/client-profile'
+import { getClientProfiles, createClientProfile } from '../api/client-profile'
 import { formatDate } from '../utils/format'
 import { theme } from '../constants/theme'
 // === Material Design 3 Style Tokens ===
@@ -202,22 +202,33 @@ export default function CaseManagement() {
   const fetchClientProfiles = async () => {
     try {
       const res: any = await getClientProfiles({ org_id: user.organization_id, page_size: 100 })
-      setClientProfiles((res?.data?.list || res?.data || []) as Record<string, any>[])
+      // 响应拦截器已直接返回数据体（客户数组），优先取数组；兼容旧 {data:{list}} 结构
+      const list = (Array.isArray(res) ? res : null) || res?.data?.list || res?.data || []
+      setClientProfiles(list as Record<string, any>[])
     } catch (error) {
       setClientProfiles([])
     }
   }
 
-  // 从客户库选择当事人（个人/企业均可），自动带出名称/手机号/客户类型
-  const handleClientSelect = (clientId: string) => {
-    setSelectedClientId(clientId)
-    const cp = clientProfiles.find((c) => String(c.id) === String(clientId))
+  const handleClientNameInput = (nextName: string) => {
+    // 当事人支持两种录入方式：从客户库选择已有客户，或直接手动输入新客户名称
+    const cp = clientProfiles.find((c) => String(c.name || '').trim() === String(nextName || '').trim())
     if (cp) {
+      // 命中客户库已有客户：带出客户信息并锁定
+      setSelectedClientId(cp.id)
       form.setFieldsValue({
         client_id: cp.id,
         client_name: cp.name,
         client_phone: cp.phone,
         client_type: cp.type || 'individual',
+      })
+    } else {
+      // 手动输入的新客户名称：解除锁定、清空关联，名称由该输入框值负责
+      setSelectedClientId(undefined)
+      form.setFieldsValue({
+        client_id: undefined,
+        client_phone: '',
+        client_type: 'individual',
       })
     }
   }
@@ -380,6 +391,32 @@ export default function CaseManagement() {
       }
       if (payload.appeal_deadline && typeof payload.appeal_deadline === 'object' && 'format' in (payload.appeal_deadline as object)) {
         payload.appeal_deadline = (payload.appeal_deadline as { format: (f: string) => string }).format('YYYY-MM-DD')
+      }
+      // 同步打通的客户：若当事人填入了全新的客户名称（客户库中不存在且未关联 client_id），
+      // 提交案件前先在客户管理创建该客户，并将新客户 id 回填到 client_id 保持关联
+      if (typeof payload.client_name === 'string' && payload.client_name.trim() && !payload.client_id) {
+        const newName = payload.client_name.trim()
+        const matched = clientProfiles.find((c) => String(c.name || '').trim() === newName)
+        if (matched) {
+          payload.client_id = matched.id
+        } else {
+          try {
+            const created: any = await createClientProfile({
+              name: newName,
+              phone: payload.client_phone || undefined,
+              type: payload.client_type || 'individual',
+            })
+            const newId = created?.id
+            if (newId) {
+              payload.client_id = newId
+              message.success('已同步创建客户：' + newName)
+            }
+          } catch (error) {
+            // 客户同步创建失败不阻断案件创建（具体错误已由 axios 拦截器统一提示）
+          } finally {
+            void fetchClientProfiles()
+          }
+        }
       }
       await createCase(payload as CreateCasePayload)
       setModalVisible(false)
@@ -789,23 +826,19 @@ export default function CaseManagement() {
         width={600}
       >
         <Form onFinish={handleSubmit}>
-          <Form.Item name="client_id" label="当事人（从客户库选择）">
-            <Select
-              placeholder="请选择客户（支持个人/企业）"
+          <Form.Item name="client_name" label="当事人（可从客户库选择或手动输入）" rules={[{ required: true }]}>
+            <AutoComplete
+              placeholder="从客户库选择，或直接输入新客户名称"
               allowClear
-              showSearch
-              optionFilterProp="children"
-              onChange={handleClientSelect}
-            >
-              {clientProfiles.map(cp => (
-                <Select.Option key={cp.id as React.Key} value={cp.id as string}>
-                  {String(cp.name || '')}（{typeLabelMap[cp.type] || '个人'}）- {String(cp.phone || '无电话')}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item name="client_name" label="客户姓名" rules={[{ required: true }]}>
-            <Input placeholder="请输入客户姓名" disabled={!!selectedClientId} />
+              onChange={handleClientNameInput}
+              filterOption={(input, option) =>
+                String(option?.value ?? '').toLowerCase().includes((input || '').toLowerCase())
+              }
+              options={clientProfiles.map(cp => ({
+                value: String(cp.name || ''),
+                label: `${String(cp.name || '')}（${typeLabelMap[cp.type] || '个人'}）- ${String(cp.phone || '无电话')}`,
+              }))}
+            />
           </Form.Item>
           <Form.Item name="client_phone" label="客户手机号">
             <Input placeholder="请输入客户手机号" disabled={!!selectedClientId} />
