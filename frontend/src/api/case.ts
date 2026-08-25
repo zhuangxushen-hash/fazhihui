@@ -128,6 +128,11 @@ export const getCaseDetail = (id: string) => {
   return axios.get(`/cases/${id}/detail`)
 }
 
+// 获取案件附件文档列表（含附件类型，如成交合同/律师函等）
+export const getCaseDocuments = (id: string) => {
+  return axios.get(`/cases/${id}/documents`)
+}
+
 // 详情页编辑保存（参考金助理案件编辑能力）
 export const updateCaseDetail = (id: string, data: Record<string, unknown>) => {
   return axios.put(`/cases/${id}`, data)

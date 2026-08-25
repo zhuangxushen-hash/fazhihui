@@ -16,6 +16,10 @@ export class ClientProfile {
   @Column({ type: 'varchar', default: 'individual', comment: '客户类型' })
   type: string;
 
+  // 单位名称（单位是单位名称，独立记录，不代表客户类型为企业）
+  @Column({ type: 'varchar', nullable: true, comment: '单位名称' })
+  unit_name: string;
+
   // 联系人
   @Column({ type: 'varchar', nullable: true, comment: '联系人' })
   contact_name: string;

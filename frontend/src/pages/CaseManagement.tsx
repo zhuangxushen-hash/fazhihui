@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { Table, Button, Modal, Form, Input, Select, Space, message, DatePicker, Card, Tag, InputNumber, Switch, Popconfirm, Progress, AutoComplete } from 'antd'
 import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, DeleteOutlined, ExportOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
-import { generateLetter, closeCaseReport, archiveCase, createCase, batchCloseCases, batchArchiveCases, CreateCasePayload } from '../api/case'
+import { generateLetter, closeCaseReport, archiveCase, createCase, batchCloseCases, batchArchiveCases, CreateCasePayload, getCaseDocuments } from '../api/case'
 import { getClientProfiles, createClientProfile } from '../api/client-profile'
+import { getContracts } from '../api/contract'
 import { formatDate } from '../utils/format'
 import { theme } from '../constants/theme'
 // === Material Design 3 Style Tokens ===
@@ -279,12 +280,52 @@ export default function CaseManagement() {
   }
 
   // 导出案件列表为 CSV
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!data.length) {
       message.warning('没有可导出的数据')
       return
     }
-    const headers = ['案件编号', '案件名称', '客户姓名', '关联线索', '案由', '案件大类', '主办律师', '协办人', '对方当事人', '联系地址', '受理法院', '状态', '案件阶段', '进度', '下一步', '风险等级', '是否超时', '案件状态', '立案日期', '联系电话', '法院案号', '开庭日期', '举证期限', '上诉期限', '涉案金额', '委托费', '服务费', '质保金', '业务类型', '计费周期', '付款方式', '收款状态', '合同交回状态', '案件来源', '来源明细', '转介绍人', '案件描述']
+    // 拉取当前组织合同列表，构建 案件id -> 最新一份成交合同标题 的映射（成交阶段：已签signed/履行performing/完成completed）
+    let contractNameMap: Record<string, string> = {}
+    try {
+      const contractRes: any = await getContracts({ org_id: user.organization_id, page: 1, limit: 1000 })
+      const contracts = (Array.isArray(contractRes) ? contractRes : contractRes?.data?.list || contractRes?.data || []) as any[]
+      const dealStages = new Set(['signed', 'performing', 'completed'])
+      const dealContracts = contracts
+        .filter(c => c.case_id && dealStages.has(String(c.stage || '')))
+        .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+      for (const c of dealContracts) {
+        if (!contractNameMap[String(c.case_id)]) {
+          contractNameMap[String(c.case_id)] = String(c.title || '')
+        }
+      }
+    } catch (error) {
+      // 合同名称获取失败不影响导出，按空处理
+    }
+    // 补充读取案件详情的成交合同附件（doc_type=成交合同），取每个案件最新上传的一份合同名称
+    // 案件成交合同可能以附件形式上传在案件详情，contracts 表中未必有记录，需一并纳入导出
+    try {
+      const docsReq = data.map(async (item) => {
+        if (!item.id || contractNameMap[String(item.id)]) return
+        let docs: any[] = []
+        try {
+          const docRes: any = await getCaseDocuments(String(item.id))
+          docs = Array.isArray(docRes) ? docRes : docRes?.data?.list || docRes?.data || []
+        } catch (e) {
+          docs = []
+        }
+        const dealDocs = docs
+          .filter(d => String(d.doc_type || '') === '成交合同' && d.name)
+          .sort((a, b) => String(b.updated_at || b.created_at || '').localeCompare(String(a.updated_at || a.created_at || '')))
+        if (dealDocs.length && !contractNameMap[String(item.id)]) {
+          contractNameMap[String(item.id)] = String(dealDocs[0].name || '')
+        }
+      })
+      await Promise.all(docsReq)
+    } catch (error) {
+      // 附件文档获取失败不影响导出，按空处理
+    }
+    const headers = ['案件编号', '案件名称', '客户姓名', '关联线索', '合同名称', '案由', '案件大类', '主办律师', '协办人', '对方当事人', '联系地址', '受理法院', '状态', '案件阶段', '进度', '下一步', '风险等级', '是否超时', '案件状态', '立案日期', '联系电话', '法院案号', '开庭日期', '举证期限', '上诉期限', '涉案金额', '委托费', '服务费', '质保金', '业务类型', '计费周期', '付款方式', '收款状态', '合同交回状态', '案件来源', '来源明细', '转介绍人', '案件描述']
     const caseTypeLabel = (type: string) => ({
       marriage: '婚姻家事',
       traffic: '交通事故',
@@ -324,6 +365,7 @@ export default function CaseManagement() {
         item.case_name || '',
         item.client_name || '',
         leadDisplay,
+        contractNameMap[String(item.id)] || '',
         caseTypeLabel(String(item.case_type || '')),
         caseCategoryLabel(String(item.case_category || '')),
         item.lawyer_name || '',
@@ -393,7 +435,8 @@ export default function CaseManagement() {
         payload.appeal_deadline = (payload.appeal_deadline as { format: (f: string) => string }).format('YYYY-MM-DD')
       }
       // 同步打通的客户：若当事人填入了全新的客户名称（客户库中不存在且未关联 client_id），
-      // 提交案件前先在客户管理创建该客户，并将新客户 id 回填到 client_id 保持关联
+      // 提交案件前先在客户管理创建该客户，并将新客户 id 回填到 client_id 保持关联；
+      // 同时将案件表单中的电话/类型/联系地址等客户相关字段一并留存到客户档案
       if (typeof payload.client_name === 'string' && payload.client_name.trim() && !payload.client_id) {
         const newName = payload.client_name.trim()
         const matched = clientProfiles.find((c) => String(c.name || '').trim() === newName)
@@ -403,8 +446,10 @@ export default function CaseManagement() {
           try {
             const created: any = await createClientProfile({
               name: newName,
+              contact_name: newName,
               phone: payload.client_phone || undefined,
               type: payload.client_type || 'individual',
+              address: (payload.contact_address as string) || undefined,
             })
             const newId = created?.id
             if (newId) {

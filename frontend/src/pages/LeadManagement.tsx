@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, InputNumber, Alert, DatePicker, Popconfirm } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, InputNumber, Alert, DatePicker, Popconfirm, AutoComplete } from 'antd'
 import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, HistoryOutlined, SaveOutlined, SwapOutlined, SafetyCertificateOutlined, WarningOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { checkConflict, ConflictCheckRecord } from '../api/conflictCheck'
+import { getClientProfiles, createClientProfile } from '../api/client-profile'
 import { formatDateTime } from '../utils/format'
 import dayjs from 'dayjs'
 import { theme } from '../constants/theme'
@@ -53,13 +54,40 @@ export default function LeadManagement() {
   const [conflictForm] = Form.useForm()
   // 记录检测到冲突的线索ID集合，用于在状态列展示红色标记
   const [conflictLeadIds, setConflictLeadIds] = useState<Set<string>>(new Set())
+  // 客户库客户列表（用于创建线索时留存/关联客户信息）
+  const [clientProfiles, setClientProfiles] = useState<Record<string, any>[]>([])
 
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const navigate = useNavigate()
 
   useEffect(() => {
     fetchData()
+    fetchClientProfiles()
   }, [])
+
+  // 加载客户库客户列表，供创建线索时下拉选择/匹配客户
+  const fetchClientProfiles = async () => {
+    try {
+      const res: any = await getClientProfiles({ org_id: user.organization_id, page_size: 100 })
+      // 响应拦截器已直接返回数据体（客户数组），优先取数组；兼容旧 {data:{list}} 结构
+      setClientProfiles((Array.isArray(res) ? res : null) || res?.data?.list || res?.data || [])
+    } catch (error) {
+      // 客户库加载失败不影响线索录入，静默处理
+    }
+  }
+
+  // 联系人输入联动：命中客户库客户时带出其存量电话/单位名/地址，供留存客户信息参考
+  const handleContactNameInput = (nextName: string) => {
+    const cp = clientProfiles.find((c) => String(c.name || '').trim() === String(nextName || '').trim())
+    if (cp) {
+      form.setFieldsValue({
+        contact_name: cp.name,
+        phone: cp.phone || form.getFieldValue('phone'),
+        unit_name: cp.unit_name || form.getFieldValue('unit_name'),
+        contact_address: cp.address || form.getFieldValue('contact_address'),
+      })
+    }
+  }
 
   const fetchData = async () => {
     setLoading(true)
@@ -131,6 +159,29 @@ export default function LeadManagement() {
 
   const handleSubmit = async (values: Record<string, unknown>) => {
     try {
+      // 创建线索时留存客户信息：联系人即客户姓名，将线索中的客户相关字段（姓名/电话/单位/地址/来源等）同步留存到客户库
+      const contactName = typeof values.contact_name === 'string' ? values.contact_name.trim() : ''
+      if (contactName) {
+        const matched = clientProfiles.find((c) => String(c.name || '').trim() === contactName)
+        if (!matched) {
+          try {
+            const address = [values.province, values.city, values.contact_address].filter(Boolean).join('') || undefined
+            const unitText = (values.unit_name as string) || ''
+            await createClientProfile({
+              name: contactName,
+              contact_name: contactName,
+              type: 'individual',
+              unit_name: unitText || undefined,
+              phone: (values.phone as string) || undefined,
+              address: address as string,
+              source: (values.source_channel as string) || undefined,
+              organization_id: user.organization_id,
+            })
+          } catch (error) {
+            // 客户留存失败不阻断线索创建，静默处理
+          }
+        }
+      }
       await axios.post('/leads', { ...values, organization_id: user.organization_id })
       setModalVisible(false)
       message.success('线索添加成功')
@@ -638,8 +689,20 @@ export default function LeadManagement() {
           <Form.Item name="phone" label="手机号" rules={[{ required: true }]}>
             <Input className="stitch-input" placeholder="请输入手机号" />
           </Form.Item>
-          <Form.Item name="contact_name" label="联系人">
-            <Input className="stitch-input" placeholder="请输入联系人姓名" />
+          <Form.Item name="contact_name" label="联系人（即客户姓名，可从客户库选择或手动输入）">
+            <AutoComplete
+              className="stitch-input"
+              placeholder="从客户库选择，或直接输入客户姓名"
+              allowClear
+              onChange={handleContactNameInput}
+              filterOption={(input, option) =>
+                String(option?.value ?? '').toLowerCase().includes((input || '').toLowerCase())
+              }
+              options={clientProfiles.map(cp => ({
+                value: String(cp.name || ''),
+                label: `${String(cp.name || '')}${cp.phone ? ' - ' + cp.phone : ''}`,
+              }))}
+            />
           </Form.Item>
           <Form.Item name="unit_name" label="单位名称">
             <Input className="stitch-input" placeholder="请输入单位名称" />
