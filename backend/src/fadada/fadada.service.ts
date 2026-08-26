@@ -10,7 +10,11 @@ import { SigningCompliance, SigningStatus } from '../compliance/signing-complian
 // C 端短信提醒：法大大电子签完成后触发收案立项短信
 import { SmsService } from '../sms/sms.service';
 
-export type FadadaMode = 'mock' | 'prod';
+// 法大大运行模式：
+// - mock：本地模拟全流程（开发/演示，无真实账号）
+// - uat：调用法大大测试环境（UAT，真实联调）
+// - prod：调用法大大正式环境（FASC-OpenAPI）
+export type FadadaMode = 'mock' | 'prod' | 'uat';
 
 export interface SigningClientInfo {
   clientUserId: string;
@@ -75,7 +79,11 @@ export class FadadaService {
   }
 
   get mode(): FadadaMode {
-    return this.configService.get('FADADA_MODE') === 'prod' ? 'prod' : 'mock';
+    const m = this.configService.get('FADADA_MODE') || 'mock';
+    // prod / uat 均视为真实调用（区别于 mock）
+    if (m === 'prod') return 'prod';
+    if (m === 'uat') return 'uat';
+    return 'mock';
   }
 
   get config(): FadadaConfigDto {
@@ -88,14 +96,26 @@ export class FadadaService {
   }
 
   private get appId(): string {
+    // uat 模式使用测试环境专用 AppId，否则沿用正式 AppId
+    if (this.mode === 'uat') {
+      return this.configService.get('FADADA_UAT_APP_ID') || this.configService.get('FADADA_APP_ID') || '';
+    }
     return this.configService.get('FADADA_APP_ID') || '';
   }
 
   private get appSecret(): string {
+    // uat 模式使用测试环境专用 AppSecret，否则沿用正式 AppSecret
+    if (this.mode === 'uat') {
+      return this.configService.get('FADADA_UAT_APP_SECRET') || this.configService.get('FADADA_APP_SECRET') || '';
+    }
     return this.configService.get('FADADA_APP_SECRET') || '';
   }
 
   private get serverUrl(): string {
+    // uat 模式使用法大大测试环境 API 地址（含 /api/v5/ 路径，SDK 按相对接口路径拼接）
+    if (this.mode === 'uat') {
+      return this.configService.get('FADADA_UAT_API_URL') || 'https://uat-api.fadada.com/api/v5';
+    }
     return this.configService.get('FADADA_API_URL') || 'https://openapi.fadada.com';
   }
 
