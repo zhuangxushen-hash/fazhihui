@@ -567,8 +567,12 @@ export class FadadaService {
     const firmActorId = corpActors[0]?.actorInfo?.actorId || '乙方';
     // 模板中甲方（person 参与方）需要填写的控件清单，继承给客户参与方，使其作为填写参与方在 C 端填写后再签署
     const personFillFields: any[] = personActors[0]?.fillFields || [];
-    // 模板中乙方（corp 参与方）需要填写的控件清单，继承给律所参与方
-    const corpFillFields: any[] = corpActors[0]?.fillFields || [];
+    // 模板中乙方（corp 参与方）的待填控件清单不再继承给律所参与方：
+    // 产品流程为「客户签完即由免验证签场景码自动盖章」，律所全程无人工动作，
+    // 若把乙方面向的控件挂到 firmActor，会在法大大任务里形成「企业待填写」欠账，
+    // 出现签署环节卡在企业填字段的状态。乙方的字段值统一由本系统在 start 前
+    // 通过 fillFieldValues 全局写入（该接口按 docId+fieldId 写入，与控件归属无关），
+    // 因此乙方可填性不受影响，只是不再让企业参与方背负填写义务。
     // 客户参与方（映射到模板 person 参与方，C端填写必填控件后再签署）
     // permissions 同时含 fill 与 sign：客户打开单链接后先补充必填控件，再执行签约动作
     // 个人快捷签：客户持有有效手机号时开启免登签署（freeLogin），打开链接直接进入合同详情页，
@@ -604,7 +608,8 @@ export class FadadaService {
           }
         : { verifyMethods: ['face', 'sms', 'pw'], identifiedView: true, readingToEnd: true, signerSignMethod: 'standard' },
     };
-    // 律所参与方（映射到模板 corp 参与方，发起方用印+填写）
+    // 律所参与方（映射到模板 corp 参与方，发起方仅用印：待填控件不再挂载，
+    // 字段值由 fillFieldValues 全局写入，企业零填写动作、随免验证签自动盖章）
     const firmActor = {
       actor: {
         actorId: firmActorId,
@@ -614,7 +619,6 @@ export class FadadaService {
         actorOpenId: this.initiatorOpenId,
         notification: { sendNotification: false },
       },
-      fillFields: corpFillFields?.length ? corpFillFields : undefined,
       signConfigInfo: { verifyMethods: ['sms', 'face', 'pw'], identifiedView: true, readingToEnd: true, signerSignMethod: 'standard' },
     };
     const actors: any[] = [firmActor, clientActor];
