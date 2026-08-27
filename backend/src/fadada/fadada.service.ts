@@ -579,7 +579,27 @@ export class FadadaService {
     // 无需登录法大大账号；identifiedView=false 允许未实名用户查看任务，
     // 实名认证与签署意愿验证合二为一。快捷签仅对个人参与方有效，
     // 且意愿验证方式仅支持 实名手机号(sms)/人脸识别(face)，故快捷签场景收窄 verifyMethods。
+    // 快捷签判断：个人客户有手机号即可开启免登签署（freeLogin + identifiedView=false）。
+    // 无手机号时降级为普通签署（identifiedView=true，需实名后查看）。
     const isQuickSign = !!params.client?.mobile;
+    this.logger.log(
+      `法大大创建签署任务 快捷签判断 isQuickSign=${isQuickSign} mobile=${params.client?.mobile || '(空)'} clientUserId=${params.client?.clientUserId || '(空)'}`,
+    );
+    const clientActorSignConfig = isQuickSign
+      ? {
+          // 快捷签意愿验证：实名手机号(短信)/人脸识别 二选一
+          verifyMethods: ['sms', 'face'],
+          identifiedView: false,
+          freeLogin: true,
+          readingToEnd: true,
+          signerSignMethod: 'standard',
+          // 免验证签整合：客户完成签署即完成实名授权，无需另行单独办理实名认证
+          authorizeFreeSign: true,
+        }
+      : { verifyMethods: ['face', 'sms', 'pw'], identifiedView: true, readingToEnd: true, signerSignMethod: 'standard' };
+    this.logger.log(
+      `法大大客户参与方 signConfigInfo=${JSON.stringify(clientActorSignConfig)}`,
+    );
     const clientActor = {
       actor: {
         actorId: clientActorId,
@@ -591,22 +611,11 @@ export class FadadaService {
         certNoForMatch: params.client?.idCardNo || '',
         accountName: params.client?.mobile || undefined,
         clientUserId: params.client?.clientUserId,
-        // 免验证签整合：客户完成签署即完成实名授权，无需另行单独办理实名认证
-        authorizeFreeSign: true,
         notification: { sendNotification: false },
       },
       // 关联客户需填写的控件，避免模板校验「签署任务不是提交状态」
       fillFields: personFillFields?.length ? personFillFields : undefined,
-      signConfigInfo: isQuickSign
-        ? {
-            // 快捷签意愿验证：实名手机号(短信)/人脸识别 二选一
-            verifyMethods: ['sms', 'face'],
-            identifiedView: false,
-            freeLogin: true,
-            readingToEnd: true,
-            signerSignMethod: 'standard',
-          }
-        : { verifyMethods: ['face', 'sms', 'pw'], identifiedView: true, readingToEnd: true, signerSignMethod: 'standard' },
+      signConfigInfo: clientActorSignConfig,
     };
     // 律所参与方（映射到模板 corp 参与方，发起方仅用印：待填控件不再挂载，
     // 字段值由 fillFieldValues 全局写入，企业零填写动作、随免验证签自动盖章）
