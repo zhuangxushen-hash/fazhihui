@@ -69,6 +69,10 @@ export class Case {
   @Column({ nullable: true })
   client_phone: string;
 
+  // 联系地址
+  @Column({ type: 'varchar', nullable: true, comment: '联系地址' })
+  contact_address: string;
+
   @Column({ nullable: true })
   filing_date: Date;
 

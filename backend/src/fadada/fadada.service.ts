@@ -3,12 +3,16 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import axios from 'axios';
 import PDFDocument = require('pdfkit');
 import * as sdk from '@fddnpm/fasc-openapi-node-sdk';
 import { SigningCompliance, SigningStatus } from '../compliance/signing-compliance.entity';
 // C 端短信提醒：法大大电子签完成后触发收案立项短信
 import { SmsService } from '../sms/sms.service';
+// 组织管理 → 认证授权：企业授权记录（corp_auths 表）
+import { CorpAuth } from './corp-auth.entity';
 
 // 法大大运行模式：
 // - mock：本地模拟全流程（开发/演示，无真实账号）
@@ -53,11 +57,19 @@ export class FadadaService {
   private signTaskClient: any = null;
   private toolClient: any = null;
   private docClient: any = null;
+  private serviceClient: any = null;
+  private templateClient: any = null;
+  private corpClient: any = null;
+  // accessToken 缓存（法大大凭证有效 2 小时，缓存提前 5 分钟续期）
+  private accessTokenCache: { token: string; expireAt: number } | null = null;
 
   constructor(
     private configService: ConfigService,
     @InjectRepository(SigningCompliance)
     private signingComplianceRepository: Repository<SigningCompliance>,
+    // 组织管理 → 认证授权：企业授权记录
+    @InjectRepository(CorpAuth)
+    private corpAuthRepository: Repository<CorpAuth>,
     // C 端短信提醒：法大大电子签完成后触发收案立项短信
     private smsService: SmsService,
   ) {}
@@ -127,6 +139,11 @@ export class FadadaService {
     return this.configService.get('FADADA_INITIATOR_OPEN_ID') || 'LAWFIRM';
   }
 
+  /** 发起签约的律所名称（corp 参与方「乙方」用印主体） */
+  private get firmName(): string {
+    return this.configService.get('FADADA_FIRM_NAME') || '广东莞康律师事务所';
+  }
+
   private get pdfFontPath(): string {
     return this.configService.get('FADADA_PDF_FONT') || '';
   }
@@ -151,13 +168,45 @@ export class FadadaService {
     if (!this.signTaskClient) this.signTaskClient = new sdk.signTaskClient.Client(clientConfig);
     if (!this.toolClient) this.toolClient = new sdk.toolClient.Client(clientConfig);
     if (!this.docClient) this.docClient = new sdk.docClient.Client(clientConfig);
+    if (!this.serviceClient) this.serviceClient = new sdk.serviceClient.Client(clientConfig);
+    if (!this.templateClient) this.templateClient = new sdk.templateClient.Client(clientConfig);
+    if (!this.corpClient) this.corpClient = new sdk.corpClient.Client(clientConfig);
   }
 
-  private assertProdReady() {
+  /**
+   * 获取法大大服务访问凭证（accessToken，有效 2 小时）。
+   * 缓存未过期则复用；过期（提前 5 分钟）时重新获取并写入所有业务 SDK 客户端。
+   */
+  private async ensureAccessToken(): Promise<void> {
+    this.ensureClients();
+    // 缓存未过期则复用（防止每次请求都重新获取 token）
+    if (this.accessTokenCache && this.accessTokenCache.expireAt > Date.now()) {
+      return;
+    }
+    const res = await this.serviceClient.getAccessToken();
+    const data = res?.data?.data;
+    if (!data?.accessToken) {
+      throw new Error('法大大获取 accessToken 失败：' + (res?.data?.msg || '未知错误'));
+    }
+    const expiresIn = Number(data.expiresIn) || 7200;
+    const token = data.accessToken;
+    this.accessTokenCache = { token, expireAt: Date.now() + (expiresIn - 300) * 1000 };
+    // 将 accessToken 写入各业务 SDK 客户端凭据（签名接口后续请求需要携带）
+    this.euiClient.credential.accessToken = token;
+    this.signTaskClient.credential.accessToken = token;
+    this.toolClient.credential.accessToken = token;
+    this.docClient.credential.accessToken = token;
+    this.templateClient.credential.accessToken = token;
+    this.corpClient.credential.accessToken = token;
+    this.logger.log(`法大大 accessToken 已获取（有效期 ${expiresIn}s），已写入各 SDK 客户端`);
+  }
+
+  private async assertProdReady() {
     if (!this.appId || !this.appSecret) {
       throw new Error('法大大未配置 FADADA_APP_ID/FADADA_APP_SECRET，无法调用正式电子签接口');
     }
-    this.ensureClients();
+    // 确保客户端已初始化且 accessToken 已获取（业务接口需要携带凭证）
+    await this.ensureAccessToken();
   }
 
   /**
@@ -165,7 +214,10 @@ export class FadadaService {
    * - prod：法大大个人授权认证页（姓名/证件号/手机号实名 + 电子签授权）
    * - mock：本地模拟认证页
    */
-  async getRealNameAuthUrl(info: SigningClientInfo & { signingId: string }): Promise<{
+  async getRealNameAuthUrl(
+    info: SigningClientInfo & { signingId: string },
+    redirectUrl?: string,
+  ): Promise<{
     verifyUrl: string;
     transactionId: string;
     mode: FadadaMode;
@@ -180,7 +232,7 @@ export class FadadaService {
         mode: 'mock',
       };
     }
-    this.assertProdReady();
+    await this.assertProdReady();
     const res = await this.euiClient.getUserAuthUrl({
       clientUserId: info.clientUserId,
       accountName: info.mobile || undefined,
@@ -192,7 +244,7 @@ export class FadadaService {
         identMethod: ['face', 'mobile'],
       },
       authScopes: ['ident_info', 'signtask_info', 'signtask_init', 'signtask_file'],
-      redirectUrl: this.redirectUrl || undefined,
+      redirectUrl: redirectUrl || this.redirectUrl || undefined,
     });
     const data = res?.data?.data;
     if (!data?.authUrl) {
@@ -206,7 +258,10 @@ export class FadadaService {
    * - prod：法大大企业授权认证页（企业名称/信用代码实名 + 经办人授权）
    * - mock：本地模拟认证页（复用个人认证入口，标识 corp）
    */
-  async getCorpAuthUrl(info: SigningCorpInfo & { signingId: string }): Promise<{
+  async getCorpAuthUrl(
+    info: SigningCorpInfo & { signingId: string },
+    redirectUrl?: string,
+  ): Promise<{
     verifyUrl: string;
     transactionId: string;
     mode: FadadaMode;
@@ -221,7 +276,7 @@ export class FadadaService {
         mode: 'mock',
       };
     }
-    this.assertProdReady();
+    await this.assertProdReady();
     const res = await this.euiClient.getCorpAuthUrl({
       clientCorpId: 'CORP_' + info.signingId,
       clientUserId: 'OPR_' + info.signingId,
@@ -241,7 +296,7 @@ export class FadadaService {
         oprIdentMethod: ['face', 'mobile'],
       },
       authScopes: ['ident_info', 'signtask_info', 'signtask_init', 'signtask_file'],
-      redirectUrl: this.redirectUrl || undefined,
+      redirectUrl: redirectUrl || this.redirectUrl || undefined,
     });
     const data = res?.data?.data;
     const eUrl = data?.eUrl;
@@ -249,6 +304,98 @@ export class FadadaService {
       throw new Error('法大大企业实名认证链接获取失败：' + (res?.data?.msg || '未知错误'));
     }
     return { verifyUrl: eUrl, transactionId: info.signingId, mode: 'prod' };
+  }
+
+  /**
+   * 获取企业授权链接（组织管理 → 认证授权，平台型应用让其他企业接入本应用）。
+   * 同一 clientCorpId 表示同一企业，重复调用即为补充授权范围。
+   * - prod：调用法大大 /corp/get-auth-url 生成授权链接
+   * - mock：返回本地模拟授权地址
+   */
+  async createCorpAuthUrl(params: {
+    clientCorpId: string;
+    corpName: string;
+    corpIdentNo?: string;
+    legalRepName?: string;
+    agentName?: string;
+    agentIdCardNo?: string;
+    agentMobile?: string;
+    authScopes: string[];
+    redirectUrl?: string;
+  }): Promise<string> {
+    if (!this.enabled) {
+      throw new Error('法大大电子签未启用（FADADA_ENABLED=false）');
+    }
+    if (this.mode === 'mock') {
+      return `/fadada/mock-corp-auth?clientCorpId=${encodeURIComponent(params.clientCorpId)}` +
+        `&corpName=${encodeURIComponent(params.corpName)}`;
+    }
+    await this.assertProdReady();
+    const agentMobile = params.agentMobile?.trim();
+    const res = await this.euiClient.getCorpAuthUrl({
+      clientCorpId: params.clientCorpId,
+      // 经办人在业务系统中的唯一标识（用于授权完成回调定位）
+      clientUserId: agentMobile ? 'AGENT_' + agentMobile : params.clientCorpId,
+      accountName: agentMobile || undefined,
+      corpIdentInfo: {
+        corpName: params.corpName,
+        corpIdentType: sdk.CorpIdentTypeEnum.CORP,
+        corpIdentNo: params.corpIdentNo || undefined,
+        legalRepName: params.legalRepName || undefined,
+        // 法人认证 或 经办人（授权人）认证
+        corpIdentMethod: ['legalRep', 'agent'],
+      },
+      // 企业名称与信用代码锁定不可由经办人修改，保障主体一致
+      corpNonEditableInfo: ['corpName', 'corpIdentNo'],
+      oprIdentInfo: {
+        userName: params.agentName || undefined,
+        userIdentType: sdk.IdentTypeEnum.ID_CARD,
+        userIdentNo: params.agentIdCardNo || undefined,
+        mobile: agentMobile || undefined,
+        oprIdentMethod: ['face', 'mobile'],
+      },
+      authScopes: params.authScopes.length ? params.authScopes : ['signtask_init', 'signtask_info', 'signtask_file', 'seal_info', 'ident_info'],
+      redirectUrl: params.redirectUrl || this.redirectUrl || undefined,
+    });
+    const authUrl = (res?.data?.data as any)?.authUrl || (res?.data?.data as any)?.eUrl;
+    if (!authUrl) {
+      // 完整打印返回结构，便于定位法大大业务错误码
+      this.logger.error(`法大大企业授权链接响应详情：${JSON.stringify(res?.data || {})}`);
+      const bizCode = (res?.data as any)?.data?.code;
+      const bizMsg = (res?.data as any)?.data?.msg || (res?.data as any)?.data?.message;
+      throw new Error(`法大大企业授权链接获取失败：${bizMsg || (res?.data as any)?.msg || '未知错误'}${bizCode ? `（业务码 ${bizCode}）` : ''}`);
+    }
+    return authUrl;
+  }
+
+  /**
+   * 查询企业授权状态（组织管理 → 认证授权）。
+   * 调用法大大 /corp/get 获取企业基本信息、认证状态、授权状态与授权范围。
+   * - prod：查询法大大
+   * - mock：返回模拟已授权状态
+   */
+  async queryCorpAuthStatus(by: { clientCorpId?: string; openCorpId?: string }): Promise<{
+    clientCorpId?: string;
+    openCorpId?: string;
+    bindingStatus?: string;
+    authScope?: string[];
+    identStatus?: string;
+  }> {
+    if (this.mode === 'mock') {
+      return {
+        clientCorpId: by.clientCorpId,
+        openCorpId: by.openCorpId || by.clientCorpId,
+        bindingStatus: 'authorized',
+        authScope: [],
+        identStatus: 'identified',
+      };
+    }
+    await this.assertProdReady();
+    const res = await this.corpClient.get({
+      clientCorpId: by.clientCorpId || undefined,
+      openCorpId: by.openCorpId || undefined,
+    });
+    return res?.data?.data || null;
   }
 
   /**
@@ -279,7 +426,7 @@ export class FadadaService {
         mode: 'mock',
       };
     }
-    this.assertProdReady();
+    await this.assertProdReady();
     const pdf = await this.generateContractPdf(params.docName, params.docContent);
     const docFileId = await this.uploadPdf(pdf, params.docName);
     const isCorp = params.subjectType === 'corp';
@@ -367,14 +514,477 @@ export class FadadaService {
   /** 查询签署任务当前状态（prod 模式调用法大大，mock 模式直接返回 pending） */
   async querySignTaskStatus(signTaskId: string): Promise<string> {
     if (this.mode === 'mock') return 'pending';
-    this.assertProdReady();
+    await this.assertProdReady();
     const res = await this.signTaskClient.getDetail({ signTaskId });
     return res?.data?.data?.signTaskStatus || 'unknown';
   }
 
   /**
+   * 基于法大大「签署任务模板 sign-template」发起签署任务（B端案件详情发起签约）。
+   * - prod：createWithTemplate 创建签署任务 → start → 获取客户签署链接
+   * - mock：返回本地模拟签署页
+   * 说明：模板签署无需手动生成 PDF，模板本身已含文档与签区；
+   * 参与方(actors)由调用方传入（客户 + 律师），发起的发起方 initiator 需已完成企业授权（openCorpId）。
+   */
+  async createSignTaskFromTemplate(params: {
+    signingId: string;
+    subject?: string;
+    signTemplateId: string;
+    // 签约主体类型：person 个人客户 / corp 企业客户
+    subjectType?: 'person' | 'corp';
+    // 个人客户信息（subjectType=person 时使用）
+    client?: SigningClientInfo;
+    // 企业客户信息（subjectType=corp 时使用）
+    corp?: SigningCorpInfo;
+    // 律师（发起方签署人）
+    lawyer?: { lawyerUserId: string; name: string; mobile?: string };
+    // 预填字段值列表（固定值 + 业务员预填），配合 fillFieldValues 在定稿前写入
+    fillValues?: Array<{ docId?: string | number; fieldId?: string; fieldName?: string; fieldValue: string }>;
+  }): Promise<{ signTaskId: string; actorId: string; signUrl: string; mode: FadadaMode }> {
+    if (!this.enabled) {
+      throw new Error('法大大电子签未启用（FADADA_ENABLED=false）');
+    }
+    if (this.mode === 'mock') {
+      return {
+        signTaskId: `MOCK-${Date.now()}`,
+        actorId: 'client',
+        signUrl: `/client/mock-fadada?mode=sign&signing_id=${params.signingId}`,
+        mode: 'mock',
+      };
+    }
+    await this.assertProdReady();
+    // 读取签署模板详情，获取模板内定义的参与方标识（actorId），以便按序匹配签区。
+    // 业务约定：person 参与方 = 客户（C端签名），corp 参与方 = 律所（发起方用印）。
+    const tmplDetail = await this.fetchSignTemplateDetail(params.signTemplateId);
+    const tmplActors: any[] = tmplDetail?.actors || [];
+    const personActors = tmplActors.filter((a) => a?.actorInfo?.actorType === 'person');
+    const corpActors = tmplActors.filter((a) => a?.actorInfo?.actorType === 'corp');
+    const clientActorId = personActors[0]?.actorInfo?.actorId || '甲方';
+    const firmActorId = corpActors[0]?.actorInfo?.actorId || '乙方';
+    // 模板中甲方（person 参与方）需要填写的控件清单，继承给客户参与方，使其作为填写参与方在 C 端填写后再签署
+    const personFillFields: any[] = personActors[0]?.fillFields || [];
+    // 模板中乙方（corp 参与方）需要填写的控件清单，继承给律所参与方
+    const corpFillFields: any[] = corpActors[0]?.fillFields || [];
+    // 客户参与方（映射到模板 person 参与方，C端填写必填控件后再签署）
+    // permissions 同时含 fill 与 sign：客户打开单链接后先补充必填控件，再执行签约动作
+    const clientActor = {
+      actor: {
+        actorId: clientActorId,
+        actorType: sdk.ActorTypeEnum.PERSON,
+        actorName: params.client?.userName || params.corp?.corpName || '客户',
+        permissions: [sdk.Permissions.FILL, sdk.Permissions.SIGN],
+        // 客户在 C 端签署流程中完成法大大实名认证，此处不预先绑定 actorOpenId
+        identNameForMatch: params.client?.userName || params.corp?.corpName,
+        certNoForMatch: params.client?.idCardNo || '',
+        accountName: params.client?.mobile || undefined,
+        clientUserId: params.client?.clientUserId,
+        // 免验证签整合：客户完成签署即完成实名授权，无需另行单独办理实名认证
+        authorizeFreeSign: true,
+        notification: { sendNotification: false },
+      },
+      // 关联客户需填写的控件，避免模板校验「签署任务不是提交状态」
+      fillFields: personFillFields?.length ? personFillFields : undefined,
+      signConfigInfo: { verifyMethods: ['face', 'sms', 'pw'], identifiedView: true, readingToEnd: true, signerSignMethod: 'standard' },
+    };
+    // 律所参与方（映射到模板 corp 参与方，发起方用印+填写）
+    const firmActor = {
+      actor: {
+        actorId: firmActorId,
+        actorType: sdk.ActorTypeEnum.CORP,
+        actorName: this.firmName,
+        permissions: [sdk.Permissions.SIGN],
+        actorOpenId: this.initiatorOpenId,
+        notification: { sendNotification: false },
+      },
+      fillFields: corpFillFields?.length ? corpFillFields : undefined,
+      signConfigInfo: { verifyMethods: ['sms', 'face', 'pw'], identifiedView: true, readingToEnd: true, signerSignMethod: 'standard' },
+    };
+    const actors: any[] = [firmActor, clientActor];
+    if (params.lawyer) {
+      actors.push({
+        actor: {
+          actorId: 'lawyer',
+          actorType: sdk.ActorTypeEnum.PERSON,
+          actorName: params.lawyer.name,
+          permissions: [sdk.Permissions.SIGN],
+          actorOpenId: params.lawyer.lawyerUserId,
+          accountName: params.lawyer.mobile || undefined,
+          notification: { sendNotification: false },
+        },
+        signConfigInfo: { verifyMethods: ['sms'], identifiedView: true, signerSignMethod: 'standard' },
+      });
+    }
+    const createRes = await this.signTaskClient.createWithTemplate({
+      signTaskSubject: params.subject || '法律顾问签约',
+      initiator: { idType: sdk.IdTypeEnum.CORP, openId: this.initiatorOpenId },
+      signTemplateId: params.signTemplateId,
+      transReferenceId: params.signingId,
+      actors,
+      // 填写+签约一体：创建后不自动提交、不定稿，等待 C 端客户在本系统 C 端页面补全必填控件后，
+      // 由 C 端点击签约再调用法大大提交(start)→定稿(finalizeDoc)→获取签署链接。
+      autoStart: false,
+      autoFillFinalize: false,
+      autoFinish: true,
+      watermarks: [],
+    });
+    const signTaskId = createRes?.data?.data?.signTaskId;
+    if (!signTaskId) {
+      throw new Error('法大大模板签署任务创建失败：' + (createRes?.data?.msg || '请求成功'));
+    }
+    // 模板签署：B端创建 → 写入预填字段(固定值+业务员预填，客户后仍需填写的必填控件在此之后)。
+    // 关键约束：填写接口(fillFieldValues)必须在提交(start)之前调用；
+    // 任务现处于「填写中」状态，后续由 C 端客户在本系统 C 端页面补全其余必填控件后，
+    // 再调用 completeClientPrefillAndSign 完成 提交→定稿→ 并返回签署链接，从而实现「补充完整信息后再签约」闭环。
+    if (params.fillValues && params.fillValues.length > 0) {
+      const compiled = params.fillValues
+        .filter((v) => v && v.fieldValue !== undefined && v.fieldValue !== null && v.fieldValue !== '')
+        .map((v) => ({
+          docId: String(v.docId ?? ''),
+          fieldId: v.fieldId,
+          fieldName: v.fieldName,
+          fieldValue: String(v.fieldValue),
+        }));
+      // 逐字段写入并容错：auto_source 自动带出的值可能不符合控件格式（如数字控件填了案件编号），
+      // 单个字段失败仅记录日志并跳过，避免整批填充失败导致 B 端预填全部丢失（C 端重复填写/不回显）。
+      for (const item of compiled) {
+        try {
+          const r = await this.signTaskClient.fillFieldValues({ signTaskId, docFieldValues: [item] });
+          const code = r?.data?.code;
+          if (code && code !== '100000') {
+            this.logger.warn(
+              `B端预填字段写入失败 fieldId=${item.fieldId} fieldName=${item.fieldName} code=${code} msg=${r?.data?.msg || ''}`,
+            );
+          }
+        } catch (e) {
+          this.logger.warn(`B端预填字段写入异常 fieldId=${item.fieldId} fieldName=${item.fieldName} msg=${(e as Error)?.message || e}`);
+        }
+      }
+    }
+    // 不再跳转法大大预填 H5 页面：返回签署任务ID，由 C 端本系统页面收集字段后点击签约再取签署链接。
+    return { signTaskId, actorId: clientActorId, signUrl: '', mode: 'prod' };
+  }
+
+  /**
+   * C端获取签署任务待填字段：返回客户在法大大签署任务中仍需补充的「填写类」必填控件，
+   * 并从模板控件定义同步输入限制（required/tips/checkFormat 等），供 C 端页面展示。
+   * 金额类控件(amount)无法通过 API 填充，且属业务字段（由 B 端/平台维护），此处一并过滤，避免 C 端填写导致整体填充失败。
+   * 仅在任务处于填写中（未提交/未定稿）时有效；mock 模式直接返回空数组。
+   */
+  async getClientPrefillFields(signTaskId: string): Promise<Array<{
+    field_doc_id: string;
+    field_id: string;
+    field_name: string;
+    field_type: string;
+    required: boolean;
+    tips: string;
+    check_format: string;
+    default_value: string;
+  }>> {
+    if (this.mode === 'mock') return [];
+    await this.assertProdReady();
+    // 从任务详情获取模板ID，再读取模板控件定义中的输入限制（required/tips/checkFormat）
+    const detailRes = await this.signTaskClient.getDetail({ signTaskId }).catch(() => null);
+    const templateId = detailRes?.data?.data?.templateId || '';
+    const limits: Record<string, { required: boolean; tips: string; check_format: string; default_value: string }> = {};
+    if (templateId) {
+      const tmplDetail = await this.fetchSignTemplateDetail(templateId).catch(() => null);
+      (tmplDetail?.docs || []).forEach((d: any) => {
+        (d?.docFields || []).forEach((f: any) => {
+          const text = f?.fieldTextSingleLine || f?.fieldTextMultiLine || f?.fieldIdCard || f?.fieldNumber || f?.fieldFillDate || null;
+          if (f?.fieldId) {
+            limits[f.fieldId] = {
+              required: !!text?.required,
+              tips: text?.tips || '',
+              check_format: text?.checkFormat || '',
+              default_value: text?.defaultValue || '',
+            };
+          }
+        });
+      });
+    }
+    const res = await this.signTaskClient.getSignTaskFieldList({ signTaskId });
+    const fields: any[] = res?.data?.data?.fillFields || [];
+    // 过滤出「填写类」且尚未填写的控件（fieldValue 为空），作为 C 端预填表单字段；
+    // 金额控件(amount)不能通过 API 填充，过滤掉不展示给客户
+    return fields
+      .filter((f) => this.isFillableFieldType(f?.fieldType) && !f?.fieldValue && (f?.fieldType || '') !== 'amount')
+      .map((f) => ({
+        field_doc_id: String(f?.docId ?? ''),
+        field_id: f?.fieldId || '',
+        field_name: f?.fieldName || f?.fieldId || '',
+        field_type: f?.fieldType || '',
+        required: !!(limits[f?.fieldId]?.required),
+        tips: limits[f?.fieldId]?.tips || '',
+        check_format: limits[f?.fieldId]?.check_format || '',
+        default_value: limits[f?.fieldId]?.default_value || '',
+      }));
+  }
+
+  /**
+   * 逐字段填充签署任务控件（共用）：
+   * 金额控件(amount)无法通过 API 填充（211407），查询任务字段列表并过滤；
+   * 其余字段逐字段写入并容错，单个字段值非法仅记录日志跳过，避免整体填充失败导致信息丢失。
+   */
+  private async fillValuesWithTolerance(
+    signTaskId: string,
+    values: Array<{ docId?: string | number; fieldId?: string; fieldName?: string; fieldValue: string }>,
+  ): Promise<void> {
+    const compiled = (values || [])
+      .filter((v) => v && v.fieldValue !== undefined && v.fieldValue !== null && v.fieldValue !== '')
+      .map((v) => ({
+        docId: String(v.docId ?? ''),
+        fieldId: v.fieldId,
+        fieldName: v.fieldName,
+        fieldValue: String(v.fieldValue),
+      }));
+    if (compiled.length === 0) return;
+    const fieldRes = await this.signTaskClient
+      .getSignTaskFieldList({ signTaskId })
+      .catch(() => null);
+    const amountFieldIds = new Set(
+      ((fieldRes?.data?.data?.fillFields || []) as any[])
+        .filter((f) => f?.fieldType === 'amount')
+        .map((f) => f?.fieldId),
+    );
+    for (const item of compiled) {
+      if (amountFieldIds.has(item.fieldId)) continue;
+      try {
+        const r = await this.signTaskClient.fillFieldValues({ signTaskId, docFieldValues: [item] });
+        const code = r?.data?.code;
+        if (code && code !== '100000') {
+          this.logger.warn(`C端字段写入失败 fieldId=${item.fieldId} fieldName=${item.fieldName} code=${code} msg=${r?.data?.msg || ''}`);
+        }
+      } catch (e) {
+        this.logger.warn(`C端字段写入异常 fieldId=${item.fieldId} fieldName=${item.fieldName} msg=${(e as Error)?.message || e}`);
+      }
+    }
+  }
+
+  /**
+   * C端完成待填字段后调用的签约动作：填充字段 → 提交任务(start) → 定稿(finalizeDoc) → 获取客户签署链接。
+   * 返回签署链接(signUrl)与可嵌入链接(embedUrl，供 C 端 iframe 内嵌签署页)。
+   * mock 模式直接返回本地模拟签署链接。
+   */
+  async completeClientPrefillAndSign(params: {
+    signTaskId: string;
+    actorId: string;
+    signingId: string;
+    values: Array<{ docId?: string | number; fieldId?: string; fieldName?: string; fieldValue: string }>;
+  }): Promise<{ signUrl: string; embedUrl: string; mode: FadadaMode }> {
+    if (this.mode === 'mock') {
+      return { signUrl: `/client/mock-fadada?mode=sign&signing_id=${params.signingId}`, embedUrl: '', mode: 'mock' };
+    }
+    await this.assertProdReady();
+    // 1. 填充客户补充的字段（必须在提交之前调用）
+    await this.fillValuesWithTolerance(params.signTaskId, params.values);
+    // 2. 提交任务 → 3. 定稿文档（记录响应业务码，便于排查任务状态流转）
+    const startRes = await this.signTaskClient.start({ signTaskId: params.signTaskId });
+    this.logger.log(`法大大模板签署任务 start 响应=${JSON.stringify(startRes?.data || startRes)}`);
+    if (startRes?.data?.code && startRes.data.code !== '100000') {
+      // 提交失败（如模板存在无法通过 API 填充的必填控件，金额控件等），给出明确提示
+      throw new Error('签署任务提交失败：' + (startRes.data.msg || '未知错误') + '（如为金额类控件，请在法大大平台模板中将金额控件改为数字/文本控件或取消必填）');
+    }
+    const finalizeRes = await this.signTaskClient.finalizeDoc({ signTaskId: params.signTaskId });
+    this.logger.log(`法大大模板签署任务 finalizeDoc 响应=${JSON.stringify(finalizeRes?.data || finalizeRes)}`);
+    // 4. 获取客户参与方签署链接
+    const urlRes = await this.signTaskClient.getActorUrl({
+      signTaskId: params.signTaskId,
+      actorId: params.actorId,
+    });
+    const signUrl = urlRes?.data?.data?.actorSignTaskUrl;
+    const embedUrl = urlRes?.data?.data?.actorSignTaskEmbedUrl || '';
+    if (!signUrl) {
+      // 附加签署任务当前状态日志，便于定位状态流转问题
+      const detailRes = await this.signTaskClient
+        .getDetail({ signTaskId: params.signTaskId })
+        .catch(() => null);
+      this.logger.error(
+        `法大大签署链接获取失败 signTaskId=${params.signTaskId} actorId=${params.actorId} 任务详情=${JSON.stringify(detailRes?.data?.data || detailRes?.data)}`,
+      );
+      throw new Error('法大大签署链接获取失败：' + (urlRes?.data?.msg || '未知错误'));
+    }
+    return { signUrl, embedUrl, mode: 'prod' };
+  }
+
+  /**
+   * C端预填字段后获取合同预览链接（不提交任务）：填充字段 → 获取签署任务预览地址。
+   * 客户预览确认后再调用 completeClientPrefillAndSign 正式签约。
+   * mock 模式返回本地模拟预览页。
+   */
+  async getClientPreviewUrl(params: {
+    signTaskId: string;
+    signingId: string;
+    values: Array<{ docId?: string | number; fieldId?: string; fieldName?: string; fieldValue: string }>;
+  }): Promise<{ previewUrl: string; mode: FadadaMode }> {
+    if (this.mode === 'mock') {
+      return { previewUrl: `/client/mock-fadada?mode=preview&signing_id=${params.signingId}`, mode: 'mock' };
+    }
+    await this.assertProdReady();
+    // 填充客户填写的字段（逐字段容错，预览展示填写后的合同内容）
+    await this.fillValuesWithTolerance(params.signTaskId, params.values);
+    // 获取签署任务预览链接（任务仍处于填写中，文档未定稿）
+    const res = await this.signTaskClient.getSignTaskPreviewUrl({ signTaskId: params.signTaskId });
+    // 记录法大大返回的完整预览链接原始值，便于排查预览域名不可达问题（如 80005605.uat-e.fadada.com）
+    this.logger.log(`法大大合同预览链接响应 raw=${JSON.stringify(res?.data || res)}`);
+    const previewUrl = res?.data?.data?.signTaskPreviewUrl;
+    if (!previewUrl) {
+      throw new Error('合同预览链接获取失败：' + (res?.data?.msg || '未知错误'));
+    }
+    return { previewUrl, mode: 'prod' };
+  }
+
+  /**
+   * 读取法大大签署任务模板详情，返回模板原始 data（含参与方 actors、文档控件等）。
+   * ownerId 使用发起方主体（当前律所），与模板归属方一致。
+   */
+  private async fetchSignTemplateDetail(signTemplateId: string): Promise<any> {
+    const res = await this.templateClient.getSignTemplateDetail({
+      ownerId: { idType: 'corp', openId: this.initiatorOpenId },
+      signTemplateId,
+    });
+    return res?.data?.data || null;
+  }
+
+  /** 属于"填写类"的控件类型（需业务填充内容），签名/印章/签署日期等归为非填写。 */
+  private isFillableFieldType(type?: string): boolean {
+    if (!type) return false;
+    if (
+      type === 'person_sign' ||
+      type === 'corp_seal' ||
+      type === 'corp_seal_cross_page' ||
+      type === 'date_sign' ||
+      type === 'remark_sign'
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * 整理法大大签署任务模板的"填写字段"清单（供同步到本地模板维护 & 发起时填充）。
+   * 返回每个填写控件：fieldDocId/fieldId/fieldName/fieldType/归属参与方(actor)，
+   * 并同步模板控件的输入限制（required/tips/checkFormat）。
+   * 依据参与方 fillFields 关联控件归属（乙方/甲方）。
+   */
+  async getTemplateFillFields(signTemplateId: string): Promise<Array<{
+    field_doc_id: string;
+    field_id: string;
+    field_name: string;
+    field_type: string;
+    actor: string;
+    required: boolean;
+    tips: string;
+    check_format: string;
+  }>> {
+    await this.assertProdReady();
+    const detail = await this.fetchSignTemplateDetail(signTemplateId);
+    const docs: any[] = detail?.docs || [];
+    const actors: any[] = detail?.actors || [];
+    // 控件 code -> 归属参与方（来自各参与方 fillFields）
+    const ownerMap: Record<string, string> = {};
+    actors.forEach((a) => {
+      const aid = a?.actorInfo?.actorId;
+      (a?.fillFields || []).forEach((f) => {
+        if (f?.fieldId) ownerMap[f.fieldId] = aid;
+      });
+    });
+    const result: Array<{
+      field_doc_id: string;
+      field_id: string;
+      field_name: string;
+      field_type: string;
+      actor: string;
+      required: boolean;
+      tips: string;
+      check_format: string;
+    }> = [];
+    docs.forEach((d) => {
+      (d?.docFields || []).forEach((f: any) => {
+        if (!this.isFillableFieldType(f?.fieldType)) return;
+        // 控件输入限制：单行/多行文本、身份证、数字、日期等控件的必填/提示/校验格式
+        const text = f?.fieldTextSingleLine || f?.fieldTextMultiLine || f?.fieldIdCard || f?.fieldNumber || f?.fieldFillDate || null;
+        result.push({
+          field_doc_id: String(d?.docId ?? ''),
+          field_id: f?.fieldId || '',
+          field_name: f?.fieldName || '',
+          field_type: f?.fieldType || '',
+          actor: ownerMap[f?.fieldId] || '',
+          required: !!text?.required,
+          tips: text?.tips || '',
+          check_format: text?.checkFormat || '',
+        });
+      });
+    });
+    return result;
+  }
+
+  /**
+   * B端案件详情「发起签约」：创建签约合规记录并通过签署模板发起签署任务。
+   * 返回签约记录与客户 C 端签署链接；发起失败则回滚已创建的签约记录。
+   */
+  async launchSignFromTemplate(params: {
+    caseId: string;
+    clientId: string;
+    lawyerId: string;
+    organizationId: string;
+    subject: string;
+    signTemplateId: string;
+    subjectType: 'person' | 'corp';
+    client?: SigningClientInfo;
+    corp?: SigningCorpInfo;
+    lawyer?: { lawyerUserId: string; name: string; mobile?: string };
+    // 预填字段值列表（固定值 + 业务员预填）
+    fillValues?: Array<{ docId?: string | number; fieldId?: string; fieldName?: string; fieldValue: string }>;
+  }) {
+    // 1. 创建签约合规记录（pending，引用法大大签署模板）
+    const signing: SigningCompliance = await this.signingComplianceRepository.save(
+      this.signingComplianceRepository.create({
+        case_id: params.caseId,
+        client_id: params.clientId,
+        lawyer_id: params.lawyerId,
+        organization_id: params.organizationId,
+        contract_template_id: params.signTemplateId,
+        subject_type: params.subjectType,
+        status: SigningStatus.PENDING,
+        verify_status: 'none',
+        id_card_no: params.client?.idCardNo || null,
+        corp_name: params.corp?.corpName || null,
+        corp_ident_no: params.corp?.corpIdentNo || null,
+        legal_rep_name: params.corp?.legalRepName || null,
+        contract_content: params.subject,
+        // 保存系统预填 + 业务员预填的字段值，C 端提交签署时一并传参法大大，避免信息丢失
+        prefill_values: params.fillValues && params.fillValues.length > 0 ? JSON.stringify(params.fillValues) : null,
+      } as Partial<SigningCompliance>),
+    );
+    try {
+      // 2. 基于签署模板发起签署，获取客户 C 端签署链接
+      const res = await this.createSignTaskFromTemplate({
+        signingId: signing.id,
+        subject: params.subject,
+        signTemplateId: params.signTemplateId,
+        subjectType: params.subjectType,
+        client: params.client,
+        corp: params.corp,
+        lawyer: params.lawyer,
+        fillValues: params.fillValues,
+      });
+      // 3. 回填签署任务信息并更新状态
+      signing.fadada_sign_task_id = res.signTaskId;
+      signing.fadada_actor_id = res.actorId;
+      signing.sign_url = res.signUrl;
+      await this.signingComplianceRepository.save(signing);
+      return { signingId: signing.id, signTaskId: res.signTaskId, actorId: res.actorId, signUrl: res.signUrl, mode: res.mode };
+    } catch (e) {
+      // 发起失败时清理已创建的签约记录，避免产生脏数据
+      await this.signingComplianceRepository.remove(signing).catch(() => undefined);
+      throw e;
+    }
+  }
+
+  /**
    * 处理法大大平台回调事件（幂等）：
    * - user-authorize / user-three-element-verify / user-four-element-verify：实名认证结果
+   * - corporate-authorize / corp-authorize：企业授权结果（回填 openCorpId）
    * - sign-task-signed / sign-task-finished / sign-task-sign-rejected / sign-task-canceled / sign-task-abolish：签署状态
    */
   async handleCallback(body: any): Promise<{ handled: boolean; eventId?: string }> {
@@ -382,6 +992,27 @@ export class FadadaService {
     if (!eventId) return { handled: false };
     this.logger.log(`收到法大大回调事件: ${eventId}`);
     try {
+      // 企业授权完成回调：通过 clientCorpId 定位授权记录，回填 openCorpId 并更新授权状态
+      if (eventId === 'corp-authorize' || eventId === 'corporate-authorize') {
+        const clientCorpId = body?.clientCorpId;
+        if (clientCorpId) {
+          const rec = await this.corpAuthRepository.findOne({
+            where: { client_corp_id: clientCorpId },
+          });
+          if (rec) {
+            const ok = body?.authResult === 'success';
+            rec.open_corp_id = body?.openCorpId || rec.open_corp_id;
+            rec.binding_status = ok ? 'authorized' : 'unauthorized';
+            rec.ident_status = body?.corpIdentProcessStatus === 'success' ? 'identified' : rec.ident_status;
+            rec.auth_status = ok ? 'authed' : 'failed';
+            rec.auth_result = body?.authFailedReason || (ok ? 'authorized' : 'auth failed');
+            rec.auth_scopes = Array.isArray(body?.authScope) ? body.authScope.join(',') : rec.auth_scopes;
+            await this.corpAuthRepository.save(rec);
+            this.logger.log(`企业授权回调已更新记录 ${rec.id}: clientCorpId=${clientCorpId} openCorpId=${rec.open_corp_id} status=${rec.auth_status}`);
+          }
+        }
+        return { handled: true, eventId };
+      }
       if (eventId.startsWith('user-')) {
         const clientUserId = body?.clientUserId;
         if (clientUserId) {
@@ -460,13 +1091,17 @@ export class FadadaService {
   private async generateContractPdf(docName: string, content: string): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       try {
-        const fontPath = this.resolveCjkFont();
+        const fontInfo = this.resolveCjkFont();
         const doc = new PDFDocument({ size: 'A4', margin: 50, info: { Title: docName } });
         const chunks: Buffer[] = [];
         doc.on('data', (c: Buffer) => chunks.push(c));
         doc.on('end', () => resolve(Buffer.concat(chunks)));
         doc.on('error', reject);
-        if (fontPath) doc.font(fontPath);
+        if (fontInfo) {
+          // ttc 集合字体（如 macOS 系统字体）需先提取具体子字体为临时 ttf 供 pdfkit 使用
+          const ttfPath = this.ttcPathToTempTtf(fontInfo.path, fontInfo.preferSc);
+          if (ttfPath) doc.font(ttfPath);
+        }
         doc.fontSize(16).text(docName, { align: 'center' });
         doc.moveDown();
         doc.fontSize(11).text(content, { lineGap: 8 });
@@ -477,21 +1112,70 @@ export class FadadaService {
     });
   }
 
+  /**
+   * 将 .ttc 字体集集合中的某个子字体导出为临时 .ttf 文件（pdfkit 只支持单体 TrueType/OpenType 字体）。
+   * - 单字体（.ttf/.otf）路径或显式配置直接返回原路径（pdfkit 可直接使用）
+   * - .ttc 集合：用 fontkit 选中简体子字体（family 名含 SC/GB），导出临时 ttf
+   */
+  private ttcPathToTempTtf(fontPath: string, preferSc?: boolean): string | null {
+    if (fontPath.toLowerCase().endsWith('.ttc')) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const fontkit = require('fontkit');
+        const collection: any = fontkit.openSync(fontPath);
+        const fonts: any[] = Array.isArray(collection.fonts) ? collection.fonts : [collection];
+        let target = fonts[0];
+        if (preferSc) {
+          const sc = fonts.find(
+            (f: any) => typeof f.familyName === 'string' && /(SC|GB)/.test(f.familyName),
+          );
+          if (sc) target = sc;
+        }
+        if (typeof target.getBuffer !== 'function') {
+          this.logger.warn(`法大大 PDF 字体集合中找不到可导出子字体：${fontPath}`);
+          return null;
+        }
+        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fdd-font-'));
+        const tmpTtf = path.join(tmpDir, 'font.ttf');
+        fs.writeFileSync(tmpTtf, target.getBuffer());
+        this.logger.log(`已从字体集合导出子字体 ${target.familyName}/${target.postscriptName} -> ${tmpTtf}`);
+        return tmpTtf;
+      } catch (e) {
+        this.logger.warn(`法大大 PDF 字体集合导出失败：${(e as Error)?.message || e}`);
+        return null;
+      }
+    }
+    return fontPath;
+  }
+
   /** 探测系统可用的中文字体（macOS/Linux），可用 FADADA_PDF_FONT 显式指定 */
-  private resolveCjkFont(): string | null {
-    const candidates = [
-      this.pdfFontPath,
-      '/System/Library/Fonts/PingFang.ttc',
-      '/System/Library/Fonts/STHeiti Light.ttc',
-      '/System/Library/Fonts/Hiragino Sans GB.ttc',
+  private resolveCjkFont(): { path: string; preferSc?: boolean } | null {
+    // 显式配置的字体（ttf/otf/ttc 均可）
+    if (this.pdfFontPath && fs.existsSync(this.pdfFontPath)) {
+      return { path: this.pdfFontPath };
+    }
+    // 优先单体字体（.ttf/.otf，pdfkit 可直接加载）：
+    // macOS 系统自带的 Arial Unicode 单体字体，覆盖中日韩统一表意文字
+    const singleFonts = [
+      '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',
+    ].filter(fs.existsSync);
+    if (singleFonts.length) return { path: singleFonts[0] };
+    // macOS ttc 集合字体（仅在此前单体字体不存在时尝试，优先简体 SC/GB）
+    const ttcCandidates: { path: string; preferSc: boolean }[] = [
+      { path: '/System/Library/Fonts/PingFang.ttc', preferSc: true },
+      { path: '/System/Library/Fonts/Hiragino Sans GB.ttc', preferSc: true },
+      { path: '/System/Library/Fonts/STHeiti Light.ttc', preferSc: true },
+    ];
+    for (const c of ttcCandidates) {
+      if (fs.existsSync(c.path)) return c;
+    }
+    // Linux 常见中文字体
+    const fontCandidates = [
       '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
       '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',
       '/usr/share/fonts/truetype/arphic/uming.ttc',
       '/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf',
-    ].filter(Boolean);
-    for (const p of candidates) {
-      if (fs.existsSync(p)) return p;
-    }
-    return null;
+    ].filter(fs.existsSync);
+    return fontCandidates.length ? { path: fontCandidates[0] } : null;
   }
 }

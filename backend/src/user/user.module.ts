@@ -4,6 +4,9 @@ import { UserService } from './user.service';
 import { UserController } from './user.controller';
 import { User } from './user.entity';
 import { Organization } from './organization.entity';
+import { Team } from './team.entity';
+import { TeamService } from './team.service';
+import { TeamController } from './team.controller';
 import { Role } from './role.entity';
 import { Menu } from './menu.entity';
 import { Notification } from './notification.entity';
@@ -28,6 +31,7 @@ import { UserProfileController } from './user-profile.controller';
     TypeOrmModule.forFeature([
       User,
       Organization,
+      Team,
       Role,
       Menu,
       Notification,
@@ -38,8 +42,8 @@ import { UserProfileController } from './user-profile.controller';
       VipSubscription,
     ]),
   ],
-  providers: [UserService, RoleService, MenuService, NotificationService, PermissionService, UserProfileService],
-  controllers: [UserController, RoleController, MenuController, NotificationController, PermissionController, UserProfileController],
+  providers: [UserService, RoleService, MenuService, NotificationService, PermissionService, UserProfileService, TeamService],
+  controllers: [UserController, RoleController, MenuController, NotificationController, PermissionController, UserProfileController, TeamController],
   exports: [UserService, RoleService, MenuService, NotificationService, PermissionService],
 })
 export class UserModule {}

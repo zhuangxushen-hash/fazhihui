@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Card, List, Tag, theme } from 'antd'
 import { FileTextOutlined, ArrowLeftOutlined, ArrowRightOutlined } from '@ant-design/icons'
 import axios from '../../api/axios'
+import { caseTypeLabel } from '../../utils/format'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../../components/BottomNav'
 
@@ -123,11 +124,11 @@ export default function ClientCaseList() {
                     <FileTextOutlined style={{ fontSize: 18, color: '#0059b5' }} />
                   </div>}
                   title={<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{item.case_type || '未知案由'}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{caseTypeLabel(item.case_type)}</span>
                     <Tag color={statusColors[item.status]} style={{ fontSize: 11, padding: '2px 8px' }}>{statusLabels[item.status]}</Tag>
                   </div>}
                   description={<div>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>案件ID: {item.id}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>案件编号: {item.case_no}</div>
                     <div style={{ color: 'var(--text-tertiary)', fontSize: 11, marginTop: 2 }}>创建时间：{item.created_at}</div>
                   </div>}
                 />

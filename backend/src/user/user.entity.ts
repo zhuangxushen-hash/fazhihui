@@ -41,6 +41,10 @@ export class User {
   @Column({ nullable: true })
   organization_id: string;
 
+  // 所属团队 id（可选，关联 team 表；用户管理维护）
+  @Column({ type: 'varchar', nullable: true })
+  team_id: string;
+
   @OneToMany(() => Lead, lead => lead.assign_sales)
   assigned_leads: Lead[];
 

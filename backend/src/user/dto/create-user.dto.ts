@@ -26,4 +26,9 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   organization_id?: string;
+
+  // 所属团队 id（可选）
+  @IsString()
+  @IsOptional()
+  team_id?: string;
 }

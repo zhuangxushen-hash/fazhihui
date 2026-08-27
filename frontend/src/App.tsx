@@ -59,6 +59,7 @@ const ClientServiceHall = lazy(() => import('./pages/client/ClientServiceHall'))
 const ServiceRating = lazy(() => import('./pages/client/ServiceRating'))
 const ClientArchive = lazy(() => import('./pages/client/ClientArchive'))
 const MockFadada = lazy(() => import('./pages/client/MockFadada'))
+const SignPrefill = lazy(() => import('./pages/client/SignPrefill'))
 // Phase 4 模块8 数据中台
 const ConversionFunnelDashboard = lazy(() => import('./pages/ConversionFunnelDashboard'))
 const SalesPerformanceDashboard = lazy(() => import('./pages/SalesPerformanceDashboard'))
@@ -125,6 +126,8 @@ const PublicOpinionMonitor = lazy(() => import('./pages/PublicOpinionMonitor'))
 const RefundManagement = lazy(() => import('./pages/RefundManagement'))
 const AuditLogManagement = lazy(() => import('./pages/AuditLogManagement'))
 const OrganizationManagement = lazy(() => import('./pages/OrganizationManagement'))
+const SignTemplateManagement = lazy(() => import('./pages/SignTemplateManagement'))
+const TeamManagement = lazy(() => import('./pages/TeamManagement'))
 // 第三批新增页面：C端推送规则配置/营销内容预审工作台
 const PushRuleConfig = lazy(() => import('./pages/PushRuleConfig'))
 const ContentPreviewWorkbench = lazy(() => import('./pages/ContentPreviewWorkbench'))
@@ -515,6 +518,8 @@ function App() {
           <Route path="/system/integrations" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><IntegrationManagement /></ProtectedRoute>} />
           <Route path="/system/audit-logs" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><AuditLogManagement /></ProtectedRoute>} />
           <Route path="/system/organizations" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><OrganizationManagement /></ProtectedRoute>} />
+          <Route path="/system/organizations/sign-templates" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><SignTemplateManagement /></ProtectedRoute>} />
+          <Route path="/system/organizations/teams" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><TeamManagement /></ProtectedRoute>} />
           <Route path="/system/push-rules" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><PushRuleConfig /></ProtectedRoute>} />
           <Route path="/system/number-rules" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin']}><NumberRuleConfig /></ProtectedRoute>} />
           {/* V3.2 合并：云归档/归档卷宗/卷宗目录 三合一为归档管理 */}
@@ -544,6 +549,7 @@ function App() {
           <Route path="/client" element={<ClientProtectedRoute><ClientHome /></ClientProtectedRoute>} />
           <Route path="/client/cases" element={<ClientProtectedRoute><ClientCaseList /></ClientProtectedRoute>} />
           <Route path="/client/case/:id" element={<ClientProtectedRoute><ClientCaseDetail /></ClientProtectedRoute>} />
+          <Route path="/client/sign-prefill" element={<ClientProtectedRoute><SignPrefill /></ClientProtectedRoute>} />
           <Route path="/client/ai-consult" element={<ClientProtectedRoute><AIConsult /></ClientProtectedRoute>} />
           <Route path="/client/complaint" element={<ClientProtectedRoute><Complaint /></ClientProtectedRoute>} />
           <Route path="/client/payment" element={<ClientProtectedRoute><Payment /></ClientProtectedRoute>} />
