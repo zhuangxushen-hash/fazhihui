@@ -361,9 +361,13 @@ export class FadadaService {
     if (!authUrl) {
       // 完整打印返回结构，便于定位法大大业务错误码
       this.logger.error(`法大大企业授权链接响应详情：${JSON.stringify(res?.data || {})}`);
-      const bizCode = (res?.data as any)?.data?.code;
-      const bizMsg = (res?.data as any)?.data?.msg || (res?.data as any)?.data?.message;
-      throw new Error(`法大大企业授权链接获取失败：${bizMsg || (res?.data as any)?.msg || '未知错误'}${bizCode ? `（业务码 ${bizCode}）` : ''}`);
+      const bizCode = (res?.data as any)?.data?.code || (res?.data as any)?.code;
+      const bizMsg = (res?.data as any)?.data?.msg || (res?.data as any)?.data?.message || (res?.data as any)?.msg;
+      const err = new Error(`法大大企业授权链接获取失败：${bizMsg || (res?.data as any)?.msg || '未知错误'}${bizCode ? `（业务码 ${bizCode}）` : ''}`);
+      // 标记是否为"企业已授权"业务结果，供上层捕获后同步保存并更新授权状态
+      (err as any).fadadaBizCode = bizCode;
+      (err as any).fadadaAlreadyAuthed = bizCode === '210002' || /已授权/.test(bizMsg || '');
+      throw err;
     }
     return authUrl;
   }

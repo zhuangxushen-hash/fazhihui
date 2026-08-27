@@ -130,7 +130,12 @@ export default function OrganizationManagement() {
           ),
         })
       } else {
-        message.success('企业授权提交成功')
+        // 无授权链接（如法大大返回"该企业已授权"）时：后端已同步保存企业标识并更新为已授权
+        if (res?.auth_status === 'authed') {
+          message.success('该企业已授权，系统已同步更新授权状态')
+        } else {
+          message.success('企业授权提交成功')
+        }
       }
       setAuthModalVisible(false)
       fetchAuthList()

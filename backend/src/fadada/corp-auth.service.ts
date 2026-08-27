@@ -90,17 +90,45 @@ export class CorpAuthService {
     rec.auth_result = null;
 
     // 生成授权链接（携带既有 openCorpId 以便补充授权范围）
-    const authUrl = await this.fadadaService.createCorpAuthUrl({
-      clientCorpId: rec.client_corp_id,
-      corpName: rec.corp_name,
-      corpIdentNo: rec.corp_ident_no,
-      legalRepName: rec.legal_rep_name,
-      agentName: rec.agent_name,
-      agentIdCardNo: rec.agent_id_card_no,
-      agentMobile: rec.agent_mobile,
-      authScopes: scopes.length ? scopes : (existing.length ? existing : []),
-      redirectUrl: dto.redirect_url,
-    });
+    let authUrl: string;
+    try {
+      authUrl = await this.fadadaService.createCorpAuthUrl({
+        clientCorpId: rec.client_corp_id,
+        corpName: rec.corp_name,
+        corpIdentNo: rec.corp_ident_no,
+        legalRepName: rec.legal_rep_name,
+        agentName: rec.agent_name,
+        agentIdCardNo: rec.agent_id_card_no,
+        agentMobile: rec.agent_mobile,
+        authScopes: scopes.length ? scopes : (existing.length ? existing : []),
+        redirectUrl: dto.redirect_url,
+      });
+    } catch (e: any) {
+      // 法大大已授权（业务码 210002）：无需重复生成授权链接，
+      // 同步保留该企业标识并从法大大拉取授权信息回填，将本地状态更新为已授权
+      if (e?.fadadaAlreadyAuthed) {
+        this.logger.log(`企业已授权，无需重复生成授权链接 clientCorpId=${rec.client_corp_id}，同步更新为已授权`);
+        rec.auth_status = 'authed';
+        rec.auth_result = 'authorized';
+        try {
+          const remote = await this.fadadaService.queryCorpAuthStatus({ clientCorpId: rec.client_corp_id });
+          if (remote) {
+            rec.binding_status = remote.bindingStatus || rec.binding_status;
+            rec.ident_status = remote.identStatus || rec.ident_status;
+            rec.open_corp_id = remote.openCorpId || rec.open_corp_id;
+            if (remote.authScope && remote.authScope.length) {
+              rec.auth_scopes = remote.authScope.join(',');
+            }
+          }
+        } catch (inner: any) {
+          this.logger.warn(`企业已授权但回填授权信息失败 clientCorpId=${rec.client_corp_id}: ${inner?.message || inner}`);
+        }
+        const saved = await this.corpAuthRepository.save(rec);
+        this.logger.log(`企业授权已同步为已授权 clientCorpId=${saved.client_corp_id} openCorpId=${saved.open_corp_id || ''}`);
+        return saved;
+      }
+      throw e;
+    }
     rec.auth_url = authUrl;
     rec.url_expire_at = new Date(Date.now() + CorpAuthService.URL_TTL_MS);
 
