@@ -610,6 +610,8 @@ export class FadadaService {
     };
     // 律所参与方（映射到模板 corp 参与方，发起方仅用印：待填控件不再挂载，
     // 字段值由 fillFieldValues 全局写入，企业零填写动作、随免验证签自动盖章）
+    // 合同模板为制式文本，企业端无需通读至末页，故 readingToEnd 显式置为 false
+    // （客户参与方的阅读要求不在此调整，维持原配置）
     const firmActor = {
       actor: {
         actorId: firmActorId,
@@ -619,7 +621,7 @@ export class FadadaService {
         actorOpenId: this.initiatorOpenId,
         notification: { sendNotification: false },
       },
-      signConfigInfo: { verifyMethods: ['sms', 'face', 'pw'], identifiedView: true, readingToEnd: true, signerSignMethod: 'standard' },
+      signConfigInfo: { verifyMethods: ['sms', 'face', 'pw'], identifiedView: true, readingToEnd: false, signerSignMethod: 'standard' },
     };
     const actors: any[] = [firmActor, clientActor];
     if (params.lawyer) {
