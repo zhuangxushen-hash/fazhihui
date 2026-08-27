@@ -142,6 +142,8 @@ export class ClientController {
     corp_name?: string;
     corp_ident_no?: string;
     legal_rep_name?: string;
+    // 认证完成后法大大跳转地址（供 C 端认证后回到原页面）
+    redirect_url?: string;
   }) {
     return this.clientService.getSignVerifyUrl(body);
   }
@@ -168,6 +170,42 @@ export class ClientController {
   @Post('sign/status')
   getSignStatus(@Body() body: { signing_id: string; client_id: string }) {
     return this.clientService.getSignStatus(body);
+  }
+
+  // ==================== 模板签约 C 端预填流程 ====================
+  // C端查询案件下待签约/待预填的签约记录（进入现有 C 端流程补充信息并签约）
+  @Post('cases/:id/signings')
+  getActiveSignings(
+    @Param('id') id: string,
+    @Body() body: { client_id: string },
+  ) {
+    return this.clientService.getActiveSignings({ client_id: body.client_id, case_id: id });
+  }
+
+  // C端获取待签约任务中客户需要补充填写的字段（用于复用 C 端页面做预填）
+  @Post('sign/prefill')
+  getSignPrefillFields(@Body() body: { signing_id: string; client_id: string }) {
+    return this.clientService.getSignPrefillFields(body);
+  }
+
+  // C端预填字段后获取合同预览链接（不提交任务，预览确认后再签约）
+  @Post('sign/preview')
+  getSignPreview(@Body() body: {
+    signing_id: string;
+    client_id: string;
+    values: Array<{ field_doc_id?: string; field_id?: string; field_name?: string; field_value: string }>;
+  }) {
+    return this.clientService.getSignPreview(body);
+  }
+
+  // C端提交预填字段并调用法大大签约流程（填充→提交→定稿→返回签署链接）
+  @Post('sign/submit-prefill')
+  submitSignPrefillAndSign(@Body() body: {
+    signing_id: string;
+    client_id: string;
+    values: Array<{ field_doc_id?: string; field_id?: string; field_name?: string; field_value: string }>;
+  }) {
+    return this.clientService.submitSignPrefillAndSign(body);
   }
 
   // 下载电子发票（C端 POST）

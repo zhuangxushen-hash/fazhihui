@@ -181,4 +181,31 @@ export class CreateCaseDto {
   @IsOptional()
   @IsDateString()
   next_step_deadline?: string;
+
+  // 律师团队（详情页团队模块已有）
+  @IsOptional()
+  @IsString()
+  team_id?: string;
+
+  // 来源明细
+  @IsOptional()
+  @IsString()
+  source_detail?: string;
+
+  // 转介绍人
+  @IsOptional()
+  @IsString()
+  referrer?: string;
+
+  // 委托费（费用）
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  fee_amount?: number;
+
+  // 服务费
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  service_fee?: number;
 }

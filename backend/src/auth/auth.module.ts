@@ -3,12 +3,15 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { UserModule } from '../user/user.module';
 import { RolesGuard } from './roles.guard';
 import { AuditModule } from '../audit/audit.module';
+// C 端客户档案：C 端登录身份与管理端账号切分，以客户档案为准
+import { ClientProfile } from '../client/client-profile.entity';
 
 @Module({
   imports: [
@@ -23,6 +26,7 @@ import { AuditModule } from '../audit/audit.module';
     }),
     UserModule,
     AuditModule,
+    TypeOrmModule.forFeature([ClientProfile]),
   ],
   providers: [
     AuthService,

@@ -14,7 +14,7 @@ import {
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import axios from '../../api/axios'
-import { formatDateTime, formatFileSize } from '../../utils/format'
+import { formatDateTime, formatFileSize, caseTypeLabel } from '../../utils/format'
 import BottomNav from '../../components/BottomNav'
 import ClientButton from '../../components/ClientButton'
 
@@ -271,7 +271,7 @@ export default function ClientArchive() {
                 size="middle"
                 options={cases.map((c) => ({
                   value: c.id,
-                  label: `${c.case_type || '案件'} - ${c.id?.slice(0, 8)}...`,
+                  label: `${caseTypeLabel(c.case_type)} - ${c.case_no || c.id?.slice(0, 8)}`,
                 }))}
               />
             </div>
@@ -449,7 +449,7 @@ export default function ClientArchive() {
               loading={loadingCases}
               options={cases.map((c) => ({
                 value: c.id,
-                label: `${c.case_type || '案件'} - ${c.id?.slice(0, 8)}...`,
+                label: `${caseTypeLabel(c.case_type)} - ${c.case_no || c.id?.slice(0, 8)}`,
               }))}
             />
           </div>

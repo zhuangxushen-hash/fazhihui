@@ -28,12 +28,15 @@ export class UserService {
     return this.userRepository.findOne({ where: { phone } });
   }
 
-  async findById(id: string): Promise<User> {
+  async findById(id: string, desensitize = true): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id } });
-    return desensitizeUser(user);
+    // desensitize 为 false 时（管理端查看/编辑）返回真实手机号，仅移除密码，避免脱敏号被回填覆盖真实号码
+    if (desensitize) return desensitizeUser(user);
+    if (user) delete user.password;
+    return user;
   }
 
-  async findAll(orgId?: string, name?: string, phone?: string, role?: string): Promise<{ data: User[]; total: number }> {
+  async findAll(orgId?: string, name?: string, phone?: string, role?: string, desensitize = true): Promise<{ data: User[]; total: number }> {
     const queryBuilder = this.userRepository.createQueryBuilder('user');
     
     if (orgId) {
@@ -52,6 +55,11 @@ export class UserService {
     const total = await queryBuilder.getCount();
     const data = await queryBuilder.getMany();
 
+    // desensitize 为 false 时（管理端列表）返回真实手机号，仅移除密码，避免脱敏号被回填覆盖真实号码
+    if (!desensitize) {
+      data.forEach(u => delete u.password);
+      return { data, total };
+    }
     return { data: data.map(user => desensitizeUser(user)), total };
   }
 

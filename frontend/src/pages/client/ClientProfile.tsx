@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Card, Avatar, Modal, message } from 'antd'
-import { UserOutlined, PhoneOutlined, MailOutlined, LogoutOutlined, FileTextOutlined, CreditCardOutlined, BellOutlined, StarOutlined } from '@ant-design/icons'
+import { UserOutlined, PhoneOutlined, MailOutlined, LogoutOutlined, FileTextOutlined, BellOutlined, StarOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../../components/BottomNav'
 import { theme } from '../../constants/theme'
@@ -18,7 +18,6 @@ export default function ClientProfile() {
 
   const menuItems = [
     { label: '我的案件', icon: FileTextOutlined, color: theme.primary, bg: 'rgba(0, 113, 227, 0.1)', path: '/client/cases' },
-    { label: '签约付款', icon: CreditCardOutlined, color: '#715818', bg: 'rgba(201, 169, 97, 0.14)', path: '/client/payment' },
     { label: '投诉反馈', icon: BellOutlined, color: '#ba1a1a', bg: 'rgba(186, 26, 26, 0.1)', path: '/client/complaint' },
     { label: '服务评价', icon: StarOutlined, color: '#2e7d32', bg: 'rgba(46, 125, 50, 0.1)', path: '/client/service-rating' },
   ]

@@ -41,7 +41,8 @@ export class UserController {
   @Get()
   findAll(@Query('org_id') orgId?: string, @Query('name') name?: string, @Query('phone') phone?: string, @Query('role') role?: string, @Request() req?: any) {
     const finalOrgId = orgId || req?.user?.organization_id;
-    return this.userService.findAll(finalOrgId, name, phone, role);
+    // 管理端返回真实手机号（desensitize=false），避免编辑回填脱敏号覆盖真实号码
+    return this.userService.findAll(finalOrgId, name, phone, role, false);
   }
 
   // ==================== 个人信息管理（必须在 @Get(':id') 之前定义）====================
@@ -181,7 +182,8 @@ export class UserController {
   @Get(':id')
   @Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.MARKETING, UserRole.SALES, UserRole.LAWYER, UserRole.ASSISTANT, UserRole.FINANCE)
   findById(@Param('id') id: string) {
-    return this.userService.findById(id);
+    // 管理端详情返回真实手机号（desensitize=false），供编辑回填，避免覆盖真实号码
+    return this.userService.findById(id, false);
   }
 
   @Put(':id')

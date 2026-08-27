@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Form, Input, Button, message, Checkbox } from 'antd'
 import { MobileOutlined, LockOutlined, KeyOutlined, WechatOutlined } from '@ant-design/icons'
-import { login } from '../../api/auth'
+import { clientLogin } from '../../api/auth'
 import { showError } from '../../utils/error'
 import logo from '../../assets/fazhihui-logo.svg'
 import { theme } from '../../constants/theme'
@@ -23,7 +23,7 @@ export default function ClientLogin() {
     setLoading(true)
     try {
       const passwordValue = values.password || values.code || ''
-      const data = await login(values.phone, passwordValue)
+      const data = await clientLogin(values.phone, passwordValue)
       if (data.user.role !== 'client') {
         message.error('该账号为管理端账号，请使用电脑端登录')
         setLoading(false)
@@ -294,7 +294,7 @@ export default function ClientLogin() {
             >
               <Input.Password
                 prefix={<LockOutlined style={{ color: '#717785', fontSize: 20 }} />}
-                placeholder="请输入密码"
+                placeholder="请输入密码（默认身份证号后8位）"
                 size="large"
                 style={{
                   height: 48,
@@ -308,6 +308,9 @@ export default function ClientLogin() {
               />
             </Form.Item>
           )}
+          <div style={{ fontSize: 12, color: '#8a90a0', marginTop: -8, marginBottom: 8, lineHeight: 1.6 }}>
+            密码为身份证号后 8 位，忘记密码请联系客户管理员重置
+          </div>
 
           <Form.Item style={{ marginTop: 8, marginBottom: 16 }}>
             <Button

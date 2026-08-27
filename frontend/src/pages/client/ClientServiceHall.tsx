@@ -2,19 +2,16 @@ import { useState, useEffect, useRef } from 'react'
 import { Card, Modal, Select, Input, Tag, theme, message, Empty } from 'antd'
 import {
   ArrowLeftOutlined,
-  FileTextOutlined,
-  CreditCardOutlined,
   FilePdfOutlined,
   UploadOutlined,
   BellOutlined,
-  CheckCircleOutlined,
   SafetyCertificateOutlined,
   DownloadOutlined,
   CloudOutlined,
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import axios from '../../api/axios'
-import { formatDateTime, formatFileSize } from '../../utils/format'
+import { formatDateTime, formatFileSize, caseTypeLabel } from '../../utils/format'
 import BottomNav from '../../components/BottomNav'
 import ClientButton from '../../components/ClientButton'
 
@@ -30,23 +27,7 @@ export default function ClientServiceHall() {
   const [cases, setCases] = useState<any[]>([])
   const [loadingCases, setLoadingCases] = useState(false)
 
-  // 在线签约（法大大电子签：身份鉴别 + 电子签名）
-  const [signModalOpen, setSignModalOpen] = useState(false)
-  const [signCaseId, setSignCaseId] = useState<string>('')
-  const [signing, setSigning] = useState(false)
-  const [signStep, setSignStep] = useState<'case' | 'verify' | 'sign' | 'done'>('case')
-  const [signingId, setSigningId] = useState<string>('')
-  const [signMode, setSignMode] = useState<'mock' | 'prod' | 'legacy'>('legacy')
-  const [verifyUrl, setVerifyUrl] = useState<string>('')
-  const [signUrl, setSignUrl] = useState<string>('')
-  const [idCardNo, setIdCardNo] = useState<string>('')
-  // 签约主体类型：individual 个人 / corp 企业（企业时走企业实名认证）
-  const [subjectType, setSubjectType] = useState<'individual' | 'corp'>('individual')
-  // 企业签约信息（主体为企业时填写）
-  const [corpName, setCorpName] = useState<string>('')
-  const [corpIdentNo, setCorpIdentNo] = useState<string>('')
-  const [legalRepName, setLegalRepName] = useState<string>('')
-  const pollTimerRef = useRef<any>(null)
+  
 
   // 发票下载
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
@@ -82,22 +63,6 @@ export default function ClientServiceHall() {
 
   // 服务入口配置
   const serviceEntries = [
-    {
-      title: '在线签约',
-      desc: '查看合同内容并完成电子签约',
-      icon: FileTextOutlined,
-      color: '#3b82f6',
-      bg: 'rgba(0, 113, 227, 0.08)',
-      action: () => openSignModal(),
-    },
-    {
-      title: '线上支付',
-      desc: '完成案件服务费用支付',
-      icon: CreditCardOutlined,
-      color: '#10b981',
-      bg: 'var(--success-bg)',
-      action: () => navigate('/client/payment'),
-    },
     {
       title: '电子发票',
       desc: '下载已付款记录的电子发票',
@@ -139,182 +104,6 @@ export default function ClientServiceHall() {
       action: () => navigate('/client/archive'),
     },
   ]
-
-  // ===== 在线签约 =====
-  const clearSignPoll = () => {
-    if (pollTimerRef.current) {
-      clearInterval(pollTimerRef.current)
-      pollTimerRef.current = null
-    }
-  }
-
-  const openSignModal = async () => {
-    if (cases.length === 0) {
-      message.warning('暂无可签约案件，请先创建案件')
-      return
-    }
-    setSignCaseId('')
-    setSignStep('case')
-    setSigningId('')
-    setVerifyUrl('')
-    setSignUrl('')
-    setIdCardNo('')
-    setSubjectType('individual')
-    setCorpName('')
-    setCorpIdentNo('')
-    setLegalRepName('')
-    clearSignPoll()
-    setSignModalOpen(true)
-    try {
-      const config = (await axios.post('/client/sign/config')) as { enabled: boolean; mode: string }
-      setSignMode((config?.mode || 'legacy') as any)
-    } catch (error) {
-      setSignMode('legacy')
-    }
-  }
-
-  // 第一步：发起签约意向（法大大启用时进入实名认证流程）
-  const handleSign = async () => {
-    if (!signCaseId) {
-      message.error('请选择要签约的案件')
-      return
-    }
-    const selectedCase = cases.find((c) => c.id === signCaseId)
-    setSigning(true)
-    try {
-      const res = (await axios.post('/client/online-sign', {
-        case_id: signCaseId,
-        client_id: user.id,
-        lawyer_id: selectedCase?.assignee_lawyer_id || '',
-        contract_template_id: 'standard-service-contract',
-        organization_id: user.organization_id || selectedCase?.organization_id || '',
-        id_card_no: subjectType === 'individual' ? idCardNo || undefined : undefined,
-        subject_type: subjectType === 'corp' ? 'corp' : 'person',
-        corp_name: subjectType === 'corp' ? corpName || undefined : undefined,
-        corp_ident_no: subjectType === 'corp' ? corpIdentNo || undefined : undefined,
-        legal_rep_name: subjectType === 'corp' ? legalRepName || undefined : undefined,
-      })) as any
-      setSigningId(res?.signing_id || res?.id)
-      if (res?.enabled === false) {
-        setSignStep('done')
-        message.success('签约成功')
-      } else {
-        setSignStep('verify')
-      }
-    } catch (error) {
-      message.error('签约发起失败，请重试')
-    } finally {
-      setSigning(false)
-    }
-  }
-
-  // 第二步：前往法大大完成实名认证（身份鉴别）
-  const handleStartVerify = async () => {
-    if (!signingId) return
-    setSigning(true)
-    try {
-      const res = (await axios.post('/client/sign/verify-url', {
-        signing_id: signingId,
-        client_id: user.id,
-        id_card_no: subjectType === 'individual' ? idCardNo || undefined : undefined,
-        corp_name: subjectType === 'corp' ? corpName || undefined : undefined,
-        corp_ident_no: subjectType === 'corp' ? corpIdentNo || undefined : undefined,
-        legal_rep_name: subjectType === 'corp' ? legalRepName || undefined : undefined,
-      })) as any
-      setVerifyUrl(res?.verify_url || '')
-      if (res?.verify_url) {
-        window.open(res.verify_url, '_blank')
-      }
-    } catch (error) {
-      // 错误已由拦截器统一提示
-    } finally {
-      setSigning(false)
-    }
-  }
-
-  // 第二步完成确认：检查实名认证状态
-  const handleVerifyDone = async () => {
-    if (!signingId) return
-    setSigning(true)
-    try {
-      const res = (await axios.post('/client/sign/status', { signing_id: signingId, client_id: user.id })) as any
-      if (res?.verify_status === 'verified') {
-        setSignStep('sign')
-      } else {
-        message.warning('尚未检测到实名认证结果，请先在法大大页面完成认证后重试')
-      }
-    } catch (error) {
-      // 错误已由拦截器统一提示
-    } finally {
-      setSigning(false)
-    }
-  }
-
-  // 第三步：生成法大大电子签签署链接
-  const handleStartSign = async () => {
-    if (!signingId) return
-    setSigning(true)
-    try {
-      const res = (await axios.post('/client/sign/flow', { signing_id: signingId, client_id: user.id })) as any
-      setSignUrl(res?.sign_url || '')
-      if (res?.sign_url) {
-        window.open(res.sign_url, '_blank')
-      }
-      pollSignStatus()
-    } catch (error) {
-      // 错误已由拦截器统一提示
-    } finally {
-      setSigning(false)
-    }
-  }
-
-  // 轮询签署状态（法大大回调更新后自动进入完成页）
-  const pollSignStatus = () => {
-    if (pollTimerRef.current) return
-    let count = 0
-    pollTimerRef.current = setInterval(async () => {
-      count += 1
-      try {
-        const res = (await axios.post('/client/sign/status', { signing_id: signingId, client_id: user.id })) as any
-        if (res?.status === 'signed') {
-          clearSignPoll()
-          setSignStep('done')
-          message.success('签约成功')
-        } else if (count >= 24) {
-          clearSignPoll()
-        }
-      } catch (error) {
-        clearSignPoll()
-      }
-    }, 5000)
-  }
-
-  // 第三步完成确认（mock 模式本地完成签署；prod 模式以法大大回调为准）
-  const handleConfirmSigned = async () => {
-    if (!signingId) return
-    setSigning(true)
-    try {
-      if (signMode === 'mock') {
-        await axios.post('/client/sign/mock-finish', { signing_id: signingId, client_id: user.id })
-        clearSignPoll()
-        setSignStep('done')
-        message.success('签约成功')
-      } else {
-        const res = (await axios.post('/client/sign/status', { signing_id: signingId, client_id: user.id })) as any
-        if (res?.status === 'signed') {
-          clearSignPoll()
-          setSignStep('done')
-          message.success('签约成功')
-        } else {
-          message.info('签署结果确认中，请稍候或稍后查看签约状态')
-        }
-      }
-    } catch (error) {
-      // 错误已由拦截器统一提示
-    } finally {
-      setSigning(false)
-    }
-  }
 
   // ===== 发票下载 =====
   const openInvoiceModal = async () => {
@@ -492,195 +281,6 @@ export default function ClientServiceHall() {
         </Card>
       </div>
 
-      {/* 在线签约弹窗 */}
-      <Modal
-        open={signModalOpen}
-        title="在线签约（法大大电子签）"
-        onCancel={() => {
-          clearSignPoll()
-          setSignModalOpen(false)
-        }}
-        footer={null}
-        centered
-      >
-        {signStep === 'done' ? (
-          <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-              <CheckCircleOutlined style={{ fontSize: 36, color: 'var(--success)' }} />
-            </div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>签约成功</div>
-            <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>您的法律服务合同已通过法大大完成签署</div>
-            <ClientButton btnVariant="primary" btnSize="large" style={{ width: '100%', marginTop: 20 }} onClick={() => setSignModalOpen(false)}>
-              完成
-            </ClientButton>
-          </div>
-        ) : signStep === 'verify' ? (
-          <div>
-            <div style={{ background: 'var(--bg-sunken)', padding: 14, borderRadius: 8, border: '1px solid var(--border-light)', marginBottom: 14 }}>
-              <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600, marginBottom: 6 }}>
-                <SafetyCertificateOutlined /> 法大大实名认证（身份鉴别）
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-                {subjectType === 'corp'
-                  ? '签约主体为企业，需前往法大大页面完成企业实名认证（企业名称 + 统一社会信用代码，经办人配合人脸/手机号核验），认证结果由法大大平台校验后进入电子签环节。'
-                  : '签约前需完成法大大实名认证：请填写身份证号并前往法大大页面完成实名认证，认证结果由法大大平台校验后进入电子签环节。'}
-              </div>
-            </div>
-            {subjectType === 'corp' ? (
-              <div style={{ background: 'var(--bg-sunken)', padding: 14, borderRadius: 8, border: '1px solid var(--border-light)', marginBottom: 14 }}>
-                <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600, marginBottom: 6 }}>企业信息</div>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.9 }}>
-                  <div><strong>企业名称：</strong>{corpName || '-'}</div>
-                  <div><strong>统一社会信用代码：</strong>{corpIdentNo || '-'}</div>
-                  <div><strong>法定代表人：</strong>{legalRepName || '-'}</div>
-                </div>
-              </div>
-            ) : (
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>
-                  身份证号 <span style={{ color: 'var(--error)' }}>*</span>
-                </label>
-                <Input
-                  value={idCardNo}
-                  onChange={(e) => setIdCardNo(e.target.value)}
-                  placeholder="请输入签约人身份证号"
-                  size="large"
-                  style={{ width: '100%' }}
-                />
-              </div>
-            )}
-            <ClientButton btnVariant="primary" btnSize="large" loading={signing} onClick={handleStartVerify} style={{ width: '100%' }}>
-              前往法大大完成{subjectType === 'corp' ? '企业' : ''}实名认证
-            </ClientButton>
-            {verifyUrl && (
-              <ClientButton btnVariant="ghost" btnSize="large" onClick={() => window.open(verifyUrl, '_blank')} style={{ width: '100%', marginTop: 10 }}>
-                重新打开认证页面
-              </ClientButton>
-            )}
-            <ClientButton btnVariant="ghost" btnSize="large" onClick={handleVerifyDone} style={{ width: '100%', marginTop: 10 }}>
-              我已完成实名认证
-            </ClientButton>
-          </div>
-        ) : signStep === 'sign' ? (
-          <div>
-            <div style={{ background: 'var(--bg-sunken)', padding: 14, borderRadius: 8, border: '1px solid var(--border-light)', marginBottom: 14 }}>
-              <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600, marginBottom: 6 }}>
-                <FileTextOutlined /> 法大大电子签
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-                实名认证已完成，系统将生成法大大签署任务与专属签署链接。请在法大大页面核对合同并完成电子签名，签署完成后将自动确认。
-              </div>
-            </div>
-            <ClientButton btnVariant="primary" btnSize="large" loading={signing} onClick={handleStartSign} style={{ width: '100%' }}>
-              生成法大大签署链接
-            </ClientButton>
-            {signUrl && (
-              <ClientButton btnVariant="ghost" btnSize="large" onClick={() => window.open(signUrl, '_blank')} style={{ width: '100%', marginTop: 10 }}>
-                重新打开签署页面
-              </ClientButton>
-            )}
-            <ClientButton btnVariant="ghost" btnSize="large" onClick={handleConfirmSigned} style={{ width: '100%', marginTop: 10 }}>
-              {signMode === 'mock' ? '我已完成签署（模拟）' : '我已完成签署'}
-            </ClientButton>
-          </div>
-        ) : (
-          <div>
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>选择案件 <span style={{ color: 'var(--error)' }}>*</span></label>
-              <Select
-                value={signCaseId || undefined}
-                onChange={(v) => setSignCaseId(v)}
-                placeholder="请选择要签约的案件"
-                style={{ width: '100%' }}
-                size="large"
-                loading={loadingCases}
-                options={cases.map((c) => ({ value: c.id, label: `${c.case_type || '案件'} - ${c.id?.slice(0, 8)}...` }))}
-              />
-            </div>
-            <div style={{ background: 'var(--bg-sunken)', padding: 14, borderRadius: 8, border: '1px solid var(--border-light)', marginBottom: 14, maxHeight: 200, overflowY: 'auto' }}>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-                <p style={{ fontWeight: 600, color: 'var(--text-primary)' }}>法律服务合同（摘要）</p>
-                <p style={{ marginTop: 6 }}><strong>第一条 服务内容</strong>：乙方接受甲方委托，指派律师为甲方提供相应法律服务。</p>
-                <p><strong>第二条 服务费用</strong>：以案件实际约定金额为准。</p>
-                <p><strong>第三条 权利义务</strong>：甲方应如实提供信息，乙方应勤勉尽责维护甲方合法权益。</p>
-                <p><strong>第四条 合同期限</strong>：自双方签字之日起生效，至案件终结之日止。</p>
-              </div>
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginBottom: 14 }}>
-              点击确认签约即表示您同意签署上述法律服务合同。签约将使用法大大实名认证与电子签名，电子签名具备法律效力。
-            </div>
-            {/* 签约主体类型：个人 / 企业（企业走企业实名认证） */}
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>签约主体 <span style={{ color: 'var(--error)' }}>*</span></label>
-              <Select
-                value={subjectType}
-                onChange={(v: 'individual' | 'corp') => setSubjectType(v)}
-                style={{ width: '100%' }}
-                size="large"
-                options={[
-                  { value: 'individual', label: '个人' },
-                  { value: 'corp', label: '企业' },
-                ]}
-              />
-            </div>
-            {subjectType === 'individual' ? (
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>
-                  身份证号 <span style={{ color: 'var(--error)' }}>*</span>
-                </label>
-                <Input
-                  value={idCardNo}
-                  onChange={(e) => setIdCardNo(e.target.value)}
-                  placeholder="请输入签约人身份证号"
-                  size="large"
-                  style={{ width: '100%' }}
-                />
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>
-                    企业名称 <span style={{ color: 'var(--error)' }}>*</span>
-                  </label>
-                  <Input
-                    value={corpName}
-                    onChange={(e) => setCorpName(e.target.value)}
-                    placeholder="请输入企业全称"
-                    size="large"
-                    style={{ width: '100%' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>
-                    统一社会信用代码 <span style={{ color: 'var(--error)' }}>*</span>
-                  </label>
-                  <Input
-                    value={corpIdentNo}
-                    onChange={(e) => setCorpIdentNo(e.target.value)}
-                    placeholder="请输入统一社会信用代码"
-                    size="large"
-                    style={{ width: '100%' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>法定代表人</label>
-                  <Input
-                    value={legalRepName}
-                    onChange={(e) => setLegalRepName(e.target.value)}
-                    placeholder="请输入法定代表人姓名（选填）"
-                    size="large"
-                    style={{ width: '100%' }}
-                  />
-                </div>
-              </div>
-            )}
-            <ClientButton btnVariant="primary" btnSize="large" loading={signing} onClick={handleSign} style={{ width: '100%' }}>
-              确认签约
-            </ClientButton>
-          </div>
-        )}
-      </Modal>
-
       {/* 发票下载弹窗 */}
       <Modal
         open={invoiceModalOpen}
@@ -778,7 +378,7 @@ export default function ClientServiceHall() {
               style={{ width: '100%' }}
               size="large"
               loading={loadingCases}
-              options={cases.map((c) => ({ value: c.id, label: `${c.case_type || '案件'} - ${c.id?.slice(0, 8)}...` }))}
+              options={cases.map((c) => ({ value: c.id, label: `${caseTypeLabel(c.case_type)} - ${c.case_no || c.id?.slice(0, 8)}` }))}
             />
           </div>
           <div style={{ marginBottom: 14 }}>

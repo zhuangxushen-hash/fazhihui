@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Card, Tag, Timeline, Empty, theme, Avatar } from 'antd'
-import { FileTextOutlined, ArrowLeftOutlined, UserOutlined, CalendarOutlined, EnvironmentOutlined, MessageOutlined, CreditCardOutlined, BellOutlined, FileOutlined, CheckCircleOutlined, StarOutlined, PaperClipOutlined } from '@ant-design/icons'
+import { FileTextOutlined, ArrowLeftOutlined, UserOutlined, CalendarOutlined, EnvironmentOutlined, MessageOutlined, CreditCardOutlined, BellOutlined, FileOutlined, CheckCircleOutlined, StarOutlined, PaperClipOutlined, FileAddOutlined, EditOutlined } from '@ant-design/icons'
 import axios from '../../api/axios'
-import { formatDateTime, formatFileSize } from '../../utils/format'
+import { formatDateTime, formatFileSize, caseTypeLabel } from '../../utils/format'
 import { useNavigate, useParams } from 'react-router-dom'
 import BottomNav from '../../components/BottomNav'
 import ClientButton from '../../components/ClientButton'
@@ -14,6 +14,8 @@ export default function ClientCaseDetail() {
   const [documents, setDocuments] = useState<any[]>([])
   const [loadingPush, setLoadingPush] = useState(false)
   const [loadingDocs, setLoadingDocs] = useState(false)
+  // 待签约（待预填）状态
+  const [activeSignings, setActiveSignings] = useState<any[]>([])
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
 
@@ -28,6 +30,7 @@ export default function ClientCaseDetail() {
       fetchCaseDetail(id)
       fetchPushNotifications(id)
       fetchDocuments(id)
+      fetchActiveSignings(id)
     }
   }, [id])
 
@@ -66,6 +69,16 @@ export default function ClientCaseDetail() {
       // 错误已由拦截器统一处理
     } finally {
       setLoadingDocs(false)
+    }
+  }
+
+  // 获取案件下待签约（待预填）的签约记录
+  const fetchActiveSignings = async (caseId: string) => {
+    try {
+      const res = await axios.post(`/client/cases/${caseId}/signings`, { client_id: user.id }) as Record<string, unknown>[]
+      setActiveSignings(res || [])
+    } catch (error) {
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -188,13 +201,39 @@ export default function ClientCaseDetail() {
               <Tag color={statusColors[caseDetail.status]} style={{ fontSize: 11, padding: '2px 8px' }}>
                 {statusLabels[caseDetail.status]}
               </Tag>
-              <span style={{ fontSize: 12, color: '#717785' }}>{caseDetail.case_type || '未知案由'}</span>
+              <span style={{ fontSize: 12, color: '#717785' }}>{caseTypeLabel(caseDetail.case_type)}</span>
             </div>
           </div>
         </div>
       </header>
 
       <div style={{ padding: '12px', flex: 1, paddingBottom: '120px' }}>
+        {/* 待签约（待预填）入口 */}
+        {activeSignings.length > 0 && (
+          <Card
+            style={{ marginBottom: 12, borderRadius: borderRadiusLG, background: 'linear-gradient(135deg, rgba(0,113,227,0.06) 0%, rgba(59,130,246,0.04) 100%)', border: '1px solid rgba(0, 113, 227, 0.2)', boxShadow: 'var(--shadow-sm)' }}
+          >
+            {activeSignings.map((signing) => (
+              <div key={signing.signing_id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '4px 0' }}>
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <FileAddOutlined style={{ fontSize: 24, color: 'var(--primary)' }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>待签约</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{signing.subject}</div>
+                </div>
+                <ClientButton
+                  btnVariant="primary"
+                  btnSize="medium"
+                  icon={<EditOutlined />}
+                  onClick={() => navigate(`/client/sign-prefill?signing_id=${signing.signing_id}`)}
+                >
+                  去填写并签约
+                </ClientButton>
+              </div>
+            ))}
+          </Card>
+        )}
         <Card 
           style={{ marginBottom: 12, borderRadius: borderRadiusLG, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}
         >
@@ -226,7 +265,7 @@ export default function ClientCaseDetail() {
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>案件编号</div>
-                <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>{caseDetail.id}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>{caseDetail.case_no}</div>
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

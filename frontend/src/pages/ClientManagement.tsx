@@ -122,6 +122,7 @@ export default function ClientManagement() {
       type: record.type,
       contact_name: record.contact_name,
       phone: record.phone,
+      id_card_no: record.id_card_no,
       email: record.email,
       address: record.address,
       source: record.source,
@@ -333,6 +334,13 @@ export default function ClientManagement() {
           <Form.Item name="phone" label="电话">
             <Input placeholder="请输入电话" />
           </Form.Item>
+          <Form.Item
+            name="id_card_no"
+            label="身份证号"
+            extra="用于 C 端登录默认密码（身份证号后 8 位），录入手机号+身份证号后自动生成 C 端账号"
+          >
+            <Input placeholder="请输入身份证号" />
+          </Form.Item>
           <Form.Item name="email" label="邮箱">
             <Input placeholder="请输入邮箱" />
           </Form.Item>
@@ -383,6 +391,7 @@ export default function ClientManagement() {
               </Descriptions.Item>
               <Descriptions.Item label="联系人">{String(cli.contact_name || '-')}</Descriptions.Item>
               <Descriptions.Item label="电话">{String(cli.phone || '-')}</Descriptions.Item>
+              <Descriptions.Item label="身份证号">{String(cli.id_card_no || '-')}</Descriptions.Item>
               <Descriptions.Item label="邮箱">{String(cli.email || '-')}</Descriptions.Item>
               <Descriptions.Item label="地址">{String(cli.address || '-')}</Descriptions.Item>
               <Descriptions.Item label="客户来源">{String(cli.source || '-')}</Descriptions.Item>

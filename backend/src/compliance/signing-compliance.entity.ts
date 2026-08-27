@@ -101,6 +101,10 @@ export class SigningCompliance {
   @Column({ type: 'varchar', nullable: true })
   sign_url: string;
 
+  // B端发起时预填字段值（系统自动带出 + 业务员预填，JSON 数组），C 端提交签署时一并传入法大大，避免信息丢失
+  @Column({ type: 'text', nullable: true })
+  prefill_values: string;
+
   // 实名认证完成时间
   @Column({ type: 'datetime', nullable: true })
   verify_time: Date;

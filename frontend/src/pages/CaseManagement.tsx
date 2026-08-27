@@ -6,6 +6,7 @@ import axios from '../api/axios'
 import { generateLetter, closeCaseReport, archiveCase, createCase, batchCloseCases, batchArchiveCases, CreateCasePayload, getCaseDocuments } from '../api/case'
 import { getClientProfiles, createClientProfile } from '../api/client-profile'
 import { getContracts } from '../api/contract'
+import { getTeamList } from '../api/team'
 import { formatDate } from '../utils/format'
 import { theme } from '../constants/theme'
 // === Material Design 3 Style Tokens ===
@@ -94,6 +95,8 @@ const caseStatusLabelMap: Record<string, string> = {
   appeal: '上诉中',
   pending_close: '待结案',
   closed: '已结案',
+  terminated: '已解约',
+  voided: '已作废',
 }
 
 const riskKindMap: Record<string, PillKind> = {
@@ -106,21 +109,6 @@ const riskLabelMap: Record<string, string> = {
   low: '低风险',
   medium: '中风险',
   high: '高风险',
-}
-
-// 案件变更状态映射
-const caseChangeStatusKindMap: Record<string, PillKind> = {
-  normal: 'neutral',
-  changed: 'gold',
-  terminated: 'orange',
-  voided: 'red',
-}
-
-const caseChangeStatusLabelMap: Record<string, string> = {
-  normal: '正常',
-  changed: '已变更',
-  terminated: '已解约',
-  voided: '已作废',
 }
 
 // 案件大类映射
@@ -172,12 +160,13 @@ export default function CaseManagement() {
   const [assignVisible, setAssignVisible] = useState(false)
   const [statusVisible, setStatusVisible] = useState(false)
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
-  const [changeActionVisible, setChangeActionVisible] = useState(false)
-  const [changeActionType, setChangeActionType] = useState<string>('')
   const [letterVisible, setLetterVisible] = useState(false)
   const [currentCase, setCurrentCase] = useState<Record<string, unknown> | null>(null)
   const [lawyers, setLawyers] = useState<Record<string, unknown>[]>([])
+  const [teams, setTeams] = useState<Record<string, any>[]>([])
   const [form] = Form.useForm()
+  const [statusForm] = Form.useForm()
+  const watchStatus = Form.useWatch('status', statusForm)
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useState({
     case_no: '',
@@ -198,7 +187,19 @@ export default function CaseManagement() {
     fetchLawyers()
     fetchLeads()
     fetchClientProfiles()
+    fetchTeams()
   }, [])
+
+  // 加载律师团队列表（按当前用户组织隔离）
+  const fetchTeams = async () => {
+    try {
+      const res: any = await getTeamList({ organization_id: user.organization_id, status: 'active' })
+      const list = (Array.isArray(res) ? res : null) || res?.data?.list || res?.data || []
+      setTeams(list as Record<string, any>[])
+    } catch (error) {
+      setTeams([])
+    }
+  }
 
   const fetchClientProfiles = async () => {
     try {
@@ -325,7 +326,7 @@ export default function CaseManagement() {
     } catch (error) {
       // 附件文档获取失败不影响导出，按空处理
     }
-    const headers = ['案件编号', '案件名称', '客户姓名', '关联线索', '合同名称', '案由', '案件大类', '主办律师', '协办人', '对方当事人', '联系地址', '受理法院', '状态', '案件阶段', '进度', '下一步', '风险等级', '是否超时', '案件状态', '立案日期', '联系电话', '法院案号', '开庭日期', '举证期限', '上诉期限', '涉案金额', '委托费', '服务费', '质保金', '业务类型', '计费周期', '付款方式', '收款状态', '合同交回状态', '案件来源', '来源明细', '转介绍人', '案件描述']
+    const headers = ['案件编号', '案件名称', '客户姓名', '关联线索', '合同名称', '案由', '案件大类', '主办律师', '协办人', '对方当事人', '联系地址', '受理法院', '状态', '案件阶段', '进度', '下一步', '风险等级', '是否超时', '立案日期', '联系电话', '法院案号', '开庭日期', '举证期限', '上诉期限', '涉案金额', '委托费', '服务费', '质保金', '业务类型', '计费周期', '付款方式', '收款状态', '合同交回状态', '案件来源', '来源明细', '转介绍人', '案件描述']
     const caseTypeLabel = (type: string) => ({
       marriage: '婚姻家事',
       traffic: '交通事故',
@@ -358,7 +359,6 @@ export default function CaseManagement() {
     const rows = data.map((item) => {
       const lead = leads.find(l => String(l.id) === String(item.lead_id))
       const leadDisplay = lead ? String(lead.phone || lead.contact_name || '') : ''
-      const changeStatus = String(item.change_status || 'normal')
       const overdue = Boolean(item.is_overdue)
       return [
         item.case_no || '',
@@ -379,7 +379,6 @@ export default function CaseManagement() {
         item.next_step || '',
         riskLabel(String(item.risk_level || '')),
         overdue ? '已超时' : '正常',
-        caseChangeStatusLabelMap[changeStatus] || '正常',
         formatDate(String(item.filing_date || '')) || '',
         item.client_phone || '',
         item.case_number || '',
@@ -492,6 +491,7 @@ export default function CaseManagement() {
 
   const handleChangeStatus = (record: Record<string, unknown>) => {
     setCurrentCase(record)
+    statusForm.setFieldsValue({ status: record.status })
     setStatusVisible(true)
   }
 
@@ -534,38 +534,23 @@ export default function CaseManagement() {
 
   const handleSubmitStatus = async (values: Record<string, unknown>) => {
     if (!currentCase) return
+    const { status, reason } = values
     try {
-      await axios.put(`/cases/${currentCase.id}/status`, values)
+      // 统一为一个状态维度：解约/作废作为终态状态，走对应接口记录原因并写审计
+      if (status === 'terminated') {
+        await axios.put(`/cases/${currentCase.id}/terminate`, { reason })
+        message.success('案件已解约')
+      } else if (status === 'voided') {
+        await axios.put(`/cases/${currentCase.id}/void`, { reason })
+        message.success('案件已作废')
+      } else {
+        await axios.put(`/cases/${currentCase.id}/status`, { status })
+        message.success('状态更新成功')
+      }
       setStatusVisible(false)
-      message.success('状态更新成功')
       fetchData()
     } catch (error) {
       message.error('状态更新失败')
-    }
-  }
-
-  // 打开变更/解约/作废弹窗
-  const handleChangeAction = (record: Record<string, unknown>, actionType: 'change' | 'terminate' | 'void') => {
-    setCurrentCase(record)
-    setChangeActionType(actionType)
-    setChangeActionVisible(true)
-  }
-
-  // 提交变更/解约/作废
-  const handleSubmitChangeAction = async (values: Record<string, unknown>) => {
-    if (!currentCase) return
-    const actionLabelMap: Record<string, string> = {
-      change: '变更',
-      terminate: '解约',
-      void: '作废',
-    }
-    try {
-      await axios.put(`/cases/${currentCase.id}/${changeActionType}`, { reason: values.reason })
-      setChangeActionVisible(false)
-      message.success(`${actionLabelMap[changeActionType] || '操作'}成功`)
-      fetchData()
-    } catch (error) {
-      message.error(`${actionLabelMap[changeActionType] || '操作'}失败`)
     }
   }
 
@@ -618,6 +603,8 @@ export default function CaseManagement() {
     { value: 'appeal', label: '上诉中' },
     { value: 'pending_close', label: '待结案' },
     { value: 'closed', label: '已结案' },
+    { value: 'terminated', label: '已解约' },
+    { value: 'voided', label: '已作废' },
   ]
 
   const caseTypeOptions = [
@@ -731,15 +718,8 @@ export default function CaseManagement() {
     { title: '是否超时', dataIndex: 'is_overdue', key: 'is_overdue', render: (overdue: boolean) => {
       return <StatusPill text={overdue ? '已超时' : '正常'} kind={overdue ? 'red' : 'green'} />
     }},
-    { title: '案件状态', dataIndex: 'change_status', key: 'change_status', render: (status: string) => {
-      const finalStatus = status || 'normal'
-      return <StatusPill text={caseChangeStatusLabelMap[finalStatus] || '正常'} kind={caseChangeStatusKindMap[finalStatus] || 'neutral'} />
-    }},
     { title: '立案日期', dataIndex: 'filing_date', key: 'filing_date', render: (val: string) => formatDate(val) },
     { title: '操作', key: 'action', width: 420, render: (_: unknown, record: Record<string, unknown>) => {
-      // 当案件处于 normal（正常）状态时，显示变更/解约/作废按钮
-      const changeStatus = record.change_status || 'normal'
-      const canAction = changeStatus === 'normal'
       // 案件阶段：用于控制结案报告/归档按钮显示
       const stage = record.stage || 'intake'
       const canCloseReport = !['closing', 'closed'].includes(stage as string)
@@ -762,13 +742,6 @@ export default function CaseManagement() {
             <Popconfirm title="确认结案归档？" onConfirm={() => handleArchiveCase(record)}>
               <Button type="link" size="small">归档</Button>
             </Popconfirm>
-          )}
-          {canAction && (
-            <>
-              <Button type="link" size="small" onClick={() => handleChangeAction(record, 'change')}>变更</Button>
-              <Button type="link" size="small" danger onClick={() => handleChangeAction(record, 'terminate')}>解约</Button>
-              <Button type="link" size="small" danger onClick={() => handleChangeAction(record, 'void')}>作废</Button>
-            </>
           )}
           <Popconfirm title="确定删除此案件？" onConfirm={() => handleDelete(record)} okText="确定" cancelText="取消">
             <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
@@ -965,8 +938,20 @@ export default function CaseManagement() {
           <Form.Item name="case_source" label="案件来源">
             <Input placeholder="请输入案件来源" />
           </Form.Item>
+          <Form.Item name="source_detail" label="来源明细">
+            <Input placeholder="请输入来源明细" />
+          </Form.Item>
+          <Form.Item name="referrer" label="转介绍人">
+            <Input placeholder="请输入转介绍人" />
+          </Form.Item>
           <Form.Item name="amount" label="涉案金额">
             <Input placeholder="请输入涉案金额" />
+          </Form.Item>
+          <Form.Item name="fee_amount" label="委托费（元）">
+            <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="请输入委托费" />
+          </Form.Item>
+          <Form.Item name="service_fee" label="服务费（元）">
+            <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="请输入服务费" />
           </Form.Item>
           <Form.Item name="fee_type" label="业务类型">
             <Select>
@@ -997,6 +982,14 @@ export default function CaseManagement() {
             <Select placeholder="请选择协办人">
               {lawyers.map(lawyer => (
                 <Select.Option key={lawyer.id as React.Key} value={lawyer.id as string}>{lawyer.real_name as React.ReactNode}</Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+          {/* 律师团队（详情页团队模块字段，收案时即可指定所属团队） */}
+          <Form.Item name="team_id" label="律师团队">
+            <Select placeholder="请选择律师团队" allowClear>
+              {teams.map(team => (
+                <Select.Option key={team.id as React.Key} value={team.id as string}>{String(team.name || '')}</Select.Option>
               ))}
             </Select>
           </Form.Item>
@@ -1064,32 +1057,19 @@ export default function CaseManagement() {
         onCancel={() => setStatusVisible(false)}
         footer={null}
       >
-        <Form initialValues={{ status: currentCase?.status }} onFinish={handleSubmitStatus}>
+        <Form form={statusForm} initialValues={{ status: currentCase?.status }} onFinish={handleSubmitStatus}>
           <Form.Item name="status" label="选择状态" rules={[{ required: true }]}>
             <Select>
               {statusOptions.map(opt => <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>)}
             </Select>
           </Form.Item>
+          {['terminated', 'voided'].includes(watchStatus) && (
+            <Form.Item name="reason" label="原因说明" rules={[{ required: true, message: '请填写解约/作废原因' }]}>
+              <Input.TextArea placeholder="请输入解约/作废原因" rows={4} />
+            </Form.Item>
+          )}
           <Form.Item>
             <Button type="primary" htmlType="submit">确认变更</Button>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal
-        title={`${({ change: '案件变更', terminate: '案件解约', void: '案件作废' } as Record<string, string>)[changeActionType] || '案件操作'}`}
-        open={changeActionVisible}
-        onCancel={() => setChangeActionVisible(false)}
-        footer={null}
-      >
-        <Form onFinish={handleSubmitChangeAction}>
-          <Form.Item name="reason" label="原因说明" rules={[{ required: true, message: '请输入原因说明' }]}>
-            <Input.TextArea placeholder="请输入原因说明" rows={4} />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" danger={changeActionType === 'terminate' || changeActionType === 'void'}>
-              确认
-            </Button>
           </Form.Item>
         </Form>
       </Modal>

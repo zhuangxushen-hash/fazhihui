@@ -450,6 +450,8 @@ export class ClientService {
     corp_name?: string;
     corp_ident_no?: string;
     legal_rep_name?: string;
+    // 认证完成后法大大跳转地址（覆盖全局配置，供 C 端认证后回到原页面）
+    redirect_url?: string;
   }): Promise<any> {
     const signing = await this.findSigning(body.signing_id, body.client_id);
     const profile = await this.clientProfileRepository.findOne({ where: { id: body.client_id } });
@@ -476,15 +478,18 @@ export class ClientService {
     await this.signingComplianceRepository.save(signing);
     // 企业签约 -> 企业实名认证；个人签约 -> 个人实名认证
     if (isCorp) {
-      const result = await this.fadadaService.getCorpAuthUrl({
-        signingId: signing.id,
-        corpName: signing.corp_name || body.corp_name || '',
-        corpIdentNo: signing.corp_ident_no || body.corp_ident_no || '',
-        legalRepName: body.legal_rep_name || signing.legal_rep_name || undefined,
-        agentName: body.user_name || profile.name || profile.contact_name || undefined,
-        agentIdCardNo: idCardNo || undefined,
-        agentMobile: body.mobile || profile.phone || undefined,
-      });
+      const result = await this.fadadaService.getCorpAuthUrl(
+        {
+          signingId: signing.id,
+          corpName: signing.corp_name || body.corp_name || '',
+          corpIdentNo: signing.corp_ident_no || body.corp_ident_no || '',
+          legalRepName: body.legal_rep_name || signing.legal_rep_name || undefined,
+          agentName: body.user_name || profile.name || profile.contact_name || undefined,
+          agentIdCardNo: idCardNo || undefined,
+          agentMobile: body.mobile || profile.phone || undefined,
+        },
+        body.redirect_url,
+      );
       return {
         signing_id: signing.id,
         verify_url: result.verifyUrl,
@@ -493,13 +498,16 @@ export class ClientService {
         subject_type: 'corp',
       };
     }
-    const result = await this.fadadaService.getRealNameAuthUrl({
-      signingId: signing.id,
-      clientUserId: body.client_id,
-      userName: body.user_name || profile.name || profile.contact_name || '客户',
-      idCardNo,
-      mobile: body.mobile || profile.phone || undefined,
-    });
+    const result = await this.fadadaService.getRealNameAuthUrl(
+      {
+        signingId: signing.id,
+        clientUserId: body.client_id,
+        userName: body.user_name || profile.name || profile.contact_name || '客户',
+        idCardNo,
+        mobile: body.mobile || profile.phone || undefined,
+      },
+      body.redirect_url,
+    );
     return {
       signing_id: signing.id,
       verify_url: result.verifyUrl,
@@ -602,6 +610,134 @@ export class ClientService {
       fadada_sign_task_id: signing.fadada_sign_task_id,
       sign_url: signing.sign_url,
     };
+  }
+
+  /**
+   * C端查询案件下「待签约/待预填」的签约记录（法大大模板签约，供 C 端案件详情展示待签约入口）。
+   * 仅返回状态为 pending 且已创建法大大签署任务的记录。
+   */
+  async getActiveSignings(body: { client_id: string; case_id?: string }): Promise<any[]> {
+    const where: any = { client_id: body.client_id, status: SigningStatus.PENDING };
+    if (body.case_id) where.case_id = body.case_id;
+    const list = await this.signingComplianceRepository.find({
+      where,
+      order: { created_at: 'DESC' },
+    });
+    const active = list.filter((s) => s.fadada_sign_task_id);
+    // 同一案件只展示最新一次发起的签约
+    return (active.length > 0 ? [active[0]] : []).map((s) => ({
+      signing_id: s.id,
+      case_id: s.case_id,
+      subject: s.contract_content || '法律顾问签约',
+      created_at: s.created_at,
+    }));
+  }
+
+  /** C端获取待签约任务中客户需要补充填写的字段列表（复用现有 C 端页面做预填） */
+  async getSignPrefillFields(body: { signing_id: string; client_id: string }): Promise<any> {
+    const signing = await this.findSigning(body.signing_id, body.client_id);
+    if (!signing.fadada_sign_task_id) {
+      throw new Error('该签约尚未完成发起，缺少签署任务ID');
+    }
+    const fields = await this.fadadaService.getClientPrefillFields(signing.fadada_sign_task_id);
+    return {
+      signing_id: signing.id,
+      sign_task_id: signing.fadada_sign_task_id,
+      subject: signing.contract_content || '法律顾问签约',
+      fields,
+    };
+  }
+
+  /** C端预填字段后获取合同预览链接（填充字段但不提交任务，预览确认后再签约） */
+  async getSignPreview(body: {
+    signing_id: string;
+    client_id: string;
+    values: Array<{ field_doc_id?: string; field_id?: string; field_name?: string; field_value: string }>;
+  }): Promise<any> {
+    const signing = await this.findSigning(body.signing_id, body.client_id);
+    if (!signing.fadada_sign_task_id) {
+      throw new Error('该签约尚未完成发起，缺少签署任务ID');
+    }
+    // 合并系统预填 + 业务员预填与客户填写的值（客户值覆盖同名预填值）
+    const merged = this.mergePrefillValues(signing, body.values || []);
+    const result = await this.fadadaService.getClientPreviewUrl({
+      signTaskId: signing.fadada_sign_task_id,
+      signingId: signing.id,
+      values: merged,
+    });
+    return {
+      signing_id: signing.id,
+      preview_url: result.previewUrl,
+      mode: result.mode,
+    };
+  }
+
+  /** C端提交填写的字段并调用法大大签约流程：填充→提交→定稿→返回签署链接 */
+  async submitSignPrefillAndSign(body: {
+    signing_id: string;
+    client_id: string;
+    values: Array<{ field_doc_id?: string; field_id?: string; field_name?: string; field_value: string }>;
+  }): Promise<any> {
+    const signing = await this.findSigning(body.signing_id, body.client_id);
+    if (!signing.fadada_sign_task_id) {
+      throw new Error('该签约尚未完成发起，缺少签署任务ID');
+    }
+    // 免验证签整合模式：无需提前单独实名认证，客户在法大大签署页完成签署时即同步完成实名授权，
+    // 身份与意愿确认由法大大签署流程（人脸/短信/密码核验）保障，此处不再强制校验 verify_status。
+    // 合并系统预填 + 业务员预填与客户填写的值（客户值覆盖同名预填值），一并传给法大大，避免信息丢失
+    const values = this.mergePrefillValues(signing, body.values || []);
+    const result = await this.fadadaService.completeClientPrefillAndSign({
+      signTaskId: signing.fadada_sign_task_id,
+      actorId: signing.fadada_actor_id || signing.client_id,
+      signingId: signing.id,
+      values,
+    });
+    // 回填签署链接并更新状态为审核中（待签署）
+    signing.sign_url = result.signUrl;
+    signing.status = SigningStatus.REVIEWING;
+    await this.signingComplianceRepository.save(signing);
+    return {
+      signing_id: signing.id,
+      sign_url: result.signUrl,
+      embed_url: result.embedUrl,
+      sign_task_id: signing.fadada_sign_task_id,
+      mode: result.mode,
+    };
+  }
+
+  /**
+   * 合并字段值：系统预填 + 业务员预填（发起时保存的 prefill_values）与客户在 C 端填写的值，
+   * 客户填写值覆盖同名预填值，返回合并后的字段列表。
+   */
+  private mergePrefillValues(
+    signing: SigningCompliance,
+    values: Array<{ field_doc_id?: string; field_id?: string; field_name?: string; field_value: string }>,
+  ): Array<{ docId?: string | number; fieldId?: string; fieldName?: string; fieldValue: string }> {
+    const merged = new Map<string, { docId?: string | number; fieldId?: string; fieldName?: string; fieldValue: string }>();
+    try {
+      const prefillValues = JSON.parse(signing.prefill_values || '[]') as Array<{
+        docId?: string | number;
+        fieldId?: string;
+        fieldName?: string;
+        fieldValue: string;
+      }>;
+      prefillValues.forEach((v) => {
+        if (v?.fieldId) merged.set(v.fieldId, { docId: v.docId, fieldId: v.fieldId, fieldName: v.fieldName, fieldValue: v.fieldValue });
+      });
+    } catch (e) {
+      // 预填值解析失败不影响主流程
+    }
+    (values || []).forEach((v) => {
+      if (v?.field_id) {
+        merged.set(v.field_id, {
+          docId: v.field_doc_id,
+          fieldId: v.field_id,
+          fieldName: v.field_name,
+          fieldValue: v.field_value,
+        });
+      }
+    });
+    return Array.from(merged.values());
   }
 
   private async findSigning(signingId: string, clientId: string): Promise<SigningCompliance> {

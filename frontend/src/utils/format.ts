@@ -34,3 +34,17 @@ export function formatFileSize(bytes: number): string {
   }
   return `${size.toFixed(unitIndex === 0 ? 0 : 2)} ${units[unitIndex]}`;
 }
+
+// 案由（案件类型）英文枚举转中文标签
+const caseTypeMap: Record<string, string> = {
+  marriage: '婚姻家事',
+  traffic: '交通事故',
+  labor: '劳动争议',
+  debt: '债务纠纷',
+  other: '其他',
+};
+
+export function caseTypeLabel(caseType?: string | null): string {
+  if (!caseType) return '未知案由';
+  return caseTypeMap[caseType] || caseType;
+}
