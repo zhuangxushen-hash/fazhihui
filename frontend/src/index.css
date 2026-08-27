@@ -1454,6 +1454,381 @@ a:hover {
   background: #2f3132 !important;
 }
 
+/* ============================================
+   C端 移动端设计系统（Client Mobile Design System）
+   手机端专用：大触控目标(>=48px)、安全区适配、统一卡片风。
+   所有类使用 c- / client-app 前缀，避免影响 B端。
+   ============================================ */
+
+/* === 页面根容器 === */
+.client-app {
+  min-height: 100vh;
+  background: var(--cm-bg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--cm-text-strong);
+  -webkit-text-size-adjust: 100%;
+}
+
+/* === C端 移动端设计令牌（覆盖在 :root 之后，仅供 C端） === */
+.client-app {
+  --cm-bg: #f4f5f7;
+  --cm-card: #ffffff;
+  --cm-border: #eef0f3;
+  --cm-primary: #0071e3;
+  --cm-primary-strong: #0059b5;
+  --cm-text-strong: #1a1d23;
+  --cm-text: #4a5361;
+  --cm-text-muted: #8a92a0;
+  --cm-success: #2e9e5b;
+  --cm-warning: #f0a020;
+  --cm-danger: #e5484d;
+  --cm-radius: 16px;
+  --cm-gap: 12px;
+}
+
+/* === 顶部应用栏（C端） === */
+.c-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  padding-top: env(safe-area-inset-top);
+  background: var(--cm-card);
+  border-bottom: 1px solid var(--cm-border);
+}
+.c-topbar__back {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--cm-text-strong);
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 20px;
+}
+.c-topbar__back:active { background: #f0f1f3; }
+.c-topbar__title {
+  flex: 1;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--cm-text-strong);
+  padding-right: 44px; /* 视觉居中抵消返回键 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c-topbar__action {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--cm-primary);
+  font-size: 15px;
+}
+
+/* === 内容容器 === */
+.c-container {
+  padding: 16px;
+  padding-bottom: calc(88px + env(safe-area-inset-bottom));
+}
+.c-container--no-nav {
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+
+/* === 区块标题 === */
+.c-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--cm-text-strong);
+}
+.c-section-title__more {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cm-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* === 卡片 === */
+.c-card {
+  background: var(--cm-card);
+  border: 1px solid var(--cm-border);
+  border-radius: var(--cm-radius);
+  box-shadow: 0 2px 12px rgba(17, 24, 39, 0.05);
+  overflow: hidden;
+}
+
+/* === 列表单元（整行可点，cell 高度 >= 56px） === */
+.c-cell {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 12px 16px;
+  background: var(--cm-card);
+  gap: 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.c-cell + .c-cell { border-top: 1px solid var(--cm-border); }
+.c-cell:active { background: #f7f8fa; }
+.c-cell__body { flex: 1; min-width: 0; }
+.c-cell__title { font-size: 15px; font-weight: 500; color: var(--cm-text-strong); }
+.c-cell__desc { font-size: 12px; color: var(--cm-text-muted); margin-top: 2px; }
+.c-cell__arrow { color: #c3c9d2; font-size: 14px; flex-shrink: 0; }
+
+/* === 按钮 === */
+.c-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 48px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+.c-btn:active { transform: scale(0.97); }
+.c-btn--primary {
+  background: linear-gradient(135deg, var(--cm-primary-strong), var(--cm-primary));
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(0, 113, 227, 0.24);
+}
+.c-btn--block { display: flex; width: 100%; }
+.c-btn--outline {
+  background: #fff;
+  color: var(--cm-primary);
+  border: 1px solid rgba(0, 113, 227, 0.35);
+}
+.c-btn--ghost {
+  background: #f0f1f3;
+  color: var(--cm-text);
+  box-shadow: none;
+}
+.c-btn--danger {
+  background: #fff;
+  color: var(--cm-danger);
+  border: 1px solid rgba(229, 72, 77, 0.3);
+}
+.c-btn--disabled { opacity: 0.5; pointer-events: none; }
+.c-btn[disabled] { opacity: 0.5; pointer-events: none; }
+
+/* === 底部操作栏（安全区） === */
+.c-action-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 -2px 16px rgba(17, 24, 39, 0.06);
+}
+.c-action-bar--above-nav { bottom: 64px; bottom: calc(64px + 0px); }
+
+/* === 底部安全区操作栏（全屏/无底部导航流程页，如签约/预览页） === */
+.c-safety-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  padding: 10px 16px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.97);
+  border-top: 1px solid var(--cm-border);
+  box-shadow: 0 -2px 16px rgba(17, 24, 39, 0.06);
+}
+
+/* === 底部输入栏（聊天/搜索等，固定于底部导航上方） === */
+.c-input-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 55;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  background: #ffffff;
+  border-top: 1px solid var(--cm-border);
+  box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.03);
+}
+
+/* === 状态胶囊 === */
+.c-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.c-pill--primary { background: rgba(0, 113, 227, 0.1); color: var(--cm-primary); }
+.c-pill--success { background: rgba(46, 158, 91, 0.1); color: var(--cm-success); }
+.c-pill--warning { background: rgba(240, 160, 32, 0.12); color: #b9730d; }
+.c-pill--danger { background: rgba(229, 72, 77, 0.1); color: var(--cm-danger); }
+.c-pill--neutral { background: #f0f1f3; color: var(--cm-text-muted); }
+
+/* === 空状态 === */
+.c-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  color: var(--cm-text-muted);
+  text-align: center;
+}
+.c-empty__icon { font-size: 48px; opacity: 0.35; margin-bottom: 12px; }
+.c-empty__title { font-size: 15px; font-weight: 500; color: var(--cm-text); }
+.c-empty__desc { font-size: 12px; color: var(--cm-text-muted); margin-top: 4px; }
+
+/* === 输入/选择控件（移动端大触控） === */
+.c-field { margin-bottom: 16px; }
+.c-field__label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cm-text);
+  margin-bottom: 8px;
+}
+.c-field .ant-input,
+.c-field .ant-input-affix-wrapper,
+.c-field .ant-select-selector {
+  min-height: 48px !important;
+  height: auto !important;
+  border-radius: 12px !important;
+  border-color: var(--cm-border) !important;
+  font-size: 16px !important;
+  padding: 0 14px !important;
+}
+.c-field .ant-input-affix-wrapper .ant-input {
+  min-height: 46px !important;
+}
+
+/* === 分段开关（C端 segmented 移动样式） === */
+.c-segmented {
+  display: flex;
+  background: #eceef1;
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+}
+.c-segmented__item {
+  flex: 1;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cm-text);
+  border-radius: 9px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.c-segmented__item--active {
+  background: #fff;
+  color: var(--cm-primary);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(17, 24, 39, 0.08);
+}
+
+/* === 骨架/加载态 === */
+.c-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  color: var(--cm-text-muted);
+}
+
+/* === 细节徽标（数字角标） === */
+.c-badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--cm-danger);
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* === 底部导航（C端，安全区适配） === */
+.client-bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  background: var(--cm-card);
+  border-top: 1px solid var(--cm-border);
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  box-shadow: 0 -2px 16px rgba(17, 24, 39, 0.06);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: calc(64px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  touch-action: pan-y;
+}
+.client-nav-item {
+  flex: 1;
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+.client-nav-item__icon { font-size: 22px; line-height: 1; }
+.client-nav-item__label { font-size: 11px; font-weight: 500; }
+.client-nav-item--active .client-nav-item__icon { color: var(--cm-primary); }
+.client-nav-item--active .client-nav-item__label { color: var(--cm-primary); font-weight: 600; }
+.client-nav-item:not(.client-nav-item--active) .client-nav-item__icon,
+.client-nav-item:not(.client-nav-item--active) .client-nav-item__label { color: var(--cm-text-muted); }
+
 /* === Stitch 按钮组规范 === */
 .stitch-btn-group {
   display: inline-flex;

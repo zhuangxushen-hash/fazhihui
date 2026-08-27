@@ -14,7 +14,7 @@ export default function MockFadada() {
   const navigate = useNavigate()
   const mode = params.get('mode') || 'verify'
   const signingId = params.get('signing_id') || ''
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const user = JSON.parse(localStorage.getItem('client_user') || '{}')
   const [loading, setLoading] = useState(false)
 
   const handleDone = async () => {

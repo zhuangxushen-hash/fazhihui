@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Card, Form, Input, InputNumber, Empty, message, Steps } from 'antd'
+import { Form, Input, InputNumber, message, Steps } from 'antd'
 import { ArrowLeftOutlined, FileAddOutlined, LockOutlined } from '@ant-design/icons'
 import axios from '../../api/axios'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -28,7 +28,7 @@ export default function SignPrefill() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const user = JSON.parse(localStorage.getItem('client_user') || '{}')
 
   useEffect(() => {
     const sid = searchParams.get('signing_id') || ''
@@ -154,48 +154,20 @@ export default function SignPrefill() {
   const stepTitle = ['填写合同信息', '预览合同', '签约合同'][currentStep]
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
+    // 根容器使用 100vh + flex column，确保内嵌法大大预览/签署 iframe 撑满剩余高度（flex:1 依赖父容器有确定高度）
+    <div className="client-app" style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* 页头 */}
-      <header
-        style={{
-          position: 'sticky',
-          top: 0,
-          background: '#ffffff',
-          borderBottom: '1px solid #c1c6d6',
-          padding: '14px 16px',
-          paddingTop: 'max(14px, env(safe-area-inset-top))',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          zIndex: 50,
-        }}
-      >
-        <button
-          onClick={() => (currentStep === 2 ? handleBackToCases() : currentStep === 1 ? setCurrentStep(0) : navigate(-1))}
-          style={{
-            width: 40,
-            height: 40,
-            border: 'none',
-            background: 'transparent',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            color: '#0059b5',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          <ArrowLeftOutlined style={{ fontSize: 22 }} />
+      <header className="c-topbar">
+        <button className="c-topbar__back" onClick={() => (currentStep === 2 ? handleBackToCases() : currentStep === 1 ? setCurrentStep(0) : navigate(-1))}>
+          <ArrowLeftOutlined />
         </button>
-        <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#0059b5', letterSpacing: '0.01em' }}>
-          {stepTitle}
-        </h2>
+        <span className="c-topbar__title" style={{ fontSize: 17 }}>{stepTitle}</span>
+        <div style={{ width: 44 }} />
       </header>
 
       {/* 流程步骤条（除签署中为 iframe 外均展示） */}
       {currentStep !== 2 && (
-        <div style={{ background: '#fff', padding: '12px 16px 0', borderBottom: '1px solid var(--border-default)' }}>
+        <div className="c-card" style={{ margin: 12, padding: '14px 12px 10px' }}>
           <Steps
             size="small"
             current={currentStep}
@@ -206,7 +178,6 @@ export default function SignPrefill() {
               { title: '签约合同' },
             ]}
           />
-          <div style={{ height: 0 }} />
         </div>
       )}
 
@@ -221,7 +192,7 @@ export default function SignPrefill() {
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
             />
           </div>
-          <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#fff', padding: '10px 16px', paddingBottom: 'max(10px, env(safe-area-inset-bottom))', borderTop: '1px solid var(--border-default)' }}>
+          <div className="c-safety-bar">
             <ClientButton
               btnVariant="outline"
               btnSize="large"
@@ -243,7 +214,7 @@ export default function SignPrefill() {
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
             />
           </div>
-          <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#fff', padding: '10px 16px', paddingBottom: 'max(10px, env(safe-area-inset-bottom))', borderTop: '1px solid var(--border-default)' }}>
+          <div className="c-safety-bar">
             <ClientButton
               btnVariant="primary"
               btnSize="large"
@@ -258,31 +229,31 @@ export default function SignPrefill() {
       ) : (
         /* 步骤1 填写合同信息 */
         <>
-          <div style={{ padding: 12, flex: 1, paddingBottom: 120 }}>
+          <main className="c-container--no-nav" style={{ padding: 16, paddingBottom: 120, maxWidth: 720, margin: '0 auto', width: '100%' }}>
             {/* 签约主题 */}
-            <Card
-              style={{ marginBottom: 12, borderRadius: 12, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}
-            >
+            <div className="c-card" style={{ padding: 16, marginBottom: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <FileAddOutlined style={{ fontSize: 24, color: 'var(--primary)' }} />
+                <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <FileAddOutlined style={{ fontSize: 24, color: '#0071e3' }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>签约主题</div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginTop: 2, wordBreak: 'break-all' }}>{subject}</div>
+                  <div style={{ fontSize: 12, color: 'var(--cm-text-muted)' }}>签约主题</div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--cm-text-strong)', marginTop: 2, wordBreak: 'break-all' }}>{subject}</div>
                 </div>
               </div>
-            </Card>
+            </div>
 
             {/* 待填字段 */}
-            <Card
-              title={<div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>合同信息</div>}
-              style={{ marginBottom: 12, borderRadius: 12, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}
-            >
+            <div className="c-card" style={{ padding: 16, marginBottom: 12 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--cm-text-strong)', marginBottom: 12 }}>合同信息</div>
               {loading ? (
-                <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-tertiary)', fontSize: 13 }}>加载中...</div>
+                <div className="c-loading">加载中...</div>
               ) : fields.length === 0 ? (
-                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="无需补充信息，可直接预览合同" />
+                <div className="c-empty" style={{ padding: '16px 0' }}>
+                  <FileAddOutlined className="c-empty__icon" />
+                  <div className="c-empty__title">无需补充信息</div>
+                  <div className="c-empty__desc">可直接预览合同</div>
+                </div>
               ) : (
                 <Form form={form} layout="vertical" requiredMark={false}>
                   {fields.map((field) => (
@@ -290,34 +261,32 @@ export default function SignPrefill() {
                       key={field.field_id}
                       name={field.field_id}
                       label={
-                        <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>
+                        <span className="c-field__label">
                           {field.field_name || field.field_id}
-                          {field.required && <span style={{ color: '#ff4d4f' }}> *</span>}
+                          {field.required && <span style={{ color: 'var(--cm-danger)' }}> *</span>}
                         </span>
                       }
                       rules={buildFieldRules(field)}
-                      style={{ marginBottom: 14 }}
+                      style={{ marginBottom: 16 }}
                     >
                       {renderFieldInput(field)}
                     </Form.Item>
                   ))}
                 </Form>
               )}
-            </Card>
+            </div>
 
             {/* 签署说明 */}
-            <Card style={{ borderRadius: 12, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                <LockOutlined style={{ color: 'var(--primary)', marginTop: 2 }} />
-                <div style={{ fontSize: 12, color: 'var(--text-tertiary)', lineHeight: 1.7 }}>
-                  填写完成后您可预览合同，确认无误后进入签署。签署时将同步完成身份认证（免验证签），全程无需离开本页面。
-                </div>
+            <div className="c-card" style={{ padding: 14, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              <LockOutlined style={{ color: '#0071e3', marginTop: 2, fontSize: 16, flexShrink: 0 }} />
+              <div style={{ fontSize: 12, color: 'var(--cm-text)', lineHeight: 1.7 }}>
+                填写完成后您可预览合同，确认无误后进入签署。签署时将同步完成身份认证（免验证签），全程无需离开本页面。
               </div>
-            </Card>
-          </div>
+            </div>
+          </main>
 
           {/* 底部固定按钮 */}
-          <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#fff', padding: '10px 16px', paddingBottom: 'max(10px, env(safe-area-inset-bottom))', borderTop: '1px solid var(--border-default)' }}>
+          <div className="c-safety-bar">
             <ClientButton
               btnVariant="primary"
               btnSize="large"

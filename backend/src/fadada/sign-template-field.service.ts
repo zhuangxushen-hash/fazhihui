@@ -42,14 +42,20 @@ export class SignTemplateFieldService {
       fill_mode?: string;
       auto_source?: string;
       fixed_value?: string;
+      enabled?: boolean;
     }>,
   ): Promise<void> {
+    // 同步前读取该模板既有字段配置，按 field_id 建立映射，用于沿用填写方式/自动带出/固定值等手工配置
+    const existing = await this.fieldRepository.find({ where: { template_id: templateId } });
+    const existingMap = new Map<string, SignTemplateField>();
+    existing.forEach((e) => e.field_id && existingMap.set(e.field_id, e));
     // 删除该模板原有字段配置
     await this.fieldRepository.delete({ template_id: templateId });
-    // 写入新的字段记录
+    // 写入新的字段记录（相同 field_id 的字段沿用既有的手工配置，不被刷新掉）
     if (fields.length > 0) {
-      const rows = fields.map((f) =>
-        this.fieldRepository.create({
+      const rows = fields.map((f) => {
+        const prev = f.field_id ? existingMap.get(f.field_id) : undefined;
+        return this.fieldRepository.create({
           template_id: templateId,
           field_doc_id: f.field_doc_id || '',
           field_id: f.field_id,
@@ -59,11 +65,13 @@ export class SignTemplateFieldService {
           required: !!f.required,
           tips: f.tips || null,
           check_format: f.check_format || null,
-          fill_mode: f.fill_mode || 'client',
-          auto_source: f.auto_source || null,
-          fixed_value: f.fixed_value || null,
-        }),
-      );
+          // 沿用既有配置（填写方式/自动带出/固定值/启用），新字段或未配置过的才用默认值
+          fill_mode: prev?.fill_mode || f.fill_mode || 'client',
+          auto_source: prev?.auto_source || f.auto_source || null,
+          fixed_value: prev?.fixed_value || f.fixed_value || null,
+          enabled: prev ? prev.enabled : f.enabled !== undefined ? !!f.enabled : true,
+        });
+      });
       await this.fieldRepository.save(rows);
     }
   }

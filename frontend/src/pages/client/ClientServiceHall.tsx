@@ -1,14 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { Card, Modal, Select, Input, Tag, theme, message, Empty } from 'antd'
-import {
-  ArrowLeftOutlined,
-  FilePdfOutlined,
-  UploadOutlined,
-  BellOutlined,
-  SafetyCertificateOutlined,
-  DownloadOutlined,
-  CloudOutlined,
-} from '@ant-design/icons'
+import { Modal, Select, Input, message, Empty, Spin } from 'antd'
+import { ArrowLeftOutlined, FilePdfOutlined, UploadOutlined, BellOutlined, SafetyCertificateOutlined, DownloadOutlined, CloudOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import axios from '../../api/axios'
 import { formatDateTime, formatFileSize, caseTypeLabel } from '../../utils/format'
@@ -17,17 +9,11 @@ import ClientButton from '../../components/ClientButton'
 
 export default function ClientServiceHall() {
   const navigate = useNavigate()
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const user = JSON.parse(localStorage.getItem('client_user') || '{}')
 
-  const {
-    token: { borderRadiusLG },
-  } = theme.useToken()
-
-  // 案件列表（用于签约/证据上传选择）
+  // 案件列表（用于证据上传选择）
   const [cases, setCases] = useState<any[]>([])
   const [loadingCases, setLoadingCases] = useState(false)
-
-  
 
   // 发票下载
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
@@ -47,6 +33,7 @@ export default function ClientServiceHall() {
 
   useEffect(() => {
     fetchCases()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchCases = async () => {
@@ -68,7 +55,7 @@ export default function ClientServiceHall() {
       desc: '下载已付款记录的电子发票',
       icon: FilePdfOutlined,
       color: '#f59e0b',
-      bg: 'var(--warning-bg)',
+      bg: 'rgba(245, 158, 11, 0.12)',
       action: () => openInvoiceModal(),
     },
     {
@@ -76,7 +63,7 @@ export default function ClientServiceHall() {
       desc: '上传案件相关证据材料',
       icon: UploadOutlined,
       color: '#06b6d4',
-      bg: 'rgba(6, 182, 212, 0.08)',
+      bg: 'rgba(6, 182, 212, 0.1)',
       action: () => openEvidenceModal(),
     },
     {
@@ -84,7 +71,7 @@ export default function ClientServiceHall() {
       desc: '提交投诉与意见反馈',
       icon: BellOutlined,
       color: '#ef4444',
-      bg: 'rgba(186, 26, 26, 0.08)',
+      bg: 'rgba(229, 72, 77, 0.1)',
       action: () => navigate('/client/complaint'),
     },
     {
@@ -92,7 +79,7 @@ export default function ClientServiceHall() {
       desc: '对已结案案件进行服务评价',
       icon: SafetyCertificateOutlined,
       color: '#8b5cf6',
-      bg: 'rgba(139,92,246,0.06)',
+      bg: 'rgba(139, 92, 246, 0.1)',
       action: () => navigate('/client/service-rating'),
     },
     {
@@ -100,7 +87,7 @@ export default function ClientServiceHall() {
       desc: '归档管理案件相关文件',
       icon: CloudOutlined,
       color: '#0ea5e9',
-      bg: 'rgba(14,165,233,0.08)',
+      bg: 'rgba(14, 165, 233, 0.1)',
       action: () => navigate('/client/archive'),
     },
   ]
@@ -187,99 +174,61 @@ export default function ClientServiceHall() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
-      <header
-        style={{
-          position: 'sticky',
-          top: 0,
-          background: '#ffffff',
-          borderBottom: '1px solid #c1c6d6',
-          padding: '14px 16px',
-          paddingTop: 'max(14px, env(safe-area-inset-top))',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          zIndex: 50,
-        }}
-      >
-        <button
-          onClick={() => navigate('/client')}
-          style={{
-            width: 40,
-            height: 40,
-            border: 'none',
-            background: 'transparent',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            color: '#0059b5',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          <ArrowLeftOutlined style={{ fontSize: 22 }} />
+    <div className="client-app">
+      {/* 顶部应用栏 */}
+      <header className="c-topbar">
+        <button className="c-topbar__back" onClick={() => navigate('/client')}>
+          <ArrowLeftOutlined />
         </button>
-        <div>
-          <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#0059b5', letterSpacing: '0.01em' }}>线上服务大厅</h2>
-          <p style={{ fontSize: 12, color: '#717785', marginTop: 2 }}>一站式法律服务办理中心</p>
-        </div>
+        <span className="c-topbar__title">线上服务大厅</span>
+        <div style={{ width: 44 }} />
       </header>
 
-      <div style={{ padding: '12px', flex: 1, paddingBottom: '80px' }}>
-        <Card
-          title={<div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Tag color="blue" style={{ borderRadius: 4, fontSize: 10 }}>服务入口</Tag>
-            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>请选择需要办理的服务</span>
-          </div>}
-          style={{ marginBottom: 12, borderRadius: borderRadiusLG, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}
-        >
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-            {serviceEntries.map((entry, index) => (
-              <div
-                key={index}
-                onClick={entry.action}
-                style={{
-                  padding: 16,
-                  background: 'var(--bg-sunken)',
-                  borderRadius: 12,
-                  border: '1px solid var(--border-light)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  gap: 8,
-                }}
-                onTouchStart={(e) => (e.currentTarget.style.transform = 'scale(0.97)')}
-                onTouchEnd={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-              >
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: entry.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <entry.icon style={{ fontSize: 22, color: entry.color }} />
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{entry.title}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>{entry.desc}</div>
-              </div>
-            ))}
+      <main className="c-container--with-nav" style={{ maxWidth: 1024, margin: '0 auto', width: '100%', padding: 16, paddingBottom: 88 }}>
+        {/* 服务入口 */}
+        <section style={{ marginBottom: 16 }}>
+          <div className="c-section-title">
+            <span>服务入口</span>
+            <span className="c-section-title__more">请选择需要办理的服务</span>
           </div>
-        </Card>
+          <div className="c-card" style={{ padding: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+              {serviceEntries.map((entry, index) => {
+                const Icon = entry.icon
+                return (
+                  <div
+                    key={index}
+                    className="c-cell"
+                    style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8, minHeight: 132, padding: 14, borderRadius: 12, background: '#f7f8fa' }}
+                    onClick={entry.action}
+                  >
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: entry.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Icon style={{ fontSize: 22, color: entry.color }} />
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--cm-text-strong)' }}>{entry.title}</div>
+                    <div style={{ fontSize: 12, color: 'var(--cm-text-muted)', lineHeight: 1.5 }}>{entry.desc}</div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </section>
 
-        <Card
-          style={{ borderRadius: borderRadiusLG, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <SafetyCertificateOutlined style={{ fontSize: 16, color: 'var(--primary)' }} />
+        {/* 服务保障说明 */}
+        <section>
+          <div className="c-card" style={{ padding: 16, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+            <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(0,113,227,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <SafetyCertificateOutlined style={{ fontSize: 17, color: '#0071e3' }} />
             </div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>服务保障说明</div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4, lineHeight: 1.7 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--cm-text-strong)' }}>服务保障说明</div>
+              <div style={{ fontSize: 12, color: 'var(--cm-text)', marginTop: 4, lineHeight: 1.7 }}>
                 所有线上服务均受平台合规监管，电子签约具备法律效力，发票可通过税务系统查验，证据材料上传后自动同步至承办律师。
               </div>
             </div>
           </div>
-        </Card>
-      </div>
+        </section>
+      </main>
 
       {/* 发票下载弹窗 */}
       <Modal
@@ -288,10 +237,10 @@ export default function ClientServiceHall() {
         onCancel={() => setInvoiceModalOpen(false)}
         footer={null}
         centered
-        width={520}
+        destroyOnClose
       >
         {loadingPayments ? (
-          <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-tertiary)' }}>加载中...</div>
+          <div className="c-loading"><Spin /></div>
         ) : payments.filter((p) => p.status === 'paid').length === 0 ? (
           <Empty description="暂无可开发票的付款记录" />
         ) : (
@@ -299,10 +248,10 @@ export default function ClientServiceHall() {
             {payments
               .filter((p) => p.status === 'paid')
               .map((p) => (
-                <div key={p.id} style={{ padding: 14, background: 'var(--bg-sunken)', borderRadius: 8, border: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div key={p.id} style={{ padding: 14, background: 'var(--cm-bg)', borderRadius: 12, border: '1px solid var(--cm-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>¥{Number(p.amount).toFixed(2)}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--cm-text-strong)' }}>¥{Number(p.amount).toFixed(2)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--cm-text-muted)', marginTop: 2 }}>
                       {paymentMethodLabels[p.method] || p.method} · {formatDateTime(p.created_at)}
                     </div>
                   </div>
@@ -328,31 +277,32 @@ export default function ClientServiceHall() {
         onCancel={() => setInvoiceDetailOpen(false)}
         footer={<ClientButton btnVariant="primary" btnSize="medium" onClick={() => setInvoiceDetailOpen(false)}>关闭</ClientButton>}
         centered
+        destroyOnClose
       >
         {invoiceInfo && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-              <span style={{ color: 'var(--text-secondary)' }}>发票编号</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+              <span style={{ color: 'var(--cm-text)' }}>发票编号</span>
               <span style={{ fontWeight: 500 }}>{invoiceInfo.invoice_no}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-              <span style={{ color: 'var(--text-secondary)' }}>发票类型</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+              <span style={{ color: 'var(--cm-text)' }}>发票类型</span>
               <span style={{ fontWeight: 500 }}>{invoiceInfo.invoice_type}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-              <span style={{ color: 'var(--text-secondary)' }}>收款方</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+              <span style={{ color: 'var(--cm-text)' }}>收款方</span>
               <span style={{ fontWeight: 500 }}>{invoiceInfo.payee}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-              <span style={{ color: 'var(--text-secondary)' }}>金额</span>
-              <span style={{ fontWeight: 600, color: 'var(--primary)' }}>¥{Number(invoiceInfo.amount).toFixed(2)}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+              <span style={{ color: 'var(--cm-text)' }}>金额</span>
+              <span style={{ fontWeight: 600, color: '#0071e3' }}>¥{Number(invoiceInfo.amount).toFixed(2)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-              <span style={{ color: 'var(--text-secondary)' }}>开具日期</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+              <span style={{ color: 'var(--cm-text)' }}>开具日期</span>
               <span style={{ fontWeight: 500 }}>{formatDateTime(invoiceInfo.issue_date)}</span>
             </div>
             <div style={{ marginTop: 8 }}>
-              <a href={invoiceInfo.download_url} target="_blank" rel="noreferrer" style={{ fontSize: 13 }}>
+              <a href={invoiceInfo.download_url} target="_blank" rel="noreferrer" style={{ fontSize: 14 }}>
                 <DownloadOutlined style={{ marginRight: 4 }} />点击下载发票文件
               </a>
             </div>
@@ -367,10 +317,11 @@ export default function ClientServiceHall() {
         onCancel={() => setEvidenceModalOpen(false)}
         footer={null}
         centered
+        destroyOnClose
       >
         <div>
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>选择案件 <span style={{ color: 'var(--error)' }}>*</span></label>
+          <div className="c-field">
+            <label className="c-field__label">选择案件 <span style={{ color: 'var(--cm-danger)' }}>*</span></label>
             <Select
               value={evidenceCaseId || undefined}
               onChange={(v) => setEvidenceCaseId(v)}
@@ -381,8 +332,8 @@ export default function ClientServiceHall() {
               options={cases.map((c) => ({ value: c.id, label: `${caseTypeLabel(c.case_type)} - ${c.case_no || c.id?.slice(0, 8)}` }))}
             />
           </div>
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>选择文件 <span style={{ color: 'var(--error)' }}>*</span></label>
+          <div className="c-field">
+            <label className="c-field__label">选择文件 <span style={{ color: 'var(--cm-danger)' }}>*</span></label>
             <input
               ref={fileInputRef}
               type="file"
@@ -391,34 +342,27 @@ export default function ClientServiceHall() {
             />
             <div
               onClick={() => fileInputRef.current?.click()}
-              style={{
-                padding: '20px',
-                border: '1px dashed var(--border-dark)',
-                borderRadius: 8,
-                textAlign: 'center',
-                cursor: 'pointer',
-                background: 'var(--bg-sunken)',
-                transition: 'all 0.15s ease',
-              }}
+              style={{ padding: '22px', border: '1px dashed var(--cm-text-muted)', borderRadius: 12, textAlign: 'center', cursor: 'pointer', background: 'var(--cm-bg)' }}
             >
-              <UploadOutlined style={{ fontSize: 28, color: 'var(--text-tertiary)', marginBottom: 8 }} />
-              <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+              <UploadOutlined style={{ fontSize: 30, color: 'var(--cm-text-muted)', marginBottom: 8 }} />
+              <div style={{ fontSize: 14, color: 'var(--cm-text)' }}>
                 {evidenceFile ? evidenceFile.name : '点击选择文件'}
               </div>
               {evidenceFile && (
-                <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 4 }}>
+                <div style={{ fontSize: 12, color: 'var(--cm-text-muted)', marginTop: 4 }}>
                   {formatFileSize(evidenceFile.size)}
                 </div>
               )}
             </div>
           </div>
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>材料描述 <span style={{ color: 'var(--text-tertiary)', fontSize: 11 }}>（选填）</span></label>
+          <div className="c-field">
+            <label className="c-field__label">材料描述 <span style={{ color: 'var(--cm-text-muted)', fontSize: 12 }}>（选填）</span></label>
             <Input.TextArea
               value={evidenceDesc}
               onChange={(e) => setEvidenceDesc(e.target.value)}
               placeholder="请简要描述证据材料内容..."
               rows={3}
+              style={{ borderRadius: 12 }}
             />
           </div>
           <ClientButton btnVariant="primary" btnSize="large" loading={uploading} onClick={handleUploadEvidence} style={{ width: '100%' }}>

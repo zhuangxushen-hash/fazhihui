@@ -1,25 +1,25 @@
 import { useState } from 'react'
-import { Card, Avatar, Modal, message } from 'antd'
-import { UserOutlined, PhoneOutlined, MailOutlined, LogoutOutlined, FileTextOutlined, BellOutlined, StarOutlined } from '@ant-design/icons'
+import { Modal, message } from 'antd'
+import { UserOutlined, PhoneOutlined, MailOutlined, LogoutOutlined, FileTextOutlined, BellOutlined, StarOutlined, ArrowRightOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../../components/BottomNav'
-import { theme } from '../../constants/theme'
+
 export default function ClientProfile() {
   const navigate = useNavigate()
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const user = JSON.parse(localStorage.getItem('client_user') || '{}')
   const [logoutModalVisible, setLogoutModalVisible] = useState(false)
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    localStorage.removeItem('client_token')
+    localStorage.removeItem('client_user')
     message.success('已退出登录')
     navigate('/client/login')
   }
 
   const menuItems = [
-    { label: '我的案件', icon: FileTextOutlined, color: theme.primary, bg: 'rgba(0, 113, 227, 0.1)', path: '/client/cases' },
-    { label: '投诉反馈', icon: BellOutlined, color: '#ba1a1a', bg: 'rgba(186, 26, 26, 0.1)', path: '/client/complaint' },
-    { label: '服务评价', icon: StarOutlined, color: '#2e7d32', bg: 'rgba(46, 125, 50, 0.1)', path: '/client/service-rating' },
+    { label: '我的案件', desc: '查看案件进度与详情', icon: FileTextOutlined, color: '#0071e3', tint: 'rgba(0, 113, 227, 0.1)', path: '/client/cases' },
+    { label: '投诉反馈', desc: '提交投诉与意见反馈', icon: BellOutlined, color: '#e5484d', tint: 'rgba(229, 72, 77, 0.1)', path: '/client/complaint' },
+    { label: '服务评价', desc: '对已结案案件进行评价', icon: StarOutlined, color: '#f0a020', tint: 'rgba(240, 160, 32, 0.12)', path: '/client/service-rating' },
   ]
 
   const infoItems = [
@@ -28,152 +28,119 @@ export default function ClientProfile() {
   ]
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f9f9fb', display: 'flex', flexDirection: 'column' }}>
-      <header
-        style={{
-          position: 'sticky',
-          top: 0,
-          background: '#ffffff',
-          borderBottom: '1px solid #c1c6d6',
-          padding: '14px 16px',
-          paddingTop: 'max(14px, env(safe-area-inset-top))',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 50,
-        }}
-      >
-        <span style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 18, fontWeight: 600, color: '#0059b5' }}>个人中心</span>
+    <div className="client-app">
+      {/* 顶部应用栏 */}
+      <header className="c-topbar">
+        <span className="c-topbar__title" style={{ paddingRight: 0 }}>个人中心</span>
       </header>
 
-      <main style={{ padding: '16px', flex: 1, maxWidth: 1024, margin: '0 auto', width: '100%', paddingBottom: 80 }}>
-        {/* === User Info Card === */}
-        <Card
-          style={{
-            borderRadius: 16,
-            border: `1px solid ${theme.brandDark}`,
-            background: `linear-gradient(135deg, ${theme.brandDark} 0%, #131c2a 100%)`,
-            boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)',
-            marginBottom: 16,
-          }}
-          styles={{ body: { padding: 20 } }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <Avatar
-              icon={<UserOutlined />}
+      <main className="c-container" style={{ maxWidth: 1024, margin: '0 auto', width: '100%' }}>
+        {/* 用户信息卡 */}
+        <section style={{ marginBottom: 16 }}>
+          <div
+            className="c-card"
+            style={{
+              padding: 20,
+              background: 'linear-gradient(135deg, #1a2e4f, #131c2a)',
+              border: 'none',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            <div
               style={{
-                width: 64,
-                height: 64,
+                position: 'absolute',
+                right: -40,
+                top: -40,
+                width: 160,
+                height: 160,
                 borderRadius: '50%',
-                background: `linear-gradient(135deg, ${theme.brandGold} 0%, #8c702e 100%)`,
-                color: '#ffffff',
-                fontSize: 28,
+                background: 'radial-gradient(circle, rgba(0, 113, 227, 0.35), transparent 65%)',
               }}
             />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 22, fontWeight: 600, color: '#ffffff' }}>
-                {user.real_name || '客户'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, position: 'relative' }}>
+              <div
+                style={{
+                  width: 62,
+                  height: 62,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #0071e3, #0059b5)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff',
+                  fontSize: 30,
+                  flexShrink: 0,
+                }}
+              >
+                <UserOutlined />
               </div>
-              <div style={{ fontSize: 13, color: 'rgba(228, 194, 120, 0.7)', marginTop: 4 }}>
-                VIP客户
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 21, fontWeight: 700, color: '#ffffff' }}>{user.real_name || '客户'}</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 4 }}>法智汇电子签约用户</div>
               </div>
             </div>
           </div>
-        </Card>
+        </section>
 
-        {/* === Contact Info === */}
-        <Card
-          style={{
-            borderRadius: 12,
-            border: '1px solid #c1c6d6',
-            marginBottom: 16,
-            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.02), 0 1px 2px rgba(15, 23, 42, 0.04)',
-          }}
-          styles={{ body: { padding: 0 } }}
-        >
-          {infoItems.map((item, index) => (
-            <div
-              key={item.label}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '16px',
-                borderBottom: index < infoItems.length - 1 ? '1px solid #e2e2e4' : 'none',
-              }}
-            >
-              <div style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                <item.icon style={{ fontSize: 18, color: theme.primary }} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 12, color: '#717785' }}>{item.label}</div>
-                <div style={{ fontSize: 15, color: '#1a1c1d', fontWeight: 500, marginTop: 2 }}>{item.value}</div>
-              </div>
-            </div>
-          ))}
-        </Card>
-
-        {/* === Quick Actions === */}
-        <Card
-          style={{
-            borderRadius: 12,
-            border: '1px solid #c1c6d6',
-            marginBottom: 16,
-            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.02), 0 1px 2px rgba(15, 23, 42, 0.04)',
-          }}
-          styles={{ body: { padding: 12 } }}
-        >
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-            {menuItems.map((item) => (
+        {/* 联系方式 */}
+        <section style={{ marginBottom: 16 }}>
+          <div className="c-card">
+            {infoItems.map((item) => (
               <div
                 key={item.label}
-                onClick={() => navigate(item.path)}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  padding: 12,
-                  borderRadius: 10,
-                  cursor: 'pointer',
-                  transition: 'background 0.15s ease',
-                }}
+                className="c-cell"
+                style={{ cursor: 'default' }}
               >
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: item.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
-                  <item.icon style={{ fontSize: 22, color: item.color }} />
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(0,113,227,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <item.icon style={{ fontSize: 18, color: '#0071e3' }} />
                 </div>
-                <div style={{ fontSize: 12, color: '#414753' }}>{item.label}</div>
+                <div className="c-cell__body">
+                  <div style={{ fontSize: 12, color: 'var(--cm-text-muted)' }}>{item.label}</div>
+                  <div style={{ fontSize: 15, color: 'var(--cm-text-strong)', fontWeight: 500, marginTop: 2 }}>{item.value}</div>
+                </div>
               </div>
             ))}
           </div>
-        </Card>
+        </section>
 
-        {/* === Logout Button === */}
-        <Card
-          style={{
-            borderRadius: 12,
-            border: '1px solid #c1c6d6',
-            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.02), 0 1px 2px rgba(15, 23, 42, 0.04)',
-          }}
-          styles={{ body: { padding: 0 } }}
-        >
-          <div
-            onClick={() => setLogoutModalVisible(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 16,
-              cursor: 'pointer',
-              borderRadius: 12,
-              transition: 'background 0.15s ease',
-            }}
-          >
-            <LogoutOutlined style={{ fontSize: 20, color: '#ba1a1a', marginRight: 8 }} />
-            <span style={{ fontSize: 16, color: '#ba1a1a', fontWeight: 500 }}>退出登录</span>
+        {/* 快捷入口 */}
+        <section style={{ marginBottom: 16 }}>
+          <div className="c-card">
+            {menuItems.map((item) => {
+              const Icon = item.icon
+              return (
+                <div key={item.label} className="c-cell" onClick={() => navigate(item.path)}>
+                  <div style={{ width: 40, height: 40, borderRadius: 12, background: item.tint, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon style={{ fontSize: 20, color: item.color }} />
+                  </div>
+                  <div className="c-cell__body">
+                    <div className="c-cell__title">{item.label}</div>
+                    <div className="c-cell__desc">{item.desc}</div>
+                  </div>
+                  <ArrowRightOutlined className="c-cell__arrow" />
+                </div>
+              )
+            })}
           </div>
-        </Card>
+        </section>
+
+        {/* 退出登录 */}
+        <section>
+          <div className="c-card">
+            <div
+              className="c-cell"
+              style={{ justifyContent: 'center' }}
+              onClick={() => setLogoutModalVisible(true)}
+            >
+              <LogoutOutlined style={{ fontSize: 20, color: '#e5484d' }} />
+              <span style={{ fontSize: 16, color: '#e5484d', fontWeight: 600, marginLeft: 8 }}>退出登录</span>
+            </div>
+          </div>
+        </section>
       </main>
 
-      {/* === Logout Confirm Modal === */}
+      {/* 退出确认弹窗 */}
       <Modal
         title="确认退出"
         open={logoutModalVisible}
@@ -183,7 +150,7 @@ export default function ClientProfile() {
         cancelText="取消"
         okButtonProps={{ danger: true }}
       >
-        <p style={{ margin: '16px 0', fontSize: 15, color: '#414753' }}>
+        <p style={{ margin: '16px 0', fontSize: 15, color: 'var(--cm-text)' }}>
           确定要退出登录吗？退出后需要重新登录才能使用。
         </p>
       </Modal>

@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
-import { Input, Card, Tag, Modal, Empty, theme, Avatar, message } from 'antd'
+import { Input, Tag, Modal, Empty, Avatar, message } from 'antd'
 import { SendOutlined, RobotOutlined, UserOutlined, CustomerServiceOutlined, HistoryOutlined, ClockCircleOutlined } from '@ant-design/icons'
 import axios from '../../api/axios'
 import { formatDateTime } from '../../utils/format'
 import BottomNav from '../../components/BottomNav'
 import ClientButton from '../../components/ClientButton'
-import { theme as appTheme } from '../../constants/theme'
 interface Message {
   id: string
   content: string
@@ -27,11 +26,7 @@ export default function AIConsult() {
   const [transferModalOpen, setTransferModalOpen] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
 
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
-
-  const {
-    token: { borderRadiusLG },
-  } = theme.useToken()
+  const user = JSON.parse(localStorage.getItem('client_user') || '{}')
 
   useEffect(() => {
     if (listRef.current) {
@@ -109,73 +104,54 @@ export default function AIConsult() {
   ]
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-body)' }}>
-      <header
-        style={{
-          position: 'sticky',
-          top: 0,
-          background: '#ffffff',
-          borderBottom: '1px solid #c1c6d6',
-          padding: '14px 16px',
-          paddingTop: 'max(14px, env(safe-area-inset-top))',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          zIndex: 50,
-        }}
-      >
-        <div style={{ width: 40, height: 40, borderRadius: '50%', background: `linear-gradient(135deg, #0059b5 0%, ${appTheme.primary} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+    <div className="client-app" style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/* 顶部应用栏 */}
+      <header className="c-topbar">
+        <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #0059b5, #0071e3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <RobotOutlined style={{ fontSize: 22, color: '#ffffff' }} />
         </div>
-        <div style={{ flex: 1 }}>
-          <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#0059b5', letterSpacing: '0.01em' }}>AI法律助手</h2>
-          <p style={{ fontSize: 12, color: '#717785', marginTop: 2 }}>7×24小时在线答疑</p>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 17, fontWeight: 600, color: 'var(--cm-text-strong)' }}>AI法律助手</div>
+          <div style={{ fontSize: 11, color: 'var(--cm-text-muted)', marginTop: 1 }}>7×24小时在线答疑</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={handleOpenHistory}
-            onTouchStart={(e) => (e.currentTarget.style.transform = 'scale(0.92)')}
-            onTouchEnd={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-            style={{ width: 36, height: 36, borderRadius: 10, border: 'none', background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s ease', WebkitTapHighlightColor: 'transparent' }}
-          >
-            <HistoryOutlined style={{ fontSize: 18, color: '#0059b5' }} />
+          <button className="c-topbar__action" aria-label="咨询历史" onClick={handleOpenHistory}>
+            <HistoryOutlined style={{ fontSize: 20, color: '#1a1d23' }} />
           </button>
-          <button
-            onClick={handleTransfer}
-            onTouchStart={(e) => (e.currentTarget.style.transform = 'scale(0.92)')}
-            onTouchEnd={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-            style={{ width: 36, height: 36, borderRadius: 10, border: 'none', background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s ease', WebkitTapHighlightColor: 'transparent' }}
-          >
-            <CustomerServiceOutlined style={{ fontSize: 18, color: '#0059b5' }} />
+          <button className="c-topbar__action" aria-label="转人工" onClick={handleTransfer}>
+            <CustomerServiceOutlined style={{ fontSize: 20, color: '#1a1d23' }} />
           </button>
         </div>
       </header>
 
-      <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: 12, paddingBottom: '160px' }}>
-        <Card
-          title={<div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Tag color="blue" style={{ borderRadius: 4, fontSize: 10 }}>问题分类</Tag>
-            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>点击快速提问</span>
-          </div>}
-          style={{ marginBottom: 16, borderRadius: borderRadiusLG, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}
-        >
+      <main ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: 12, paddingBottom: '170px' }}>
+        {/* 问题分类快捷入口 */}
+        <div className="c-card" style={{ padding: 12, marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+            <span className="c-pill c-pill--primary">问题分类</span>
+            <span style={{ fontSize: 12, color: 'var(--cm-text)', fontWeight: 500 }}>点击快速提问</span>
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
             {questionCategories.map((q, i) => (
               <div
                 key={i}
                 style={{
                   cursor: 'pointer',
-                  padding: '10px 12px',
-                  fontSize: 12,
-                  borderRadius: 8,
+                  padding: '12px 8px',
+                  fontSize: 13,
+                  borderRadius: 10,
                   background: 'rgba(0, 113, 227, 0.08)',
-                  color: '#0059b5',
+                  color: '#0071e3',
                   border: '1px solid rgba(0, 113, 227, 0.2)',
                   transition: 'transform 0.15s ease',
                   transform: activeQuestion === i ? 'scale(0.96)' : 'scale(1)',
                   textAlign: 'center',
                   fontWeight: 500,
                   WebkitTapHighlightColor: 'transparent',
+                  minHeight: 40,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
                 onClick={() => handleSend(q.question)}
                 onTouchStart={() => setActiveQuestion(i)}
@@ -185,109 +161,71 @@ export default function AIConsult() {
               </div>
             ))}
           </div>
-        </Card>
+        </div>
 
-        <div style={{ background: 'var(--bg-card)', borderRadius: borderRadiusLG, padding: 12, minHeight: '300px', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}>
-          <div>
-            {messages.map((item) => (
-              <div key={item.id} style={{ display: 'flex', marginBottom: 16, justifyContent: item.isUser ? 'flex-end' : 'flex-start', alignItems: 'flex-start' }}>
-                {!item.isUser && (
-                  <Avatar
-                    icon={<RobotOutlined />}
-                    style={{
-                      background: `linear-gradient(135deg, #0059b5 0%, ${appTheme.primary} 100%)`,
-                      width: 36,
-                      height: 36,
-                      marginRight: 8,
-                    }}
-                  />
+        {/* 对话气泡区 */}
+        <div className="c-card" style={{ padding: 12, minHeight: '300px' }}>
+          {messages.map((item) => (
+            <div key={item.id} style={{ display: 'flex', marginBottom: 16, justifyContent: item.isUser ? 'flex-end' : 'flex-start', alignItems: 'flex-start' }}>
+              {!item.isUser && (
+                <Avatar
+                  icon={<RobotOutlined />}
+                  style={{ background: 'linear-gradient(135deg, #0059b5, #0071e3)', width: 36, height: 36, marginRight: 8, flexShrink: 0 }}
+                />
+              )}
+              <div style={{
+                maxWidth: '80%',
+                padding: '12px 16px',
+                borderRadius: item.isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                background: item.isUser ? '#0071e3' : 'var(--cm-bg)',
+                color: item.isUser ? '#fff' : 'var(--cm-text-strong)',
+                fontSize: 14,
+                lineHeight: 1.6,
+                transition: 'all 0.15s ease',
+                wordBreak: 'break-word',
+              }}>
+                {item.content}
+                {item.transferred && (
+                  <div style={{ marginTop: 10, padding: '8px 10px', background: 'rgba(240, 160, 32, 0.14)', border: '1px solid rgba(240, 160, 32, 0.3)', borderRadius: 8, fontSize: 12, color: '#b9730d', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <CustomerServiceOutlined /> 该问题已为您转接人工客服，工单生成中
+                  </div>
                 )}
-                <div style={{
-                  maxWidth: '80%',
-                  padding: '12px 16px',
-                  borderRadius: item.isUser ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
-                  background: item.isUser ? 'var(--primary)' : 'var(--bg-sunken)',
-                  color: item.isUser ? '#fff' : 'var(--text-primary)',
-                  fontSize: 14,
-                  lineHeight: 1.6,
-                  transition: 'all 0.15s ease',
-                }}>
-                  {item.content}
-                  {item.transferred && (
-                    <div style={{
-                      marginTop: 10,
-                      padding: '8px 10px',
-                      background: 'var(--warning-bg)',
-                      border: '1px solid rgba(237, 108, 2, 0.2)',
-                      borderRadius: 6,
-                      fontSize: 12,
-                      color: 'var(--warning)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                    }}>
-                      <CustomerServiceOutlined /> 该问题已为您转接人工客服，工单生成中
-                    </div>
-                  )}
-                  {item.relatedLaws && item.relatedLaws.length > 0 && (
-                    <div style={{
-                      marginTop: 10,
-                      padding: 10,
-                      borderTop: `1px solid ${item.isUser ? 'rgba(255,255,255,0.2)' : 'var(--border-light)'}`,
-                      background: item.isUser ? 'rgba(255,255,255,0.08)' : 'var(--bg-card)',
-                      borderRadius: 6,
-                    }}>
-                      <div style={{ fontSize: 11, color: item.isUser ? 'rgba(255,255,255,0.8)' : 'var(--text-tertiary)', fontWeight: 500, marginBottom: 6 }}>相关法条：</div>
-                      {item.relatedLaws.map((law, i) => (
-                        <div key={i} style={{ fontSize: 12, marginTop: 3, padding: '4px 8px', background: item.isUser ? 'rgba(255,255,255,0.1)' : 'var(--bg-sunken)', borderRadius: 4 }}>{law}</div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {item.isUser && (
-                  <Avatar
-                    icon={<UserOutlined />}
-                    style={{
-                      background: '#334155',
-                      width: 36,
-                      height: 36,
-                      marginLeft: 8,
-                    }}
-                  />
+                {item.relatedLaws && item.relatedLaws.length > 0 && (
+                  <div style={{ marginTop: 10, padding: 10, borderTop: `1px solid ${item.isUser ? 'rgba(255,255,255,0.2)' : 'var(--cm-border)'}`, background: item.isUser ? 'rgba(255,255,255,0.08)' : 'var(--cm-card)', borderRadius: 8 }}>
+                    <div style={{ fontSize: 11, color: item.isUser ? 'rgba(255,255,255,0.8)' : 'var(--cm-text-muted)', fontWeight: 500, marginBottom: 6 }}>相关法条：</div>
+                    {item.relatedLaws.map((law, i) => (
+                      <div key={i} style={{ fontSize: 12, marginTop: 3, padding: '4px 8px', background: item.isUser ? 'rgba(255,255,255,0.1)' : 'var(--cm-bg)', borderRadius: 6 }}>{law}</div>
+                    ))}
+                  </div>
                 )}
               </div>
-            ))}
-          </div>
+              {item.isUser && (
+                <Avatar icon={<UserOutlined />} style={{ background: '#334155', width: 36, height: 36, marginLeft: 8, flexShrink: 0 }} />
+              )}
+            </div>
+          ))}
           {loading && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', background: 'var(--bg-sunken)', borderRadius: '12px 12px 12px 4px', maxWidth: '80%' }}>
-              <Avatar
-                icon={<RobotOutlined />}
-                style={{
-                  background: 'var(--gradient-accent)',
-                  width: 32,
-                  height: 32,
-                  marginRight: 6,
-                }}
-              />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', background: 'var(--cm-bg)', borderRadius: '14px 14px 14px 4px', maxWidth: '80%', width: 'fit-content' }}>
+              <Avatar icon={<RobotOutlined />} style={{ background: 'linear-gradient(135deg, #0059b5, #0071e3)', width: 32, height: 32, marginRight: 6 }} />
               <div style={{ display: 'flex', gap: 3 }}>
-                <span style={{ width: 5, height: 5, background: 'var(--text-tertiary)', borderRadius: '50%', animation: 'bounce 1.4s infinite ease-in-out both' }} />
-                <span style={{ width: 5, height: 5, background: 'var(--text-tertiary)', borderRadius: '50%', animation: 'bounce 1.4s infinite ease-in-out both', animationDelay: '0.2s' }} />
-                <span style={{ width: 5, height: 5, background: 'var(--text-tertiary)', borderRadius: '50%', animation: 'bounce 1.4s infinite ease-in-out both', animationDelay: '0.4s' }} />
+                <span style={{ width: 5, height: 5, background: 'var(--cm-text-muted)', borderRadius: '50%', animation: 'c-bounce 1.4s infinite ease-in-out both' }} />
+                <span style={{ width: 5, height: 5, background: 'var(--cm-text-muted)', borderRadius: '50%', animation: 'c-bounce 1.4s infinite ease-in-out both', animationDelay: '0.2s' }} />
+                <span style={{ width: 5, height: 5, background: 'var(--cm-text-muted)', borderRadius: '50%', animation: 'c-bounce 1.4s infinite ease-in-out both', animationDelay: '0.4s' }} />
               </div>
             </div>
           )}
         </div>
-      </div>
+      </main>
 
-      <div style={{ position: 'fixed', bottom: 56, left: 0, right: 0, background: '#fff', padding: '10px 12px', borderTop: '1px solid var(--border-default)', display: 'flex', gap: 8, boxShadow: '0 -1px 4px rgba(0,0,0,0.03)' }}>
+      {/* 底部输入栏（固定于底部导航上方） */}
+      <div className="c-input-bar" style={{ bottom: 56 }}>
         <Input
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
           placeholder="请输入您的法律问题..."
           size="large"
-          style={{ flex: 1, borderRadius: 20, border: '1px solid var(--border-default)', transition: 'all 0.15s ease' }}
-          prefix={<span style={{ fontSize: 14, color: 'var(--text-tertiary)', marginRight: 6 }}>💬</span>}
+          style={{ flex: 1, borderRadius: 22, border: '1px solid var(--cm-border)', background: 'var(--cm-bg)' }}
         />
         <ClientButton
           btnVariant="primary"
@@ -295,7 +233,7 @@ export default function AIConsult() {
           icon={<SendOutlined />}
           loading={loading}
           onClick={() => handleSend()}
-          style={{ height: 40, width: 40, borderRadius: 8, padding: 0 }}
+          style={{ height: 44, width: 44, borderRadius: 12, padding: 0, flexShrink: 0 }}
         />
       </div>
 
@@ -308,29 +246,29 @@ export default function AIConsult() {
         onCancel={() => setHistoryOpen(false)}
         footer={<ClientButton btnVariant="primary" btnSize="medium" onClick={() => setHistoryOpen(false)}>关闭</ClientButton>}
         centered
-        width={520}
+        destroyOnClose
       >
         {loadingHistory ? (
-          <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-tertiary)' }}>加载中...</div>
+          <div className="c-loading">加载中...</div>
         ) : history.length === 0 ? (
           <Empty description="暂无咨询记录" />
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 400, overflowY: 'auto' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 400, overflowY: 'auto' }}>
             {history.map((item) => (
-              <div key={item.id} style={{ padding: 12, background: 'var(--bg-sunken)', borderRadius: 8, border: '1px solid var(--border-light)' }}>
+              <div key={item.id} style={{ padding: 12, background: 'var(--cm-bg)', borderRadius: 12, border: '1px solid var(--cm-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <ClockCircleOutlined style={{ fontSize: 12, color: 'var(--text-tertiary)' }} />
-                    <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{formatDateTime(item.created_at)}</span>
+                    <ClockCircleOutlined style={{ fontSize: 12, color: 'var(--cm-text-muted)' }} />
+                    <span style={{ fontSize: 11, color: 'var(--cm-text-muted)' }}>{formatDateTime(item.created_at)}</span>
                   </div>
                   {item.is_transferred_to_human && <Tag color="orange" style={{ fontSize: 10 }}>已转人工</Tag>}
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4 }}>
-                  <span style={{ color: 'var(--primary)' }}>问：</span>{item.question}
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--cm-text-strong)', marginBottom: 4 }}>
+                  <span style={{ color: '#0071e3' }}>问：</span>{item.question}
                 </div>
                 {item.ai_answer && (
-                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-                    <span style={{ color: 'var(--text-tertiary)' }}>答：</span>{item.ai_answer}
+                  <div style={{ fontSize: 12, color: 'var(--cm-text)', lineHeight: 1.7 }}>
+                    <span style={{ color: 'var(--cm-text-muted)' }}>答：</span>{item.ai_answer}
                   </div>
                 )}
               </div>
@@ -349,10 +287,10 @@ export default function AIConsult() {
       >
         <div style={{ textAlign: 'center', padding: '16px 0' }}>
           <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-            <CustomerServiceOutlined style={{ fontSize: 32, color: 'var(--primary)' }} />
+            <CustomerServiceOutlined style={{ fontSize: 32, color: '#0071e3' }} />
           </div>
-          <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>已转人工，工单生成中</div>
-          <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--cm-text-strong)', marginBottom: 6 }}>已转人工，工单生成中</div>
+          <div style={{ fontSize: 13, color: 'var(--cm-text)', lineHeight: 1.7 }}>
             您的咨询已转接至人工客服
             <br />
             我们将尽快安排专人为您服务，请保持通讯畅通
@@ -361,7 +299,7 @@ export default function AIConsult() {
       </Modal>
 
       <style>{`
-        @keyframes bounce {
+        @keyframes c-bounce {
           0%, 80%, 100% { transform: scale(0); }
           40% { transform: scale(1); }
         }

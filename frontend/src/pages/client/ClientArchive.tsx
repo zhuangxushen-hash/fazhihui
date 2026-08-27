@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Card, Modal, Select, Input, Tag, theme, message, Empty, Button } from 'antd'
+import { Modal, Select, Input, Tag, message } from 'antd'
 import {
   ArrowLeftOutlined,
   UploadOutlined,
@@ -58,11 +58,7 @@ const getFileIcon = (fileName: string) => {
 
 export default function ClientArchive() {
   const navigate = useNavigate()
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
-
-  const {
-    token: { borderRadiusLG },
-  } = theme.useToken()
+  const user = JSON.parse(localStorage.getItem('client_user') || '{}')
 
   // 归档列表
   const [archives, setArchives] = useState<any[]>([])
@@ -200,230 +196,145 @@ export default function ClientArchive() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
-      {/* 顶部导航 */}
-      <header
-        style={{
-          position: 'sticky',
-          top: 0,
-          background: '#ffffff',
-          borderBottom: '1px solid #c1c6d6',
-          padding: '14px 16px',
-          paddingTop: 'max(14px, env(safe-area-inset-top))',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          zIndex: 50,
-        }}
-      >
-        <button
-          onClick={() => navigate('/client')}
-          style={{
-            width: 40,
-            height: 40,
-            border: 'none',
-            background: 'transparent',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            color: '#0059b5',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          <ArrowLeftOutlined style={{ fontSize: 22 }} />
+    <div className="client-app">
+      {/* 顶部应用栏 */}
+      <header className="c-topbar">
+        <button className="c-topbar__back" onClick={() => navigate('/client')}>
+          <ArrowLeftOutlined />
         </button>
-        <div style={{ flex: 1 }}>
-          <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#0059b5', letterSpacing: '0.01em' }}>云归档管理</h2>
-          <p style={{ fontSize: 12, color: '#717785', marginTop: 2 }}>您的案件文件云端归档存储</p>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span className="c-topbar__title" style={{ fontSize: 17 }}>云归档管理</span>
+          <div style={{ fontSize: 11, color: 'var(--cm-text-muted)', marginTop: 1 }}>您的案件文件云端归档存储</div>
         </div>
-        <Button
-          type="primary"
-          icon={<UploadOutlined />}
+        <button
+          className="c-topbar__action"
+          aria-label="上传归档"
           onClick={openUploadModal}
-          style={{ borderRadius: 8 }}
         >
-          上传归档
-        </Button>
+          <UploadOutlined style={{ fontSize: 22, color: '#1a1d23' }} />
+        </button>
       </header>
 
-      <div style={{ padding: '12px', flex: 1, paddingBottom: '80px' }}>
+      <main className="c-container--with-nav" style={{ maxWidth: 720, margin: '0 auto', width: '100%', padding: 16, paddingBottom: 88 }}>
         {/* 筛选条件 */}
-        <Card
-          style={{
-            marginBottom: 12,
-            borderRadius: borderRadiusLG,
-            boxShadow: 'var(--shadow-sm)',
-            border: '1px solid var(--border-default)',
-          }}
-          bodyStyle={{ padding: 12 }}
-        >
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <div style={{ flex: '1 1 45%', minWidth: 140 }}>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>按案件筛选</div>
+        <div className="c-card" style={{ padding: 12, marginBottom: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div className="c-field" style={{ marginBottom: 0 }}>
+              <label className="c-field__label">按案件筛选</label>
               <Select
                 value={filterCaseId}
                 onChange={(v) => setFilterCaseId(v)}
                 placeholder="全部案件"
                 style={{ width: '100%' }}
                 allowClear
-                size="middle"
+                size="large"
                 options={cases.map((c) => ({
                   value: c.id,
                   label: `${caseTypeLabel(c.case_type)} - ${c.case_no || c.id?.slice(0, 8)}`,
                 }))}
               />
             </div>
-            <div style={{ flex: '1 1 45%', minWidth: 140 }}>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>文件类型</div>
+            <div className="c-field" style={{ marginBottom: 0 }}>
+              <label className="c-field__label">文件类型</label>
               <Select
                 value={filterFileType}
                 onChange={(v) => setFilterFileType(v)}
                 placeholder="全部类型"
                 style={{ width: '100%' }}
                 allowClear
-                size="middle"
+                size="large"
                 options={FILE_TYPE_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))}
               />
             </div>
           </div>
-          <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
-            <Button
-              type="primary"
-              size="small"
-              onClick={fetchArchives}
-              style={{ borderRadius: 8 }}
-            >
+          <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+            <ClientButton btnVariant="outline" btnSize="small" onClick={fetchArchives}>
               查询
-            </Button>
+            </ClientButton>
           </div>
-        </Card>
+        </div>
 
         {/* 归档列表 */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-tertiary)' }}>加载中...</div>
+          <div className="c-loading">加载中...</div>
         ) : archives.length === 0 ? (
-          <Card
-            style={{
-              borderRadius: borderRadiusLG,
-              boxShadow: 'var(--shadow-sm)',
-              border: '1px solid var(--border-default)',
-            }}
-          >
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={<span style={{ color: 'var(--text-tertiary)' }}>暂无归档文件</span>}
-            >
-              <Button type="primary" icon={<UploadOutlined />} onClick={openUploadModal}>
+          <div className="c-card" style={{ padding: 32 }}>
+            <div className="c-empty">
+              <FileTextOutlined className="c-empty__icon" />
+              <div className="c-empty__title">暂无归档文件</div>
+              <div className="c-empty__desc">您的案件文件将归档存储在这里</div>
+              <ClientButton
+                btnVariant="primary"
+                btnSize="medium"
+                icon={<UploadOutlined />}
+                onClick={openUploadModal}
+                style={{ marginTop: 16 }}
+              >
                 立即归档
-              </Button>
-            </Empty>
-          </Card>
+              </ClientButton>
+            </div>
+          </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {archives.map((archive) => {
-              const typeConfig = getFileTypeConfig(archive.file_type)
-              const FileIcon = getFileIcon(archive.file_name)
-              return (
-                <Card
-                  key={archive.id}
-                  style={{
-                    borderRadius: borderRadiusLG,
-                    boxShadow: 'var(--shadow-sm)',
-                    border: '1px solid var(--border-default)',
-                    transition: 'all 0.2s ease',
-                  }}
-                  bodyStyle={{ padding: 14 }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+          <div className="c-card" style={{ padding: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {archives.map((archive) => {
+                const typeConfig = getFileTypeConfig(archive.file_type)
+                const FileIcon = getFileIcon(archive.file_name)
+                return (
+                  <div key={archive.id} className="c-cell" style={{ minHeight: 64, cursor: 'default' }}>
                     {/* 文件图标 */}
-                    <div
-                      style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 12,
-                        background: 'var(--bg-sunken)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                      }}
-                    >
-                      <FileIcon style={{ fontSize: 22, color: 'var(--primary)' }} />
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,113,227,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <FileIcon style={{ fontSize: 22, color: '#0071e3' }} />
                     </div>
 
                     {/* 文件信息 */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="c-cell__body">
                       <div
-                        style={{
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: 'var(--text-primary)',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          marginBottom: 4,
-                        }}
+                        style={{ fontSize: 14, fontWeight: 600, color: 'var(--cm-text-strong)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                         title={archive.file_name}
                       >
                         {archive.file_name}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 12, color: 'var(--text-tertiary)' }}>
-                        <Tag color={typeConfig.color} style={{ borderRadius: 4, fontSize: 11, margin: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 11, color: 'var(--cm-text-muted)', marginTop: 4 }}>
+                        <Tag color={typeConfig.color} style={{ borderRadius: 6, fontSize: 11, margin: 0, lineHeight: '18px' }}>
                           {typeConfig.label}
                         </Tag>
                         <span>{formatFileSize(archive.file_size)}</span>
                         <span>{formatDateTime(archive.archived_at)}</span>
                       </div>
                       {archive.description && (
-                        <div
-                          style={{
-                            fontSize: 12,
-                            color: 'var(--text-secondary)',
-                            marginTop: 6,
-                            lineHeight: 1.5,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                          }}
-                        >
+                        <div style={{ fontSize: 12, color: 'var(--cm-text)', marginTop: 6, lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                           {archive.description}
                         </div>
                       )}
                     </div>
 
                     {/* 操作按钮 */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
-                      <Button
-                        type="link"
-                        size="small"
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
+                      <ClientButton
+                        btnVariant="outline"
+                        btnSize="small"
                         icon={<DownloadOutlined />}
                         onClick={() => handleDownload(archive)}
-                        style={{ color: 'var(--primary)', padding: '4px 8px' }}
                       >
                         下载
-                      </Button>
-                      <Button
-                        type="link"
-                        size="small"
-                        danger
+                      </ClientButton>
+                      <ClientButton
+                        btnVariant="danger"
+                        btnSize="small"
                         icon={<DeleteOutlined />}
                         onClick={() => openDeleteModal(archive.id)}
-                        style={{ padding: '4px 8px' }}
                       >
                         删除
-                      </Button>
+                      </ClientButton>
                     </div>
                   </div>
-                </Card>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
         )}
-      </div>
+      </main>
 
       {/* 上传归档弹窗 */}
       <Modal
@@ -432,13 +343,11 @@ export default function ClientArchive() {
         onCancel={() => setUploadModalOpen(false)}
         footer={null}
         centered
-        width={480}
+        destroyOnClose
       >
         <div>
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>
-              关联案件 <span style={{ color: 'var(--text-tertiary)', fontSize: 11 }}>（选填）</span>
-            </label>
+          <div className="c-field">
+            <label className="c-field__label">关联案件 <span style={{ color: 'var(--cm-text-muted)', fontSize: 12 }}>（选填）</span></label>
             <Select
               value={uploadCaseId || undefined}
               onChange={(v) => setUploadCaseId(v)}
@@ -454,10 +363,8 @@ export default function ClientArchive() {
             />
           </div>
 
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>
-              文件类型 <span style={{ color: 'var(--error)' }}>*</span>
-            </label>
+          <div className="c-field">
+            <label className="c-field__label">文件类型 <span style={{ color: 'var(--cm-danger)' }}>*</span></label>
             <Select
               value={uploadFileType}
               onChange={(v) => setUploadFileType(v)}
@@ -468,10 +375,8 @@ export default function ClientArchive() {
             />
           </div>
 
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>
-              选择文件 <span style={{ color: 'var(--error)' }}>*</span>
-            </label>
+          <div className="c-field">
+            <label className="c-field__label">选择文件 <span style={{ color: 'var(--cm-danger)' }}>*</span></label>
             <input
               ref={fileInputRef}
               type="file"
@@ -480,32 +385,22 @@ export default function ClientArchive() {
             />
             <div
               onClick={() => fileInputRef.current?.click()}
-              style={{
-                padding: '20px',
-                border: '1px dashed var(--border-dark)',
-                borderRadius: 8,
-                textAlign: 'center',
-                cursor: 'pointer',
-                background: 'var(--bg-sunken)',
-                transition: 'all 0.15s ease',
-              }}
+              style={{ padding: '22px', border: '1px dashed var(--cm-text-muted)', borderRadius: 12, textAlign: 'center', cursor: 'pointer', background: 'var(--cm-bg)' }}
             >
-              <UploadOutlined style={{ fontSize: 28, color: 'var(--text-tertiary)', marginBottom: 8 }} />
-              <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+              <UploadOutlined style={{ fontSize: 28, color: 'var(--cm-text-muted)', marginBottom: 8 }} />
+              <div style={{ fontSize: 14, color: 'var(--cm-text)' }}>
                 {uploadFile ? uploadFile.name : '点击选择要归档的文件'}
               </div>
               {uploadFile && (
-                <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 4 }}>
+                <div style={{ fontSize: 12, color: 'var(--cm-text-muted)', marginTop: 4 }}>
                   {formatFileSize(uploadFile.size)}
                 </div>
               )}
             </div>
           </div>
 
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>
-              归档描述 <span style={{ color: 'var(--text-tertiary)', fontSize: 11 }}>（选填）</span>
-            </label>
+          <div className="c-field">
+            <label className="c-field__label">归档描述 <span style={{ color: 'var(--cm-text-muted)', fontSize: 12 }}>（选填）</span></label>
             <Input.TextArea
               value={uploadDesc}
               onChange={(e) => setUploadDesc(e.target.value)}
@@ -513,6 +408,7 @@ export default function ClientArchive() {
               rows={3}
               maxLength={200}
               showCount
+              style={{ borderRadius: 12 }}
             />
           </div>
 
@@ -540,8 +436,8 @@ export default function ClientArchive() {
         centered
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0' }}>
-          <DeleteFilled style={{ fontSize: 24, color: 'var(--error)' }} />
-          <div style={{ fontSize: 14, color: 'var(--text-primary)' }}>
+          <DeleteFilled style={{ fontSize: 24, color: 'var(--cm-danger)' }} />
+          <div style={{ fontSize: 14, color: 'var(--cm-text-strong)' }}>
             确定要删除这份归档文件吗？删除后不可恢复。
           </div>
         </div>

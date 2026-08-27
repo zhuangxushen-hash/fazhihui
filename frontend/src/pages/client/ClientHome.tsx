@@ -1,22 +1,21 @@
 import { useState, useEffect } from 'react'
-import { Card, List, Avatar } from 'antd'
-import { FileTextOutlined, MessageOutlined, BellOutlined, UserOutlined, ArrowRightOutlined, AppstoreOutlined, SafetyCertificateOutlined, NotificationOutlined } from '@ant-design/icons'
+import { List, Avatar, Spin } from 'antd'
+import { FileTextOutlined, BellOutlined, UserOutlined, ArrowRightOutlined, MessageOutlined, AppstoreOutlined, SafetyCertificateOutlined } from '@ant-design/icons'
 import axios from '../../api/axios'
 import { caseTypeLabel } from '../../utils/format'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../../components/BottomNav'
-import { theme } from '../../constants/theme'
+
 export default function ClientHome() {
   const [cases, setCases] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
-  const [activeAction, setActiveAction] = useState<number | null>(null)
-  const [activeStat, setActiveStat] = useState<number | null>(null)
   const navigate = useNavigate()
 
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const user = JSON.parse(localStorage.getItem('client_user') || '{}')
 
   useEffect(() => {
     fetchCases()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchCases = async () => {
@@ -42,15 +41,16 @@ export default function ClientHome() {
     closed: '已结案',
   }
 
-  const statusPillStyles: Record<string, { bg: string; color: string }> = {
-    pending_assign: { bg: 'rgba(237, 108, 2, 0.1)', color: '#ed6c02' },
-    processing: { bg: 'rgba(0, 113, 227, 0.1)', color: theme.primary },
-    filing: { bg: 'rgba(0, 113, 227, 0.1)', color: theme.primary },
-    evidence: { bg: 'rgba(0, 113, 227, 0.1)', color: theme.primary },
-    hearing: { bg: 'rgba(201, 169, 97, 0.14)', color: '#8c702e' },
-    appeal: { bg: 'rgba(201, 169, 97, 0.14)', color: '#8c702e' },
-    pending_close: { bg: 'rgba(237, 108, 2, 0.1)', color: '#ed6c02' },
-    closed: { bg: 'rgba(46, 125, 50, 0.1)', color: '#2e7d32' },
+  // 状态胶囊 class 映射
+  const statusPill: Record<string, string> = {
+    pending_assign: 'c-pill--warning',
+    processing: 'c-pill--primary',
+    filing: 'c-pill--primary',
+    evidence: 'c-pill--primary',
+    hearing: 'c-pill--warning',
+    appeal: 'c-pill--warning',
+    pending_close: 'c-pill--warning',
+    closed: 'c-pill--success',
   }
 
   const quickActions = [
@@ -58,33 +58,33 @@ export default function ClientHome() {
       title: '在线咨询',
       desc: 'AI法律助手随时解答',
       icon: MessageOutlined,
-      color: theme.primary,
-      bg: 'rgba(0, 113, 227, 0.1)',
-      path: '/client/ai-consult'
+      path: '/client/ai-consult',
+      tint: 'rgba(0, 113, 227, 0.1)',
+      color: '#0071e3',
     },
     {
       title: '服务大厅',
-      desc: '签约/支付/发票/证据一站式办理',
+      desc: '发票/证据/材料一站式办理',
       icon: AppstoreOutlined,
-      color: '#715818',
-      bg: 'rgba(201, 169, 97, 0.14)',
-      path: '/client/service-hall'
+      path: '/client/service-hall',
+      tint: 'rgba(240, 160, 32, 0.12)',
+      color: '#b9730d',
     },
     {
       title: '投诉反馈',
       desc: '24小时快速响应',
       icon: BellOutlined,
-      color: '#ba1a1a',
-      bg: 'rgba(186, 26, 26, 0.1)',
-      path: '/client/complaint'
+      path: '/client/complaint',
+      tint: 'rgba(229, 72, 77, 0.1)',
+      color: '#e5484d',
     },
     {
       title: '服务评价',
       desc: '对已结案案件进行评价',
       icon: SafetyCertificateOutlined,
-      color: '#8c702e',
-      bg: 'rgba(201, 169, 97, 0.14)',
-      path: '/client/service-rating'
+      path: '/client/service-rating',
+      tint: 'rgba(46, 158, 91, 0.1)',
+      color: '#2e9e5b',
     },
   ]
 
@@ -95,207 +95,129 @@ export default function ClientHome() {
   ]
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f9f9fb', display: 'flex', flexDirection: 'column' }}>
-      {/* === MD3 Top App Bar === */}
-      <header
-        style={{
-          position: 'sticky',
-          top: 0,
-          background: '#ffffff',
-          borderBottom: '1px solid #c1c6d6',
-          padding: '14px 16px',
-          paddingTop: 'max(14px, env(safe-area-inset-top))',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          zIndex: 50,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+    <div className="client-app">
+      {/* 顶部应用栏 */}
+      <header className="c-topbar" style={{ justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingLeft: 8 }}>
           <Avatar
             icon={<UserOutlined />}
             style={{
-              width: 40,
-              height: 40,
+              width: 38,
+              height: 38,
               borderRadius: '50%',
-              background: `linear-gradient(135deg, ${theme.brandDark} 0%, #131c2a 100%)`,
-              border: '1px solid rgba(201, 169, 97, 0.3)',
-              color: '#e4c278',
+              background: 'linear-gradient(135deg, #0059b5, #0071e3)',
+              color: '#fff',
             }}
           />
-          <span style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#0059b5', letterSpacing: '0.01em' }}>法智汇</span>
+          <span style={{ fontSize: 19, fontWeight: 700, color: '#1a1d23', letterSpacing: '0.02em' }}>法智汇</span>
         </div>
         <button
-          style={{
-            width: 40,
-            height: 40,
-            border: 'none',
-            background: 'transparent',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            color: '#0059b5',
-            WebkitTapHighlightColor: 'transparent',
-          }}
+          className="c-topbar__action"
+          aria-label="通知"
+          onClick={() => undefined}
         >
-          <NotificationOutlined style={{ fontSize: 22 }} />
+          <BellOutlined style={{ fontSize: 22, color: '#1a1d23' }} />
         </button>
       </header>
 
-      <main style={{ padding: '20px 16px 80px', flex: 1, maxWidth: 1024, margin: '0 auto', width: '100%' }}>
-        {/* === Welcome Section === */}
-        <section style={{ marginBottom: 24 }}>
-          <h1 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 24, fontWeight: 600, color: '#0059b5', margin: 0, letterSpacing: '0.01em' }}>
-            您好，{user.real_name || '客户'}
-          </h1>
-          <p style={{ fontSize: 14, color: '#414753', marginTop: 4 }}>
+      <main className="c-container" style={{ maxWidth: 1024, margin: '0 auto', width: '100%' }}>
+        {/* 问候区 */}
+        <section style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1d23' }}>您好，{user.real_name || '客户'}</div>
+          <div style={{ fontSize: 13, color: 'var(--cm-text-muted)', marginTop: 4 }}>
             今天有 {cases.length} 条案件动态需要您关注
-          </p>
+          </div>
         </section>
 
-        {/* === Stats Row === */}
+        {/* 数据统计 */}
         <section style={{ marginBottom: 24 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
             {stats.map((stat, idx) => (
               <div
                 key={idx}
+                className="c-card"
+                style={{ textAlign: 'center', padding: '16px 8px', cursor: 'pointer' }}
                 onClick={() => navigate(stat.path)}
-                onTouchStart={() => setActiveStat(idx)}
-                onTouchEnd={() => setActiveStat(null)}
-                style={{
-                  background: '#ffffff',
-                  border: '1px solid #c1c6d6',
-                  borderRadius: 12,
-                  padding: '14px 12px',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                  transform: activeStat === idx ? 'scale(0.97)' : 'scale(1)',
-                  boxShadow: '0 1px 3px rgba(15, 23, 42, 0.02), 0 1px 2px rgba(15, 23, 42, 0.04)',
-                }}
               >
-                <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 22, fontWeight: 700, color: '#0059b5' }}>{stat.value}</div>
-                <div style={{ fontSize: 11, color: '#717785', marginTop: 2 }}>{stat.label}</div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: '#0071e3', fontVariantNumeric: 'tabular-nums' }}>{stat.value}</div>
+                <div style={{ fontSize: 12, color: 'var(--cm-text-muted)', marginTop: 4 }}>{stat.label}</div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* === My Cases Section === */}
+        {/* 快捷操作 */}
         <section style={{ marginBottom: 24 }}>
-          <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#1a1c1d', marginBottom: 12, letterSpacing: '0.01em' }}>我的活跃案件</h2>
-          <Card style={{ borderRadius: 12, border: '1px solid #c1c6d6', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.02), 0 1px 2px rgba(15, 23, 42, 0.04)' }} styles={{ body: { padding: '4px 16px' } }}>
-            <List
-              loading={loading}
-              dataSource={cases}
-              renderItem={(item, index) => {
-                const pill = statusPillStyles[item.status] || statusPillStyles.processing
-                return (
-                  <List.Item
-                    actions={[
-                      <div
-                        key={index}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          navigate(`/client/case/${item.id}`)
-                        }}
-                        onTouchStart={(e) => {
-                          e.stopPropagation()
-                          e.currentTarget.style.transform = 'scale(0.96)'
-                        }}
-                        onTouchEnd={(e) => {
-                          e.stopPropagation()
-                          e.currentTarget.style.transform = 'scale(1)'
-                        }}
-                        style={{
-                          padding: '4px 14px',
-                          borderRadius: 999,
-                          border: `1px solid ${theme.primary}`,
-                          color: theme.primary,
-                          fontSize: 12,
-                          fontWeight: 500,
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                          background: '#ffffff',
-                          WebkitTapHighlightColor: 'transparent',
-                          touchAction: 'manipulation',
-                        }}
-                      >查看详情</div>
-                    ]}
-                    style={{ borderBottom: index < cases.length - 1 ? '1px solid #e2e2e4' : 'none', padding: '12px 0', cursor: 'pointer', transition: 'transform 0.15s ease', WebkitTapHighlightColor: 'transparent' }}
-                    onClick={() => navigate(`/client/case/${item.id}`)}
-                    onTouchStart={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
-                    onTouchEnd={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                  >
-                    <List.Item.Meta
-                      avatar={<div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <FileTextOutlined style={{ fontSize: 18, color: theme.primary }} />
-                      </div>}
-                      title={<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
-                        <span style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 14, fontWeight: 600, color: '#1a1c1d' }}>案件编号: {item.case_no}</span>
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center',
-                          padding: '2px 10px', borderRadius: 999,
-                          fontSize: 11, fontWeight: 500, lineHeight: '18px',
-                          background: pill.bg, color: pill.color,
-                        }}>{statusLabels[item.status]}</span>
-                      </div>}
-                      description={<div>
-                        <div style={{ fontSize: 12, color: '#414753', marginTop: 2 }}>案由：{caseTypeLabel(item.case_type)}</div>
-                        <div style={{ color: '#717785', fontSize: 11, marginTop: 2 }}>创建时间：{item.created_at}</div>
-                      </div>}
-                    />
-                  </List.Item>
-                )
-              }}
-            />
-            {cases.length === 0 && !loading && (
-              <div style={{ textAlign: 'center', padding: 32, color: '#717785' }}>
-                <FileTextOutlined style={{ fontSize: 40, color: '#c1c6d6', marginBottom: 8 }} />
-                <div style={{ fontSize: 13 }}>暂无案件</div>
-                <div style={{ fontSize: 11, marginTop: 2 }}>您可以通过签约付款创建新案件</div>
-              </div>
-            )}
-          </Card>
-        </section>
-
-        {/* === Quick Actions === */}
-        <section style={{ marginBottom: 24 }}>
-          <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#1a1c1d', marginBottom: 12, letterSpacing: '0.01em' }}>快捷操作</h2>
-          <Card style={{ borderRadius: 12, border: '1px solid #c1c6d6', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.02), 0 1px 2px rgba(15, 23, 42, 0.04)' }} styles={{ body: { padding: 8 } }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {quickActions.map((action, index) => (
+          <div className="c-section-title">
+            <span>快捷操作</span>
+            <span className="c-section-title__more">点击办理相关服务</span>
+          </div>
+          <div className="c-card">
+            {quickActions.map((action, index) => {
+              const Icon = action.icon
+              return (
                 <div
                   key={index}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '12px 14px',
-                    background: 'transparent',
-                    borderRadius: 10,
-                    border: '1px solid transparent',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                    transform: activeAction === index ? 'scale(0.98)' : 'scale(1)',
-                  }}
+                  className="c-cell"
                   onClick={() => navigate(action.path)}
-                  onTouchStart={() => setActiveAction(index)}
-                  onTouchEnd={() => setActiveAction(null)}
                 >
-                  <div style={{ width: 44, height: 44, borderRadius: 12, background: action.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                    <action.icon style={{ fontSize: 22, color: action.color }} />
+                  <div style={{ width: 46, height: 46, borderRadius: 14, background: action.tint, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon style={{ fontSize: 22, color: action.color }} />
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 15, fontWeight: 600, color: '#1a1c1d' }}>{action.title}</div>
-                    <div style={{ fontSize: 12, color: '#717785', marginTop: 2 }}>{action.desc}</div>
+                  <div className="c-cell__body">
+                    <div className="c-cell__title">{action.title}</div>
+                    <div className="c-cell__desc">{action.desc}</div>
                   </div>
-                  <ArrowRightOutlined style={{ fontSize: 14, color: '#717785' }} />
+                  <ArrowRightOutlined className="c-cell__arrow" />
                 </div>
-              ))}
-            </div>
-          </Card>
+              )
+            })}
+          </div>
+        </section>
+
+        {/* 我的活跃案件 */}
+        <section>
+          <div className="c-section-title">
+            <span>我的活跃案件</span>
+          </div>
+          <div className="c-card">
+            {loading ? (
+              <div className="c-loading"><Spin /></div>
+            ) : cases.length === 0 ? (
+              <div className="c-empty">
+                <FileTextOutlined className="c-empty__icon" />
+                <div className="c-empty__title">暂无案件</div>
+                <div className="c-empty__desc">您可以通过签约付款创建新案件</div>
+              </div>
+            ) : (
+              <List
+                dataSource={cases}
+                split={false}
+                renderItem={(item, index) => {
+                  return (
+                    <List.Item
+                      className="c-cell"
+                      style={{ borderTop: index === 0 ? 'none' : '1px solid var(--cm-border)' }}
+                      onClick={() => navigate(`/client/case/${item.id}`)}
+                    >
+                      <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(0,113,227,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <FileTextOutlined style={{ fontSize: 18, color: '#0071e3' }} />
+                      </div>
+                      <div className="c-cell__body">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                          <span className="c-cell__title" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>案件编号: {item.case_no}</span>
+                          <span className={`c-pill ${statusPill[item.status] || 'c-pill--primary'}`} style={{ flexShrink: 0 }}>{statusLabels[item.status] || item.status}</span>
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--cm-text)', marginTop: 3 }}>案由：{caseTypeLabel(item.case_type)}</div>
+                        <div style={{ fontSize: 11, color: 'var(--cm-text-muted)', marginTop: 2 }}>创建时间：{item.created_at}</div>
+                      </div>
+                      <ArrowRightOutlined className="c-cell__arrow" />
+                    </List.Item>
+                  )
+                }}
+              />
+            )}
+          </div>
         </section>
       </main>
 

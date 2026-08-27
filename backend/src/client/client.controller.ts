@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, BadRequestException } from '@nestjs/common';
 import { ClientService } from './client.service';
 import { ComplaintType, UserRole } from '../types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -200,12 +200,17 @@ export class ClientController {
 
   // C端提交预填字段并调用法大大签约流程（填充→提交→定稿→返回签署链接）
   @Post('sign/submit-prefill')
-  submitSignPrefillAndSign(@Body() body: {
+  async submitSignPrefillAndSign(@Body() body: {
     signing_id: string;
     client_id: string;
     values: Array<{ field_doc_id?: string; field_id?: string; field_name?: string; field_value: string }>;
   }) {
-    return this.clientService.submitSignPrefillAndSign(body);
+    try {
+      return await this.clientService.submitSignPrefillAndSign(body);
+    } catch (e) {
+      // 透出法大大业务错误（如必填控件未填写），避免被包装成无意义的 Internal server error
+      throw new BadRequestException((e as Error)?.message || '签约失败，请稍后重试');
+    }
   }
 
   // 下载电子发票（C端 POST）

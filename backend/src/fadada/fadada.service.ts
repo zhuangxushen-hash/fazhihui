@@ -624,6 +624,10 @@ export class FadadaService {
       signTemplateId: params.signTemplateId,
       transReferenceId: params.signingId,
       actors,
+      // 免验证签场景码（自动签）：在法大大平台「印章管理→电子印章→免验证签」授权该场景码后，
+      // 企业（律所）印章随签署自动盖章，客户签名后任务即完成，无需流转回企业再用印。
+      // 读取自环境变量 FADADA_BUSINESS_ID，未配置时使用默认场景码。
+      businessId: this.configService.get('FADADA_BUSINESS_ID') || '451799554c41a58c4f8e6e549cf792f3',
       // 填写+签约一体：创建后不自动提交、不定稿，等待 C 端客户在本系统 C 端页面补全必填控件后，
       // 由 C 端点击签约再调用法大大提交(start)→定稿(finalizeDoc)→获取签署链接。
       autoStart: false,
@@ -781,15 +785,24 @@ export class FadadaService {
     await this.assertProdReady();
     // 1. 填充客户补充的字段（必须在提交之前调用）
     await this.fillValuesWithTolerance(params.signTaskId, params.values);
-    // 2. 提交任务 → 3. 定稿文档（记录响应业务码，便于排查任务状态流转）
-    const startRes = await this.signTaskClient.start({ signTaskId: params.signTaskId });
-    this.logger.log(`法大大模板签署任务 start 响应=${JSON.stringify(startRes?.data || startRes)}`);
-    if (startRes?.data?.code && startRes.data.code !== '100000') {
-      // 提交失败（如模板存在无法通过 API 填充的必填控件，金额控件等），给出明确提示
-      throw new Error('签署任务提交失败：' + (startRes.data.msg || '未知错误') + '（如为金额类控件，请在法大大平台模板中将金额控件改为数字/文本控件或取消必填）');
+    // 2/3. 提交任务(start)并定稿(finalizeDoc)。这两个动作都是「一次性」状态流转，重复点击"去签署"
+    //     会对已推进的任务再次触发，法大大返回 211055「签署任务不是创建中状态」/ 211125「不是填写完成状态」。
+    //     因此先读取任务当前状态，仅当处于对应流转前置状态时才调用，已推进则跳过，做到幂等容错。
+    let taskStatus = '';
+    const detailRes = await this.signTaskClient.getDetail({ signTaskId: params.signTaskId }).catch(() => null);
+    taskStatus = detailRes?.data?.data?.signTaskStatus || '';
+    // 任务状态参考：task_created=创建中、fill_progress=填写中、fill_complete=填写完成、sign_progress=签署中、finished=已完成
+    if (taskStatus === 'preview' || taskStatus === 'task_created' || !taskStatus) {
+      // 处于创建/预览态才算真正「创建中」，才允许 start 提交
+      await this.trySubmitSignTask(params.signTaskId);
+      // start 成功后进入「填写中」，此时字段已由 C 端填过，可尝试定稿；若字段未全（如含金额控件跳过），
+      // 定稿会返回业务错误，降级为日志即可，客户仍可进入法大大页面补齐。
+      await this.tryFinalizeSignTask(params.signTaskId);
+    } else if (taskStatus === 'fill_progress') {
+      // 已提交过(start 生效)，处于填写中：直接尝试定稿转为签署中；失败不阻断，取链接让客户在法大大页面确认
+      await this.tryFinalizeSignTask(params.signTaskId);
     }
-    const finalizeRes = await this.signTaskClient.finalizeDoc({ signTaskId: params.signTaskId });
-    this.logger.log(`法大大模板签署任务 finalizeDoc 响应=${JSON.stringify(finalizeRes?.data || finalizeRes)}`);
+    // 处于 fill_complete / sign_progress / finished 等更后置状态时，start 与 finalize 均已生效，直接取链接
     // 4. 获取客户参与方签署链接
     const urlRes = await this.signTaskClient.getActorUrl({
       signTaskId: params.signTaskId,
@@ -808,6 +821,56 @@ export class FadadaService {
       throw new Error('法大大签署链接获取失败：' + (urlRes?.data?.msg || '未知错误'));
     }
     return { signUrl, embedUrl, mode: 'prod' };
+  }
+
+  /**
+   * 提交签署任务(start)：仅在任务仍处于「创建中/预览」态时生效。
+   * 若任务已推进（如重复调用），法大大返回非 100000 业务码，此处降级为 WARN 日志而不抛错，
+   * 避免 C 端「去签署」重复点击导致 Internal Server Error。
+   * 但若提交失败原因明确（如必填控件未填写），需透出具体原因给前端，便于客户补齐后重试。
+   */
+  private async trySubmitSignTask(signTaskId: string): Promise<void> {
+    try {
+      const startRes = await this.signTaskClient.start({ signTaskId });
+      this.logger.log(`法大大模板签署任务 start 响应=${JSON.stringify(startRes?.data || startRes)}`);
+      if (startRes?.data?.code && startRes.data.code !== '100000') {
+        const code = startRes.data.code;
+        const msg = startRes.data.msg || '';
+        // 211148=必填控件未填写：这是真实业务阻塞，直接抛错让前端提示客户补齐字段后重试
+        if (code === '211148') {
+          throw new Error(`签署任务提交失败：${msg}`);
+        }
+        // 其余情况（如任务已推进 211055）为幂等场景，降级为 WARN 继续取链接
+        this.logger.warn(
+          `法大大签署任务 start 未生效 code=${code} msg=${msg}，继续取签署链接`,
+        );
+      }
+    } catch (e) {
+      if ((e as Error)?.message?.startsWith('签署任务提交失败')) {
+        throw e;
+      }
+      // 网络/签名异常也降级，不阻断后续取链接
+      this.logger.warn(`法大大签署任务 start 调用异常 msg=${(e as Error)?.message || e}`);
+    }
+  }
+
+  /**
+   * 定稿文档(finalizeDoc)：仅在任务处于「填写中」时尝试转「填写完成」。
+   * 未到定稿时机（如存在未填必填控件）时法大大返回非 100000，同样降级为 WARN，
+   * 客户仍可进入法大大签署页面补齐字段并签署。
+   */
+  private async tryFinalizeSignTask(signTaskId: string): Promise<void> {
+    try {
+      const finalizeRes = await this.signTaskClient.finalizeDoc({ signTaskId });
+      this.logger.log(`法大大模板签署任务 finalizeDoc 响应=${JSON.stringify(finalizeRes?.data || finalizeRes)}`);
+      if (finalizeRes?.data?.code && finalizeRes.data.code !== '100000') {
+        this.logger.warn(
+          `法大大签署任务 finalizeDoc 未生效 code=${finalizeRes.data.code} msg=${finalizeRes.data.msg || ''}，继续取签署链接`,
+        );
+      }
+    } catch (e) {
+      this.logger.warn(`法大大签署任务 finalizeDoc 调用异常 msg=${(e as Error)?.message || e}`);
+    }
   }
 
   /**

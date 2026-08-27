@@ -7,6 +7,7 @@ import 'dayjs/locale/zh-cn'
 import Layout from './components/Layout'
 import ErrorBoundary from './components/ErrorBoundary'
 import { theme } from './constants/theme'
+import { getToken, getAuthUser } from './utils/authStorage'
 // 页面组件懒加载（按需打包，加快首屏加载速度）
 const Login = lazy(() => import('./pages/Login'))
 const ClientLogin = lazy(() => import('./pages/client/ClientLogin'))
@@ -245,12 +246,11 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
-  const token = localStorage.getItem('token')
+  const token = getToken()
   if (!token) {
     return <Navigate to="/login" replace />
   }
-  const userStr = localStorage.getItem('user')
-  const user = userStr ? JSON.parse(userStr) : null
+  const user = getAuthUser<any>()
   const userRole = user?.role
   // client角色强制跳转客户端
   if (userRole === 'client') {
@@ -272,12 +272,11 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
 }
 
 const ClientProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const token = localStorage.getItem('token')
+  const token = getToken()
   if (!token) {
     return <Navigate to="/client/login" replace />
   }
-  const userStr = localStorage.getItem('user')
-  const user = userStr ? JSON.parse(userStr) : null
+  const user = getAuthUser<any>()
   const userRole = user?.role
   if (!userRole || !CLIENT_ALLOWED_ROLES.includes(userRole)) {
     return <Navigate to="/login" replace />

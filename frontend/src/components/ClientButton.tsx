@@ -1,76 +1,67 @@
 import { useState } from 'react'
 import { Button } from 'antd'
 import type { ButtonProps } from 'antd'
-import { theme } from '../constants/theme'
+
 interface ClientButtonProps extends Omit<ButtonProps, 'variant' | 'size'> {
-  btnVariant?: 'primary' | 'secondary' | 'outline' | 'ghost'
+  btnVariant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger'
   btnSize?: 'small' | 'medium' | 'large'
 }
 
+const MODIFIERS: Record<string, string> = {
+  primary: 'c-btn--primary',
+  outline: 'c-btn--outline',
+  ghost: 'c-btn--ghost',
+  danger: 'c-btn--danger',
+}
+
+const HEIGHTS: Record<string, number> = {
+  small: 44,
+  medium: 48,
+  large: 54,
+}
+
+/**
+ * C端通用按钮（移动端样式）
+ * 统一触控目标 >= 44px，带按下缩放反馈
+ */
 export default function ClientButton({
   btnVariant = 'primary',
   btnSize = 'medium',
   style,
+  className,
   children,
+  disabled,
   ...props
 }: ClientButtonProps) {
   const [isPressed, setIsPressed] = useState(false)
 
-  const sizeStyles = {
-    small: { height: 36, fontSize: 13, padding: '0 16px', borderRadius: 8 },
-    medium: { height: 44, fontSize: 14, padding: '0 24px', borderRadius: 10 },
-    large: { height: 48, fontSize: 16, padding: '0 28px', borderRadius: 12 },
-  }
-
-  const baseStyles = {
-    ...sizeStyles[btnSize],
-    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-    fontWeight: 600 as const,
-    WebkitTapHighlightColor: 'transparent',
-    touchAction: 'manipulation',
-    transform: isPressed ? 'scale(0.97)' : 'scale(1)',
-    ...style,
-  }
-
-  const variantStyles = {
-    primary: {
-      background: theme.primary,
-      borderColor: theme.primary,
-      color: '#ffffff',
-      boxShadow: '0 2px 8px rgba(0, 113, 227, 0.2)',
-    },
-    secondary: {
-      background: '#2e7d32',
-      borderColor: '#2e7d32',
-      color: '#ffffff',
-      boxShadow: '0 2px 8px rgba(46, 125, 50, 0.2)',
-    },
-    outline: {
-      background: isPressed ? 'rgba(0, 113, 227, 0.06)' : '#ffffff',
-      borderColor: theme.primary,
-      color: theme.primary,
-      borderWidth: 1,
-      boxShadow: 'none',
-    },
-    ghost: {
-      background: isPressed ? '#f3f3f5' : 'transparent',
-      borderColor: 'transparent',
-      color: '#414753',
-      boxShadow: 'none',
-    },
-  }
+  const modifier = MODIFIERS[btnVariant]
+  // secondary：实底绿色（与 primary 区分）
+  const secondaryFill = btnVariant === 'secondary'
+  const dangerFill = btnVariant === 'danger'
 
   return (
     <Button
       {...props}
+      className={`c-btn ${modifier || ''} ${className || ''}`}
+      disabled={disabled}
       style={{
-        ...baseStyles,
-        ...variantStyles[btnVariant],
+        height: HEIGHTS[btnSize],
+        fontSize: btnSize === 'large' ? 17 : 16,
+        boxShadow: secondaryFill
+          ? '0 6px 16px rgba(46, 158, 91, 0.22)'
+          : dangerFill && !MODIFIERS[btnVariant]
+            ? '0 6px 16px rgba(229, 72, 77, 0.2)'
+            : undefined,
+        background: secondaryFill ? 'linear-gradient(135deg, #23905a, #2e9e5b)' : undefined,
+        borderColor: secondaryFill ? '#2e9e5b' : undefined,
+        transform: isPressed ? 'scale(0.97)' : 'scale(1)',
+        ...style,
       }}
-      onTouchStart={() => !props.disabled && setIsPressed(true)}
+      onTouchStart={() => !disabled && setIsPressed(true)}
       onTouchEnd={() => setIsPressed(false)}
       onTouchCancel={() => setIsPressed(false)}
-      onMouseDown={() => !props.disabled && setIsPressed(true)}
+      onMouseDown={() => !disabled && setIsPressed(true)}
       onMouseUp={() => setIsPressed(false)}
       onMouseLeave={() => setIsPressed(false)}
     >

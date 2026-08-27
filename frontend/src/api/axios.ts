@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosHeaders } from 'axios'
 import { message } from 'antd'
 import { getErrorMessage, markHandled } from '../utils/error'
+import { getToken, clearAuth } from '../utils/authStorage'
 
 const instance = axios.create({
   baseURL: '/api',
@@ -9,7 +10,7 @@ const instance = axios.create({
 
 instance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')
+    const token = getToken()
     if (token) {
       if (!config.headers) {
         config.headers = new AxiosHeaders()
@@ -37,9 +38,8 @@ instance.interceptors.response.use(
         message.error(loginMsg)
         return Promise.reject(markHandled(error))
       }
-      // 非登录页的 401：清除登录态并跳转
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      // 非登录页的 401：清除当前端登录态并跳转
+      clearAuth()
       message.warning('登录已过期，请重新登录')
       setTimeout(() => {
         const isClient = window.location.pathname.startsWith('/client')

@@ -27,7 +27,7 @@ export default function Payment() {
   })
 
   const navigate = useNavigate()
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const user = JSON.parse(localStorage.getItem('client_user') || '{}')
 
   const { token: { borderRadiusLG } } = theme.useToken()
 

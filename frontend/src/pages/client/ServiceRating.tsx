@@ -1,23 +1,19 @@
 import { useState, useEffect } from 'react'
-import { Card, Input, Tag, theme, message } from 'antd'
+import { Input, Tag, message } from 'antd'
 import { StarFilled, ArrowLeftOutlined, CheckCircleOutlined, HistoryOutlined, EditOutlined, StarOutlined } from '@ant-design/icons'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import axios from '../../api/axios'
 import { formatDateTime } from '../../utils/format'
 import BottomNav from '../../components/BottomNav'
 import ClientButton from '../../components/ClientButton'
-import { theme as appTheme } from '../../constants/theme'
+
 // 星级强调色
-const STAR_COLOR = appTheme.primary
+const STAR_COLOR = '#0071e3'
 
 export default function ServiceRating() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
-
-  const {
-    token: { borderRadiusLG },
-  } = theme.useToken()
+  const user = JSON.parse(localStorage.getItem('client_user') || '{}')
 
   const caseId = searchParams.get('case_id') || ''
 
@@ -178,49 +174,23 @@ export default function ServiceRating() {
   // 感谢页面
   if (submitted) {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
-        <header
-          style={{
-            position: 'sticky',
-            top: 0,
-            background: '#ffffff',
-            borderBottom: '1px solid #c1c6d6',
-            padding: '14px 16px',
-            paddingTop: 'max(14px, env(safe-area-inset-top))',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            zIndex: 50,
-          }}
-        >
-          <button
-            onClick={() => navigate(-1)}
-            style={{
-              width: 40,
-              height: 40,
-              border: 'none',
-              background: 'transparent',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              color: '#0059b5',
-              WebkitTapHighlightColor: 'transparent',
-            }}
-          >
-            <ArrowLeftOutlined style={{ fontSize: 22 }} />
+      <div className="client-app">
+        {/* 顶部应用栏 */}
+        <header className="c-topbar">
+          <button className="c-topbar__back" onClick={() => navigate(-1)}>
+            <ArrowLeftOutlined />
           </button>
-          <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#0059b5', letterSpacing: '0.01em' }}>服务评价</h2>
+          <span className="c-topbar__title" style={{ fontSize: 17 }}>服务评价</span>
+          <div style={{ width: 44 }} />
         </header>
 
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <Card style={{ width: '100%', maxWidth: 420, borderRadius: borderRadiusLG, textAlign: 'center', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--border-default)' }}>
-            <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-              <CheckCircleOutlined style={{ fontSize: 44, color: 'var(--success)' }} />
+        <main className="c-container--with-nav" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div className="c-card" style={{ width: '100%', maxWidth: 420, padding: 32, textAlign: 'center' }}>
+            <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(46, 158, 91, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <CheckCircleOutlined style={{ fontSize: 44, color: '#2e9e5b' }} />
             </div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>感谢您的评价</div>
-            <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.8, marginBottom: 20 }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--cm-text-strong)', marginBottom: 8 }}>感谢您的评价</div>
+            <div style={{ fontSize: 13, color: 'var(--cm-text)', lineHeight: 1.8, marginBottom: 20 }}>
               您的宝贵意见是我们不断进步的动力
               <br />
               我们将认真对待您的每一条反馈
@@ -233,8 +203,8 @@ export default function ServiceRating() {
                 再次评价
               </ClientButton>
             </div>
-          </Card>
-        </div>
+          </div>
+        </main>
 
         <BottomNav />
       </div>
@@ -242,75 +212,46 @@ export default function ServiceRating() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
-      <header
-        style={{
-          position: 'sticky',
-          top: 0,
-          background: '#ffffff',
-          borderBottom: '1px solid #c1c6d6',
-          padding: '14px 16px',
-          paddingTop: 'max(14px, env(safe-area-inset-top))',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          zIndex: 50,
-        }}
-      >
-        <button
-          onClick={() => navigate(-1)}
-          style={{
-            width: 40,
-            height: 40,
-            border: 'none',
-            background: 'transparent',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            color: '#0059b5',
-            WebkitTapHighlightColor: 'transparent',
-          }}
-        >
-          <ArrowLeftOutlined style={{ fontSize: 22 }} />
+    <div className="client-app">
+      {/* 顶部应用栏 */}
+      <header className="c-topbar">
+        <button className="c-topbar__back" onClick={() => navigate(-1)}>
+          <ArrowLeftOutlined />
         </button>
-        <div>
-          <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#0059b5', letterSpacing: '0.01em' }}>服务评价</h2>
-          <p style={{ fontSize: 12, color: '#717785', marginTop: 2 }}>您的反馈对我们至关重要</p>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span className="c-topbar__title" style={{ fontSize: 17 }}>服务评价</span>
+          <div style={{ fontSize: 11, color: 'var(--cm-text-muted)', marginTop: 1 }}>您的反馈对我们至关重要</div>
         </div>
+        <div style={{ width: 44 }} />
       </header>
 
-      <div style={{ padding: '12px', flex: 1, paddingBottom: '80px' }}>
+      <main className="c-container--with-nav" style={{ maxWidth: 720, margin: '0 auto', width: '100%', padding: 16, paddingBottom: 88 }}>
         {/* 评价表单 */}
-        <Card
-          title={<div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Tag color="blue" style={{ borderRadius: 4, fontSize: 10 }}><EditOutlined /> 评价服务</Tag>
-            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>请为本次服务打分</span>
-          </div>}
-          style={{ marginBottom: 12, borderRadius: borderRadiusLG, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}
-        >
+        <div className="c-card" style={{ padding: 16, marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+            <span className="c-pill c-pill--primary"><EditOutlined /> 评价服务</span>
+            <span style={{ fontSize: 13, color: 'var(--cm-text)', fontWeight: 500 }}>请为本次服务打分</span>
+          </div>
+
           <div style={{ textAlign: 'center', padding: '8px 0 16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 10 }}>
               {[1, 2, 3, 4, 5].map((i) => renderStar(i))}
             </div>
             <div style={{ fontSize: 14, fontWeight: 600, color: STAR_COLOR, minHeight: 20 }}>
               {(hoverRating || rating) > 0 ? ratingLabels[String(hoverRating || rating)] || '请选择评分' : '请选择评分'}
             </div>
             <div
-              style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', background: 'var(--bg-sunken)', borderRadius: 16, cursor: 'pointer', border: `1px solid ${allowHalf ? STAR_COLOR : 'var(--border-default)'}` }}
+              style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'var(--cm-bg)', borderRadius: 18, cursor: 'pointer', border: `1px solid ${allowHalf ? STAR_COLOR : 'var(--cm-border)'}` }}
               onClick={() => setAllowHalf(!allowHalf)}
             >
-              <span style={{ fontSize: 11, color: allowHalf ? STAR_COLOR : 'var(--text-tertiary)' }}>
+              <span style={{ fontSize: 11, color: allowHalf ? STAR_COLOR : 'var(--cm-text-muted)' }}>
                 {allowHalf ? '半星模式 已开启' : '开启半星评分'}
               </span>
             </div>
           </div>
 
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>
-              评价内容 <span style={{ color: 'var(--text-tertiary)', fontSize: 11 }}>（选填，最多500字）</span>
-            </label>
+          <div className="c-field">
+            <label className="c-field__label">评价内容 <span style={{ color: 'var(--cm-text-muted)', fontSize: 12 }}>（选填，最多500字）</span></label>
             <Input.TextArea
               value={content}
               onChange={(e) => setContent(e.target.value.slice(0, 500))}
@@ -318,6 +259,7 @@ export default function ServiceRating() {
               rows={5}
               maxLength={500}
               showCount
+              style={{ borderRadius: 12 }}
             />
           </div>
 
@@ -332,52 +274,51 @@ export default function ServiceRating() {
           </ClientButton>
 
           {!caseId && (
-            <div style={{ fontSize: 11, color: 'var(--warning)', textAlign: 'center', marginTop: 10 }}>
+            <div style={{ fontSize: 11, color: 'var(--cm-warning)', textAlign: 'center', marginTop: 10 }}>
               未指定案件，请从案件详情页进入评价
             </div>
           )}
-        </Card>
+        </div>
 
         {/* 历史评价 */}
-        <Card
-          title={<div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Tag color="default" style={{ borderRadius: 4, fontSize: 10 }}><HistoryOutlined /> 历史评价</Tag>
-            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>我的评价记录</span>
-          </div>}
-          style={{ borderRadius: borderRadiusLG, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}
-        >
+        <div className="c-card" style={{ padding: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+            <span className="c-pill c-pill--neutral"><HistoryOutlined /> 历史评价</span>
+            <span style={{ fontSize: 13, color: 'var(--cm-text)', fontWeight: 500 }}>我的评价记录</span>
+          </div>
+
           {loadingHistory ? (
-            <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-tertiary)', fontSize: 13 }}>加载中...</div>
+            <div className="c-loading">加载中...</div>
           ) : history.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-tertiary)' }}>
-              <StarOutlined style={{ fontSize: 36, color: 'var(--border-default)', marginBottom: 8 }} />
-              <div style={{ fontSize: 13 }}>暂无评价记录</div>
+            <div className="c-empty" style={{ padding: '16px 0' }}>
+              <StarOutlined style={{ fontSize: 36, color: 'var(--cm-text-muted)', opacity: 0.35, marginBottom: 8 }} />
+              <div className="c-empty__title">暂无评价记录</div>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {history.map((item) => (
-                <div key={item.id} style={{ padding: 12, background: 'var(--bg-sunken)', borderRadius: 8, border: '1px solid var(--border-light)' }}>
+                <div key={item.id} style={{ padding: 12, background: 'var(--cm-bg)', borderRadius: 12, border: '1px solid var(--cm-border)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       {renderReadonlyStars(item.rating)}
-                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{item.rating} 星</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--cm-text-strong)' }}>{item.rating} 星</span>
                     </div>
-                    <Tag color={statusColors[item.status]} style={{ fontSize: 10 }}>{statusLabels[item.status] || item.status}</Tag>
+                    <Tag color={statusColors[item.status]} style={{ fontSize: 10, borderRadius: 6 }}>{statusLabels[item.status] || item.status}</Tag>
                   </div>
                   {item.content && (
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.7, margin: '6px 0' }}>
+                    <div style={{ fontSize: 12, color: 'var(--cm-text)', lineHeight: 1.7, margin: '6px 0' }}>
                       {item.content}
                     </div>
                   )}
-                  <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--cm-text-muted)' }}>
                     案件：{item.case_id?.slice(0, 8)}... · {formatDateTime(item.created_at)}
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </Card>
-      </div>
+        </div>
+      </main>
 
       <BottomNav />
     </div>

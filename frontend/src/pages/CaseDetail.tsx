@@ -374,7 +374,12 @@ export default function CaseDetail() {
     // 案件顶层字段：case.<字段名>，直接从案件详情对象取值
     if (key.startsWith('case.')) {
       const f = key.slice(5)
-      if (f in c) return c[f] ?? ''
+      if (f in c) {
+        const val = c[f] ?? ''
+        // 案由等枚举字段转为中文显示（case_type/type 在数据库中存的是英文枚举）
+        if (f === 'type' || f === 'case_type') return caseTypeLabelMap[val] || val || ''
+        return val
+      }
       return ''
     }
     // 当事人/客户字段：client.<字段名>，从 party 取值（兼容历史别名）
