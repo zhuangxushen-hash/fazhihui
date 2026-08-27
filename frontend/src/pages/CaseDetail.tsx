@@ -883,6 +883,8 @@ export default function CaseDetail() {
       const res: any = await launchSign(values.template, payload)
       setSignResult(res.data)
       message.success('签约已发起')
+      // 发起成功后自动关闭弹窗；状态与表单由下次打开时的 openSignModal 统一重置
+      setSignModalVisible(false)
     } catch (error) {
       message.error((error as any)?.response?.data?.message || '发起签约失败')
     } finally {
