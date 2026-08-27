@@ -503,11 +503,16 @@ export class FadadaService {
       throw new Error('法大大签署任务创建失败：' + (createRes?.data?.msg || '未知错误'));
     }
     await this.signTaskClient.start({ signTaskId });
-    const urlRes = await this.signTaskClient.getActorUrl({
+    // 获取签署链接时同时传 freeLogin / free_login（SDK 类型定义未包含但法大大后端可能需要）
+    const urlParams1: any = {
       signTaskId,
       actorId: 'client',
       redirectUrl: this.redirectUrl || undefined,
-    });
+      freeLogin: true,
+      free_login: true,
+    };
+    this.logger.log('法大大 getActorUrl 请求体(camel+snake)=' + JSON.stringify(urlParams1));
+    const urlRes = await this.signTaskClient.getActorUrl(urlParams1);
     const signUrl = urlRes?.data?.data?.actorSignTaskUrl;
     if (!signUrl) {
       throw new Error('法大大签署链接获取失败：' + (urlRes?.data?.msg || '未知错误'));
@@ -586,17 +591,24 @@ export class FadadaService {
       `法大大创建签署任务 快捷签判断 isQuickSign=${isQuickSign} mobile=${params.client?.mobile || '(空)'} clientUserId=${params.client?.clientUserId || '(空)'}`,
     );
     const clientActorSignConfig = isQuickSign
-      ? {
-          // 快捷签意愿验证：实名手机号(短信)/人脸识别 二选一
-          verifyMethods: ['sms', 'face'],
+      ? ({
+          // 快捷签意愿验证：仅允许人脸识别后签署（限制为 face 方式）
+          verifyMethods: ['face'],
           identifiedView: false,
           freeLogin: true,
           readingToEnd: true,
           signerSignMethod: 'standard',
           // 免验证签整合：客户完成签署即完成实名授权，无需另行单独办理实名认证
           authorizeFreeSign: true,
-        }
-      : { verifyMethods: ['face', 'sms', 'pw'], identifiedView: true, readingToEnd: true, signerSignMethod: 'standard' };
+          // snake_case 兼容别名（法大大 API 可能需要 snake_case）
+          free_login: true,
+          identified_view: false,
+          reading_to_end: true,
+          signer_sign_method: 'standard',
+          authorize_free_sign: true,
+        })
+      : ({ verifyMethods: ['face'], identifiedView: true, readingToEnd: true, signerSignMethod: 'standard',
+          free_login: false, identified_view: true, reading_to_end: true, signer_sign_method: 'standard' });
     this.logger.log(
       `法大大客户参与方 signConfigInfo=${JSON.stringify(clientActorSignConfig)}`,
     );
@@ -647,23 +659,23 @@ export class FadadaService {
         signConfigInfo: { verifyMethods: ['sms'], identifiedView: true, signerSignMethod: 'standard' },
       });
     }
-    const createRes = await this.signTaskClient.createWithTemplate({
+    // 组装最终请求体并打印完整日志，便于排查 freeLogin 等参数是否正确传入
+    const createWithTemplateReq = {
       signTaskSubject: params.subject || '法律顾问签约',
       initiator: { idType: sdk.IdTypeEnum.CORP, openId: this.initiatorOpenId },
       signTemplateId: params.signTemplateId,
       transReferenceId: params.signingId,
       actors,
-      // 免验证签场景码（自动签）：在法大大平台「印章管理→电子印章→免验证签」授权该场景码后，
-      // 企业（律所）印章随签署自动盖章，客户签名后任务即完成，无需流转回企业再用印。
-      // 读取自环境变量 FADADA_BUSINESS_ID，未配置时使用默认场景码。
       businessId: this.configService.get('FADADA_BUSINESS_ID') || '451799554c41a58c4f8e6e549cf792f3',
-      // 填写+签约一体：创建后不自动提交、不定稿，等待 C 端客户在本系统 C 端页面补全必填控件后，
-      // 由 C 端点击签约再调用法大大提交(start)→定稿(finalizeDoc)→获取签署链接。
       autoStart: false,
-      autoFillFinalize: false,
+      // autoFillFinalize=true: C 端 start 提交后，所有必填控件填完时法大大自动定稿，
+      // 直接进入签署阶段，跳过手动 finalizeDoc 的中间状态。
+      autoFillFinalize: true,
       autoFinish: true,
       watermarks: [],
-    });
+    };
+    this.logger.log('法大大 createWithTemplate 完整请求体=' + JSON.stringify(createWithTemplateReq));
+    const createRes = await this.signTaskClient.createWithTemplate(createWithTemplateReq);
     const signTaskId = createRes?.data?.data?.signTaskId;
     if (!signTaskId) {
       throw new Error('法大大模板签署任务创建失败：' + (createRes?.data?.msg || '请求成功'));
@@ -833,10 +845,15 @@ export class FadadaService {
     }
     // 处于 fill_complete / sign_progress / finished 等更后置状态时，start 与 finalize 均已生效，直接取链接
     // 4. 获取客户参与方签署链接
-    const urlRes = await this.signTaskClient.getActorUrl({
+    // 获取签署链接时同时传 freeLogin / free_login（SDK 类型定义未包含但法大大后端可能需要）
+    const urlParams2: any = {
       signTaskId: params.signTaskId,
       actorId: params.actorId,
-    });
+      freeLogin: true,
+      free_login: true,
+    };
+    this.logger.log('法大大 getActorUrl 请求体(camel+snake)=' + JSON.stringify(urlParams2));
+    const urlRes = await this.signTaskClient.getActorUrl(urlParams2);
     const signUrl = urlRes?.data?.data?.actorSignTaskUrl;
     const embedUrl = urlRes?.data?.data?.actorSignTaskEmbedUrl || '';
     if (!signUrl) {
