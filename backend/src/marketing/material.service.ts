@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AdMaterial } from './ad-material.entity';
@@ -199,7 +199,7 @@ export class MaterialService {
   async findById(id: string): Promise<AdMaterial> {
     const material = await this.adMaterialRepository.findOne({ where: { id } });
     if (!material) {
-      throw new Error('素材不存在');
+      throw new NotFoundException('素材不存在');
     }
     return material;
   }
