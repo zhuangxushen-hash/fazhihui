@@ -1,12 +1,36 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, ValidationPipe } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import helmet from 'helmet';
+
+// 全局异常过滤器：HttpException 按原样透传；其他未捕获异常统一转为 500，
+// 并在响应体中保留业务错误信息，避免前端只能显示笼统的“服务器异常”提示
+@Catch()
+export class AllExceptionsFilter implements ExceptionFilter {
+  catch(exception: unknown, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse();
+
+    if (exception instanceof HttpException) {
+      response.status(exception.getStatus()).json(exception.getResponse());
+      return;
+    }
+
+    const message = exception instanceof Error && exception.message
+      ? exception.message
+      : '服务器内部错误';
+    response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      message,
+    });
+  }
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(helmet());
+  app.useGlobalFilters(new AllExceptionsFilter());
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
     forbidNonWhitelisted: true,

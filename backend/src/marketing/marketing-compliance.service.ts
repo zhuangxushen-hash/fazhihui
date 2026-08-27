@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AdMaterial } from './ad-material.entity';
@@ -239,7 +239,7 @@ export class MarketingComplianceService {
   }> {
     const material = await this.adMaterialRepository.findOne({ where: { id: materialId } });
     if (!material) {
-      throw new Error('素材不存在');
+      throw new NotFoundException('素材不存在');
     }
     let detail: CompliancePrecheckResult | null = null;
     if (material.compliance_detail) {

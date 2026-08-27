@@ -571,6 +571,11 @@ export class FadadaService {
     const corpFillFields: any[] = corpActors[0]?.fillFields || [];
     // 客户参与方（映射到模板 person 参与方，C端填写必填控件后再签署）
     // permissions 同时含 fill 与 sign：客户打开单链接后先补充必填控件，再执行签约动作
+    // 个人快捷签：客户持有有效手机号时开启免登签署（freeLogin），打开链接直接进入合同详情页，
+    // 无需登录法大大账号；identifiedView=false 允许未实名用户查看任务，
+    // 实名认证与签署意愿验证合二为一。快捷签仅对个人参与方有效，
+    // 且意愿验证方式仅支持 实名手机号(sms)/人脸识别(face)，故快捷签场景收窄 verifyMethods。
+    const isQuickSign = !!params.client?.mobile;
     const clientActor = {
       actor: {
         actorId: clientActorId,
@@ -588,7 +593,16 @@ export class FadadaService {
       },
       // 关联客户需填写的控件，避免模板校验「签署任务不是提交状态」
       fillFields: personFillFields?.length ? personFillFields : undefined,
-      signConfigInfo: { verifyMethods: ['face', 'sms', 'pw'], identifiedView: true, readingToEnd: true, signerSignMethod: 'standard' },
+      signConfigInfo: isQuickSign
+        ? {
+            // 快捷签意愿验证：实名手机号(短信)/人脸识别 二选一
+            verifyMethods: ['sms', 'face'],
+            identifiedView: false,
+            freeLogin: true,
+            readingToEnd: true,
+            signerSignMethod: 'standard',
+          }
+        : { verifyMethods: ['face', 'sms', 'pw'], identifiedView: true, readingToEnd: true, signerSignMethod: 'standard' },
     };
     // 律所参与方（映射到模板 corp 参与方，发起方用印+填写）
     const firmActor = {
@@ -1040,11 +1054,41 @@ export class FadadaService {
       signing.fadada_actor_id = res.actorId;
       signing.sign_url = res.signUrl;
       await this.signingComplianceRepository.save(signing);
+      // 4. 作废该案件同一客户的历史进行中签约（pending/reviewing）：
+      //    同一案件重新发起签约后，遗留的旧签约仍带有效法大大任务（且基于旧模板快照），
+      //    C 端「去填写并签约」入口按时间取最新待签记录时若新记录已进入后续态，
+      //    会命中这些旧记录导致跳转到旧的法大大任务链接。故仅在本次发起成功后才作废旧记录。
+      await this.invalidateStaleSignings(params.caseId, params.clientId, signing.id);
       return { signingId: signing.id, signTaskId: res.signTaskId, actorId: res.actorId, signUrl: res.signUrl, mode: res.mode };
     } catch (e) {
       // 发起失败时清理已创建的签约记录，避免产生脏数据
       await this.signingComplianceRepository.remove(signing).catch(() => undefined);
       throw e;
+    }
+  }
+
+  /**
+   * 作废指定案件+客户的进行中历史签约（pending/reviewing → rejected）。
+   * 用于重新发起签约后清理旧签约：旧签约关联的法大大任务基于旧模板快照，
+   * 继续存活会让 C 端签约入口误命中并跳转到旧的签署链接，故在新发起成功后将旧的置为失效终态。
+   */
+  private async invalidateStaleSignings(caseId: string, clientId: string, currentSigningId: string): Promise<void> {
+    try {
+      const result = await this.signingComplianceRepository
+        .createQueryBuilder()
+        .update(SigningCompliance)
+        .set({ status: SigningStatus.REJECTED })
+        .where('case_id = :caseId', { caseId })
+        .andWhere('client_id = :clientId', { clientId })
+        .andWhere('id != :id', { id: currentSigningId })
+        .andWhere('status IN (:...statuses)', { statuses: [SigningStatus.PENDING, SigningStatus.REVIEWING] })
+        .execute();
+      if (result.affected && result.affected > 0) {
+        this.logger.log(`重新发起签约：已作废案件 ${caseId} 客户 ${clientId} 的历史进行中签约 ${result.affected} 条`);
+      }
+    } catch (e) {
+      // 作废旧签约失败不影响本次新签约的正常使用，仅记录日志便于排查
+      this.logger.warn(`作废旧签约失败 caseId=${caseId} clientId=${clientId}: ${(e as Error)?.message || e}`);
     }
   }
 

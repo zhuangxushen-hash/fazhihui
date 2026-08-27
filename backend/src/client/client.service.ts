@@ -614,10 +614,14 @@ export class ClientService {
 
   /**
    * C端查询案件下「待签约/待预填」的签约记录（法大大模板签约，供 C 端案件详情展示待签约入口）。
-   * 仅返回状态为 pending 且已创建法大大签署任务的记录。
+   * pending=等待客户填写提交；reviewing=客户已提交填写、任务已开启，仍在等待完成签署（非终态）。
+   * 两种状态都应作为有效入口展示，并按创建时间取最新一条，避免命中历史遗留记录导致跳转旧签署链接。
    */
   async getActiveSignings(body: { client_id: string; case_id?: string }): Promise<any[]> {
-    const where: any = { client_id: body.client_id, status: SigningStatus.PENDING };
+    const where: any = {
+      client_id: body.client_id,
+      status: In([SigningStatus.PENDING, SigningStatus.REVIEWING]),
+    };
     if (body.case_id) where.case_id = body.case_id;
     const list = await this.signingComplianceRepository.find({
       where,

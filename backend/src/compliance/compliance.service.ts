@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, Like } from 'typeorm';
 import { ComplianceRecord } from './compliance-record.entity';
@@ -1803,7 +1803,7 @@ export class ComplianceService {
   }> {
     const archive = await this.caseArchiveRepository.findOne({ where: { case_id: caseId } });
     if (!archive) {
-      throw new Error('归档记录不存在');
+      throw new NotFoundException('该案件暂无归档记录，无法导出');
     }
 
     return {

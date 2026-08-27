@@ -59,13 +59,20 @@ export default function ClientLogin() {
         minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
         padding: '32px 24px',
         position: 'relative',
-        overflow: 'hidden',
+        // 全局布局将 html/body/#root 钉死为视口高度，body 层不发生滚动，
+        // 页面高度超过视口时必须由本容器提供纵向内部滚动，
+        // 否则手机端高度不足时底部协议勾选区将被裁掉且无法到达
+        overflowY: 'auto',
+        overflowX: 'hidden',
       }}
     >
+      {/* 内容外壳：margin auto 在视口富余时把内容推向垂直居中；
+          高度不足时 margin 归零、外壳按真实内容高度展开，
+          配合根容器的纵向滚动保证底部的协议区始终可达。
+          flexShrink=0 禁止外壳被 flex 压缩，维持真实内容高度以产生可滚动的溢出 */}
+      <div style={{ margin: 'auto 0', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
       {/* 品牌区 */}
       <div style={{ textAlign: 'center', marginBottom: 36 }}>
         <div
@@ -213,6 +220,7 @@ export default function ClientLogin() {
       {/* 版权信息 */}
       <div style={{ marginTop: 24, fontSize: 11, color: 'var(--cm-text-muted)', letterSpacing: '0.08em' }}>
         Powered by 法智汇
+      </div>
       </div>
 
       <style>{`

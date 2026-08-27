@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CaseTask, CaseTaskStatus, TaskPriority } from './case-task.entity';
@@ -233,7 +233,7 @@ export class CaseTaskService {
   async updateTaskProgress(taskId: string, dto: UpdateTaskProgressDto): Promise<CaseTask> {
     const task = await this.caseTaskRepository.findOne({ where: { id: taskId } });
     if (!task) {
-      throw new Error('任务不存在');
+      throw new NotFoundException('任务不存在');
     }
 
     task.progress = dto.progress;
@@ -261,7 +261,7 @@ export class CaseTaskService {
     });
 
     if (!task) {
-      throw new Error('任务不存在');
+      throw new NotFoundException('任务不存在');
     }
 
     return task;

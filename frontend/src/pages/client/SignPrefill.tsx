@@ -192,7 +192,8 @@ export default function SignPrefill() {
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
             />
           </div>
-          <div className="c-safety-bar">
+          {/* 底部按钮改为静态参与 flex 布局，避免固定定位悬浮遮挡内嵌签署 iframe */}
+          <div className="c-safety-bar" style={{ position: 'static' }}>
             <ClientButton
               btnVariant="outline"
               btnSize="large"
@@ -214,7 +215,8 @@ export default function SignPrefill() {
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
             />
           </div>
-          <div className="c-safety-bar">
+          {/* 底部按钮改为静态参与 flex 布局，避免固定定位悬浮遮挡内嵌预览 iframe */}
+          <div className="c-safety-bar" style={{ position: 'static' }}>
             <ClientButton
               btnVariant="primary"
               btnSize="large"
