@@ -42,7 +42,7 @@ instance.interceptors.response.use(
       clearAuth()
       message.warning('登录已过期，请重新登录')
       setTimeout(() => {
-        const isClient = window.location.pathname.startsWith('/client')
+        const isClient = /^\/client(\/|$)/.test(window.location.pathname)
         window.location.href = isClient ? '/client/login' : '/login'
       }, 800)
       return Promise.reject(markHandled(error))

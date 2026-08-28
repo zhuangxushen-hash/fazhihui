@@ -5,9 +5,13 @@
 //   - C 端（/client 路径）：client_token / client_user
 // 两端读写、清理互不影响。
 
-// 当前是否为 C 端（/client 开头的路径）
+// 精确判断是否为 C 端路径：/client 本身或以 /client/ 开头
+// 使用正则边界匹配，避免 /client-management 等路径被误判为 C 端
+const CLIENT_PATH_REGEX = /^\/client(\/|$)/
+
+// 当前是否为 C 端（/client 路径）
 export function isClientPath(): boolean {
-  return typeof window !== 'undefined' && window.location.pathname.startsWith('/client')
+  return typeof window !== 'undefined' && CLIENT_PATH_REGEX.test(window.location.pathname)
 }
 
 // 当前端对应的 token 存储 key
