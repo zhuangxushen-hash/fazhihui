@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Spin, Button, Tag, Space, message, Upload, Timeline, Empty, Alert, Card, Modal, Input,
-  Form, InputNumber, Select, DatePicker, Switch, Popconfirm, Badge, Radio, Result, Divider,
+  Form, InputNumber, Select, DatePicker, Switch, Popconfirm, Badge,
 } from 'antd'
 import {
   ArrowLeftOutlined, UploadOutlined, DownloadOutlined, FolderOutlined,
@@ -13,9 +13,6 @@ import dayjs from 'dayjs'
 import axios from '../api/axios'
 import { getCaseDetail, updateCaseDetail, deleteCase } from '../api/case'
 // 法大大签署模板：B端签约模板信息维护 + 案件详情「发起签约」
-import { getSignTemplateList, launchSign, getSignTemplateFields, SignTemplate as SignTemplateType, SignTemplateField } from '../api/signTemplate'
-// 组织：发起签约模板下拉标注所属组织（超管可不限组织选模板）
-import { getOrganizations, Organization } from '../api/organization'
 import { getUsers, UserItem } from '../api/user'
 import { getSchedules, createSchedule } from '../api/schedule'
 import { getWorklogs, createWorklog } from '../api/worklog'
@@ -338,6 +335,9 @@ export default function CaseDetail() {
   // 案由自定义选项（支持用户输入新案由）
   const [customCaseTypeOptions, setCustomCaseTypeOptions] = useState<Array<{ value: string; label: string }>>([])
   const [form] = Form.useForm()
+  // 分配律师弹窗状态
+  const [assignVisible, setAssignVisible] = useState(false)
+  const [assignForm] = Form.useForm()
 
   // 日程相关状态
   const [schedules, setSchedules] = useState<any[]>([])
@@ -352,92 +352,11 @@ export default function CaseDetail() {
   const [worklogForm] = Form.useForm()
 
   // 法大大签署任务模板（B端签约模板信息维护）
-  const [signTemplates, setSignTemplates] = useState<SignTemplateType[]>([])
-  const [signTemplateLoading, setSignTemplateLoading] = useState(false)
   // 组织列表：模板下拉标注所属组织（超管可不限组织选择签约模板）
-  const [organizations, setOrganizations] = useState<Organization[]>([])
   // 「发起签约」弹窗
-  const [signModalVisible, setSignModalVisible] = useState(false)
-  const [signLaunching, setSignLaunching] = useState(false)
-  const [signResult, setSignResult] = useState<any>(null)
-  const [signForm] = Form.useForm()
   // 当前选中模板的字段配置（含固定值、业务员预填），用于发起签约弹窗展示预填字段
-  const [signFields, setSignFields] = useState<SignTemplateField[]>([])
 
-  // 解析业务员预填字段的自动带出值（auto_source）：支持案件详情任意字段，带不出时留空由业务员手动填写
-  const resolveAutoSource = (key?: string): string => {
-    if (!key) return ''
-    const c: any = detail || {}
-    const p: any = c.party || {}
-    const t: any = c.team || {}
-    const tl: any = c.timeline || {}
-    // 案件顶层字段：case.<字段名>，直接从案件详情对象取值
-    if (key.startsWith('case.')) {
-      const f = key.slice(5)
-      if (f in c) {
-        const val = c[f] ?? ''
-        // 案由等枚举字段转为中文显示（case_type/type 在数据库中存的是英文枚举）
-        if (f === 'type' || f === 'case_type') return caseTypeLabelMap[val] || val || ''
-        return val
-      }
-      return ''
-    }
-    // 当事人/客户字段：client.<字段名>，从 party 取值（兼容历史别名）
-    if (key.startsWith('client.')) {
-      const raw = key.slice(7)
-      const aliases: Record<string, string> = {
-        name: 'client_name',
-        mobile: 'client_phone',
-        identity_no: 'client_identity_no',
-        address: 'contact_address',
-        type: 'client_type',
-      }
-      const f = aliases[raw] || raw
-      if (f in p) return p[f] ?? ''
-      return ''
-    }
-    // 团队字段：team.<字段名>
-    if (key.startsWith('team.')) {
-      const f = key.slice(5)
-      if (f in t) return t[f] ?? ''
-      return ''
-    }
-    // 时间节点字段：timeline.<字段名>
-    if (key.startsWith('timeline.')) {
-      const f = key.slice(9)
-      if (f in tl) return tl[f] ?? ''
-      return ''
-    }
-    // 律所名称（从当前组织取）
-    if (key === 'firm.name') return organizations.find(o => o.id === c.organization_id)?.name || ''
-    // 经办律师
-    if (key === 'lawyer.name') return t.assignee_name || ''
-    return ''
-  }
-
-  // 加载选中模板的字段配置：展示业务员预填字段并自动带出可解析的值
-  const loadSignPrefillFields = async (t?: SignTemplateType) => {
-    setSignFields([])
-    if (!t) return
-    try {
-      const list = await getSignTemplateFields(t.id) as unknown as SignTemplateField[]
-      const fields = list || []
-      setSignFields(fields)
-      const next: any = {}
-      fields.filter(f => f.enabled).forEach(f => {
-        if (f.fill_mode === 'fixed') {
-          next[f.field_id] = f.fixed_value || ''
-        } else if (f.fill_mode === 'prefill') {
-          const v = resolveAutoSource(f.auto_source)
-          if (v !== '') next[f.field_id] = v
-        }
-      })
-      signForm.setFieldsValue({ prefill: next })
-    } catch (error) {
-      message.error('加载模板预填字段失败')
-    }
-  }
-
+  
   const user = JSON.parse(localStorage.getItem('user') || '{}')
 
   // 合并预设选项和自定义选项
@@ -804,93 +723,7 @@ export default function CaseDetail() {
     }
   }
 
-  // 「发起签约」：打开弹窗并加载签署模板列表，预填客户信息
-  const openSignModal = async () => {
-    setSignResult(null)
-    signForm.resetFields()
-    setSignFields([])
-    setSignTemplateLoading(true)
-    try {
-      const list = await getSignTemplateList({ enabled: true })
-      setSignTemplates(list || [])
-    } catch (error) {
-      message.error('加载签署模板失败')
-    } finally {
-      setSignTemplateLoading(false)
-    }
-    // 加载组织列表：标注模板所属组织（超管不限组织选模板，需区分不同组织的模板）
-    try {
-      const orgList = await getOrganizations()
-      setOrganizations(orgList || [])
-    } catch (error) {
-      // 组织列表加载失败不影响发起签约，仅下拉无组织标注
-    }
-    const p = detail?.party || {}
-    signForm.setFieldsValue({
-      subject_type: p.client_type === 'enterprise' ? 'corp' : 'person',
-      client: { userName: p.client_name || '', mobile: p.client_phone || '' },
-      corp: { corpName: p.client_name || '' },
-    })
-    setSignModalVisible(true)
-  }
 
-  // 模板所属组织名称（用于模板下拉标注；无归属显示为「全局」）
-  const templateOrgName = (orgId?: string) => {
-    if (!orgId) return '全局'
-    return organizations.find(o => o.id === orgId)?.name || orgId
-  }
-
-  // 提交「发起签约」：基于签署模板创建签署任务，展示客户 C 端签署链接
-  const handleLaunchSign = async () => {
-    // 签署完成态：再次点击「发起签约」回到表单（可重新发起新一批签约）
-    if (signResult) {
-      setSignResult(null)
-      return
-    }
-    if (!id) return
-    const values = await signForm.validateFields()
-    const p = detail?.party || {}
-    setSignLaunching(true)
-    try {
-      const payload: any = {
-        case_id: id,
-        client_id: p.client_id || '',
-        subject: values.subject,
-        subject_type: values.subject_type,
-      }
-      if (values.subject_type === 'corp') {
-        payload.corp = values.corp
-      } else {
-        payload.client = {
-          clientUserId: p.client_id || values.client?.mobile || '',
-          userName: values.client?.userName || '',
-          idCardNo: values.client?.idCardNo || undefined,
-          mobile: values.client?.mobile || undefined,
-        }
-      }
-      // 预填字段值（固定值 + 业务员预填），定稿前写入法大大签署任务
-      const prefillValues: any = values.prefill || {}
-      const fillValues = signFields
-        .filter(f => f.enabled)
-        .map(f => ({
-          docId: f.field_doc_id,
-          fieldId: f.field_id,
-          fieldName: f.field_name,
-          fieldValue: f.fill_mode === 'fixed' ? (f.fixed_value || '') : (prefillValues[f.field_id] || ''),
-        }))
-        .filter(v => v.fieldValue && v.fieldValue !== '')
-      if (fillValues.length) payload.fillValues = fillValues
-      const res: any = await launchSign(values.template, payload)
-      setSignResult(res.data)
-      message.success('签约已发起')
-      // 发起成功后自动关闭弹窗；状态与表单由下次打开时的 openSignModal 统一重置
-      setSignModalVisible(false)
-    } catch (error) {
-      message.error((error as any)?.response?.data?.message || '发起签约失败')
-    } finally {
-      setSignLaunching(false)
-    }
-  }
 
   if (loading) {
     return (
@@ -948,7 +781,10 @@ export default function CaseDetail() {
         <Space>
           {!editing ? (
             <>
-              <Button type="primary" icon={<FileTextOutlined />} onClick={openSignModal}>发起签约</Button>
+              <Button type="primary" icon={<FileTextOutlined />} onClick={() => navigate(`/cases/${id}/sign`)}>发起签约</Button>
+              <Button type={detail?.assignee_lawyer_id ? 'default' : 'primary'} onClick={() => setAssignVisible(true)}>
+                {detail?.assignee_name ? '更换律师' : '分配律师'}
+              </Button>
               <Button icon={<EditOutlined />} onClick={handleEdit}>编辑</Button>
               <Popconfirm title="确定删除该案件吗？删除后可在数据库中找回，界面不再显示。" okText="删除" cancelText="取消" onConfirm={handleDelete}>
                 <Button danger icon={<DeleteOutlined />}>删除</Button>
@@ -1284,7 +1120,12 @@ export default function CaseDetail() {
           {/* 团队 */}
           <SectionCard title="团队">
             <FieldGrid>
-              <Field label="主办律师">{t.assignee_name || '-'}</Field>
+              <Field label="主办律师">
+                  <span>{t.assignee_name || <span style={{ color: theme.textTertiary }}>未分配</span>}</span>
+                  <Button type="link" size="small" style={{ padding: 0, marginLeft: 4 }} onClick={() => setAssignVisible(true)}>
+                    {t.assignee_name ? '更换' : '分配'}
+                  </Button>
+                </Field>
               <Field label="主办人">{t.handler_name || (t.handler || '-')}</Field>
               <Field label="协办人">{t.co_handler_name || (t.co_handler || '-')}</Field>
               {/* 多人协办律师（参考金助理协办多人能力） */}
@@ -1718,105 +1559,39 @@ export default function CaseDetail() {
               />
             </Form.Item>
           </Form>
-        </Modal>
-        {/* 「发起签约」弹窗：选择法大大签署模板，填写客户签署信息并发起电子签 */}
+        </Modal>        {/* 分配律师 Modal */}
         <Modal
-          title="发起签约"
-          open={signModalVisible}
-          okText="发起签约"
-          cancelText="取消"
-          confirmLoading={signLaunching}
-          onOk={handleLaunchSign}
-          onCancel={() => { setSignModalVisible(false); setSignResult(null); setSignFields([]); signForm.resetFields() }}
-          destroyOnClose
-          width={560}
+          title="分配主办律师"
+          open={assignVisible}
+          onCancel={() => setAssignVisible(false)}
+          footer={null}
         >
-          {signResult ? (
-            <Result
-              status="success"
-              title="签约已发起"
-              subTitle={`签署任务ID：${signResult.signTaskId || '-'}`}
-              extra={[
-                <div key="note" style={{ textAlign: 'left', background: '#fafafb', border: '1px solid #ececef', borderRadius: 6, padding: 10 }}>
-                  <div style={{ fontSize: 12, color: '#5f6672' }}>签约已推送到客户 C 端，客户将在 C 端案件详情的「待签约」入口补充信息并完成签署。</div>
-                </div>,
-              ]}
-            />
-          ) : (
-            <Form form={signForm} layout="vertical" preserve={false}>
-              <Form.Item name="template" label="签署模板" rules={[{ required: true, message: '请选择签署模板' }]}>
-                <Select
-                  placeholder="请选择法大大签署模板"
-                  loading={signTemplateLoading}
-                  options={signTemplates.map(s => ({ value: s.id, label: `${s.name}（${s.sign_template_id}）【${templateOrgName(s.organization_id)}】` }))}
-                  onChange={(sid: string) => {
-                    const t = signTemplates.find(s => s.id === sid)
-                    signForm.setFieldValue('subject', t?.name || '')
-                    signForm.setFieldValue('prefill', undefined)
-                    loadSignPrefillFields(t)
-                  }}
-                  notFoundContent={signTemplates.length ? undefined : '暂无模板，请先在组织管理维护签约模板'}
-                />
-              </Form.Item>
-              <Form.Item name="subject" label="签约主题" rules={[{ required: true, message: '请输入签约主题' }]}>
-                <Input placeholder="请输入签约主题（默认使用模板名称）" />
-              </Form.Item>
-              <Form.Item name="subject_type" initialValue="person">
-                <Radio.Group options={[{ label: '个人客户', value: 'person' }, { label: '企业客户', value: 'corp' }]} />
-              </Form.Item>
-              <Form.Item noStyle shouldUpdate={(prev, cur) => prev.subject_type !== cur.subject_type}>
-                {({ getFieldValue }) => (getFieldValue('subject_type') === 'corp' ? (
-                  <>
-                    <Form.Item name={['corp', 'corpName']} label="企业名称" rules={[{ required: true, message: '请输入企业名称' }]}>
-                      <Input placeholder="请输入企业名称" />
-                    </Form.Item>
-                    <Form.Item name={['corp', 'corpIdentNo']} label="统一社会信用代码" rules={[{ required: true, message: '请输入统一社会信用代码' }]}>
-                      <Input placeholder="请输入统一社会信用代码" />
-                    </Form.Item>
-                    <Form.Item name={['corp', 'legalRepName']} label="法定代表人姓名">
-                      <Input placeholder="请输入法定代表人姓名" />
-                    </Form.Item>
-                  </>
-                ) : (
-                  <>
-                    <Form.Item name={['client', 'userName']} label="客户姓名" rules={[{ required: true, message: '请输入客户姓名' }]}>
-                      <Input placeholder="请输入客户姓名" />
-                    </Form.Item>
-                    <Form.Item name={['client', 'idCardNo']} label="身份证号">
-                      <Input placeholder="请输入身份证号（用于实名认证核验）" />
-                    </Form.Item>
-                    <Form.Item name={['client', 'mobile']} label="手机号">
-                      <Input placeholder="请输入手机号" />
-                    </Form.Item>
-                  </>
-                ))}
-              </Form.Item>
-              {/* 业务员预填字段：模板中配置为 prefill（业务员预填）的字段，可自动带出，也可手动补充 */}
-              {(() => {
-                const prefillFields = signFields.filter(f => f.enabled && f.fill_mode === 'prefill')
-                if (!prefillFields.length) return null
-                return (
-                  <div style={{ borderTop: '1px dashed #e8e8e8', marginTop: 4, paddingTop: 4 }}>
-                    <Divider plain style={{ marginTop: 8, marginBottom: 8 }}>业务员填写的字段</Divider>
-                    {prefillFields.map(f => (
-                      <Form.Item
-                        key={f.field_id}
-                        name={['prefill', f.field_id]}
-                        label={
-                          <span>
-                            {f.field_name}
-                            {f.required && <span style={{ color: '#ff4d4f' }}> *</span>}
-                          </span>
-                        }
-                      >
-                        <Input placeholder={`请输入${f.field_name}`} />
-                      </Form.Item>
-                    ))}
-                  </div>
-                )
-              })()}
-            </Form>
-          )}
+          <Form
+            form={assignForm}
+            initialValues={{ lawyer_id: detail?.assignee_lawyer_id }}
+            onFinish={async (values) => {
+              try {
+                await axios.put(`/cases/${id}/assign`, values)
+                message.success('律师分配成功')
+                setAssignVisible(false)
+                fetchDetail()
+              } catch (error) {
+                message.error('律师分配失败')
+              }
+            }}
+          >
+            <Form.Item name="lawyer_id" label="选择律师" rules={[{ required: true, message: '请选择律师' }]}>
+              <Select
+                placeholder="请选择主办律师"
+                options={lawyerOptions}
+                allowClear
+              />
+            </Form.Item>
+            <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+              <Button style={{ marginRight: 8 }} onClick={() => setAssignVisible(false)}>取消</Button>
+              <Button type="primary" htmlType="submit">确认分配</Button>
+            </Form.Item>
+          </Form>
         </Modal>
         </>
       )}

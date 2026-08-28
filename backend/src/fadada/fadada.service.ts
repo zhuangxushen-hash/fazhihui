@@ -511,7 +511,7 @@ export class FadadaService {
       freeLogin: true,
       free_login: true,
     };
-    this.logger.log('法大大 getActorUrl 请求体(camel+snake)=' + JSON.stringify(urlParams1));
+    console.log('法大大 getActorUrl 请求体(camel+snake)=' + JSON.stringify(urlParams1));
     const urlRes = await this.signTaskClient.getActorUrl(urlParams1);
     const signUrl = urlRes?.data?.data?.actorSignTaskUrl;
     if (!signUrl) {
@@ -587,7 +587,7 @@ export class FadadaService {
     // 快捷签判断：个人客户有手机号即可开启免登签署（freeLogin + identifiedView=false）。
     // 无手机号时降级为普通签署（identifiedView=true，需实名后查看）。
     const isQuickSign = !!params.client?.mobile;
-    this.logger.log(
+    console.log(
       `法大大创建签署任务 快捷签判断 isQuickSign=${isQuickSign} mobile=${params.client?.mobile || '(空)'} clientUserId=${params.client?.clientUserId || '(空)'}`,
     );
     const clientActorSignConfig = isQuickSign
@@ -598,20 +598,14 @@ export class FadadaService {
           freeLogin: true,
           readingToEnd: true,
           signerSignMethod: 'standard',
-          // 免验证签整合：客户完成签署即完成实名授权，无需另行单独办理实名认证
-          authorizeFreeSign: true,
           // snake_case 兼容别名（法大大 API 可能需要 snake_case）
           free_login: true,
           identified_view: false,
           reading_to_end: true,
-          signer_sign_method: 'standard',
-          authorize_free_sign: true,
+          signer_sign_method: 'standard'
         })
-      : ({ verifyMethods: ['face'], identifiedView: true, readingToEnd: true, signerSignMethod: 'standard',
+      : ({ verifyMethods: ['sms', 'face'], identifiedView: true, readingToEnd: true, signerSignMethod: 'standard',
           free_login: false, identified_view: true, reading_to_end: true, signer_sign_method: 'standard' });
-    this.logger.log(
-      `法大大客户参与方 signConfigInfo=${JSON.stringify(clientActorSignConfig)}`,
-    );
     const clientActor = {
       actor: {
         actorId: clientActorId,
@@ -619,16 +613,24 @@ export class FadadaService {
         actorName: params.client?.userName || params.corp?.corpName || '客户',
         permissions: [sdk.Permissions.FILL, sdk.Permissions.SIGN],
         // 客户在 C 端签署流程中完成法大大实名认证，此处不预先绑定 actorOpenId
-        identNameForMatch: params.client?.userName || params.corp?.corpName,
-        certNoForMatch: params.client?.idCardNo || '',
+        identNameForMatch: (params.client?.userName || params.corp?.corpName) || undefined,
+        // certType 不传，法大大默认身份证；手动传 'idcard' 会被法大大后端校验为不合法
+        certNoForMatch: params.client?.idCardNo || undefined,
         accountName: params.client?.mobile || undefined,
-        clientUserId: params.client?.clientUserId,
+        // accountEditable: true, // 豸帮帮没提此字段，先不传（默认 false）
+        // accountEditable=true: 开启"二要素快捷签"——手机号+姓名匹配即可，无需法大大已有账号
+        // clientUserId: 用手机号派生，确保 createWithTemplate 与 getActorUrl 传一致的值
+        // 豸帮帮明确建议：获取签署链接时也应传一致的 clientUserId，避免提交环节弹窗要求登录
+        clientUserId: params.client?.mobile ? ('CLT_' + params.client.mobile) : undefined,
         notification: { sendNotification: false },
       },
       // 关联客户需填写的控件，避免模板校验「签署任务不是提交状态」
       fillFields: personFillFields?.length ? personFillFields : undefined,
       signConfigInfo: clientActorSignConfig,
     };
+    console.log(
+      `法大大客户参与方 actor=${JSON.stringify(clientActor.actor)} signConfigInfo=${JSON.stringify(clientActorSignConfig)}`,
+    );
     // 律所参与方（映射到模板 corp 参与方，发起方仅用印：待填控件不再挂载，
     // 字段值由 fillFieldValues 全局写入，企业零填写动作、随免验证签自动盖章）
     // 合同模板为制式文本，企业端无需通读至末页，故 readingToEnd 显式置为 false
@@ -674,8 +676,9 @@ export class FadadaService {
       autoFinish: true,
       watermarks: [],
     };
-    this.logger.log('法大大 createWithTemplate 完整请求体=' + JSON.stringify(createWithTemplateReq));
+    console.log('法大大 createWithTemplate 完整请求体=' + JSON.stringify(createWithTemplateReq));
     const createRes = await this.signTaskClient.createWithTemplate(createWithTemplateReq);
+    console.log('法大大 createWithTemplate 响应.data=' + JSON.stringify(createRes?.data));
     const signTaskId = createRes?.data?.data?.signTaskId;
     if (!signTaskId) {
       throw new Error('法大大模板签署任务创建失败：' + (createRes?.data?.msg || '请求成功'));
@@ -818,6 +821,7 @@ export class FadadaService {
     signTaskId: string;
     actorId: string;
     signingId: string;
+    clientMobile?: string;
     values: Array<{ docId?: string | number; fieldId?: string; fieldName?: string; fieldValue: string }>;
   }): Promise<{ signUrl: string; embedUrl: string; mode: FadadaMode }> {
     if (this.mode === 'mock') {
@@ -849,11 +853,13 @@ export class FadadaService {
     const urlParams2: any = {
       signTaskId: params.signTaskId,
       actorId: params.actorId,
-      freeLogin: true,
-      free_login: true,
+      // 豸帮帮建议：传与 createWithTemplate 一致的 clientUserId，确保快捷签链路完整
+      // createWithTemplate 里用 CLT_手机号 当 clientUserId，这里保持一致
+      clientUserId: params.clientMobile ? ('CLT_' + params.clientMobile) : undefined,
     };
-    this.logger.log('法大大 getActorUrl 请求体(camel+snake)=' + JSON.stringify(urlParams2));
+    console.log('法大大 getActorUrl 请求体(camel+snake)=' + JSON.stringify(urlParams2));
     const urlRes = await this.signTaskClient.getActorUrl(urlParams2);
+    console.log('法大大 getActorUrl 响应.data=' + JSON.stringify(urlRes?.data));
     const signUrl = urlRes?.data?.data?.actorSignTaskUrl;
     const embedUrl = urlRes?.data?.data?.actorSignTaskEmbedUrl || '';
     if (!signUrl) {
@@ -878,7 +884,7 @@ export class FadadaService {
   private async trySubmitSignTask(signTaskId: string): Promise<void> {
     try {
       const startRes = await this.signTaskClient.start({ signTaskId });
-      this.logger.log(`法大大模板签署任务 start 响应=${JSON.stringify(startRes?.data || startRes)}`);
+      console.log(`法大大模板签署任务 start 响应=${JSON.stringify(startRes?.data || startRes)}`);
       if (startRes?.data?.code && startRes.data.code !== '100000') {
         const code = startRes.data.code;
         const msg = startRes.data.msg || '';
@@ -908,7 +914,7 @@ export class FadadaService {
   private async tryFinalizeSignTask(signTaskId: string): Promise<void> {
     try {
       const finalizeRes = await this.signTaskClient.finalizeDoc({ signTaskId });
-      this.logger.log(`法大大模板签署任务 finalizeDoc 响应=${JSON.stringify(finalizeRes?.data || finalizeRes)}`);
+      console.log(`法大大模板签署任务 finalizeDoc 响应=${JSON.stringify(finalizeRes?.data || finalizeRes)}`);
       if (finalizeRes?.data?.code && finalizeRes.data.code !== '100000') {
         this.logger.warn(
           `法大大签署任务 finalizeDoc 未生效 code=${finalizeRes.data.code} msg=${finalizeRes.data.msg || ''}，继续取签署链接`,
@@ -938,7 +944,7 @@ export class FadadaService {
     // 获取签署任务预览链接（任务仍处于填写中，文档未定稿）
     const res = await this.signTaskClient.getSignTaskPreviewUrl({ signTaskId: params.signTaskId });
     // 记录法大大返回的完整预览链接原始值，便于排查预览域名不可达问题（如 80005605.uat-e.fadada.com）
-    this.logger.log(`法大大合同预览链接响应 raw=${JSON.stringify(res?.data || res)}`);
+    console.log(`法大大合同预览链接响应 raw=${JSON.stringify(res?.data || res)}`);
     const previewUrl = res?.data?.data?.signTaskPreviewUrl;
     if (!previewUrl) {
       throw new Error('合同预览链接获取失败：' + (res?.data?.msg || '未知错误'));
@@ -1084,14 +1090,15 @@ export class FadadaService {
       // 3. 回填签署任务信息并更新状态
       signing.fadada_sign_task_id = res.signTaskId;
       signing.fadada_actor_id = res.actorId;
-      signing.sign_url = res.signUrl;
+      // 优先用 embedUrl（带 isFreeLogin=1 参数，法大大后端识别快捷签），短链作 fallback
+      signing.sign_url = (res as any).embedUrl || res.signUrl;
       await this.signingComplianceRepository.save(signing);
       // 4. 作废该案件同一客户的历史进行中签约（pending/reviewing）：
       //    同一案件重新发起签约后，遗留的旧签约仍带有效法大大任务（且基于旧模板快照），
       //    C 端「去填写并签约」入口按时间取最新待签记录时若新记录已进入后续态，
       //    会命中这些旧记录导致跳转到旧的法大大任务链接。故仅在本次发起成功后才作废旧记录。
       await this.invalidateStaleSignings(params.caseId, params.clientId, signing.id);
-      return { signingId: signing.id, signTaskId: res.signTaskId, actorId: res.actorId, signUrl: res.signUrl, mode: res.mode };
+      return { signingId: signing.id, signTaskId: res.signTaskId, actorId: res.actorId, signUrl: (res as any).embedUrl || res.signUrl, mode: res.mode };
     } catch (e) {
       // 发起失败时清理已创建的签约记录，避免产生脏数据
       await this.signingComplianceRepository.remove(signing).catch(() => undefined);

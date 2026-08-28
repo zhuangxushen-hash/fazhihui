@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Table, Button, Modal, Form, Input, Select, Space, message, DatePicker, Card, Tag, InputNumber, Switch, Popconfirm, Progress, AutoComplete } from 'antd'
-import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, DeleteOutlined, ExportOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, DeleteOutlined, ExportOutlined, FileTextOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
-import { generateLetter, closeCaseReport, archiveCase, createCase, batchCloseCases, batchArchiveCases, CreateCasePayload, getCaseDocuments } from '../api/case'
+import { archiveCase, createCase, batchCloseCases, batchArchiveCases, CreateCasePayload, getCaseDocuments } from '../api/case'
 import { getClientProfiles, createClientProfile } from '../api/client-profile'
 import { getContracts } from '../api/contract'
 import { getTeamList } from '../api/team'
@@ -160,7 +160,6 @@ export default function CaseManagement() {
   const [assignVisible, setAssignVisible] = useState(false)
   const [statusVisible, setStatusVisible] = useState(false)
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
-  const [letterVisible, setLetterVisible] = useState(false)
   const [currentCase, setCurrentCase] = useState<Record<string, unknown> | null>(null)
   const [lawyers, setLawyers] = useState<Record<string, unknown>[]>([])
   const [teams, setTeams] = useState<Record<string, any>[]>([])
@@ -554,35 +553,6 @@ export default function CaseManagement() {
     }
   }
 
-  // 打开出函弹窗
-  const handleGenerateLetter = (record: Record<string, unknown>) => {
-    setCurrentCase(record)
-    setLetterVisible(true)
-  }
-
-  // 提交出函：type 为 court_letter 出庭函 / firm_letter 所函
-  const handleSubmitLetter = async (type: string) => {
-    if (!currentCase) return
-    try {
-      await generateLetter(currentCase.id as string, type)
-      setLetterVisible(false)
-      message.success('出函成功')
-    } catch (error) {
-      message.error('出函失败')
-    }
-  }
-
-  // 生成结案报告
-  const handleCloseCaseReport = async (record: Record<string, unknown>) => {
-    try {
-      await closeCaseReport(record.id as string)
-      message.success('结案报告已生成')
-      fetchData()
-    } catch (error) {
-      message.error('结案报告生成失败')
-    }
-  }
-
   // 结案归档
   const handleArchiveCase = async (record: Record<string, unknown>) => {
     try {
@@ -720,9 +690,8 @@ export default function CaseManagement() {
     }},
     { title: '立案日期', dataIndex: 'filing_date', key: 'filing_date', render: (val: string) => formatDate(val) },
     { title: '操作', key: 'action', width: 420, render: (_: unknown, record: Record<string, unknown>) => {
-      // 案件阶段：用于控制结案报告/归档按钮显示
+      // 案件阶段：用于控制归档按钮显示
       const stage = record.stage || 'intake'
-      const canCloseReport = !['closing', 'closed'].includes(stage as string)
       const canArchive = stage === 'closing'
       return (
         <Space wrap className="stitch-btn-group">
@@ -731,13 +700,7 @@ export default function CaseManagement() {
           {!record.assignee_lawyer_id && (
             <Button size="small" type="primary" onClick={() => handleAssignLawyer(record)}>分配律师</Button>
           )}
-          <Button type="link" size="small" onClick={() => navigate('/contracts')}>创建合同</Button>
-          <Button type="link" size="small" onClick={() => handleGenerateLetter(record)}>出函</Button>
-          {canCloseReport && (
-            <Popconfirm title="确认生成结案报告？" onConfirm={() => handleCloseCaseReport(record)}>
-              <Button type="link" size="small">结案报告</Button>
-            </Popconfirm>
-          )}
+          <Button type="link" size="small" icon={<FileTextOutlined />} onClick={() => navigate(`/cases/${record.id}/sign`)}>发起签约</Button>
           {canArchive && (
             <Popconfirm title="确认结案归档？" onConfirm={() => handleArchiveCase(record)}>
               <Button type="link" size="small">归档</Button>
@@ -1072,21 +1035,6 @@ export default function CaseManagement() {
             <Button type="primary" htmlType="submit">确认变更</Button>
           </Form.Item>
         </Form>
-      </Modal>
-
-      <Modal
-        title="出函"
-        open={letterVisible}
-        onCancel={() => setLetterVisible(false)}
-        footer={null}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ color: theme.textSecondary, fontSize: 13 }}>请选择函件类型：</div>
-          <Space className="stitch-btn-group">
-            <Button type="primary" onClick={() => handleSubmitLetter('court_letter')}>出庭函</Button>
-            <Button type="primary" onClick={() => handleSubmitLetter('firm_letter')}>所函</Button>
-          </Space>
-        </div>
       </Modal>
     </div>
   )

@@ -690,10 +690,17 @@ export class ClientService {
     // 身份与意愿确认由法大大签署流程（人脸/短信/密码核验）保障，此处不再强制校验 verify_status。
     // 合并系统预填 + 业务员预填与客户填写的值（客户值覆盖同名预填值），一并传给法大大，避免信息丢失
     const values = this.mergePrefillValues(signing, body.values || []);
+    // 查出客户手机号，传给法大大确保快捷签 createWithTemplate 与 getActorUrl 的 clientUserId 一致
+    let clientMobile: string | undefined;
+    try {
+      const profile = await this.clientProfileRepository.findOne({ where: { id: signing.client_id } });
+      clientMobile = profile?.phone || undefined;
+    } catch { /* 查不到就跳过，clientUserId 为空法大大走普通登录流程 */ }
     const result = await this.fadadaService.completeClientPrefillAndSign({
       signTaskId: signing.fadada_sign_task_id,
       actorId: signing.fadada_actor_id || signing.client_id,
       signingId: signing.id,
+      clientMobile,
       values,
     });
     // 回填签署链接并更新状态为审核中（待签署）
