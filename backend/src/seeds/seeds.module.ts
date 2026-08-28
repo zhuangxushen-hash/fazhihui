@@ -4674,8 +4674,12 @@ export class SeedsModule implements OnModuleInit {
 
   // 菜单种子数据，与 frontend/src/components/Layout.tsx 的 menuGroups 保持完全同步
   private async seedMenus() {
-    // 每次都同步，不跳过已有数据，确保数据库与前端菜单一致
-    // 之前 seeds 只在 count=0 时 seed 一次，导致菜单管理页面和实际侧边栏不一致
+    // 每次都重建（先清空再插入），避免新旧数据混杂导致 path 冲突
+    // Layout.tsx 里合规风控一级菜单和子菜单 path 都叫 /compliance
+    // upsert 二级菜单时会覆盖一级菜单，所以必须先清空再按正确顺序插入
+    console.log('[SEED] seedMenus START');
+    await this.menuRepository.clear();
+    console.log('[SEED] seedMenus CLEARED');
 
     // 一级菜单（与 Layout.tsx menuGroups 一一对应）
     const topMenus = [
@@ -4813,11 +4817,11 @@ export class SeedsModule implements OnModuleInit {
       ['lawyer-center', '/lawyer-center/rating-manage', '评级管理'],
     ];
 
-    // 同步一级菜单（upsert，按 path 匹配）
+    console.log('[SEED] topMenus count:', topMenus.length);
+    // 同步一级菜单（clear 后直接 save，不会有冲突）
     const topMenuIdMap: Record<string, string> = {};
     for (const m of topMenus) {
       const path = '/' + m.key;
-      const existing = await this.menuRepository.findOne({ where: { path } });
       const payload = {
         name: m.name,
         path,
@@ -4826,20 +4830,14 @@ export class SeedsModule implements OnModuleInit {
         is_visible: true,
         component: '',
       };
-      if (existing) {
-        await this.menuRepository.update(existing.id, payload);
-        topMenuIdMap[m.key] = existing.id;
-      } else {
-        const saved = await this.menuRepository.save(payload);
-        topMenuIdMap[m.key] = saved.id;
-      }
+      const saved = await this.menuRepository.save(payload);
+      topMenuIdMap[m.key] = saved.id;
     }
 
-    // 同步二级菜单（upsert，按 path 匹配）
+    // 同步二级菜单（clear 后直接 save，不会有冲突）
     for (let i = 0; i < subMenus.length; i++) {
       const [parentKey, path, name] = subMenus[i];
       const parentId = topMenuIdMap[parentKey];
-      const existing = await this.menuRepository.findOne({ where: { path } });
       const payload = {
         name,
         path,
@@ -4848,12 +4846,9 @@ export class SeedsModule implements OnModuleInit {
         is_visible: true,
         component: '',
       };
-      if (existing) {
-        await this.menuRepository.update(existing.id, payload);
-      } else {
-        await this.menuRepository.save(payload);
-      }
+      await this.menuRepository.save(payload);
     }
+    console.log('[SEED] seedMenus DONE, total:', await this.menuRepository.count());
   }
 
   private async seedNotifications(userMap: Record<string, User>) {
