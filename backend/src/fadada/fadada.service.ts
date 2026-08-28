@@ -856,6 +856,8 @@ export class FadadaService {
       // 豸帮帮建议：传与 createWithTemplate 一致的 clientUserId，确保快捷签链路完整
       // createWithTemplate 里用 CLT_手机号 当 clientUserId，这里保持一致
       clientUserId: params.clientMobile ? ('CLT_' + params.clientMobile) : undefined,
+      // 签署完成后重定向回 C 端案件列表（法大大 getActorUrl 接口支持 redirectUrl 参数）
+      redirectUrl: this.redirectUrl || undefined,
     };
     console.log('法大大 getActorUrl 请求体(camel+snake)=' + JSON.stringify(urlParams2));
     const urlRes = await this.signTaskClient.getActorUrl(urlParams2);
