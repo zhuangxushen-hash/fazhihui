@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 品牌主色：与前端主题一致 -->
+    <color name="primary">#0071E3</color>
+    <color name="primary_dark">#0059B5</color>
+    <color name="primary_light">#3A8FFF</color>
+    <color name="progress_color">#0071E3</color>
+</resources>

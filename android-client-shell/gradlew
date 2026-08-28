@@ -1,0 +1,25 @@
+#!/bin/sh
+# Gradle Wrapper 启动脚本
+APP_HOME=$( cd "${APP_HOME:-./}" && pwd -P ) || exit
+APP_NAME="Gradle"
+APP_BASE_NAME=${0##*/}
+
+MAX_FD=maximum
+CLASSPATH="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
+
+# 找 JAVA_HOME
+if [ -n "$JAVA_HOME" ] ; then
+    if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
+        JAVACMD="$JAVA_HOME/jre/sh/java"
+    else
+        JAVACMD="$JAVA_HOME/bin/java"
+    fi
+else
+    JAVACMD=java
+fi
+
+exec "$JAVACMD" \
+  -Xmx1024m \
+  -Dorg.gradle.appname="$APP_BASE_NAME" \
+  -classpath "$CLASSPATH" \
+  org.gradle.wrapper.GradleWrapperMain "$@"

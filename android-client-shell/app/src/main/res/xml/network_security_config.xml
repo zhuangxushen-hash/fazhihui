@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    网络安全配置
+    cleartextTrafficPermitted="true" 允许访问 HTTP 接口和服务器
+    上线 HTTPS 后可以改为 false
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

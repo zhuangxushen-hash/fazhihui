@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Form, Input, InputNumber, message, Steps } from 'antd'
+import { Form, Input, InputNumber, message } from 'antd'
 import { ArrowLeftOutlined, FileAddOutlined, LockOutlined } from '@ant-design/icons'
 import axios from '../../api/axios'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -12,15 +12,11 @@ import ClientButton from '../../components/ClientButton'
  * 填写签署任务待填字段 → 直接提交预填并进入页面内嵌签署页（免验证签整合：客户完成签署即完成实名授权，无需另行单独实名认证）。
  */
 export default function SignPrefill() {
-  // 当前流程步骤：0 填写信息 / 1 签约合同
-  const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [fields, setFields] = useState<any[]>([])
   const [subject, setSubject] = useState('法律顾问签约')
   const [signingId, setSigningId] = useState('')
-  // 进入签署后内嵌的签署页地址（步骤1）
-  const [embedUrl, setEmbedUrl] = useState('')
   const [form] = Form.useForm()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -92,8 +88,9 @@ export default function SignPrefill() {
       field_value: String(values[f.field_id] ?? ''),
     }))
 
-  // 步骤0 → 1：填写完成后直接提交预填并调用法大大签约流程，进入页面内嵌签署
-  // 免验证签整合：客户在签署页完成签署即完成实名授权，无需提前单独实名认证
+  // 填写完成 → 提交预填 → 新窗口打开法大大签署页（web-view 形式）
+  // 不再使用 iframe 内嵌：避免 CSP 跨域限制、摄像头权限被拦截等问题
+  // 客户在新窗口完成签署后自行关闭，本页自动返回案件列表
   const handleSubmit = async () => {
     setSubmitting(true)
     try {
@@ -104,14 +101,20 @@ export default function SignPrefill() {
         values: collectFieldValues(values),
       }
       const res: any = await axios.post('/client/sign/submit-prefill', payload)
-      message.success('信息已提交，正在进入签署')
-      // 优先在页面内嵌签署页；无法内嵌时兜底新窗口打开签署链接
-      if (res?.embed_url) {
-        setEmbedUrl(res.embed_url)
-        setCurrentStep(1)
-      } else if (res?.sign_url) {
-        window.open(res.sign_url, '_blank')
-        setTimeout(() => navigate('/client/cases', { replace: true }), 1200)
+      // 优先用 embed_url（connect 层带 isFreeLogin=1，确保快捷签）；兜底 sign_url 短链
+      const url = res?.embed_url || res?.sign_url
+      if (url) {
+        // 新窗口打开，避免浏览器弹窗拦截需要用户手势触发
+        const win = window.open(url, '_blank', 'noopener,noreferrer')
+        if (!win) {
+          message.warning('浏览器拦截了弹窗，请允许本站点弹窗后重试')
+          return
+        }
+        message.success('已打开签署页面，请在新窗口完成签署')
+        // 延迟返回案件列表，给用户时间看到提示
+        setTimeout(() => navigate('/client/cases', { replace: true }), 1500)
+      } else {
+        message.error('未获取到签署链接，请稍后重试')
       }
     } catch (error) {
       // 校验失败或请求错误已处理
@@ -120,138 +123,90 @@ export default function SignPrefill() {
     }
   }
 
-  // 返回案件列表
-  const handleBackToCases = () => {
-    navigate('/client/cases', { replace: true })
+  const handleBack = () => {
+    navigate(-1)
   }
 
-  // 步骤标题
-  const stepTitle = ['填写合同信息', '签约合同'][currentStep]
-
   return (
-    // 根容器使用 100vh + flex column，确保内嵌法大大签署 iframe 撑满剩余高度（flex:1 依赖父容器有确定高度）
-    <div className="client-app" style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="client-app" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* 页头 */}
       <header className="c-topbar">
-        <button className="c-topbar__back" onClick={() => (currentStep === 1 ? handleBackToCases() : navigate(-1))}>
+        <button className="c-topbar__back" onClick={handleBack}>
           <ArrowLeftOutlined />
         </button>
-        <span className="c-topbar__title" style={{ fontSize: 17 }}>{stepTitle}</span>
+        <span className="c-topbar__title" style={{ fontSize: 17 }}>填写合同信息</span>
         <div style={{ width: 44 }} />
       </header>
 
-      {/* 流程步骤条（签署中为 iframe，故不展示） */}
-      {currentStep !== 1 && (
-        <div className="c-card" style={{ margin: 12, padding: '14px 12px 10px' }}>
-          <Steps
-            size="small"
-            current={currentStep}
-            responsive={false}
-            items={[
-              { title: '填写信息' },
-              { title: '签约合同' },
-            ]}
-          />
+      <main className="c-container--no-nav" style={{ padding: 16, paddingBottom: 120, maxWidth: 720, margin: '0 auto', width: '100%' }}>
+        {/* 签约主题 */}
+        <div className="c-card" style={{ padding: 16, marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <FileAddOutlined style={{ fontSize: 24, color: '#0071e3' }} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, color: 'var(--cm-text-muted)' }}>签约主题</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--cm-text-strong)', marginTop: 2, wordBreak: 'break-all' }}>{subject}</div>
+            </div>
+          </div>
         </div>
-      )}
 
-      {currentStep === 1 ? (
-        /* 步骤1 内嵌法大大签署页：客户在页面内完成签署（免验证签整合，签署即完成实名授权） */
-        <>
-          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <iframe
-              src={embedUrl}
-              title="电子签署页"
-              style={{ flex: 1, width: '100%', border: 'none' }}
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-            />
-          </div>
-          {/* 底部按钮改为静态参与 flex 布局，避免固定定位悬浮遮挡内嵌签署 iframe */}
-          <div className="c-safety-bar" style={{ position: 'static' }}>
-            <ClientButton
-              btnVariant="outline"
-              btnSize="large"
-              style={{ width: '100%' }}
-              onClick={handleBackToCases}
-            >
-              已完成签署，返回案件列表
-            </ClientButton>
-          </div>
-        </>
-      ) : (
-        /* 步骤0 填写合同信息 */
-        <>
-          <main className="c-container--no-nav" style={{ padding: 16, paddingBottom: 120, maxWidth: 720, margin: '0 auto', width: '100%' }}>
-            {/* 签约主题 */}
-            <div className="c-card" style={{ padding: 16, marginBottom: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <FileAddOutlined style={{ fontSize: 24, color: '#0071e3' }} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, color: 'var(--cm-text-muted)' }}>签约主题</div>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--cm-text-strong)', marginTop: 2, wordBreak: 'break-all' }}>{subject}</div>
-                </div>
-              </div>
+        {/* 待填字段 */}
+        <div className="c-card" style={{ padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--cm-text-strong)', marginBottom: 12 }}>合同信息</div>
+          {loading ? (
+            <div className="c-loading">加载中...</div>
+          ) : fields.length === 0 ? (
+            <div className="c-empty" style={{ padding: '16px 0' }}>
+              <FileAddOutlined className="c-empty__icon" />
+              <div className="c-empty__title">无需补充信息</div>
+              <div className="c-empty__desc">可直接进入签署</div>
             </div>
+          ) : (
+            <Form form={form} layout="vertical" requiredMark={false}>
+              {fields.map((field) => (
+                <Form.Item
+                  key={field.field_id}
+                  name={field.field_id}
+                  label={
+                    <span className="c-field__label">
+                      {field.field_name || field.field_id}
+                      {field.required && <span style={{ color: 'var(--cm-danger)' }}> *</span>}
+                    </span>
+                  }
+                  rules={buildFieldRules(field)}
+                  style={{ marginBottom: 16 }}
+                >
+                  {renderFieldInput(field)}
+                </Form.Item>
+              ))}
+            </Form>
+          )}
+        </div>
 
-            {/* 待填字段 */}
-            <div className="c-card" style={{ padding: 16, marginBottom: 12 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--cm-text-strong)', marginBottom: 12 }}>合同信息</div>
-              {loading ? (
-                <div className="c-loading">加载中...</div>
-              ) : fields.length === 0 ? (
-                <div className="c-empty" style={{ padding: '16px 0' }}>
-                  <FileAddOutlined className="c-empty__icon" />
-                  <div className="c-empty__title">无需补充信息</div>
-                  <div className="c-empty__desc">可直接进入签署</div>
-                </div>
-              ) : (
-                <Form form={form} layout="vertical" requiredMark={false}>
-                  {fields.map((field) => (
-                    <Form.Item
-                      key={field.field_id}
-                      name={field.field_id}
-                      label={
-                        <span className="c-field__label">
-                          {field.field_name || field.field_id}
-                          {field.required && <span style={{ color: 'var(--cm-danger)' }}> *</span>}
-                        </span>
-                      }
-                      rules={buildFieldRules(field)}
-                      style={{ marginBottom: 16 }}
-                    >
-                      {renderFieldInput(field)}
-                    </Form.Item>
-                  ))}
-                </Form>
-              )}
-            </div>
-
-            {/* 签署说明 */}
-            <div className="c-card" style={{ padding: 14, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-              <LockOutlined style={{ color: '#0071e3', marginTop: 2, fontSize: 16, flexShrink: 0 }} />
-              <div style={{ fontSize: 12, color: 'var(--cm-text)', lineHeight: 1.7 }}>
-                填写完成后直接进入签署。签署时将同步完成身份认证（免验证签），全程无需离开本页面。
-              </div>
-            </div>
-          </main>
-
-          {/* 底部固定按钮 */}
-          <div className="c-safety-bar">
-            <ClientButton
-              btnVariant="primary"
-              btnSize="large"
-              style={{ width: '100%' }}
-              loading={submitting}
-              disabled={loading}
-              onClick={handleSubmit}
-            >
-              提交信息并去签署
-            </ClientButton>
+        {/* 签署说明 */}
+        <div className="c-card" style={{ padding: 14, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <LockOutlined style={{ color: '#0071e3', marginTop: 2, fontSize: 16, flexShrink: 0 }} />
+          <div style={{ fontSize: 12, color: 'var(--cm-text)', lineHeight: 1.7 }}>
+            填写完成后将在新窗口打开签署页面。签署时将同步完成身份认证（刷脸），完成后关闭签署窗口即可。
           </div>
-        </>
-      )}
+        </div>
+      </main>
+
+      {/* 底部固定按钮 */}
+      <div className="c-safety-bar">
+        <ClientButton
+          btnVariant="primary"
+          btnSize="large"
+          style={{ width: '100%' }}
+          loading={submitting}
+          disabled={loading}
+          onClick={handleSubmit}
+        >
+          提交信息并去签署
+        </ClientButton>
+      </div>
     </div>
   )
 }
