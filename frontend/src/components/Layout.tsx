@@ -61,7 +61,7 @@ const menuGroups: MenuGroup[] = [
     children: [
       // 原线索CRM 7项
       { key: '/leads', label: '线索管理' },
-      { key: '/clients', label: '客户管理' },
+      { key: '/client-management', label: '客户管理' },
       { key: '/lead-pool', label: '公海池' },
       { key: '/invite-workbench', label: '邀约工作台' },
       { key: '/talk-workbench', label: '谈案工作台' },
@@ -302,7 +302,7 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
   // 线索CRM：销售类角色看全，其他只看客户（含原SCRM私域6项）
   crm: {
     '/leads': ['super_admin', 'org_admin', 'marketing', 'sales'],
-    '/clients': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
+    '/client-management': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/lead-pool': ['super_admin', 'org_admin', 'sales'],
     '/invite-workbench': ['super_admin', 'org_admin', 'sales'],
     '/talk-workbench': ['super_admin', 'org_admin', 'sales'],

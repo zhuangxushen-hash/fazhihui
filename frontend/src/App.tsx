@@ -86,9 +86,8 @@ const DeploymentConfig = lazy(() => import('./pages/DeploymentConfig'))
 const BrandCustomization = lazy(() => import('./pages/BrandCustomization'))
 const IntegrationManagement = lazy(() => import('./pages/IntegrationManagement'))
 const ApprovalCenter = lazy(() => import('./pages/ApprovalCenter'))
-// 可视化绘图 + 数据大屏
+// 可视化绘图
 const DiagramTool = lazy(() => import('./pages/DiagramTool'))
-const DataScreen = lazy(() => import('./pages/DataScreen'))
 // kinglex 功能模块
 const SealManagement = lazy(() => import('./pages/SealManagement'))
 const ConflictCheck = lazy(() => import('./pages/ConflictCheck'))
@@ -447,7 +446,7 @@ function App() {
           <Route path="/dashboard/profit-model" element={<ProtectedRoute><ProfitModelSimulator /></ProtectedRoute>} />
           {/* 线索CRM */}
           <Route path="/leads" element={<ProtectedRoute><LeadManagement /></ProtectedRoute>} />
-          <Route path="/clients" element={<ProtectedRoute><ClientManagement /></ProtectedRoute>} />
+          <Route path="/client-management" element={<ProtectedRoute><ClientManagement /></ProtectedRoute>} />
           <Route path="/lead-pool" element={<ProtectedRoute><LeadPool /></ProtectedRoute>} />
           <Route path="/invite-workbench" element={<ProtectedRoute><InviteWorkbench /></ProtectedRoute>} />
           <Route path="/talk-workbench" element={<ProtectedRoute><TalkWorkbench /></ProtectedRoute>} />
@@ -527,9 +526,7 @@ function App() {
           <Route path="/archive-management" element={<ProtectedRoute allowedRoles={['super_admin', 'org_admin', 'lawyer', 'assistant']}><ArchiveManagement /></ProtectedRoute>} />
           <Route path="/cloud-archive" element={<Navigate to="/archive-management" replace />} />
           <Route path="/approval-center" element={<ProtectedRoute><ApprovalCenter /></ProtectedRoute>} />
-          {/* 可视化绘图 + 数据大屏 */}
           <Route path="/diagram-tool" element={<ProtectedRoute><DiagramTool /></ProtectedRoute>} />
-          <Route path="/data-screen" element={<DataScreen />} />
           {/* kinglex 功能模块 */}
           <Route path="/seals" element={<ProtectedRoute><SealManagement /></ProtectedRoute>} />
           <Route path="/conflict-check" element={<ProtectedRoute><ConflictCheck /></ProtectedRoute>} />

@@ -6,8 +6,6 @@ export const INTERVAL = {
   HALF_MINUTE: 30000,
   MINUTE: 60000,
   HOUR: 3600000,
-  // 数据大屏刷新间隔
-  DATA_SCREEN_REFRESH: 30000,
   // 时钟刷新间隔
   CLOCK_TICK: 1000,
   // 计时器精度
