@@ -104,15 +104,18 @@ export default function SignPrefill() {
       // 优先用 embed_url（connect 层带 isFreeLogin=1，确保快捷签）；兜底 sign_url 短链
       const url = res?.embed_url || res?.sign_url
       if (url) {
-        // 新窗口打开，避免浏览器弹窗拦截需要用户手势触发
-        const win = window.open(url, '_blank', 'noopener,noreferrer')
-        if (!win) {
-          message.warning('浏览器拦截了弹窗，请允许本站点弹窗后重试')
-          return
+        // WebView 壳环境（UA 带 app_embed）：直接 location.href，壳接管加载
+        // 普通浏览器：先 window.open，被拦截时降级 location.href
+        const ua = navigator.userAgent || ''
+        if (ua.includes('app_embed')) {
+          window.location.href = url
+        } else {
+          const win = window.open(url, '_blank', 'noopener,noreferrer')
+          if (!win) {
+            // 弹窗被拦截，降级为当前页跳转
+            window.location.href = url
+          }
         }
-        message.success('已打开签署页面，请在新窗口完成签署')
-        // 延迟返回案件列表，给用户时间看到提示
-        setTimeout(() => navigate('/client/cases', { replace: true }), 1500)
       } else {
         message.error('未获取到签署链接，请稍后重试')
       }
