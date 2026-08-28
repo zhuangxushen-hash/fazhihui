@@ -4672,95 +4672,186 @@ export class SeedsModule implements OnModuleInit {
     }
   }
 
+  // 菜单种子数据，与 frontend/src/components/Layout.tsx 的 menuGroups 保持完全同步
   private async seedMenus() {
-    const count = await this.menuRepository.count();
-    if (count > 0) return;
+    // 每次都同步，不跳过已有数据，确保数据库与前端菜单一致
+    // 之前 seeds 只在 count=0 时 seed 一次，导致菜单管理页面和实际侧边栏不一致
 
-    const menus = [
-      // 一级菜单
-      { name: '数据看板', path: '/dashboard', icon: 'DashboardOutlined', sort_order: 1, is_visible: true, component: 'Dashboard' },
-      { name: '线索CRM', path: '/crm', icon: 'TeamOutlined', sort_order: 2, is_visible: true, component: 'LeadManagement' },
-      { name: '案件办案', path: '/case', icon: 'FileTextOutlined', sort_order: 3, is_visible: true, component: 'CaseManagement' },
-      { name: '合规风控', path: '/compliance', icon: 'SecurityScanOutlined', sort_order: 4, is_visible: true, component: 'ComplianceManagement' },
-      { name: '财务分润', path: '/finance', icon: 'DollarOutlined', sort_order: 5, is_visible: true, component: 'FinanceManagement' },
-      { name: '投放营销', path: '/marketing', icon: 'NotificationOutlined', sort_order: 6, is_visible: true, component: 'AdAccountManagement' },
-      { name: 'SCRM私域', path: '/scrm', icon: 'MessageOutlined', sort_order: 7, is_visible: true, component: 'LiveCodeManagement' },
-      { name: '系统管理', path: '/system', icon: 'SettingOutlined', sort_order: 8, is_visible: true, component: 'UserManagement' },
+    // 一级菜单（与 Layout.tsx menuGroups 一一对应）
+    const topMenus = [
+      { key: 'dashboard', name: '数据看板', icon: 'DashboardOutlined', sort_order: 1 },
+      { key: 'crm', name: '线索CRM', icon: 'TeamOutlined', sort_order: 2 },
+      { key: 'case', name: '案件办案', icon: 'FileTextOutlined', sort_order: 3 },
+      { key: 'compliance', name: '合规风控', icon: 'SecurityScanOutlined', sort_order: 4 },
+      { key: 'finance', name: '财务分润', icon: 'DollarOutlined', sort_order: 5 },
+      { key: 'marketing', name: '投放营销', icon: 'NotificationOutlined', sort_order: 6 },
+      { key: 'system', name: '系统管理', icon: 'SettingOutlined', sort_order: 7 },
+      { key: 'hr', name: '人事行政', icon: 'SolutionOutlined', sort_order: 8 },
+      { key: 'comprehensive', name: '综合管理', icon: 'SearchOutlined', sort_order: 9 },
+      { key: 'shortcut', name: '快捷工具', icon: 'ToolOutlined', sort_order: 10 },
+      { key: 'lawyer-center', name: '律师中心', icon: 'StarOutlined', sort_order: 11 },
     ];
 
-    const savedMenus: Record<string, string> = {};
-    for (const menu of menus) {
-      const existing = await this.menuRepository.findOne({ where: { path: menu.path } });
-      if (!existing) {
-        const saved = await this.menuRepository.save(menu);
-        savedMenus[menu.path] = saved.id;
+    // 二级菜单 [parentKey, path, name]
+    const subMenus: Array<[string, string, string]> = [
+      // 数据看板
+      ['dashboard', '/workbench', '个人工作台'],
+      ['dashboard', '/update-dynamic', '更新动态'],
+      ['dashboard', '/overview-management', '经营总览'],
+      ['dashboard', '/dashboard/conversion-funnel', '投放转化漏斗'],
+      ['dashboard', '/dashboard/sales-performance', '销售团队绩效'],
+      ['dashboard', '/dashboard/case-efficiency', '办案效能分析'],
+      ['dashboard', '/dashboard/compliance-risk', '合规风险监控'],
+      ['dashboard', '/dashboard/custom-report', '自定义报表'],
+      ['dashboard', '/dashboard/hr-efficiency', '人效分析'],
+      ['dashboard', '/dashboard/profit-model', '盈利模型'],
+      // 线索CRM
+      ['crm', '/leads', '线索管理'],
+      ['crm', '/client-management', '客户管理'],
+      ['crm', '/lead-pool', '公海池'],
+      ['crm', '/invite-workbench', '邀约工作台'],
+      ['crm', '/talk-workbench', '谈案工作台'],
+      ['crm', '/talk-sop', '谈案SOP'],
+      ['crm', '/scrm/live-codes', '活码管理'],
+      ['crm', '/scrm/channels', '渠道追踪'],
+      ['crm', '/scrm/tags', '客户标签'],
+      ['crm', '/scrm/sidebar', '企微侧边栏'],
+      ['crm', '/scrm/reach', '私域触达'],
+      ['crm', '/scrm/chat-archives', '聊天存档'],
+      // 案件办案
+      ['case', '/cases', '案件管理'],
+      ['case', '/case-sop', '办案SOP'],
+      ['case', '/case-warning', '案件预警'],
+      ['case', '/legal-documents', 'AI文书'],
+      ['case', '/similar-cases', '类案匹配'],
+      ['case', '/contracts', '合同管理'],
+      ['case', '/property-preservation', '财产保全'],
+      ['case', '/conflict-check', '利冲检索'],
+      ['case', '/bids', '投标管理'],
+      ['case', '/due-diligence', '尽调宝'],
+      ['case', '/compliance/export', '案件归档'],
+      ['case', '/documents', '我的文档'],
+      ['case', '/archive-management', '归档管理'],
+      // 合规风控
+      ['compliance', '/compliance', '投诉管理'],
+      ['compliance', '/compliance-management', '合规管理'],
+      ['compliance', '/compliance/public-opinion', '舆情监控'],
+      // 财务分润
+      ['finance', '/finance-operation', '财务经营'],
+      ['finance', '/finance/project-collection', '项目收款台账'],
+      ['finance', '/finance/income-expenditure', '收支综合'],
+      ['finance', '/finance/fixed-cost-withholding', '固定费用代扣'],
+      ['finance', '/finance/salary-fees-withholding', '工资代扣'],
+      ['finance', '/finance/income-tax-withholding', '个税结算'],
+      ['finance', '/finance/withholding-offset', '代扣撤销冲抵'],
+      ['finance', '/finance/account-statistics', '账户台账'],
+      ['finance', '/finance/paper-invoice-print', '纸质发票打印'],
+      ['finance', '/commission-config', '分润配置'],
+      ['finance', '/finance/reconciliation', '智能对账'],
+      ['finance', '/finance/refund', '退费管理'],
+      ['finance', '/finance/case-profit', '单案利润分析'],
+      ['finance', '/finance/payment-reminder', '催款管理'],
+      ['finance', '/finance/invoices', '发票管理'],
+      ['finance', '/finance/business-funds', '业务款管理'],
+      // 投放营销
+      ['marketing', '/marketing/ad-accounts', '广告账户'],
+      ['marketing', '/marketing/platform-integration', '平台对接'],
+      ['marketing', '/marketing/ad-plans', '投放计划'],
+      ['marketing', '/marketing/conversion', '转化归因'],
+      ['marketing', '/marketing/materials', '素材管理'],
+      ['marketing', '/marketing/ai-content', 'AI内容生成'],
+      ['marketing', '/marketing/social-accounts', '公域账号'],
+      ['marketing', '/marketing/live-management', '直播管理'],
+      ['marketing', '/marketing/work-phone', '工作手机'],
+      ['marketing', '/marketing/content-preview', '内容预审'],
+      // 系统管理
+      ['system', '/users', '用户管理'],
+      ['system', '/permissions', '角色权限'],
+      ['system', '/menus', '菜单管理'],
+      ['system', '/system/organizations', '组织管理'],
+      ['system', '/system/push-rules', '推送规则'],
+      ['system', '/system/number-rules', '编号规则'],
+      ['system', '/notifications', '消息通知'],
+      ['system', '/notifications/publish', '发布通知'],
+      ['system', '/service-ratings', '评价管理'],
+      ['system', '/ai-nav', 'AI工具'],
+      ['system', '/system/deployment-config', '部署配置'],
+      ['system', '/system/brand-customization', '品牌定制'],
+      ['system', '/system/integrations', '第三方对接'],
+      ['system', '/system/audit-logs', '审计日志'],
+      // 人事行政
+      ['hr', '/hr/personnel', '人事管理'],
+      ['hr', '/hr/attendance-leave', '人事考勤'],
+      ['hr', '/hr/materials', '物品管理'],
+      ['hr', '/hr/activities', '活动管理'],
+      ['hr', '/worklogs', '工作日志'],
+      ['hr', '/worklog-print', '工时打印'],
+      ['hr', '/schedules', '日程管理'],
+      ['hr', '/tasks', '任务中心'],
+      ['hr', '/knowledge-management', '知识管理'],
+      ['hr', '/diagram-tool', '可视化绘图'],
+      ['hr', '/approval-center', '审批中心'],
+      ['hr', '/seals', '用印管理'],
+      ['hr', '/approval/finance-withdrawal', '财务提款审批'],
+      ['hr', '/approval/pay-apply', '支付申请'],
+      ['hr', '/approval/pay-approve', '支付审批'],
+      ['hr', '/approval/repay-apply', '报销申请'],
+      ['hr', '/approval/repay-approve', '报销审批'],
+      ['hr', '/approval/invoice-repay', '成本票报销'],
+      // 综合管理
+      ['comprehensive', '/comprehensive/query', '综合查询'],
+      ['comprehensive', '/statistical-analysis', '统计分析'],
+      ['comprehensive', '/internal-projects', '内部项目'],
+      ['comprehensive', '/bid-performances', '投标业绩库'],
+      ['comprehensive', '/law-tools', '法律工具'],
+      // 快捷工具
+      ['shortcut', '/shortcut/cooperative-source', '协作案源'],
+      ['shortcut', '/shortcut/difficult-cases', '疑难案件'],
+      ['shortcut', '/shortcut/cooperative-firms', '协作律所'],
+      // 律师中心
+      ['lawyer-center', '/lawyer-center/rating', '律师评级'],
+      ['lawyer-center', '/lawyer-center/rating-manage', '评级管理'],
+    ];
+
+    // 同步一级菜单（upsert，按 path 匹配）
+    const topMenuIdMap: Record<string, string> = {};
+    for (const m of topMenus) {
+      const path = '/' + m.key;
+      const existing = await this.menuRepository.findOne({ where: { path } });
+      const payload = {
+        name: m.name,
+        path,
+        icon: m.icon,
+        sort_order: m.sort_order,
+        is_visible: true,
+        component: '',
+      };
+      if (existing) {
+        await this.menuRepository.update(existing.id, payload);
+        topMenuIdMap[m.key] = existing.id;
       } else {
-        savedMenus[menu.path] = existing.id;
+        const saved = await this.menuRepository.save(payload);
+        topMenuIdMap[m.key] = saved.id;
       }
     }
 
-    // 二级菜单
-    const subMenus = [
-      // 数据看板
-      { name: '经营总览', path: '/', parent_path: '/dashboard', sort_order: 1, is_visible: true, component: 'Dashboard' },
-      { name: '投放转化漏斗', path: '/dashboard/conversion-funnel', parent_path: '/dashboard', sort_order: 2, is_visible: true, component: 'ConversionFunnelDashboard' },
-      { name: '销售团队绩效', path: '/dashboard/sales-performance', parent_path: '/dashboard', sort_order: 3, is_visible: true, component: 'SalesPerformanceDashboard' },
-      { name: '办案效能分析', path: '/dashboard/case-efficiency', parent_path: '/dashboard', sort_order: 4, is_visible: true, component: 'CaseEfficiencyDashboard' },
-      { name: '财务经营', path: '/dashboard/finance', parent_path: '/dashboard', sort_order: 5, is_visible: true, component: 'FinanceDashboard' },
-      { name: '合规风险监控', path: '/dashboard/compliance-risk', parent_path: '/dashboard', sort_order: 6, is_visible: true, component: 'ComplianceRiskDashboard' },
-      { name: '自定义报表', path: '/dashboard/custom-report', parent_path: '/dashboard', sort_order: 7, is_visible: true, component: 'CustomReport' },
-      // 线索CRM
-      { name: '线索管理', path: '/leads', parent_path: '/crm', sort_order: 1, is_visible: true, component: 'LeadManagement' },
-      { name: '公海池', path: '/lead-pool', parent_path: '/crm', sort_order: 2, is_visible: true, component: 'LeadPool' },
-      { name: '邀约工作台', path: '/invite-workbench', parent_path: '/crm', sort_order: 3, is_visible: true, component: 'InviteWorkbench' },
-      { name: '谈案工作台', path: '/talk-workbench', parent_path: '/crm', sort_order: 4, is_visible: true, component: 'TalkWorkbench' },
-      { name: '谈案SOP', path: '/talk-sop', parent_path: '/crm', sort_order: 5, is_visible: true, component: 'TalkSOPConfig' },
-      // 案件办案
-      { name: '案件管理', path: '/cases', parent_path: '/case', sort_order: 1, is_visible: true, component: 'CaseManagement' },
-      { name: '办案SOP', path: '/case-sop', parent_path: '/case', sort_order: 2, is_visible: true, component: 'CaseSOPConfig' },
-      { name: '案件预警', path: '/case-warning', parent_path: '/case', sort_order: 3, is_visible: true, component: 'CaseWarningCenter' },
-      // 合规风控
-      { name: '合规管理', path: '/compliance', parent_path: '/compliance', sort_order: 1, is_visible: true, component: 'ComplianceManagement' },
-      { name: '合规风控中心', path: '/compliance-center', parent_path: '/compliance', sort_order: 2, is_visible: true, component: 'ComplianceCenter' },
-      // 财务分润
-      { name: '财务管理', path: '/finance', parent_path: '/finance', sort_order: 1, is_visible: true, component: 'FinanceManagement' },
-      { name: '分润配置', path: '/commission-config', parent_path: '/finance', sort_order: 2, is_visible: true, component: 'CommissionConfig' },
-      { name: '评价管理', path: '/service-ratings', parent_path: '/finance', sort_order: 3, is_visible: true, component: 'ServiceRatingManagement' },
-      // 投放营销
-      { name: '广告账户', path: '/marketing/ad-accounts', parent_path: '/marketing', sort_order: 1, is_visible: true, component: 'AdAccountManagement' },
-      { name: '投放计划', path: '/marketing/ad-plans', parent_path: '/marketing', sort_order: 2, is_visible: true, component: 'AdPlanManagement' },
-      { name: '转化归因', path: '/marketing/conversion', parent_path: '/marketing', sort_order: 3, is_visible: true, component: 'ConversionReport' },
-      { name: '素材管理', path: '/marketing/materials', parent_path: '/marketing', sort_order: 4, is_visible: true, component: 'MaterialManagement' },
-      { name: 'AI内容生成', path: '/marketing/ai-content', parent_path: '/marketing', sort_order: 5, is_visible: true, component: 'AIContentGenerator' },
-      { name: '公域账号', path: '/marketing/social-accounts', parent_path: '/marketing', sort_order: 6, is_visible: true, component: 'SocialAccountMatrix' },
-      // SCRM私域
-      { name: '活码管理', path: '/scrm/live-codes', parent_path: '/scrm', sort_order: 1, is_visible: true, component: 'LiveCodeManagement' },
-      { name: '渠道追踪', path: '/scrm/channels', parent_path: '/scrm', sort_order: 2, is_visible: true, component: 'ChannelTracking' },
-      { name: '客户标签', path: '/scrm/tags', parent_path: '/scrm', sort_order: 3, is_visible: true, component: 'ClientTagManagement' },
-      { name: '企微侧边栏', path: '/scrm/sidebar', parent_path: '/scrm', sort_order: 4, is_visible: true, component: 'ScrmSidebar' },
-      { name: '私域触达', path: '/scrm/reach', parent_path: '/scrm', sort_order: 5, is_visible: true, component: 'ReachTool' },
-      { name: '聊天存档', path: '/scrm/chat-archives', parent_path: '/scrm', sort_order: 6, is_visible: true, component: 'ChatArchiveManagement' },
-      // 系统管理
-      { name: '用户管理', path: '/users', parent_path: '/system', sort_order: 1, is_visible: true, component: 'UserManagement' },
-      { name: '角色管理', path: '/roles', parent_path: '/system', sort_order: 2, is_visible: true, component: 'RoleManagement' },
-      { name: '权限管理', path: '/permissions', parent_path: '/system', sort_order: 3, is_visible: true, component: 'PermissionManagement' },
-      { name: '菜单管理', path: '/menus', parent_path: '/system', sort_order: 4, is_visible: true, component: 'MenuManagement' },
-      { name: '消息通知', path: '/notifications', parent_path: '/system', sort_order: 5, is_visible: true, component: 'NotificationList' },
-      { name: 'AI工具', path: '/ai-tools', parent_path: '/system', sort_order: 6, is_visible: true, component: 'AITools' },
-    ];
-
-    for (const sub of subMenus) {
-      const existing = await this.menuRepository.findOne({ where: { path: sub.path } });
-      if (!existing) {
-        const parentId = savedMenus[sub.parent_path];
-        await this.menuRepository.save({
-          name: sub.name,
-          path: sub.path,
-          parent_id: parentId,
-          sort_order: sub.sort_order,
-          is_visible: sub.is_visible,
-          component: sub.component,
-        });
+    // 同步二级菜单（upsert，按 path 匹配）
+    for (let i = 0; i < subMenus.length; i++) {
+      const [parentKey, path, name] = subMenus[i];
+      const parentId = topMenuIdMap[parentKey];
+      const existing = await this.menuRepository.findOne({ where: { path } });
+      const payload = {
+        name,
+        path,
+        parent_id: parentId,
+        sort_order: i + 1,
+        is_visible: true,
+        component: '',
+      };
+      if (existing) {
+        await this.menuRepository.update(existing.id, payload);
+      } else {
+        await this.menuRepository.save(payload);
       }
     }
   }
