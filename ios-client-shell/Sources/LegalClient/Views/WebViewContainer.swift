@@ -108,7 +108,7 @@ final class WebViewController: UIViewController, WKNavigationDelegate, WKUIDeleg
 
         // 5. 反指纹：自定义 UA，让法大大能识别为正常移动浏览器
         let originalUA = webView.value(forKey: "userAgent") as? String ?? ""
-        webView.customUserAgent = originalUA + " LegalClientApp/1.0"
+        webView.customUserAgent = originalUA + " LegalClientApp/1.0 app_embed"
 
         view.addSubview(webView)
 

@@ -206,6 +206,10 @@ public class MainActivity extends AppCompatActivity {
 
         // 基础能力
         settings.setJavaScriptEnabled(true);
+        // 追加 app_embed 标识：法大大 H5 检测到后会展示签署完成返回按钮，
+        // 点击可关闭签署页面回到 App（豸帮帮官方要求，前面有空格）
+        String ua = settings.getUserAgentString();
+        settings.setUserAgentString(ua == null ? "app_embed" : ua + " app_embed");
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
