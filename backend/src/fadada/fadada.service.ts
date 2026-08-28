@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import axios from 'axios';
 import PDFDocument = require('pdfkit');
 import * as sdk from '@fddnpm/fasc-openapi-node-sdk';
@@ -148,6 +149,10 @@ export class FadadaService {
     return this.configService.get('FADADA_PDF_FONT') || '';
   }
 
+  /** 法大大签署完成后异步回调通知地址（法大大回调我们发送短信的入口） */
+  private get notifyUrl(): string {
+    return this.configService.get("FADADA_NOTIFY_URL") || "";
+  }
   private get callbackToken(): string {
     return this.configService.get('FADADA_CALLBACK_TOKEN') || '';
   }
@@ -156,6 +161,46 @@ export class FadadaService {
   verifyCallbackToken(token?: string): boolean {
     if (!this.callbackToken) return true;
     return token === this.callbackToken;
+  }
+
+  /**
+   * 验签法大大正式回调（HMAC-SHA256）
+   * 规则：将 X-FASC-App-Id / X-FASC-Sign-Type / X-FASC-Timestamp / X-FASC-Nonce / X-FASC-Event / bizContent
+   *  的键值对按 ASCII 码升序排列，拼成 key1=val1&key2=val2... 格式的字符串，
+   *  再用 appSecret 作为密钥做 HMAC-SHA256，结果与 X-FASC-Sign 比对。
+   *
+   * @returns true 验签通过；false 验签失败；null 跳过（UAT/MOCK 模式无 AppSecret 时）
+   */
+  verifyCallbackSign(headers: Record<string, string | undefined>, bizContent: string): boolean | null {
+    const appSecret = this.configService.get('FADADA_UAT_APP_SECRET') || this.configService.get('FADADA_APP_SECRET');
+    if (!appSecret) {
+      this.logger.log('verifyCallbackSign: 未配置 AppSecret，跳过回调验签');
+      return null;
+    }
+    const sign = headers.sign;
+    const timestamp = headers.timestamp;
+    if (!sign || !timestamp) {
+      this.logger.warn('verifyCallbackSign: 缺少 X-FASC-Sign 或 X-FASC-Timestamp 头，验签失败');
+      return false;
+    }
+    // 按法大大签名规则，将请求头参数 + bizContent 按 ASCII 排序后拼接
+    const paramMap: Record<string, string> = {};
+    if (headers.appId) paramMap['X-FASC-App-Id'] = headers.appId;
+    if (headers.signType) paramMap['X-FASC-Sign-Type'] = headers.signType;
+    if (timestamp) paramMap['X-FASC-Timestamp'] = timestamp;
+    if (headers.nonce) paramMap['X-FASC-Nonce'] = headers.nonce;
+    if (headers.event) paramMap['X-FASC-Event'] = headers.event;
+    paramMap['bizContent'] = bizContent || '';
+    const sortedKeys = Object.keys(paramMap).sort();
+    const strToSign = sortedKeys.map(function(k) { return k + '=' + paramMap[k]; }).join('&');
+    const computed = crypto.createHmac('sha256', appSecret).update(strToSign).digest('hex');
+    const ok = computed === sign;
+    if (!ok) {
+      this.logger.warn('verifyCallbackSign: HMAC-SHA256 验签失败 computed=' + computed + ' received=' + sign);
+    } else {
+      this.logger.log('verifyCallbackSign: HMAC-SHA256 验签通过');
+    }
+    return ok;
   }
 
   private ensureClients() {
@@ -497,6 +542,7 @@ export class FadadaService {
       actors,
       autoStart: false,
       autoFinish: true,
+      notifyUrl: this.notifyUrl || undefined,
     });
     const signTaskId = createRes?.data?.data?.signTaskId;
     if (!signTaskId) {
@@ -674,6 +720,7 @@ export class FadadaService {
       // 直接进入签署阶段，跳过手动 finalizeDoc 的中间状态。
       autoFillFinalize: true,
       autoFinish: true,
+      notifyUrl: this.notifyUrl || undefined,
       watermarks: [],
     };
     console.log('法大大 createWithTemplate 完整请求体=' + JSON.stringify(createWithTemplateReq));
