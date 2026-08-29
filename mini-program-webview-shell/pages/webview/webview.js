@@ -33,6 +33,12 @@ Page({
         const token = wx.getStorageSync(tokenKey);
         if (token) {
           params.push('token=' + encodeURIComponent(token));
+          // user 一并传给 H5：H5 渲染前据此直接建立 client_token/client_user 登录态
+          //（H5 端实现见 frontend/src/utils/tokenBootstrap.ts）
+          const userStr = wx.getStorageSync('user');
+          if (userStr) {
+            params.push('user=' + encodeURIComponent(userStr));
+          }
         }
 
         const sep = base.indexOf('?') === -1 ? '?' : '&';

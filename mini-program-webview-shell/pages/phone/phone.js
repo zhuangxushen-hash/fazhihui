@@ -58,8 +58,13 @@ Page({
           const token = data.access_token || (data.data && data.data.access_token);
           if (token) {
             wx.setStorageSync(this.tokenKey(), token);
-            if (data.user && data.user.phone) {
-              wx.setStorageSync('phone', data.user.phone);
+            // 完整 user 存一份：进 H5 时随 token 一起通过 URL 传给 H5 建立登录态
+            const user = data.user || (data.data && data.data.user);
+            if (user) {
+              wx.setStorageSync('user', JSON.stringify(user));
+              if (user.phone) {
+                wx.setStorageSync('phone', user.phone);
+              }
             }
             this.goWebview();
             return;
