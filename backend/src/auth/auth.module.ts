@@ -12,6 +12,8 @@ import { RolesGuard } from './roles.guard';
 import { AuditModule } from '../audit/audit.module';
 // C 端客户档案：C 端登录身份与管理端账号切分，以客户档案为准
 import { ClientProfile } from '../client/client-profile.entity';
+// 组织实体：微信授权自动建客户档案时需要归属组织
+import { Organization } from '../user/organization.entity';
 
 @Module({
   imports: [
@@ -26,7 +28,7 @@ import { ClientProfile } from '../client/client-profile.entity';
     }),
     UserModule,
     AuditModule,
-    TypeOrmModule.forFeature([ClientProfile]),
+    TypeOrmModule.forFeature([ClientProfile, Organization]),
   ],
   providers: [
     AuthService,

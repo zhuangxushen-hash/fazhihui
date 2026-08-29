@@ -121,35 +121,28 @@ export default function SignPrefill() {
         }}
       >
         {/* ===== 自定义导航栏 ===== */}
-        <div
-          style={{
-            height: 44,
-            display: 'flex',
-            alignItems: 'center',
-            paddingLeft: 4,
-            paddingRight: 10,
-            flexShrink: 0,
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            style={{
-              width: 40,
-              height: 40,
-              border: 'none',
-              background: 'transparent',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <LeftOutlined style={{ fontSize: 18, color: '#0F172A' }} />
-          </button>
-          <span style={{ flex: 1, fontSize: 17, fontWeight: 600, color: '#0F172A' }}>电子签约</span>
-          <div style={{ width: 87, flexShrink: 0 }} />
-        </div>
+        <div style={{ height: 44, display: 'flex', alignItems: 'center', paddingRight: 10, flexShrink: 0 }}>
+            {/*
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              style={{
+                width: 40,
+                height: 40,
+                border: 'none',
+                background: 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <LeftOutlined style={{ fontSize: 18, color: '#0F172A' }} />
+            </button>
+            */}
+            <span style={{ flex: 1, fontSize: 17, fontWeight: 600, color: '#0F172A' }}>电子签约</span>
+            <div style={{ width: 87, flexShrink: 0 }} />
+          </div>
 
         {/* ===== 内容区 ===== */}
         <div
@@ -224,7 +217,8 @@ export default function SignPrefill() {
             </Card>
           ) : null}
 
-          {/* 签名板 */}
+          {/* ===== 签名板（功能暂未上线，暂时隐藏） ===== */}
+          {/*
           <Card
             onClick={handleSubmit}
             style={{
@@ -251,6 +245,7 @@ export default function SignPrefill() {
             </div>
             <span style={{ fontSize: 14, color: '#94A3B8' }}>请在此手写签名</span>
           </Card>
+          */}
 
           <div style={{ flex: 1, minHeight: 8 }} />
 
@@ -269,9 +264,9 @@ export default function SignPrefill() {
             style={{
               height: 48,
               borderRadius: 12,
-              border: '1px solid #E2E8F0',
-              background: '#FFFFFF',
-              color: '#1E3A8A',
+              border: 'none',
+              background: '#1E3A8A',
+              color: '#FFFFFF',
               fontSize: 16,
               fontWeight: 500,
               cursor: 'pointer',
@@ -280,7 +275,8 @@ export default function SignPrefill() {
             预览合同
           </button>
 
-          {/* 确认签署 */}
+          {/* ===== 确认签署（功能暂未上线，暂时隐藏） ===== */}
+          {/*
           <button
             type="button"
             onClick={handleSubmit}
@@ -298,6 +294,7 @@ export default function SignPrefill() {
           >
             {submitting ? '提交中...' : '确认签署'}
           </button>
+          */}
 
           <div style={{ textAlign: 'center', fontSize: 12, color: '#94A3B8' }}>
             电子签名与手写签名或盖章具有同等法律效力
