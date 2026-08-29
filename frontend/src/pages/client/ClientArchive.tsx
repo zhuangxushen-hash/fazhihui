@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
-import { Modal, Select, Input, Tag, message } from 'antd'
+import { useState, useEffect } from 'react'
+import { Modal, Select, Input, message, Spin } from 'antd'
 import {
-  ArrowLeftOutlined,
+  LeftOutlined,
   UploadOutlined,
   DownloadOutlined,
   DeleteOutlined,
@@ -10,109 +10,74 @@ import {
   FileImageOutlined,
   FileExcelOutlined,
   FileWordOutlined,
-  DeleteFilled,
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import axios from '../../api/axios'
 import { formatDateTime, formatFileSize, caseTypeLabel } from '../../utils/format'
-import BottomNav from '../../components/BottomNav'
-import ClientButton from '../../components/ClientButton'
+import { Card, Pill, EmptyState } from './shared'
 
-// 文件类型配置
+/** 文件类型 */
 const FILE_TYPE_OPTIONS = [
-  { value: 'document', label: '文书', color: 'blue' },
-  { value: 'evidence', label: '证据', color: 'orange' },
-  { value: 'contract', label: '合同', color: 'green' },
-  { value: 'invoice', label: '发票', color: 'purple' },
-  { value: 'correspondence', label: '函件', color: 'cyan' },
+  { value: 'document', label: '文书' },
+  { value: 'evidence', label: '证据' },
+  { value: 'contract', label: '合同' },
+  { value: 'invoice', label: '发票' },
+  { value: 'correspondence', label: '函件' },
 ]
 
-const getFileTypeConfig = (type: string) => {
-  return FILE_TYPE_OPTIONS.find((item) => item.value === type) || {
-    value: type,
-    label: type,
-    color: 'default',
-  }
-}
+const getFileTypeLabel = (type: string) =>
+  FILE_TYPE_OPTIONS.find((i) => i.value === type)?.label || type || '文书'
 
-// 根据文件名获取图标
 const getFileIcon = (fileName: string) => {
   const ext = fileName?.split('.').pop()?.toLowerCase()
-  if (!ext) return FileTextOutlined
   const iconMap: Record<string, any> = {
     pdf: FilePdfOutlined,
     doc: FileWordOutlined,
     docx: FileWordOutlined,
     xls: FileExcelOutlined,
     xlsx: FileExcelOutlined,
-    ppt: FileTextOutlined,
-    pptx: FileTextOutlined,
     jpg: FileImageOutlined,
     jpeg: FileImageOutlined,
     png: FileImageOutlined,
-    gif: FileImageOutlined,
-    bmp: FileImageOutlined,
   }
-  return iconMap[ext] || FileTextOutlined
+  return (ext && iconMap[ext]) || FileTextOutlined
 }
 
 export default function ClientArchive() {
-  const navigate = useNavigate()
-  const user = JSON.parse(localStorage.getItem('client_user') || '{}')
-
-  // 归档列表
   const [archives, setArchives] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
-
-  // 筛选条件
-  const [filterCaseId, setFilterCaseId] = useState<string | undefined>(undefined)
-  const [filterFileType, setFilterFileType] = useState<string | undefined>(undefined)
-
-  // 案件列表（用于筛选和上传关联）
   const [cases, setCases] = useState<any[]>([])
-  const [loadingCases, setLoadingCases] = useState(false)
-
-  // 上传弹窗
-  const [uploadModalOpen, setUploadModalOpen] = useState(false)
+  const [uploadOpen, setUploadOpen] = useState(false)
   const [uploadCaseId, setUploadCaseId] = useState<string>('')
   const [uploadFileType, setUploadFileType] = useState<string>('document')
   const [uploadDesc, setUploadDesc] = useState('')
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [deleteId, setDeleteId] = useState<string>('')
 
-  // 删除确认弹窗
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
-  const [deletingId, setDeletingId] = useState<string>('')
+  const navigate = useNavigate()
+  const user = JSON.parse(localStorage.getItem('client_user') || '{}')
 
   useEffect(() => {
-    fetchCases()
     fetchArchives()
+    fetchCases()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // 获取案件列表
   const fetchCases = async () => {
-    setLoadingCases(true)
     try {
-      const res = await axios.post('/client/cases', { client_id: user.id }) as Record<string, unknown>[]
-      setCases(res || [])
+      const res: any = await axios.post('/client/cases', { client_id: user.id })
+      setCases(Array.isArray(res) ? res : [])
     } catch (error) {
       // 错误已由拦截器统一处理
-    } finally {
-      setLoadingCases(false)
     }
   }
 
-  // 获取归档列表
   const fetchArchives = async () => {
     setLoading(true)
     try {
-      const res = await axios.post('/client/archives/list', {
-        client_id: user.id,
-        case_id: filterCaseId,
-        file_type: filterFileType,
-      }) as Record<string, unknown>[]
-      setArchives(res || [])
+      const res: any = await axios.post('/client/archives/list', { client_id: user.id })
+      setArchives(Array.isArray(res) ? res : [])
     } catch (error) {
       // 错误已由拦截器统一处理
     } finally {
@@ -120,24 +85,6 @@ export default function ClientArchive() {
     }
   }
 
-  // 打开上传弹窗
-  const openUploadModal = () => {
-    setUploadCaseId('')
-    setUploadFileType('document')
-    setUploadDesc('')
-    setUploadFile(null)
-    setUploadModalOpen(true)
-  }
-
-  // 文件选择
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setUploadFile(file)
-    }
-  }
-
-  // 提交上传
   const handleUpload = async () => {
     if (!uploadFile) {
       message.error('请选择要归档的文件')
@@ -156,7 +103,9 @@ export default function ClientArchive() {
         organization_id: user.organization_id || undefined,
       })
       message.success('归档上传成功')
-      setUploadModalOpen(false)
+      setUploadOpen(false)
+      setUploadFile(null)
+      setUploadDesc('')
       fetchArchives()
     } catch (error) {
       message.error('上传失败，请重试')
@@ -165,285 +114,334 @@ export default function ClientArchive() {
     }
   }
 
-  // 打开删除确认
-  const openDeleteModal = (id: string) => {
-    setDeletingId(id)
-    setDeleteModalOpen(true)
-  }
-
-  // 确认删除
   const confirmDelete = async () => {
     try {
-      await axios.delete(`/client/archives/${deletingId}`, {
-        data: { client_id: user.id },
-      })
+      await axios.delete(`/client/archives/${deleteId}`, { data: { client_id: user.id } })
       message.success('归档已删除')
-      setDeleteModalOpen(false)
-      setDeletingId('')
+      setDeleteId('')
       fetchArchives()
     } catch (error) {
       message.error('删除失败，请重试')
     }
   }
 
-  // 下载归档
   const handleDownload = (archive: any) => {
-    if (archive.file_url) {
-      window.open(archive.file_url, '_blank')
-    } else {
-      message.warning('文件暂无可下载地址')
-    }
+    if (archive.file_url) window.open(archive.file_url, '_blank')
+    else message.warning('文件暂无可下载地址')
   }
+
+  /** 按案件聚合：已归档案件数 + 卷宗总数 */
+  const archivedCaseIds = Array.from(
+    new Set(archives.map((a) => a.case_id).filter(Boolean))
+  ) as string[]
+  const stats = [
+    { value: archivedCaseIds.length || 0, label: '已归档案件' },
+    { value: archives.length, label: '电子卷宗' },
+  ]
+
+  /** 按案件分组展示 */
+  const grouped = archivedCaseIds.map((cid) => ({
+    caseId: cid,
+    items: archives.filter((a) => a.case_id === cid),
+  }))
+  const ungrouped = archives.filter((a) => !a.case_id)
 
   return (
     <div className="client-app">
-      {/* 顶部应用栏 */}
-      <header className="c-topbar">
-        <button className="c-topbar__back" onClick={() => navigate('/client')}>
-          <ArrowLeftOutlined />
-        </button>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <span className="c-topbar__title" style={{ fontSize: 17 }}>云归档管理</span>
-          <div style={{ fontSize: 11, color: 'var(--cm-text-muted)', marginTop: 1 }}>您的案件文件云端归档存储</div>
-        </div>
-        <button
-          className="c-topbar__action"
-          aria-label="上传归档"
-          onClick={openUploadModal}
+      <div
+        style={{
+          maxWidth: 375,
+          margin: '0 auto',
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          background: '#F6F7F9',
+        }}
+      >
+        {/* ===== 自定义导航栏 ===== */}
+        <div
+          style={{
+            height: 44,
+            display: 'flex',
+            alignItems: 'center',
+            paddingLeft: 4,
+            paddingRight: 10,
+            flexShrink: 0,
+          }}
         >
-          <UploadOutlined style={{ fontSize: 22, color: '#1a1d23' }} />
-        </button>
-      </header>
-
-      <main className="c-container--with-nav" style={{ maxWidth: 720, margin: '0 auto', width: '100%', padding: 16, paddingBottom: 88 }}>
-        {/* 筛选条件 */}
-        <div className="c-card" style={{ padding: 12, marginBottom: 12 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div className="c-field" style={{ marginBottom: 0 }}>
-              <label className="c-field__label">按案件筛选</label>
-              <Select
-                value={filterCaseId}
-                onChange={(v) => setFilterCaseId(v)}
-                placeholder="全部案件"
-                style={{ width: '100%' }}
-                allowClear
-                size="large"
-                options={cases.map((c) => ({
-                  value: c.id,
-                  label: `${caseTypeLabel(c.case_type)} - ${c.case_no || c.id?.slice(0, 8)}`,
-                }))}
-              />
-            </div>
-            <div className="c-field" style={{ marginBottom: 0 }}>
-              <label className="c-field__label">文件类型</label>
-              <Select
-                value={filterFileType}
-                onChange={(v) => setFilterFileType(v)}
-                placeholder="全部类型"
-                style={{ width: '100%' }}
-                allowClear
-                size="large"
-                options={FILE_TYPE_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))}
-              />
-            </div>
-          </div>
-          <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
-            <ClientButton btnVariant="outline" btnSize="small" onClick={fetchArchives}>
-              查询
-            </ClientButton>
-          </div>
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            style={{
+              width: 40,
+              height: 40,
+              border: 'none',
+              background: 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <LeftOutlined style={{ fontSize: 18, color: '#0F172A' }} />
+          </button>
+          <span style={{ flex: 1, fontSize: 17, fontWeight: 600, color: '#0F172A' }}>归档查询</span>
+          <button
+            type="button"
+            onClick={() => setUploadOpen(true)}
+            style={{
+              width: 40,
+              height: 40,
+              border: 'none',
+              background: 'transparent',
+              color: '#1E3A8A',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              marginRight: 6,
+            }}
+          >
+            <UploadOutlined style={{ fontSize: 18 }} />
+          </button>
+          <div style={{ width: 87, flexShrink: 0 }} />
         </div>
 
-        {/* 归档列表 */}
-        {loading ? (
-          <div className="c-loading">加载中...</div>
-        ) : archives.length === 0 ? (
-          <div className="c-card" style={{ padding: 32 }}>
-            <div className="c-empty">
-              <FileTextOutlined className="c-empty__icon" />
-              <div className="c-empty__title">暂无归档文件</div>
-              <div className="c-empty__desc">您的案件文件将归档存储在这里</div>
-              <ClientButton
-                btnVariant="primary"
-                btnSize="medium"
-                icon={<UploadOutlined />}
-                onClick={openUploadModal}
-                style={{ marginTop: 16 }}
+        {/* ===== 内容区 ===== */}
+        <div
+          style={{
+            flex: 1,
+            padding: 16,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16,
+          }}
+        >
+          {/* 统计卡 */}
+          <Card style={{ padding: 16, display: 'flex', gap: 12 }}>
+            {stats.map((s) => (
+              <div
+                key={s.label}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
               >
-                立即归档
-              </ClientButton>
+                <span style={{ fontSize: 28, fontWeight: 700, color: '#1E3A8A', lineHeight: 1.2 }}>
+                  {s.value}
+                </span>
+                <span style={{ fontSize: 12, color: '#64748B' }}>{s.label}</span>
+              </div>
+            ))}
+          </Card>
+
+          {loading ? (
+            <div style={{ padding: '48px 0', textAlign: 'center' }}>
+              <Spin />
             </div>
-          </div>
-        ) : (
-          <div className="c-card" style={{ padding: 12 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {archives.map((archive) => {
-                const typeConfig = getFileTypeConfig(archive.file_type)
-                const FileIcon = getFileIcon(archive.file_name)
+          ) : archives.length === 0 ? (
+            <Card>
+              <EmptyState
+                icon={<FileTextOutlined />}
+                title="暂无归档文件"
+                desc="案件结案后，电子卷宗会自动归档到这里"
+              />
+            </Card>
+          ) : (
+            <>
+              {grouped.map((group) => {
+                const c = cases.find((x) => x.id === group.caseId)
+                const last = group.items[group.items.length - 1]
                 return (
-                  <div key={archive.id} className="c-cell" style={{ minHeight: 64, cursor: 'default' }}>
-                    {/* 文件图标 */}
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(0,113,227,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <FileIcon style={{ fontSize: 22, color: '#0071e3' }} />
-                    </div>
-
-                    {/* 文件信息 */}
-                    <div className="c-cell__body">
-                      <div
-                        style={{ fontSize: 14, fontWeight: 600, color: 'var(--cm-text-strong)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                        title={archive.file_name}
+                  <Card
+                    key={group.caseId}
+                    style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 8,
+                      }}
+                    >
+                      <span
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          fontSize: 15,
+                          fontWeight: 600,
+                          color: '#0F172A',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
                       >
-                        {archive.file_name}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 11, color: 'var(--cm-text-muted)', marginTop: 4 }}>
-                        <Tag color={typeConfig.color} style={{ borderRadius: 6, fontSize: 11, margin: 0, lineHeight: '18px' }}>
-                          {typeConfig.label}
-                        </Tag>
-                        <span>{formatFileSize(archive.file_size)}</span>
-                        <span>{formatDateTime(archive.archived_at)}</span>
-                      </div>
-                      {archive.description && (
-                        <div style={{ fontSize: 12, color: 'var(--cm-text)', marginTop: 6, lineHeight: 1.5, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                          {archive.description}
-                        </div>
-                      )}
+                        {c ? caseTypeLabel(c.case_type) : '案件卷宗'}
+                      </span>
+                      <Pill bg="#E7F6EF" color="#059669">
+                        已归档
+                      </Pill>
                     </div>
-
-                    {/* 操作按钮 */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
-                      <ClientButton
-                        btnVariant="outline"
-                        btnSize="small"
-                        icon={<DownloadOutlined />}
-                        onClick={() => handleDownload(archive)}
-                      >
-                        下载
-                      </ClientButton>
-                      <ClientButton
-                        btnVariant="danger"
-                        btnSize="small"
-                        icon={<DeleteOutlined />}
-                        onClick={() => openDeleteModal(archive.id)}
-                      >
-                        删除
-                      </ClientButton>
+                    <div style={{ fontSize: 12, color: '#64748B' }}>
+                      归档日期：
+                      {last?.created_at ? formatDateTime(last.created_at).slice(0, 10) : '—'} · 卷宗{' '}
+                      {group.items.length} 份
                     </div>
-                  </div>
+                    <button
+                      type="button"
+                      onClick={() => group.items.forEach(handleDownload)}
+                      style={{
+                        height: 36,
+                        borderRadius: 10,
+                        border: 'none',
+                        background: '#EEF2FB',
+                        color: '#1E3A8A',
+                        fontSize: 13,
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                      }}
+                    >
+                      <DownloadOutlined />
+                      下载电子卷宗
+                    </button>
+                  </Card>
                 )
               })}
-            </div>
-          </div>
-        )}
-      </main>
 
-      {/* 上传归档弹窗 */}
+              {/* 未关联案件的散件 */}
+              {ungrouped.length > 0 && (
+                <Card style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>其他文件</span>
+                  {ungrouped.map((item) => {
+                    const Icon = getFileIcon(item.file_name)
+                    return (
+                      <div
+                        key={item.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 10,
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                          <Icon style={{ fontSize: 18, color: '#1E3A8A', flexShrink: 0 }} />
+                          <div style={{ minWidth: 0 }}>
+                            <div
+                              style={{
+                                fontSize: 13,
+                                color: '#0F172A',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {item.file_name}
+                            </div>
+                            <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>
+                              {getFileTypeLabel(item.file_type)}
+                              {item.file_size ? ` · ${formatFileSize(item.file_size)}` : ''}
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                          <DownloadOutlined
+                            onClick={() => handleDownload(item)}
+                            style={{ fontSize: 18, color: '#1E3A8A', cursor: 'pointer' }}
+                          />
+                          <DeleteOutlined
+                            onClick={() => setDeleteId(item.id)}
+                            style={{ fontSize: 16, color: '#94A3B8', cursor: 'pointer' }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </Card>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* 底部安全区 */}
+        <div style={{ height: 34 }} />
+      </div>
+
+      {/* 上传归档 */}
       <Modal
-        open={uploadModalOpen}
         title="上传归档文件"
-        onCancel={() => setUploadModalOpen(false)}
-        footer={null}
-        centered
-        destroyOnClose
+        open={uploadOpen}
+        onCancel={() => setUploadOpen(false)}
+        onOk={handleUpload}
+        okText="上传"
+        cancelText="取消"
+        confirmLoading={uploading}
       >
-        <div>
-          <div className="c-field">
-            <label className="c-field__label">关联案件 <span style={{ color: 'var(--cm-text-muted)', fontSize: 12 }}>（选填）</span></label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div>
+            <div style={{ fontSize: 13, color: '#475569', marginBottom: 6 }}>关联案件</div>
             <Select
-              value={uploadCaseId || undefined}
-              onChange={(v) => setUploadCaseId(v)}
-              placeholder="请选择关联案件"
               style={{ width: '100%' }}
+              placeholder="选择案件（可选）"
               allowClear
-              size="large"
-              loading={loadingCases}
+              value={uploadCaseId || undefined}
+              onChange={(v) => setUploadCaseId(v || '')}
               options={cases.map((c) => ({
                 value: c.id,
-                label: `${caseTypeLabel(c.case_type)} - ${c.case_no || c.id?.slice(0, 8)}`,
+                label: `${caseTypeLabel(c.case_type)}（${c.case_no || ''}）`,
               }))}
             />
           </div>
-
-          <div className="c-field">
-            <label className="c-field__label">文件类型 <span style={{ color: 'var(--cm-danger)' }}>*</span></label>
+          <div>
+            <div style={{ fontSize: 13, color: '#475569', marginBottom: 6 }}>文件类型</div>
             <Select
-              value={uploadFileType}
-              onChange={(v) => setUploadFileType(v)}
-              placeholder="请选择文件类型"
               style={{ width: '100%' }}
-              size="large"
-              options={FILE_TYPE_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))}
+              value={uploadFileType}
+              onChange={setUploadFileType}
+              options={FILE_TYPE_OPTIONS}
             />
           </div>
-
-          <div className="c-field">
-            <label className="c-field__label">选择文件 <span style={{ color: 'var(--cm-danger)' }}>*</span></label>
+          <div>
+            <div style={{ fontSize: 13, color: '#475569', marginBottom: 6 }}>选择文件</div>
             <input
-              ref={fileInputRef}
               type="file"
-              onChange={handleFileChange}
-              style={{ display: 'none' }}
+              onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+              style={{ fontSize: 13 }}
             />
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              style={{ padding: '22px', border: '1px dashed var(--cm-text-muted)', borderRadius: 12, textAlign: 'center', cursor: 'pointer', background: 'var(--cm-bg)' }}
-            >
-              <UploadOutlined style={{ fontSize: 28, color: 'var(--cm-text-muted)', marginBottom: 8 }} />
-              <div style={{ fontSize: 14, color: 'var(--cm-text)' }}>
-                {uploadFile ? uploadFile.name : '点击选择要归档的文件'}
-              </div>
-              {uploadFile && (
-                <div style={{ fontSize: 12, color: 'var(--cm-text-muted)', marginTop: 4 }}>
-                  {formatFileSize(uploadFile.size)}
-                </div>
-              )}
-            </div>
           </div>
-
-          <div className="c-field">
-            <label className="c-field__label">归档描述 <span style={{ color: 'var(--cm-text-muted)', fontSize: 12 }}>（选填）</span></label>
+          <div>
+            <div style={{ fontSize: 13, color: '#475569', marginBottom: 6 }}>备注</div>
             <Input.TextArea
+              rows={3}
               value={uploadDesc}
               onChange={(e) => setUploadDesc(e.target.value)}
-              placeholder="请简要描述归档文件的内容或用途..."
-              rows={3}
-              maxLength={200}
-              showCount
-              style={{ borderRadius: 12 }}
+              placeholder="补充说明（可选）"
+              className="mp-field-textarea"
             />
           </div>
-
-          <ClientButton
-            btnVariant="primary"
-            btnSize="large"
-            loading={uploading}
-            onClick={handleUpload}
-            style={{ width: '100%' }}
-          >
-            确认归档
-          </ClientButton>
         </div>
       </Modal>
 
-      {/* 删除确认弹窗 */}
+      {/* 删除确认 */}
       <Modal
-        open={deleteModalOpen}
         title="删除归档"
-        onCancel={() => setDeleteModalOpen(false)}
+        open={!!deleteId}
+        onCancel={() => setDeleteId('')}
         onOk={confirmDelete}
         okText="确认删除"
         cancelText="取消"
         okButtonProps={{ danger: true }}
-        centered
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0' }}>
-          <DeleteFilled style={{ fontSize: 24, color: 'var(--cm-danger)' }} />
-          <div style={{ fontSize: 14, color: 'var(--cm-text-strong)' }}>
-            确定要删除这份归档文件吗？删除后不可恢复。
-          </div>
-        </div>
+        <div style={{ fontSize: 13, color: '#475569' }}>删除后不可恢复，确认删除该文件吗？</div>
       </Modal>
-
-      <BottomNav />
     </div>
   )
 }

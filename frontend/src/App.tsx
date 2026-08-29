@@ -62,6 +62,8 @@ const ServiceRating = lazy(() => import('./pages/client/ServiceRating'))
 const ClientArchive = lazy(() => import('./pages/client/ClientArchive'))
 const MockFadada = lazy(() => import('./pages/client/MockFadada'))
 const SignPrefill = lazy(() => import('./pages/client/SignPrefill'))
+const ClientNotifications = lazy(() => import('./pages/client/ClientNotifications'))
+const ClientHelpCenter = lazy(() => import('./pages/client/ClientHelpCenter'))
 // Phase 4 模块8 数据中台
 const ConversionFunnelDashboard = lazy(() => import('./pages/ConversionFunnelDashboard'))
 const SalesPerformanceDashboard = lazy(() => import('./pages/SalesPerformanceDashboard'))
@@ -556,6 +558,8 @@ function App() {
           <Route path="/client/archive" element={<ClientProtectedRoute><ClientArchive /></ClientProtectedRoute>} />
           <Route path="/client/mock-fadada" element={<ClientProtectedRoute><MockFadada /></ClientProtectedRoute>} />
           <Route path="/client/profile" element={<ClientProtectedRoute><ClientProfile /></ClientProtectedRoute>} />
+          <Route path="/client/notifications" element={<ClientProtectedRoute><ClientNotifications /></ClientProtectedRoute>} />
+          <Route path="/client/help" element={<ClientProtectedRoute><ClientHelpCenter /></ClientProtectedRoute>} />
           {/* 金助理对齐：新增路由 */}
           <Route path="/comprehensive/query" element={<ProtectedRoute><ComprehensiveQuery /></ProtectedRoute>} />
           <Route path="/statistical-analysis" element={<ProtectedRoute><StatisticalAnalysis /></ProtectedRoute>} />

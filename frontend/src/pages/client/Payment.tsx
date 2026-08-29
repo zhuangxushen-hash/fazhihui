@@ -1,72 +1,37 @@
 import { useState, useEffect } from 'react'
-import { Card, Input, Checkbox, Steps, Modal, theme, message } from 'antd'
-import { FileTextOutlined, CreditCardOutlined, AlipayCircleOutlined, WechatOutlined, BankOutlined, CheckCircleOutlined, UserOutlined, PhoneOutlined, FileOutlined, AlertOutlined, ArrowLeftOutlined } from '@ant-design/icons'
+import { Input, Checkbox, Modal, message, Spin } from 'antd'
+import {
+  LeftOutlined,
+  FileTextOutlined,
+  WechatOutlined,
+  BankOutlined,
+  TransactionOutlined,
+  CheckCircleFilled,
+} from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import axios from '../../api/axios'
-import BottomNav from '../../components/BottomNav'
-import ClientButton from '../../components/ClientButton'
-import { theme as appTheme } from '../../constants/theme'
-export default function Payment() {
-  const [currentStep, setCurrentStep] = useState(0)
-  const [agreedRisk, setAgreedRisk] = useState(false)
-  const [signed, setSigned] = useState(false)
-  const [selectedMethod, setSelectedMethod] = useState('alipay')
-  const [paymentSuccess, setPaymentSuccess] = useState(false)
-  const [showSignModal, setShowSignModal] = useState(false)
-  const [serviceFee, setServiceFee] = useState<number | null>(null)
-  const [createdCaseId, setCreatedCaseId] = useState<string | null>(null)
-  const [loadingFee, setLoadingFee] = useState(false)
-  const [activePaymentMethod, setActivePaymentMethod] = useState<string | null>(null)
-  const [activeCaseType, setActiveCaseType] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    id_card: '',
-    case_type: '',
-    case_desc: '',
-  })
+import { Card } from './shared'
 
-  const navigate = useNavigate()
-  const user = JSON.parse(localStorage.getItem('client_user') || '{}')
+/** 自助签约付费流程步骤 */
+const STEP_TITLES = ['签约信息', '风险告知', '在线签约', '支付费用']
 
-  const { token: { borderRadiusLG } } = theme.useToken()
+/** 案件类型 */
+const CASE_TYPES = [
+  { value: 'marriage', label: '婚姻家事' },
+  { value: 'traffic', label: '交通事故' },
+  { value: 'labor', label: '劳动争议' },
+  { value: 'debt', label: '债务追讨' },
+  { value: 'other', label: '其他案件' },
+]
 
-  useEffect(() => {
-    if (user.real_name) setFormData(prev => ({ ...prev, name: user.real_name }))
-    if (user.phone) setFormData(prev => ({ ...prev, phone: user.phone }))
-    fetchServiceFee()
-  }, [])
+/** 支付方式（设计稿：微信支付 / 银行卡 / 对公转账） */
+const PAY_METHODS = [
+  { value: 'wechat', label: '微信支付', desc: '推荐使用，支持零钱与银行卡', icon: WechatOutlined, color: '#07C160' },
+  { value: 'bank', label: '银行卡', desc: '支持储蓄卡与信用卡', icon: BankOutlined, color: '#1E3A8A' },
+  { value: 'transfer', label: '对公转账', desc: '转账后由财务人工核销', icon: TransactionOutlined, color: '#475569' },
+]
 
-  const fetchServiceFee = async () => {
-    setLoadingFee(true)
-    try {
-      const res = await axios.post('/client/service-fee', { client_id: user.id }) as Record<string, unknown>
-      if (res && res.service_fee) {
-        setServiceFee(res.service_fee as number)
-      }
-    } catch (error) {
-      // 错误已由拦截器统一处理
-    } finally {
-      setLoadingFee(false)
-    }
-  }
-
-  const steps = [
-    { title: '签约信息', description: '填写客户信息和案件信息', icon: <UserOutlined /> },
-    { title: '风险告知', description: '阅读并确认风险告知书', icon: <AlertOutlined /> },
-    { title: '在线签约', description: '签署电子合同', icon: <FileTextOutlined /> },
-    { title: '支付费用', description: '完成案件费用支付', icon: <CreditCardOutlined /> },
-  ]
-
-  const caseTypes = [
-    { value: 'marriage', label: '婚姻家事' },
-    { value: 'traffic', label: '交通事故' },
-    { value: 'labor', label: '劳动争议' },
-    { value: 'debt', label: '债务追讨' },
-    { value: 'other', label: '其他案件' },
-  ]
-
-  const riskContent = `尊敬的客户：
+const RISK_CONTENT = `尊敬的客户：
 
 在您与本律所签订法律服务合同之前，为保障您的合法权益，请仔细阅读以下风险告知事项：
 
@@ -92,6 +57,47 @@ export default function Payment() {
 
 请您在充分了解以上风险后，再签署法律服务合同。`
 
+export default function Payment() {
+  const [currentStep, setCurrentStep] = useState(0)
+  const [agreedRisk, setAgreedRisk] = useState(false)
+  const [signed, setSigned] = useState(false)
+  const [selectedMethod, setSelectedMethod] = useState('wechat')
+  const [paymentSuccess, setPaymentSuccess] = useState(false)
+  const [showSignModal, setShowSignModal] = useState(false)
+  const [serviceFee, setServiceFee] = useState<number | null>(null)
+  const [createdCaseId, setCreatedCaseId] = useState<string | null>(null)
+  const [loadingFee, setLoadingFee] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    id_card: '',
+    case_type: '',
+    case_desc: '',
+  })
+
+  const navigate = useNavigate()
+  const user = JSON.parse(localStorage.getItem('client_user') || '{}')
+
+  useEffect(() => {
+    if (user.real_name) setFormData((prev) => ({ ...prev, name: user.real_name }))
+    if (user.phone) setFormData((prev) => ({ ...prev, phone: user.phone }))
+    fetchServiceFee()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const fetchServiceFee = async () => {
+    setLoadingFee(true)
+    try {
+      const res: any = await axios.post('/client/service-fee', { client_id: user.id })
+      if (res && res.service_fee) setServiceFee(res.service_fee as number)
+    } catch (error) {
+      // 错误已由拦截器统一处理
+    } finally {
+      setLoadingFee(false)
+    }
+  }
+
   const handleNext = () => {
     if (currentStep === 0) {
       if (!formData.name || !formData.phone || !formData.case_type) {
@@ -107,16 +113,13 @@ export default function Payment() {
       message.error('请完成电子签约')
       return
     }
-    setCurrentStep(prev => prev + 1)
-  }
-
-  const handlePrev = () => {
-    setCurrentStep(prev => prev - 1)
+    setCurrentStep((prev) => prev + 1)
   }
 
   const handleSign = async () => {
+    setSubmitting(true)
     try {
-      const caseData = await axios.post('/cases', {
+      const caseData: any = await axios.post('/cases', {
         case_type: formData.case_type,
         client_id: user.id,
         organization_id: user.organization_id,
@@ -125,14 +128,15 @@ export default function Payment() {
         fee_amount: serviceFee || 0,
         amount: serviceFee || 0,
         description: formData.case_desc || `客户${formData.name}签约的${formData.case_type}案件`,
-      }) as Record<string, unknown>
-      // 保存新创建的 case id 供后续付款使用
-      setCreatedCaseId(caseData.id as string)
+      })
+      setCreatedCaseId(caseData.id)
       setSigned(true)
       setShowSignModal(false)
       message.success('签约成功')
     } catch (error) {
       message.error('签约失败，请重试')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -145,6 +149,7 @@ export default function Payment() {
       message.error('请先完成签约')
       return
     }
+    setSubmitting(true)
     try {
       await axios.post('/finance/fee', {
         case_id: createdCaseId,
@@ -158,399 +163,469 @@ export default function Payment() {
       setPaymentSuccess(true)
       setTimeout(() => {
         setPaymentSuccess(false)
-      }, 2000)
+        navigate('/client/cases')
+      }, 1800)
     } catch (error) {
       message.error('支付失败，请重试')
+    } finally {
+      setSubmitting(false)
     }
   }
 
-  const paymentMethods = [
-    { value: 'alipay', label: '支付宝', icon: AlipayCircleOutlined, color: '#1677ff' },
-    { value: 'wechat', label: '微信支付', icon: WechatOutlined, color: '#07c160' },
-    { value: 'bank', label: '银行卡', icon: BankOutlined, color: '#faad14' },
-  ]
-
-  const renderStepContent = () => {
-    switch (currentStep) {
-      case 0:
+  /** 顶部步骤指示 */
+  const StepBar = () => (
+    <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', background: '#FFFFFF' }}>
+      {STEP_TITLES.map((title, i) => {
+        const done = i < currentStep
+        const active = i === currentStep
         return (
-          <Card 
-            title={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: `linear-gradient(135deg, #0059b5 0%, ${appTheme.primary} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <UserOutlined style={{ fontSize: 14, color: '#fff' }} />
-              </div>
-              <span style={{ fontSize: 15, fontWeight: 600 }}>签约信息填写</span>
-            </div>} 
-            style={{ marginBottom: 12, borderRadius: borderRadiusLG, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>
-                  <UserOutlined style={{ marginRight: 6, color: 'var(--primary)', fontSize: 14 }} />姓名 <span style={{ color: 'var(--error)' }}>*</span>
-                </label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="请输入您的姓名"
-                  size="large"
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>
-                  <PhoneOutlined style={{ marginRight: 6, color: 'var(--primary)', fontSize: 14 }}>手机号码</PhoneOutlined> <span style={{ color: 'var(--error)' }}>*</span>
-                </label>
-                <Input
-                  value={formData.phone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                  placeholder="请输入手机号码"
-                  size="large"
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>
-                  <FileOutlined style={{ marginRight: 6, color: 'var(--primary)', fontSize: 14 }} />身份证号
-                </label>
-                <Input
-                  value={formData.id_card}
-                  onChange={(e) => setFormData(prev => ({ ...prev, id_card: e.target.value }))}
-                  placeholder="请输入身份证号（选填）"
-                  size="large"
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>
-                  案件类型 <span style={{ color: 'var(--error)' }}>*</span>
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-                  {caseTypes.map(type => (
-                    <div
-                      key={type.value}
-                      style={{
-                        height: 44,
-                        borderRadius: 8,
-                        border: formData.case_type === type.value ? '1px solid var(--primary)' : '1px solid var(--border-default)',
-                        background: formData.case_type === type.value ? 'var(--primary-bg)' : 'var(--bg-card)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        transform: activeCaseType === type.value ? 'scale(0.96)' : 'scale(1)',
-                        WebkitTapHighlightColor: 'transparent',
-                      }}
-                      onClick={() => setFormData(prev => ({ ...prev, case_type: type.value }))}
-                      onTouchStart={() => setActiveCaseType(type.value)}
-                      onTouchEnd={() => setActiveCaseType(null)}
-                    >
-                      <span style={{ fontSize: 13, color: formData.case_type === type.value ? 'var(--primary)' : 'var(--text-secondary)', fontWeight: formData.case_type === type.value ? 500 : 'normal' }}>
-                        {type.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>案件描述</label>
-                <Input.TextArea
-                  value={formData.case_desc}
-                  onChange={(e) => setFormData(prev => ({ ...prev, case_desc: e.target.value }))}
-                  placeholder="请简要描述案件情况（选填）"
-                  rows={4}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 500 }}>服务费用</label>
-                <div style={{ padding: '14px', background: 'var(--bg-sunken)', borderRadius: 8, border: '1px solid var(--border-default)' }}>
-                  {loadingFee ? (
-                    <div style={{ fontSize: 14, color: 'var(--text-tertiary)', textAlign: 'center' }}>加载中...</div>
-                  ) : serviceFee ? (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>已设置服务费用</span>
-                      <span style={{ fontSize: 24, fontWeight: 700, color: 'var(--primary)' }}>¥{serviceFee.toFixed(2)}</span>
-                    </div>
-                  ) : (
-                    <div style={{ fontSize: 13, color: 'var(--warning)', textAlign: 'center', padding: 6 }}>
-                      暂未设置（请联系销售）
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </Card>
-        )
-      case 1:
-        return (
-          <Card 
-            title={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: `linear-gradient(135deg, #0059b5 0%, ${appTheme.primary} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <AlertOutlined style={{ fontSize: 14, color: '#fff' }} />
-              </div>
-              <span style={{ fontSize: 15, fontWeight: 600 }}>风险告知书</span>
-            </div>}
-            style={{ marginBottom: 12, borderRadius: borderRadiusLG, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}
-          >
-            <div style={{ background: 'var(--bg-sunken)', border: '1px solid var(--border-default)', borderRadius: 8, padding: 16, marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 12 }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', background: `linear-gradient(135deg, #0059b5 0%, ${appTheme.primary} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
-                  <AlertOutlined style={{ fontSize: 18, color: '#fff' }} />
-                </div>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 'bold', color: 'var(--primary)' }}>重要提示</div>
-                  <div style={{ fontSize: 11, color: '#717785', marginTop: 1 }}>请仔细阅读以下风险告知事项</div>
-                </div>
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 2, whiteSpace: 'pre-wrap', background: 'var(--bg-card)', padding: 14, borderRadius: 6, maxHeight: 200, overflowY: 'auto' }}>
-                {riskContent}
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 14, background: 'var(--bg-sunken)', borderRadius: 8 }}>
-              <Checkbox 
-                checked={agreedRisk} 
-                onChange={(e) => setAgreedRisk(e.target.checked)}
-                style={{ transform: 'scale(1.1)' }}
-              />
-              <span style={{ fontSize: 12, color: 'var(--text-secondary)', flex: 1 }}>我已仔细阅读并理解上述风险告知内容，自愿承担相关风险</span>
-            </div>
-          </Card>
-        )
-      case 2:
-        return (
-          <Card 
-            title={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: `linear-gradient(135deg, #0059b5 0%, ${appTheme.primary} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <FileTextOutlined style={{ fontSize: 14, color: '#fff' }} />
-              </div>
-              <span style={{ fontSize: 15, fontWeight: 600 }}>在线签约</span>
-            </div>}
-            style={{ marginBottom: 12, borderRadius: borderRadiusLG, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}
-          >
-            <div style={{ textAlign: 'center', padding: '24px 0' }}>
-              <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                <FileTextOutlined style={{ fontSize: 44, color: 'var(--primary)' }} />
-              </div>
-              <div style={{ fontSize: 18, fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: 6 }}>法律服务合同</div>
-              <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 20 }}>
-                甲方：{formData.name}
-                <br />
-                乙方：法智汇法律服务平台
-              </div>
-              <div style={{ background: 'var(--bg-sunken)', padding: 16, borderRadius: 8, marginBottom: 20, textAlign: 'left', border: '1px solid var(--border-default)', maxHeight: 220, overflowY: 'auto' }}>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-                  <p><strong>第一条 服务内容</strong></p>
-                  <p style={{ marginBottom: 6 }}>乙方接受甲方委托，指派律师为甲方提供{caseTypes.find(t => t.value === formData.case_type)?.label}案件的法律服务。</p>
-                  <p><strong>第二条 服务费用</strong></p>
-                  <p style={{ marginBottom: 6 }}>甲方应向乙方支付服务费用人民币{serviceFee?.toFixed(2) || 0}元（大写：{serviceFee?.toFixed(2) || 0}元整）。</p>
-                  <p><strong>第三条 双方权利义务</strong></p>
-                  <p style={{ marginBottom: 6 }}>甲方应如实提供案件相关信息，配合乙方工作；乙方应勤勉尽责，维护甲方合法权益。</p>
-                  <p><strong>第四条 合同期限</strong></p>
-                  <p>本合同自双方签字（盖章）之日起生效，至案件终结之日止。</p>
-                </div>
-              </div>
-              <div style={{ fontSize: 13, color: 'var(--text-tertiary)', marginBottom: 20 }}>
-                请点击下方按钮完成电子签约
-              </div>
-              <ClientButton
-                btnVariant={signed ? 'ghost' : 'primary'}
-                btnSize="large"
-                disabled={signed}
-                onClick={() => setShowSignModal(true)}
+          <div key={title} style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              <div
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 11,
+                  background: done || active ? '#1E3A8A' : '#E2E8F0',
+                  color: '#FFFFFF',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
-                {signed ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <CheckCircleOutlined /> 已签约
-                  </div>
-                ) : (
-                  '在线签约'
-                )}
-              </ClientButton>
-            </div>
-          </Card>
-        )
-      case 3:
-        return (
-          <Card 
-            title={<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: `linear-gradient(135deg, #0059b5 0%, ${appTheme.primary} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <CreditCardOutlined style={{ fontSize: 14, color: '#fff' }} />
+                {done ? '✓' : i + 1}
               </div>
-              <span style={{ fontSize: 15, fontWeight: 600 }}>支付费用</span>
-            </div>}
-            style={{ marginBottom: 12, borderRadius: borderRadiusLG, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}
-          >
-            <div style={{ textAlign: 'center', padding: '16px 0' }}>
-              <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                <CreditCardOutlined style={{ fontSize: 32, color: 'var(--primary)' }} />
-              </div>
-              <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>应付金额</div>
-              <div style={{ fontSize: 36, fontWeight: 'bold', color: 'var(--error)', marginBottom: 24 }}>¥{serviceFee?.toFixed(2) || 0}</div>
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12, fontWeight: 500 }}>选择支付方式</div>
-                <div style={{ display: 'flex', gap: 10 }}>
-                  {paymentMethods.map(method => (
-                    <div
-                      key={method.value}
-                      style={{ 
-                        flex: 1, 
-                        height: 52,
-                        borderRadius: 8,
-                        border: selectedMethod === method.value ? '1px solid var(--primary)' : '1px solid var(--border-default)',
-                        background: selectedMethod === method.value ? 'var(--primary-bg)' : 'var(--bg-card)',
-                        transition: 'all 0.15s ease',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        transform: activePaymentMethod === method.value ? 'scale(0.98)' : 'scale(1)',
-                      }}
-                      onClick={() => setSelectedMethod(method.value)}
-                      onTouchStart={() => setActivePaymentMethod(method.value)}
-                      onTouchEnd={() => setActivePaymentMethod(null)}
-                    >
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                        <method.icon style={{ fontSize: 22, color: selectedMethod === method.value ? 'var(--primary)' : 'var(--text-secondary)' }} />
-                        <span style={{ fontSize: 12, color: selectedMethod === method.value ? 'var(--primary)' : 'var(--text-secondary)' }}>{method.label}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <ClientButton 
-                btnVariant="primary" 
-                btnSize="large" 
-                onClick={handlePayment}
+              <span
+                style={{
+                  fontSize: 10,
+                  color: active ? '#1E3A8A' : '#94A3B8',
+                  fontWeight: active ? 600 : 400,
+                  whiteSpace: 'nowrap',
+                }}
               >
-                确认支付 ¥{serviceFee?.toFixed(2) || 0}
-              </ClientButton>
+                {title}
+              </span>
             </div>
-          </Card>
+            {i < STEP_TITLES.length - 1 && (
+              <div style={{ flex: 1, height: 2, background: done ? '#1E3A8A' : '#E2E8F0', marginBottom: 16 }} />
+            )}
+          </div>
         )
-      default:
-        return null
-    }
-  }
+      })}
+    </div>
+  )
 
-  return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-body)', display: 'flex', flexDirection: 'column' }}>
-      <header
+  /** 步骤 0：签约信息 */
+  const renderStep0 = () => (
+    <Card style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>签约信息填写</div>
+
+      <div>
+        <div style={{ fontSize: 13, color: '#475569', marginBottom: 8 }}>
+          姓名 <span style={{ color: '#DC2626' }}>*</span>
+        </div>
+        <Input
+          value={formData.name}
+          onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
+          placeholder="请输入您的姓名"
+          className="mp-field-input"
+          style={{ height: 44 }}
+        />
+      </div>
+
+      <div>
+        <div style={{ fontSize: 13, color: '#475569', marginBottom: 8 }}>
+          手机号码 <span style={{ color: '#DC2626' }}>*</span>
+        </div>
+        <Input
+          value={formData.phone}
+          onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
+          placeholder="请输入手机号码"
+          className="mp-field-input"
+          style={{ height: 44 }}
+        />
+      </div>
+
+      <div>
+        <div style={{ fontSize: 13, color: '#475569', marginBottom: 8 }}>身份证号</div>
+        <Input
+          value={formData.id_card}
+          onChange={(e) => setFormData((p) => ({ ...p, id_card: e.target.value }))}
+          placeholder="请输入身份证号（选填）"
+          className="mp-field-input"
+          style={{ height: 44 }}
+        />
+      </div>
+
+      <div>
+        <div style={{ fontSize: 13, color: '#475569', marginBottom: 8 }}>
+          案件类型 <span style={{ color: '#DC2626' }}>*</span>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {CASE_TYPES.map((t) => {
+            const active = formData.case_type === t.value
+            return (
+              <button
+                key={t.value}
+                type="button"
+                onClick={() => setFormData((p) => ({ ...p, case_type: t.value }))}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 99,
+                  border: 'none',
+                  background: active ? '#1E3A8A' : '#EEF2FB',
+                  color: active ? '#FFFFFF' : '#1E3A8A',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                {t.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <div>
+        <div style={{ fontSize: 13, color: '#475569', marginBottom: 8 }}>案件描述</div>
+        <Input.TextArea
+          value={formData.case_desc}
+          onChange={(e) => setFormData((p) => ({ ...p, case_desc: e.target.value }))}
+          placeholder="请简要描述您的案件情况"
+          rows={4}
+          className="mp-field-textarea"
+        />
+      </div>
+    </Card>
+  )
+
+  /** 步骤 1：风险告知 */
+  const renderStep1 = () => (
+    <Card style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <FileTextOutlined style={{ fontSize: 16, color: '#1E3A8A' }} />
+        <span style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>风险告知书</span>
+      </div>
+      <div
         style={{
-          position: 'sticky',
-          top: 0,
-          background: '#ffffff',
-          borderBottom: '1px solid #c1c6d6',
-          padding: '14px 16px',
-          paddingTop: 'max(14px, env(safe-area-inset-top))',
-          zIndex: 50,
+          padding: 14,
+          borderRadius: 12,
+          background: '#F6F7F9',
+          fontSize: 12,
+          color: '#475569',
+          lineHeight: 1.9,
+          whiteSpace: 'pre-wrap',
+          maxHeight: 340,
+          overflowY: 'auto',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {RISK_CONTENT}
+      </div>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+        <Checkbox
+          checked={agreedRisk}
+          onChange={(e) => setAgreedRisk(e.target.checked)}
+        />
+        <span style={{ fontSize: 13, color: '#475569' }}>我已阅读并同意上述风险告知内容</span>
+      </label>
+    </Card>
+  )
+
+  /** 步骤 2：在线签约 */
+  const renderStep2 = () => (
+    <Card style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>电子合同签署</div>
+      <div style={{ fontSize: 12, color: '#64748B', lineHeight: 1.8 }}>
+        请确认以下信息无误后签署电子合同，签署完成即可进入支付环节。
+      </div>
+
+      <div style={{ padding: 14, borderRadius: 12, background: '#F6F7F9', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {[
+          { label: '客户姓名', value: formData.name || '-' },
+          { label: '联系电话', value: formData.phone || '-' },
+          { label: '案件类型', value: CASE_TYPES.find((t) => t.value === formData.case_type)?.label || '-' },
+          { label: '服务费用', value: serviceFee ? `¥${Number(serviceFee).toLocaleString('zh-CN')}` : '待定' },
+        ].map((row) => (
+          <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 13, color: '#64748B' }}>{row.label}</span>
+            <span style={{ fontSize: 13, color: '#0F172A', fontWeight: 500 }}>{row.value}</span>
+          </div>
+        ))}
+      </div>
+
+      {signed ? (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: 14,
+            borderRadius: 12,
+            background: '#E7F6EF',
+            color: '#059669',
+            fontSize: 13,
+          }}
+        >
+          <CheckCircleFilled />
+          已完成签署
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowSignModal(true)}
+          style={{
+            height: 48,
+            borderRadius: 12,
+            border: 'none',
+            background: '#1E3A8A',
+            color: '#FFFFFF',
+            fontSize: 16,
+            fontWeight: 500,
+            cursor: 'pointer',
+          }}
+        >
+          签署电子合同
+        </button>
+      )}
+    </Card>
+  )
+
+  /** 步骤 3：支付（严格对齐设计稿 07-支付） */
+  const renderStep3 = () => (
+    <>
+      {/* 订单信息卡 */}
+      <Card style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ fontSize: 16, fontWeight: 600, color: '#0F172A' }}>
+          {CASE_TYPES.find((t) => t.value === formData.case_type)?.label || '法律服务费'}
+        </div>
+        <div style={{ fontSize: 13, color: '#64748B' }}>
+          {formData.name ? `${formData.name} · ` : ''}律师服务费
+        </div>
+      </Card>
+
+      {/* 金额展示区 */}
+      <Card
+        style={{
+          padding: '24px 20px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 6,
+        }}
+      >
+        <span style={{ fontSize: 13, color: '#64748B' }}>支付金额</span>
+        {loadingFee ? (
+          <Spin />
+        ) : (
+          <span style={{ fontSize: 36, fontWeight: 700, color: '#0F172A', lineHeight: 1.2 }}>
+            ¥{Number(serviceFee || 0).toLocaleString('zh-CN', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </span>
+        )}
+      </Card>
+
+      {/* 支付方式卡 */}
+      <Card style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>选择支付方式</div>
+        {PAY_METHODS.map((m) => {
+          const Icon = m.icon
+          const active = selectedMethod === m.value
+          return (
+            <div
+              key={m.value}
+              onClick={() => setSelectedMethod(m.value)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 0',
+                cursor: 'pointer',
+                borderTop: m.value === PAY_METHODS[0].value ? 'none' : '1px solid #F1F5F9',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <Icon style={{ fontSize: 20, color: m.color }} />
+                <div>
+                  <div style={{ fontSize: 14, color: '#0F172A', fontWeight: 500 }}>{m.label}</div>
+                  <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>{m.desc}</div>
+                </div>
+              </div>
+              <div
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: 10,
+                  border: active ? 'none' : '1px solid #CBD5E1',
+                  background: active ? '#1E3A8A' : '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                {active && (
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M1 4 L3.5 6.5 L9 1"
+                      stroke="#FFFFFF"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </Card>
+    </>
+  )
+
+  return (
+    <div className="client-app">
+      <div
+        style={{
+          maxWidth: 375,
+          margin: '0 auto',
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          background: '#F6F7F9',
+        }}
+      >
+        {/* ===== 自定义导航栏 ===== */}
+        <div
+          style={{
+            height: 44,
+            display: 'flex',
+            alignItems: 'center',
+            paddingLeft: 4,
+            paddingRight: 10,
+            flexShrink: 0,
+          }}
+        >
           <button
-            onClick={() => navigate('/client')}
+            type="button"
+            onClick={() => (currentStep === 0 ? navigate(-1) : setCurrentStep((p) => p - 1))}
             style={{
               width: 40,
               height: 40,
               border: 'none',
               background: 'transparent',
-              borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              color: '#0059b5',
-              WebkitTapHighlightColor: 'transparent',
             }}
           >
-            <ArrowLeftOutlined style={{ fontSize: 22 }} />
+            <LeftOutlined style={{ fontSize: 18, color: '#0F172A' }} />
           </button>
-          <div>
-            <h2 style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 20, fontWeight: 600, color: '#0059b5', letterSpacing: '0.01em' }}>客户签约付款</h2>
-            <p style={{ fontSize: 12, color: '#717785', marginTop: 2 }}>一站式法律服务签约流程</p>
-          </div>
+          <span style={{ flex: 1, fontSize: 17, fontWeight: 600, color: '#0F172A' }}>
+            {currentStep === 3 ? '支付' : '签约付费'}
+          </span>
+          <div style={{ width: 87, flexShrink: 0 }} />
         </div>
-      </header>
 
-      <div style={{ padding: '12px', flex: 1, paddingBottom: '80px' }}>
-        <div style={{ background: 'var(--bg-card)', borderRadius: borderRadiusLG, padding: 16, marginBottom: 16, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-default)' }}>
-          <Steps 
-            current={currentStep} 
-            items={steps}
-            style={{ padding: '0 4px' }}
-            size="small"
-          />
-        </div>
-        {renderStepContent()}
-        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-          {currentStep > 0 && (
-            <ClientButton btnVariant="ghost" btnSize="large" onClick={handlePrev} style={{ flex: 1 }}>
-              <ArrowLeftOutlined style={{ marginRight: 4 }} />上一步
-            </ClientButton>
-          )}
+        <StepBar />
+
+        {/* ===== 内容区 ===== */}
+        <div
+          style={{
+            flex: 1,
+            padding: 16,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16,
+          }}
+        >
+          {currentStep === 0 && renderStep0()}
+          {currentStep === 1 && renderStep1()}
+          {currentStep === 2 && renderStep2()}
+          {currentStep === 3 && renderStep3()}
+
+          <div style={{ flex: 1, minHeight: 8 }} />
+
+          {/* 底部主操作 */}
           {currentStep < 3 ? (
-            <ClientButton btnVariant="primary" btnSize="large" onClick={handleNext} style={{ flex: 1 }}>
+            <button
+              type="button"
+              onClick={handleNext}
+              style={{
+                height: 48,
+                borderRadius: 12,
+                border: 'none',
+                background: '#1E3A8A',
+                color: '#FFFFFF',
+                fontSize: 16,
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}
+            >
               下一步
-            </ClientButton>
+            </button>
           ) : (
-            <ClientButton btnVariant="primary" btnSize="large" onClick={() => navigate('/client')} style={{ flex: 1 }}>
-              返回首页
-            </ClientButton>
+            <>
+              <button
+                type="button"
+                onClick={handlePayment}
+                disabled={submitting}
+                style={{
+                  height: 48,
+                  borderRadius: 12,
+                  border: 'none',
+                  background: '#07C160',
+                  color: '#FFFFFF',
+                  fontSize: 16,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                {submitting ? '支付中...' : '立即支付'}
+              </button>
+              <div style={{ textAlign: 'center', fontSize: 12, color: '#94A3B8' }}>
+                已接入微信支付 · 资金安全有保障
+              </div>
+            </>
           )}
         </div>
+
+        {/* 底部安全区 */}
+        <div style={{ height: 34 }} />
       </div>
 
-      <BottomNav />
-
+      {/* 签约弹窗 */}
       <Modal
+        title="签署电子合同"
         open={showSignModal}
-        title="电子签约"
         onCancel={() => setShowSignModal(false)}
-        footer={null}
-        centered
-        style={{ borderRadius: 20 }}
+        onOk={handleSign}
+        okText="确认签署"
+        cancelText="取消"
+        confirmLoading={submitting}
       >
-        <div style={{ textAlign: 'center', padding: '20px 0' }}>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-            <FileTextOutlined style={{ fontSize: 28, color: 'var(--primary)' }} />
-          </div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 12 }}>请确认以下签约信息：</div>
-          <div style={{ background: 'var(--bg-sunken)', padding: 16, borderRadius: 8, marginBottom: 16, textAlign: 'left', border: '1px solid var(--border-default)' }}>
-            <div style={{ fontSize: 13, color: 'var(--text-primary)', marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-secondary)' }}>签约人：</span>
-              <span style={{ fontWeight: 500 }}>{formData.name}</span>
-            </div>
-            <div style={{ fontSize: 13, color: 'var(--text-primary)', marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-secondary)' }}>手机号码：</span>
-              <span style={{ fontWeight: 500 }}>{formData.phone}</span>
-            </div>
-            <div style={{ fontSize: 13, color: 'var(--text-primary)', marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-secondary)' }}>案件类型：</span>
-              <span style={{ fontWeight: 500 }}>{caseTypes.find(t => t.value === formData.case_type)?.label}</span>
-            </div>
-            <div style={{ fontSize: 13, color: 'var(--text-primary)', display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-secondary)' }}>服务费用：</span>
-              <span style={{ fontWeight: 600, color: 'var(--primary)' }}>¥{serviceFee?.toFixed(2) || 0}</span>
-            </div>
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginBottom: 16 }}>
-            点击确认即表示您同意签署上述法律服务合同
-          </div>
-          <ClientButton btnVariant="primary" btnSize="large" onClick={handleSign} style={{ width: '100%' }}>
-            确认签约
-          </ClientButton>
+        <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.8 }}>
+          签署即表示您已阅读并同意《法律服务合同》与《风险告知书》的全部条款，合同自双方签署之日起生效。
         </div>
       </Modal>
 
+      {/* 支付成功 */}
       <Modal
         open={paymentSuccess}
-        title="签约付款成功"
         footer={null}
+        closable={false}
+        width={280}
         centered
       >
-        <div style={{ textAlign: 'center', padding: '24px 0' }}>
-          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-            <CheckCircleOutlined style={{ fontSize: 36, color: 'var(--success)' }} />
-          </div>
-          <div style={{ fontSize: 18, fontWeight: 'bold', color: 'var(--text-primary)' }}>签约付款成功</div>
-          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 6 }}>您的法律服务合同已签署，费用已支付</div>
-          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>我们将尽快安排律师与您联系</div>
+        <div style={{ textAlign: 'center', padding: '16px 0' }}>
+          <CheckCircleFilled style={{ fontSize: 48, color: '#059669' }} />
+          <div style={{ marginTop: 12, fontSize: 16, fontWeight: 600, color: '#0F172A' }}>支付成功</div>
+          <div style={{ marginTop: 4, fontSize: 12, color: '#94A3B8' }}>正在前往案件列表…</div>
         </div>
       </Modal>
     </div>

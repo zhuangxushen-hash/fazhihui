@@ -1,21 +1,20 @@
 import { useState, useEffect } from 'react'
-import { Form, Input, InputNumber, message } from 'antd'
-import { ArrowLeftOutlined, FileAddOutlined, LockOutlined } from '@ant-design/icons'
+import { Form, Input, InputNumber, message, Spin } from 'antd'
+import { LeftOutlined, LockOutlined, EditOutlined } from '@ant-design/icons'
 import axios from '../../api/axios'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import ClientButton from '../../components/ClientButton'
+import { Card, Pill } from './shared'
 
 /**
- * C 端签约预填页（移动端）流程化：
- * 填写合同信息 → 签约合同 两步流程。
- * 客户从案件详情"待签约"入口进入，
- * 填写签署任务待填字段 → 直接提交预填并进入页面内嵌签署页（免验证签整合：客户完成签署即完成实名授权，无需另行单独实名认证）。
+ * C 端电子签约页（对齐设计稿 09-电子签约）
+ * 流程：加载待填字段 → 客户填写 → 提交预填 → 新窗口打开法大大签署页。
+ * 注：签署页用新窗口而非 iframe 内嵌，规避 CSP 跨域与摄像头权限拦截问题。
  */
 export default function SignPrefill() {
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [fields, setFields] = useState<any[]>([])
-  const [subject, setSubject] = useState('法律顾问签约')
+  const [subject, setSubject] = useState('委托代理合同')
   const [signingId, setSigningId] = useState('')
   const [form] = Form.useForm()
   const navigate = useNavigate()
@@ -31,17 +30,16 @@ export default function SignPrefill() {
     }
     setSigningId(sid)
     fetchPrefillFields(sid)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
-  // 加载待填字段
   const fetchPrefillFields = async (sid: string) => {
     setLoading(true)
     try {
       const res: any = await axios.post('/client/sign/prefill', { signing_id: sid, client_id: user.id })
       const list = res?.fields || []
       setFields(list)
-      setSubject(res?.subject || '法律顾问签约')
-      // 模板控件默认值回显到表单
+      setSubject(res?.subject || '委托代理合同')
       const defaults: any = {}
       list.forEach((f: any) => {
         if (f.default_value) defaults[f.field_id] = f.default_value
@@ -54,32 +52,23 @@ export default function SignPrefill() {
     }
   }
 
-  // 根据字段类型渲染输入控件
   const renderFieldInput = (field: any) => {
     const fieldName = field.field_name || field.field_id || '字段'
     const type = (field.field_type || '').toLowerCase()
     if (type.includes('multi_line') || type.includes('textarea')) {
-      return <Input.TextArea rows={3} placeholder={`请输入${fieldName}`} />
+      return <Input.TextArea rows={3} placeholder={`请输入${fieldName}`} className="mp-field-textarea" />
     }
     if (type.includes('number') || type.includes('amount') || type.includes('money')) {
       return <InputNumber min={0} style={{ width: '100%' }} placeholder={`请输入${fieldName}`} />
     }
     if (type.includes('date')) {
-      return <Input placeholder={`请输入${fieldName}（如 2026-08-26）`} />
+      return (
+        <Input placeholder={`请输入${fieldName}（如 2026-08-26）`} className="mp-field-input" style={{ height: 44 }} />
+      )
     }
-    return <Input placeholder={`请输入${fieldName}`} />
+    return <Input placeholder={`请输入${fieldName}`} className="mp-field-input" style={{ height: 44 }} />
   }
 
-  // 必填校验规则（required 来自法大大模板控件定义）
-  const buildFieldRules = (field: any) => {
-    const rules: any[] = []
-    if (field.required) {
-      rules.push({ required: true, message: `请填写${field.field_name || field.field_id || '该项'}` })
-    }
-    return rules
-  }
-
-  // 组装客户填写的字段值
   const collectFieldValues = (values: any) =>
     fields.map((f) => ({
       field_doc_id: f.field_doc_id,
@@ -88,9 +77,6 @@ export default function SignPrefill() {
       field_value: String(values[f.field_id] ?? ''),
     }))
 
-  // 填写完成 → 提交预填 → 新窗口打开法大大签署页（web-view 形式）
-  // 不再使用 iframe 内嵌：避免 CSP 跨域限制、摄像头权限被拦截等问题
-  // 客户在新窗口完成签署后自行关闭，本页自动返回案件列表
   const handleSubmit = async () => {
     setSubmitting(true)
     try {
@@ -101,20 +87,14 @@ export default function SignPrefill() {
         values: collectFieldValues(values),
       }
       const res: any = await axios.post('/client/sign/submit-prefill', payload)
-      // 优先用 embed_url（connect 层带 isFreeLogin=1，确保快捷签）；兜底 sign_url 短链
       const url = res?.embed_url || res?.sign_url
       if (url) {
-        // WebView 壳环境（UA 带 app_embed）：直接 location.href，壳接管加载
-        // 普通浏览器：先 window.open，被拦截时降级 location.href
         const ua = navigator.userAgent || ''
         if (ua.includes('app_embed')) {
           window.location.href = url
         } else {
           const win = window.open(url, '_blank', 'noopener,noreferrer')
-          if (!win) {
-            // 弹窗被拦截，降级为当前页跳转
-            window.location.href = url
-          }
+          if (!win) window.location.href = url
         }
       } else {
         message.error('未获取到签署链接，请稍后重试')
@@ -126,89 +106,206 @@ export default function SignPrefill() {
     }
   }
 
-  const handleBack = () => {
-    navigate(-1)
-  }
+  const today = new Date().toISOString().slice(0, 10)
 
   return (
-    <div className="client-app" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* 页头 */}
-      <header className="c-topbar">
-        <button className="c-topbar__back" onClick={handleBack}>
-          <ArrowLeftOutlined />
-        </button>
-        <span className="c-topbar__title" style={{ fontSize: 17 }}>填写合同信息</span>
-        <div style={{ width: 44 }} />
-      </header>
-
-      <main className="c-container--no-nav" style={{ padding: 16, paddingBottom: 120, maxWidth: 720, margin: '0 auto', width: '100%' }}>
-        {/* 签约主题 */}
-        <div className="c-card" style={{ padding: 16, marginBottom: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <FileAddOutlined style={{ fontSize: 24, color: '#0071e3' }} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12, color: 'var(--cm-text-muted)' }}>签约主题</div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--cm-text-strong)', marginTop: 2, wordBreak: 'break-all' }}>{subject}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* 待填字段 */}
-        <div className="c-card" style={{ padding: 16, marginBottom: 12 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--cm-text-strong)', marginBottom: 12 }}>合同信息</div>
-          {loading ? (
-            <div className="c-loading">加载中...</div>
-          ) : fields.length === 0 ? (
-            <div className="c-empty" style={{ padding: '16px 0' }}>
-              <FileAddOutlined className="c-empty__icon" />
-              <div className="c-empty__title">无需补充信息</div>
-              <div className="c-empty__desc">可直接进入签署</div>
-            </div>
-          ) : (
-            <Form form={form} layout="vertical" requiredMark={false}>
-              {fields.map((field) => (
-                <Form.Item
-                  key={field.field_id}
-                  name={field.field_id}
-                  label={
-                    <span className="c-field__label">
-                      {field.field_name || field.field_id}
-                      {field.required && <span style={{ color: 'var(--cm-danger)' }}> *</span>}
-                    </span>
-                  }
-                  rules={buildFieldRules(field)}
-                  style={{ marginBottom: 16 }}
-                >
-                  {renderFieldInput(field)}
-                </Form.Item>
-              ))}
-            </Form>
-          )}
-        </div>
-
-        {/* 签署说明 */}
-        <div className="c-card" style={{ padding: 14, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-          <LockOutlined style={{ color: '#0071e3', marginTop: 2, fontSize: 16, flexShrink: 0 }} />
-          <div style={{ fontSize: 12, color: 'var(--cm-text)', lineHeight: 1.7 }}>
-            填写完成后将在新窗口打开签署页面。签署时将同步完成身份认证（刷脸），完成后关闭签署窗口即可。
-          </div>
-        </div>
-      </main>
-
-      {/* 底部固定按钮 */}
-      <div className="c-safety-bar">
-        <ClientButton
-          btnVariant="primary"
-          btnSize="large"
-          style={{ width: '100%' }}
-          loading={submitting}
-          disabled={loading}
-          onClick={handleSubmit}
+    <div className="client-app">
+      <div
+        style={{
+          maxWidth: 375,
+          margin: '0 auto',
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          background: '#F6F7F9',
+        }}
+      >
+        {/* ===== 自定义导航栏 ===== */}
+        <div
+          style={{
+            height: 44,
+            display: 'flex',
+            alignItems: 'center',
+            paddingLeft: 4,
+            paddingRight: 10,
+            flexShrink: 0,
+          }}
         >
-          提交信息并去签署
-        </ClientButton>
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            style={{
+              width: 40,
+              height: 40,
+              border: 'none',
+              background: 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <LeftOutlined style={{ fontSize: 18, color: '#0F172A' }} />
+          </button>
+          <span style={{ flex: 1, fontSize: 17, fontWeight: 600, color: '#0F172A' }}>电子签约</span>
+          <div style={{ width: 87, flexShrink: 0 }} />
+        </div>
+
+        {/* ===== 内容区 ===== */}
+        <div
+          style={{
+            flex: 1,
+            padding: 16,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16,
+          }}
+        >
+          {/* 合同信息卡 */}
+          <Card style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <span
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: '#0F172A',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {subject}
+              </span>
+              <Pill bg="#FEF3C7" color="#B45309">
+                待签署
+              </Pill>
+            </div>
+            <div style={{ fontSize: 13, color: '#475569' }}>
+              甲方（委托人）：{user.real_name || user.name || '—'}
+            </div>
+            <div style={{ fontSize: 13, color: '#475569' }}>乙方（受托人）：法智汇合作律所</div>
+            <div style={{ fontSize: 12, color: '#94A3B8' }}>签约日期：{today}</div>
+          </Card>
+
+          {/* 待填字段 */}
+          {loading ? (
+            <Card style={{ padding: 32, textAlign: 'center' }}>
+              <Spin />
+            </Card>
+          ) : fields.length > 0 ? (
+            <Card style={{ padding: 20 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: '#0F172A', marginBottom: 16 }}>
+                合同信息
+              </div>
+              <Form form={form} layout="vertical" requiredMark={false}>
+                {fields.map((field) => (
+                  <Form.Item
+                    key={field.field_id}
+                    name={field.field_id}
+                    label={
+                      <span style={{ fontSize: 13, color: '#475569' }}>
+                        {field.field_name || field.field_id}
+                        {field.required && <span style={{ color: '#DC2626' }}> *</span>}
+                      </span>
+                    }
+                    rules={
+                      field.required
+                        ? [{ required: true, message: `请填写${field.field_name || '该项'}` }]
+                        : []
+                    }
+                    style={{ marginBottom: 16 }}
+                  >
+                    {renderFieldInput(field)}
+                  </Form.Item>
+                ))}
+              </Form>
+            </Card>
+          ) : null}
+
+          {/* 签名板 */}
+          <Card
+            onClick={handleSubmit}
+            style={{
+              height: 220,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              cursor: 'pointer',
+              border: '1px dashed #CBD5E1',
+            }}
+          >
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <EditOutlined style={{ fontSize: 30, color: '#CBD5E1' }} />
+            </div>
+            <span style={{ fontSize: 14, color: '#94A3B8' }}>请在此手写签名</span>
+          </Card>
+
+          <div style={{ flex: 1, minHeight: 8 }} />
+
+          {/* 签署说明 */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+            <LockOutlined style={{ color: '#1E3A8A', marginTop: 2, fontSize: 14, flexShrink: 0 }} />
+            <div style={{ fontSize: 12, color: '#64748B', lineHeight: 1.7 }}>
+              填写完成后将在新窗口打开签署页面，签署时同步完成身份认证（刷脸），完成后关闭窗口即可。
+            </div>
+          </div>
+
+          {/* 预览合同 */}
+          <button
+            type="button"
+            onClick={() => message.info('合同预览功能开发中')}
+            style={{
+              height: 48,
+              borderRadius: 12,
+              border: '1px solid #E2E8F0',
+              background: '#FFFFFF',
+              color: '#1E3A8A',
+              fontSize: 16,
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}
+          >
+            预览合同
+          </button>
+
+          {/* 确认签署 */}
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={submitting}
+            style={{
+              height: 48,
+              borderRadius: 12,
+              border: 'none',
+              background: '#1E3A8A',
+              color: '#FFFFFF',
+              fontSize: 16,
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}
+          >
+            {submitting ? '提交中...' : '确认签署'}
+          </button>
+
+          <div style={{ textAlign: 'center', fontSize: 12, color: '#94A3B8' }}>
+            电子签名与手写签名或盖章具有同等法律效力
+          </div>
+        </div>
+
+        {/* 底部安全区 */}
+        <div style={{ height: 34 }} />
       </div>
     </div>
   )

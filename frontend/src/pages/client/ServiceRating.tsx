@@ -1,14 +1,21 @@
 import { useState, useEffect } from 'react'
-import { Input, Tag, message } from 'antd'
-import { StarFilled, ArrowLeftOutlined, CheckCircleOutlined, HistoryOutlined, EditOutlined, StarOutlined } from '@ant-design/icons'
+import { Input, message, Spin } from 'antd'
+import { LeftOutlined, CheckCircleFilled, StarFilled } from '@ant-design/icons'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import axios from '../../api/axios'
-import { formatDateTime } from '../../utils/format'
-import BottomNav from '../../components/BottomNav'
-import ClientButton from '../../components/ClientButton'
+import { Card } from './shared'
 
-// 星级强调色
-const STAR_COLOR = '#0071e3'
+/** 快捷评价标签 */
+const QUICK_TAGS = ['专业负责', '响应及时', '沟通耐心']
+
+/** 星级文案 */
+const RATING_TEXT: Record<number, string> = {
+  1: '非常不满意',
+  2: '不满意',
+  3: '一般',
+  4: '满意',
+  5: '非常满意',
+}
 
 export default function ServiceRating() {
   const [searchParams] = useSearchParams()
@@ -19,27 +26,32 @@ export default function ServiceRating() {
 
   const [rating, setRating] = useState<number>(0)
   const [hoverRating, setHoverRating] = useState<number>(0)
-  const [allowHalf, setAllowHalf] = useState<boolean>(false)
   const [content, setContent] = useState('')
+  const [tags, setTags] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
-  const [history, setHistory] = useState<any[]>([])
-  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [caseInfo, setCaseInfo] = useState<any>(null)
+  const [loadingCase, setLoadingCase] = useState(false)
 
   useEffect(() => {
-    fetchHistory()
-  }, [])
+    if (caseId) fetchCaseInfo(caseId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [caseId])
 
-  const fetchHistory = async () => {
-    setLoadingHistory(true)
+  const fetchCaseInfo = async (id: string) => {
+    setLoadingCase(true)
     try {
-      const res = await axios.post('/client/service-ratings/list', { client_id: user.id }) as Record<string, unknown>[]
-      setHistory(res || [])
+      const res: any = await axios.post(`/client/cases/${id}`, { client_id: user.id })
+      setCaseInfo(res)
     } catch (error) {
       // 错误已由拦截器统一处理
     } finally {
-      setLoadingHistory(false)
+      setLoadingCase(false)
     }
+  }
+
+  const toggleTag = (tag: string) => {
+    setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
   }
 
   const handleSubmit = async () => {
@@ -57,11 +69,10 @@ export default function ServiceRating() {
         case_id: caseId,
         client_id: user.id,
         rating,
-        content: content.trim() || undefined,
+        content: [tags.join('、'), content.trim()].filter(Boolean).join('。') || undefined,
         organization_id: user.organization_id,
       })
       setSubmitted(true)
-      fetchHistory()
     } catch (error) {
       message.error('评价提交失败，请重试')
     } finally {
@@ -69,258 +80,249 @@ export default function ServiceRating() {
     }
   }
 
-  // 渲染单颗星：支持半星
-  const renderStar = (index: number) => {
-    // 当前展示的评分值（hover 优先）
-    const activeValue = hoverRating || rating
-    const isFull = activeValue >= index
-    const isHalf = allowHalf && activeValue >= index - 0.5 && activeValue < index
-
-    return (
-      <div
-        key={index}
-        style={{ position: 'relative', width: 36, height: 36, cursor: 'pointer', display: 'inline-block' }}
-        onClick={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect()
-          const isLeftHalf = e.clientX - rect.left < rect.width / 2
-          if (allowHalf && isLeftHalf) {
-            setRating(index - 0.5)
-          } else {
-            setRating(index)
-          }
-        }}
-        onMouseMove={(e) => {
-          if (!allowHalf) {
-            setHoverRating(index)
-            return
-          }
-          const rect = e.currentTarget.getBoundingClientRect()
-          const isLeftHalf = e.clientX - rect.left < rect.width / 2
-          setHoverRating(isLeftHalf ? index - 0.5 : index)
-        }}
-        onMouseLeave={() => setHoverRating(0)}
-        onTouchStart={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect()
-          const touch = e.touches[0]
-          const isLeftHalf = touch.clientX - rect.left < rect.width / 2
-          if (allowHalf && isLeftHalf) {
-            setRating(index - 0.5)
-          } else {
-            setRating(index)
-          }
-        }}
-      >
-        {/* 底层空星 */}
-        <StarOutlined style={{ fontSize: 32, color: '#d2d2d7', position: 'absolute', top: 0, left: 0 }} />
-        {/* 上层实星（支持半星） */}
-        {(isFull || isHalf) && (
-          <div style={{ position: 'absolute', top: 0, left: 0, width: isHalf ? '50%' : '100%', overflow: 'hidden' }}>
-            <StarFilled style={{ fontSize: 32, color: STAR_COLOR }} />
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  // 渲染只读星级
-  const renderReadonlyStars = (value: number) => {
-    return (
-      <div style={{ display: 'inline-flex', gap: 2 }}>
-        {[1, 2, 3, 4, 5].map((i) => {
-          const isFull = value >= i
-          const isHalf = value >= i - 0.5 && value < i
-          return (
-            <div key={i} style={{ position: 'relative', width: 16, height: 16 }}>
-              <StarOutlined style={{ fontSize: 14, color: '#d2d2d7', position: 'absolute', top: 0, left: 0 }} />
-              {(isFull || isHalf) && (
-                <div style={{ position: 'absolute', top: 0, left: 0, width: isHalf ? '50%' : '100%', overflow: 'hidden' }}>
-                  <StarFilled style={{ fontSize: 14, color: STAR_COLOR }} />
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    )
-  }
-
-  const ratingLabels: Record<string, string> = {
-    '0.5': '非常不满意',
-    '1': '很不满意',
-    '1.5': '不满意',
-    '2': '不满意',
-    '2.5': '一般',
-    '3': '一般',
-    '3.5': '满意',
-    '4': '满意',
-    '4.5': '很满意',
-    '5': '非常满意',
-  }
-
-  const statusLabels: Record<string, string> = {
-    pending: '待审核',
-    approved: '已通过',
-    rejected: '已驳回',
-    converted_to_material: '已沉淀',
-  }
-
-  const statusColors: Record<string, string> = {
-    pending: 'orange',
-    approved: 'green',
-    rejected: 'red',
-    converted_to_material: 'blue',
-  }
-
-  // 感谢页面
-  if (submitted) {
-    return (
-      <div className="client-app">
-        {/* 顶部应用栏 */}
-        <header className="c-topbar">
-          <button className="c-topbar__back" onClick={() => navigate(-1)}>
-            <ArrowLeftOutlined />
-          </button>
-          <span className="c-topbar__title" style={{ fontSize: 17 }}>服务评价</span>
-          <div style={{ width: 44 }} />
-        </header>
-
-        <main className="c-container--with-nav" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div className="c-card" style={{ width: '100%', maxWidth: 420, padding: 32, textAlign: 'center' }}>
-            <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(46, 158, 91, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-              <CheckCircleOutlined style={{ fontSize: 44, color: '#2e9e5b' }} />
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--cm-text-strong)', marginBottom: 8 }}>感谢您的评价</div>
-            <div style={{ fontSize: 13, color: 'var(--cm-text)', lineHeight: 1.8, marginBottom: 20 }}>
-              您的宝贵意见是我们不断进步的动力
-              <br />
-              我们将认真对待您的每一条反馈
-            </div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <ClientButton btnVariant="ghost" btnSize="large" style={{ flex: 1 }} onClick={() => navigate('/client')}>
-                返回首页
-              </ClientButton>
-              <ClientButton btnVariant="primary" btnSize="large" style={{ flex: 1 }} onClick={() => { setSubmitted(false); setRating(0); setContent('') }}>
-                再次评价
-              </ClientButton>
-            </div>
-          </div>
-        </main>
-
-        <BottomNav />
-      </div>
-    )
-  }
+  const lawyerName = caseInfo?.lawyer_name || '承办律师'
+  const activeValue = hoverRating || rating
 
   return (
     <div className="client-app">
-      {/* 顶部应用栏 */}
-      <header className="c-topbar">
-        <button className="c-topbar__back" onClick={() => navigate(-1)}>
-          <ArrowLeftOutlined />
-        </button>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <span className="c-topbar__title" style={{ fontSize: 17 }}>服务评价</span>
-          <div style={{ fontSize: 11, color: 'var(--cm-text-muted)', marginTop: 1 }}>您的反馈对我们至关重要</div>
-        </div>
-        <div style={{ width: 44 }} />
-      </header>
-
-      <main className="c-container--with-nav" style={{ maxWidth: 720, margin: '0 auto', width: '100%', padding: 16, paddingBottom: 88 }}>
-        {/* 评价表单 */}
-        <div className="c-card" style={{ padding: 16, marginBottom: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
-            <span className="c-pill c-pill--primary"><EditOutlined /> 评价服务</span>
-            <span style={{ fontSize: 13, color: 'var(--cm-text)', fontWeight: 500 }}>请为本次服务打分</span>
-          </div>
-
-          <div style={{ textAlign: 'center', padding: '8px 0 16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 10 }}>
-              {[1, 2, 3, 4, 5].map((i) => renderStar(i))}
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: STAR_COLOR, minHeight: 20 }}>
-              {(hoverRating || rating) > 0 ? ratingLabels[String(hoverRating || rating)] || '请选择评分' : '请选择评分'}
-            </div>
-            <div
-              style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: 'var(--cm-bg)', borderRadius: 18, cursor: 'pointer', border: `1px solid ${allowHalf ? STAR_COLOR : 'var(--cm-border)'}` }}
-              onClick={() => setAllowHalf(!allowHalf)}
-            >
-              <span style={{ fontSize: 11, color: allowHalf ? STAR_COLOR : 'var(--cm-text-muted)' }}>
-                {allowHalf ? '半星模式 已开启' : '开启半星评分'}
-              </span>
-            </div>
-          </div>
-
-          <div className="c-field">
-            <label className="c-field__label">评价内容 <span style={{ color: 'var(--cm-text-muted)', fontSize: 12 }}>（选填，最多500字）</span></label>
-            <Input.TextArea
-              value={content}
-              onChange={(e) => setContent(e.target.value.slice(0, 500))}
-              placeholder="请分享您的服务体验，您的评价将帮助我们持续提升服务质量..."
-              rows={5}
-              maxLength={500}
-              showCount
-              style={{ borderRadius: 12 }}
-            />
-          </div>
-
-          <ClientButton
-            btnVariant="primary"
-            btnSize="large"
-            loading={submitting}
-            onClick={handleSubmit}
-            style={{ width: '100%' }}
+      <div
+        style={{
+          maxWidth: 375,
+          margin: '0 auto',
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          background: '#F6F7F9',
+        }}
+      >
+        {/* ===== 自定义导航栏 ===== */}
+        <div
+          style={{
+            height: 44,
+            display: 'flex',
+            alignItems: 'center',
+            paddingLeft: 4,
+            paddingRight: 10,
+            flexShrink: 0,
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            style={{
+              width: 40,
+              height: 40,
+              border: 'none',
+              background: 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
           >
-            提交评价
-          </ClientButton>
-
-          {!caseId && (
-            <div style={{ fontSize: 11, color: 'var(--cm-warning)', textAlign: 'center', marginTop: 10 }}>
-              未指定案件，请从案件详情页进入评价
-            </div>
-          )}
+            <LeftOutlined style={{ fontSize: 18, color: '#0F172A' }} />
+          </button>
+          <span style={{ flex: 1, fontSize: 17, fontWeight: 600, color: '#0F172A' }}>服务评价</span>
+          <div style={{ width: 87, flexShrink: 0 }} />
         </div>
 
-        {/* 历史评价 */}
-        <div className="c-card" style={{ padding: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
-            <span className="c-pill c-pill--neutral"><HistoryOutlined /> 历史评价</span>
-            <span style={{ fontSize: 13, color: 'var(--cm-text)', fontWeight: 500 }}>我的评价记录</span>
-          </div>
-
-          {loadingHistory ? (
-            <div className="c-loading">加载中...</div>
-          ) : history.length === 0 ? (
-            <div className="c-empty" style={{ padding: '16px 0' }}>
-              <StarOutlined style={{ fontSize: 36, color: 'var(--cm-text-muted)', opacity: 0.35, marginBottom: 8 }} />
-              <div className="c-empty__title">暂无评价记录</div>
-            </div>
+        {/* ===== 内容区 ===== */}
+        <div
+          style={{
+            flex: 1,
+            padding: 16,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16,
+          }}
+        >
+          {submitted ? (
+            <Card style={{ padding: 40, textAlign: 'center' }}>
+              <CheckCircleFilled style={{ fontSize: 48, color: '#059669' }} />
+              <div style={{ marginTop: 16, fontSize: 16, fontWeight: 600, color: '#0F172A' }}>
+                评价已提交
+              </div>
+              <div style={{ marginTop: 6, fontSize: 13, color: '#94A3B8' }}>
+                感谢您的反馈，我们会持续改进服务
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate('/client/cases')}
+                style={{
+                  marginTop: 24,
+                  width: '100%',
+                  height: 48,
+                  borderRadius: 12,
+                  border: 'none',
+                  background: '#1E3A8A',
+                  color: '#FFFFFF',
+                  fontSize: 16,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                返回我的案件
+              </button>
+            </Card>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {history.map((item) => (
-                <div key={item.id} style={{ padding: 12, background: 'var(--cm-bg)', borderRadius: 12, border: '1px solid var(--cm-border)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {renderReadonlyStars(item.rating)}
-                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--cm-text-strong)' }}>{item.rating} 星</span>
+            <>
+              {/* 律师信息卡 */}
+              <Card style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 14 }}>
+                {loadingCase ? (
+                  <Spin />
+                ) : (
+                  <>
+                    <div
+                      style={{
+                        width: 56,
+                        height: 56,
+                        borderRadius: 28,
+                        background: '#1E3A8A',
+                        color: '#FFFFFF',
+                        fontSize: 20,
+                        fontWeight: 500,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {lawyerName.charAt(0)}
                     </div>
-                    <Tag color={statusColors[item.status]} style={{ fontSize: 10, borderRadius: 6 }}>{statusLabels[item.status] || item.status}</Tag>
-                  </div>
-                  {item.content && (
-                    <div style={{ fontSize: 12, color: 'var(--cm-text)', lineHeight: 1.7, margin: '6px 0' }}>
-                      {item.content}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+                      <span style={{ fontSize: 16, fontWeight: 600, color: '#0F172A' }}>
+                        {lawyerName}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 13,
+                          color: '#64748B',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {caseInfo?.case_no ? `案号：${caseInfo.case_no}` : '法律服务'}
+                      </span>
                     </div>
-                  )}
-                  <div style={{ fontSize: 11, color: 'var(--cm-text-muted)' }}>
-                    案件：{item.case_id?.slice(0, 8)}... · {formatDateTime(item.created_at)}
-                  </div>
+                  </>
+                )}
+              </Card>
+
+              {/* 评分卡 */}
+              <Card
+                style={{
+                  padding: 20,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 12,
+                }}
+              >
+                <span style={{ fontSize: 14, color: '#64748B' }}>服务满意度</span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setRating(i)}
+                      onMouseEnter={() => setHoverRating(i)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      style={{
+                        width: 32,
+                        height: 32,
+                        border: 'none',
+                        background: 'transparent',
+                        padding: 0,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <StarFilled
+                        style={{
+                          fontSize: 28,
+                          color: i <= activeValue ? '#F5B84C' : '#E2E8F0',
+                          transition: 'color .15s ease',
+                        }}
+                      />
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
+                {activeValue > 0 && (
+                  <span style={{ fontSize: 13, color: '#B45309', fontWeight: 500 }}>
+                    {RATING_TEXT[activeValue]}
+                  </span>
+                )}
+              </Card>
+
+              {/* 快捷评价 */}
+              <Card style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <span style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>快捷评价</span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                  {QUICK_TAGS.map((tag) => {
+                    const active = tags.includes(tag)
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => toggleTag(tag)}
+                        style={{
+                          padding: '6px 14px',
+                          borderRadius: 99,
+                          border: 'none',
+                          background: active ? '#1E3A8A' : '#EEF2FB',
+                          color: active ? '#FFFFFF' : '#1E3A8A',
+                          fontSize: 12,
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {tag}
+                      </button>
+                    )
+                  })}
+                </div>
+              </Card>
+
+              {/* 文字评价 */}
+              <Input.TextArea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="写下您的真实评价，帮助更多用户..."
+                rows={4}
+                className="mp-field-textarea"
+                style={{ minHeight: 120 }}
+              />
+
+              <div style={{ flex: 1, minHeight: 8 }} />
+
+              {/* 提交 */}
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={submitting}
+                style={{
+                  height: 48,
+                  borderRadius: 12,
+                  border: 'none',
+                  background: '#1E3A8A',
+                  color: '#FFFFFF',
+                  fontSize: 16,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                {submitting ? '提交中...' : '提交评价'}
+              </button>
+            </>
           )}
         </div>
-      </main>
 
-      <BottomNav />
+        {/* 底部安全区 */}
+        <div style={{ height: 34 }} />
+      </div>
     </div>
   )
 }

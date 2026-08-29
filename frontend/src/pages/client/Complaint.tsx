@@ -1,212 +1,278 @@
 import { useState } from 'react'
-import { Form, Input, message } from 'antd'
-import { ArrowLeftOutlined, WarningOutlined, CheckCircleOutlined, ClockCircleOutlined, MessageOutlined } from '@ant-design/icons'
+import { Form, Input, message, Spin } from 'antd'
+import { LeftOutlined, PlusOutlined, LoadingOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import axios from '../../api/axios'
-import BottomNav from '../../components/BottomNav'
-import ClientButton from '../../components/ClientButton'
+import { createComplaint } from '../../api/client'
+import { Card } from './shared'
+
+/** 投诉类型（设计稿：服务态度 / 办理进度 / 收费问题 / 其他） */
+const COMPLAINT_TYPES = [
+  { value: 'service_attitude', label: '服务态度' },
+  { value: 'progress', label: '办理进度' },
+  { value: 'fee', label: '收费问题' },
+  { value: 'other', label: '其他' },
+]
 
 export default function Complaint() {
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
-  const [activeType, setActiveType] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [activeType, setActiveType] = useState<string>('service_attitude')
+  const [evidence, setEvidence] = useState<string[]>([])
   const navigate = useNavigate()
 
   const user = JSON.parse(localStorage.getItem('client_user') || '{}')
 
-  const handleSubmit = async (values: any) => {
+  /** 上传凭证（复用服务大厅的上传接口，返回可访问 URL） */
+  const handleUpload = async (file: File) => {
+    if (!file) return
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res: any = await axios.post('/upload', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      const url = res?.url || res?.file_url
+      if (url) {
+        setEvidence((prev) => [...prev, url])
+        message.success('凭证已上传')
+      }
+    } catch (error) {
+      message.error('上传失败，请重试')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleSubmit = async () => {
+    let values: any
+    try {
+      values = await form.validateFields()
+    } catch {
+      return
+    }
     setLoading(true)
     try {
-      await axios.post('/client/complaint', {
-        ...values,
+      await createComplaint({
+        type: activeType,
+        content: values.content,
         client_id: user.id,
-        client_name: user.real_name || '',
-        client_phone: user.phone || '',
+        client_name: user.real_name || user.name || '',
+        client_phone: values.phone || user.phone || '',
         organization_id: user.organization_id,
+        evidence_files: evidence.length ? JSON.stringify(evidence) : undefined,
       })
-      message.success('投诉提交成功')
+      message.success('投诉提交成功，我们将在 24 小时内响应')
       form.resetFields()
+      setEvidence([])
     } catch (error) {
-      message.error('投诉提交失败')
+      // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
     }
   }
 
-  const complaintTypes = [
-    { value: 'service_quality', label: '服务质量', icon: WarningOutlined, bgVar: 'rgba(229, 72, 77, 0.08)', colorVar: '#e5484d', desc: '律师服务态度、专业水平等' },
-    { value: 'fee_issue', label: '费用问题', icon: ClockCircleOutlined, bgVar: 'rgba(240, 160, 32, 0.14)', colorVar: '#b9730d', desc: '收费标准、退费纠纷等' },
-    { value: 'other', label: '其他', icon: MessageOutlined, bgVar: 'rgba(0, 113, 227, 0.08)', colorVar: '#0071e3', desc: '其他问题或建议' },
-  ]
-
   return (
     <div className="client-app">
-      {/* 顶部应用栏 */}
-      <header className="c-topbar">
-        <button className="c-topbar__back" onClick={() => navigate(-1)}>
-          <ArrowLeftOutlined />
-        </button>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <span className="c-topbar__title" style={{ fontSize: 17 }}>投诉反馈</span>
-          <div style={{ fontSize: 11, color: 'var(--cm-text-muted)', marginTop: 1 }}>我们会在24小时内响应您的投诉</div>
-        </div>
-        <div style={{ width: 44 }} />
-      </header>
-
-      <main className="c-container--with-nav" style={{ maxWidth: 720, margin: '0 auto', width: '100%', padding: 16, paddingBottom: 88 }}>
-        {/* 投诉类型选择 */}
-        <div className="c-card" style={{ padding: 14, marginBottom: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-            <span className="c-pill c-pill--danger">投诉类型</span>
-            <span style={{ fontSize: 13, color: 'var(--cm-text)', fontWeight: 500 }}>请选择投诉类型</span>
-          </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            {complaintTypes.map((type) => {
-              const Icon = type.icon
-              const isActive = activeType === type.value
-              return (
-                <div
-                  key={type.value}
-                  style={{
-                    flex: 1,
-                    padding: '14px 8px',
-                    background: isActive ? 'rgba(0, 113, 227, 0.08)' : 'var(--cm-bg)',
-                    borderRadius: 12,
-                    border: isActive ? '1.5px solid var(--cm-primary)' : '1px solid var(--cm-border)',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    textAlign: 'center',
-                    transform: isActive ? 'scale(0.98)' : 'scale(1)',
-                    WebkitTapHighlightColor: 'transparent',
-                  }}
-                  onClick={() => form.setFieldValue('type', type.value)}
-                  onTouchStart={() => {
-                    setActiveType(type.value)
-                    form.setFieldValue('type', type.value)
-                  }}
-                  onTouchEnd={() => setActiveType(null)}
-                >
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', background: type.bgVar, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
-                    <Icon style={{ fontSize: 18, color: type.colorVar }} />
-                  </div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: isActive ? 'var(--cm-primary)' : 'var(--cm-text-strong)', marginBottom: 2 }}>{type.label}</div>
-                  <div style={{ fontSize: 10, color: 'var(--cm-text-muted)', lineHeight: 1.4 }}>{type.desc}</div>
-                </div>
-              )
-            })}
-          </div>
+      <div
+        style={{
+          maxWidth: 375,
+          margin: '0 auto',
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          background: '#F6F7F9',
+        }}
+      >
+        {/* ===== 自定义导航栏 ===== */}
+        <div
+          style={{
+            height: 44,
+            display: 'flex',
+            alignItems: 'center',
+            paddingLeft: 4,
+            paddingRight: 10,
+            flexShrink: 0,
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            style={{
+              width: 40,
+              height: 40,
+              border: 'none',
+              background: 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <LeftOutlined style={{ fontSize: 18, color: '#0F172A' }} />
+          </button>
+          <span style={{ flex: 1, fontSize: 17, fontWeight: 600, color: '#0F172A' }}>投诉与建议</span>
+          <div style={{ width: 87, flexShrink: 0 }} />
         </div>
 
-        {/* 投诉表单 */}
-        <div className="c-card" style={{ padding: 16, marginBottom: 12 }}>
-          <Form form={form} onFinish={handleSubmit} layout="vertical" requiredMark={false}>
-            <Form.Item
-              name="type"
-              label={<span className="c-field__label">投诉类型 <span style={{ color: 'var(--cm-danger)' }}>*</span></span>}
-              rules={[{ required: true, message: '请选择投诉类型' }]}
-              style={{ display: 'none' }}
-            >
-              <Input />
+        {/* ===== 内容区 ===== */}
+        <Form
+          form={form}
+          layout="vertical"
+          requiredMark={false}
+          style={{ flex: 1, padding: 16, display: 'flex', flexDirection: 'column' }}
+        >
+          <Card
+            style={{
+              padding: 20,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16,
+            }}
+          >
+            {/* 投诉类型 */}
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>投诉类型</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {COMPLAINT_TYPES.map((t) => {
+                const active = activeType === t.value
+                return (
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => setActiveType(t.value)}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: 99,
+                      border: 'none',
+                      background: active ? '#1E3A8A' : '#EEF2FB',
+                      color: active ? '#FFFFFF' : '#1E3A8A',
+                      fontSize: 12,
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      WebkitTapHighlightColor: 'transparent',
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* 投诉对象 */}
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>投诉对象</div>
+            <Form.Item name="target" style={{ marginBottom: 0 }}>
+              <Input
+                placeholder="请选择案件/律师"
+                className="mp-field-input"
+                style={{ height: 44, borderRadius: 12 }}
+              />
             </Form.Item>
 
-            <div className="c-field">
-              <label className="c-field__label">投诉内容 <span style={{ color: 'var(--cm-danger)' }}>*</span></label>
-              <Form.Item
-                name="content"
-                style={{ marginBottom: 0 }}
-                rules={[{ required: true, message: '请输入投诉内容' }, { min: 10, message: '投诉内容至少10个字' }]}
-              >
-                <Input.TextArea
-                  rows={5}
-                  placeholder="请详细描述您的投诉内容，包括时间、地点、人物以及具体情况..."
-                  size="large"
-                  style={{ borderRadius: 12 }}
-                />
-              </Form.Item>
-            </div>
-
-            <div className="c-field">
-              <label className="c-field__label">关联案件ID</label>
-              <Form.Item name="case_id" style={{ marginBottom: 0 }}>
-                <Input
-                  placeholder="请输入案件ID（选填）"
-                  size="large"
-                  style={{ borderRadius: 12 }}
-                />
-              </Form.Item>
-            </div>
-
-            <div className="c-field">
-              <label className="c-field__label">证据材料</label>
-              <Form.Item name="evidence_files" style={{ marginBottom: 0 }}>
-                <Input
-                  placeholder="请上传相关证据（选填）"
-                  size="large"
-                  style={{ borderRadius: 12 }}
-                />
-              </Form.Item>
-            </div>
-
-            <ClientButton
-              btnVariant="primary"
-              btnSize="large"
-              htmlType="submit"
-              loading={loading}
-              style={{ width: '100%' }}
+            {/* 联系电话 */}
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>联系电话</div>
+            <Form.Item
+              name="phone"
+              style={{ marginBottom: 0 }}
+              rules={[{ pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号' }]}
             >
-              提交投诉
-            </ClientButton>
-          </Form>
-        </div>
+              <Input
+                placeholder="请输入手机号"
+                className="mp-field-input"
+                style={{ height: 44, borderRadius: 12 }}
+              />
+            </Form.Item>
 
-        {/* 投诉须知 */}
-        <div className="c-card" style={{ padding: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-            <span className="c-pill c-pill--primary">投诉须知</span>
-            <span style={{ fontSize: 13, color: 'var(--cm-text)', fontWeight: 500 }}>请仔细阅读</span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(229, 72, 77, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <WarningOutlined style={{ fontSize: 15, color: '#e5484d' }} />
-              </div>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--cm-text-strong)' }}>如实填写</div>
-                <div style={{ fontSize: 12, color: 'var(--cm-text)', marginTop: 2, lineHeight: 1.6 }}>请如实填写投诉内容，恶意投诉将承担法律责任</div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(46, 158, 91, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <CheckCircleOutlined style={{ fontSize: 15, color: '#2e9e5b' }} />
-              </div>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--cm-text-strong)' }}>隐私保护</div>
-                <div style={{ fontSize: 12, color: 'var(--cm-text)', marginTop: 2, lineHeight: 1.6 }}>我们会保护您的隐私，投诉内容仅用于内部处理</div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(240, 160, 32, 0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <ClockCircleOutlined style={{ fontSize: 15, color: '#b9730d' }} />
-              </div>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--cm-text-strong)' }}>响应时间</div>
-                <div style={{ fontSize: 12, color: 'var(--cm-text)', marginTop: 2, lineHeight: 1.6 }}>一般投诉将在24小时内响应，紧急投诉将在2小时内响应</div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(0, 113, 227, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <MessageOutlined style={{ fontSize: 15, color: '#0071e3' }} />
-              </div>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--cm-text-strong)' }}>进度查询</div>
-                <div style={{ fontSize: 12, color: 'var(--cm-text)', marginTop: 2, lineHeight: 1.6 }}>您可以通过"我的投诉"查看处理进度</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
+            {/* 问题描述 */}
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>问题描述</div>
+            <Form.Item
+              name="content"
+              style={{ marginBottom: 0 }}
+              rules={[{ required: true, message: '请描述您遇到的问题' }]}
+            >
+              <Input.TextArea
+                placeholder="请详细描述您遇到的问题，我们将尽快处理..."
+                rows={4}
+                className="mp-field-textarea"
+                style={{ borderRadius: 12, minHeight: 120, resize: 'none' }}
+              />
+            </Form.Item>
 
-      <BottomNav />
+            {/* 上传凭证 */}
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>上传凭证</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {evidence.map((url, i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    border: '1px solid #E2E8F0',
+                  }}
+                >
+                  <img src={url} alt="凭证" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              ))}
+              <label
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: 12,
+                  background: '#F6F7F9',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                {uploading ? (
+                  <Spin indicator={<LoadingOutlined style={{ fontSize: 20, color: '#94A3B8' }} spin />} />
+                ) : (
+                  <PlusOutlined style={{ fontSize: 24, color: '#94A3B8' }} />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) handleUpload(file)
+                    e.target.value = ''
+                  }}
+                />
+              </label>
+            </div>
+
+            {/* 弹性间隔 */}
+            <div style={{ flex: 1, minHeight: 8 }} />
+
+            {/* 提交按钮 */}
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={loading}
+              style={{
+                height: 48,
+                borderRadius: 12,
+                border: 'none',
+                background: '#1E3A8A',
+                color: '#FFFFFF',
+                fontSize: 16,
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}
+            >
+              {loading ? '提交中...' : '提交投诉'}
+            </button>
+          </Card>
+        </Form>
+
+        {/* 底部安全区 */}
+        <div style={{ height: 34 }} />
+      </div>
     </div>
   )
 }

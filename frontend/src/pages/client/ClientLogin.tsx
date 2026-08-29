@@ -1,53 +1,85 @@
 import { useState } from 'react'
-import { Form, Input, message, Checkbox } from 'antd'
-import { MobileOutlined, LockOutlined, KeyOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons'
+import { Form, Input, message } from 'antd'
+import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons'
 import { clientLogin } from '../../api/auth'
 import { showError } from '../../utils/error'
 
-/** 盾牌 + 天平 Logo 图标（SVG） */
-function ShieldLogo({ size = 48 }: { size?: number }) {
+/** 法智汇品牌 Logo（六边形 + 天平，金色 #D97706） */
+function BrandLogo({ size = 72 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* 盾牌外轮廓 */}
-      <path
-        d="M32 4 L54 12 V32 C54 44 44 53 32 58 C20 53 10 44 10 32 V12 L32 4 Z"
-        fill="#165DFF"
+    <svg width={size} height={size} viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polygon
+        points="100,46 148,73 148,127 100,154 52,127 52,73"
+        stroke="#D97706"
+        strokeWidth="8"
+        strokeLinejoin="round"
       />
-      {/* 盾牌内部浅蓝底 */}
-      <path
-        d="M32 10 L48 16 V32 C48 41 41 48 32 52 C23 48 16 41 16 32 V16 L32 10 Z"
-        fill="#4080FF"
-        opacity="0.3"
-      />
-      {/* 天平横梁 */}
-      <line x1="18" y1="26" x2="46" y2="26" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" />
-      {/* 天平支柱 */}
-      <line x1="32" y1="26" x2="32" y2="42" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" />
-      {/* 天平底座 */}
-      <path d="M26 42 H38" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" />
-      {/* 左秤盘 */}
-      <path d="M15 26 L11 36 H19 Z" fill="#ffffff" opacity="0.9" />
-      {/* 右秤盘 */}
-      <path d="M49 26 L45 36 H53 Z" fill="#ffffff" opacity="0.9" />
+      <path d="M 100 70 L 109.6 90.4 L 130 100 L 109.6 109.6 L 100 130 L 90.4 109.6 L 70 100 L 90.4 90.4 Z" fill="#D97706" />
     </svg>
   )
 }
 
-export default function ClientLogin() {
-  const [loading, setLoading] = useState(false)
-  const [loginMode, setLoginMode] = useState<'sms' | 'password'>('password')
-  const [agreed, setAgreed] = useState(false)
-  const [countdown, setCountdown] = useState(0)
+/** 是否处于微信小程序 webview 环境 */
+function isInMiniProgram() {
+  return /miniProgram/i.test(navigator.userAgent)
+}
 
-  const onFinish = async (values: { phone: string; password?: string; code?: string }) => {
+/** 登录方式：验证码 / 密码 */
+type LoginMode = 'code' | 'password'
+
+export default function ClientLogin() {
+  const [form] = Form.useForm()
+  const [loading, setLoading] = useState(false)
+  const [agreed, setAgreed] = useState(true)
+  const [countdown, setCountdown] = useState(0)
+  const [loginMode, setLoginMode] = useState<LoginMode>('code')
+
+  /** 切换验证码 / 密码登录（清空另一方式的值与校验态） */
+  const switchMode = (mode: LoginMode) => {
+    if (mode === loginMode) return
+    setLoginMode(mode)
+    form.setFieldsValue({ code: undefined, password: undefined })
+    form.setFields([
+      { name: 'code', errors: [] },
+      { name: 'password', errors: [] },
+    ])
+  }
+
+  /** 微信一键登录：跳转小程序原生手机号授权页 */
+  const handleWechatLogin = () => {
+    if (!agreed) {
+      message.warning('请先阅读并同意《用户协议》与《隐私政策》')
+      return
+    }
+    if (!isInMiniProgram()) {
+      message.info('微信一键登录需在微信小程序中使用')
+      return
+    }
+    const wx = (window as any).wx
+    const goAuth = () => {
+      wx?.miniProgram?.navigateTo({ url: '/pages/phone/phone' })
+    }
+    if (wx?.miniProgram) {
+      goAuth()
+      return
+    }
+    // 动态注入微信 JS-SDK 后跳转
+    const script = document.createElement('script')
+    script.src = 'https://res.wx.qq.com/open/js/jweixin-1.6.0.js'
+    script.onload = goAuth
+    document.body.appendChild(script)
+  }
+
+  /** 手机号登录（验证码或密码） */
+  const onFinish = async (values: { phone: string; code?: string; password?: string }) => {
     if (!agreed) {
       message.warning('请先阅读并同意《用户协议》与《隐私政策》')
       return
     }
     setLoading(true)
     try {
-      const passwordValue = values.password || values.code || ''
-      const data = await clientLogin(values.phone, passwordValue)
+      const secret = (loginMode === 'code' ? values.code : values.password) || ''
+      const data = await clientLogin(values.phone, secret)
       if (data.user.role !== 'client') {
         message.error('该账号为管理端账号，请使用电脑端登录')
         setLoading(false)
@@ -58,7 +90,7 @@ export default function ClientLogin() {
       message.success('登录成功')
       window.location.href = '/client'
     } catch (error) {
-      showError(error, '登录失败，请检查账号密码')
+      showError(error, loginMode === 'code' ? '登录失败，请检查手机号与验证码' : '登录失败，请检查手机号与密码')
     } finally {
       setLoading(false)
     }
@@ -79,399 +111,276 @@ export default function ClientLogin() {
     message.success('验证码已发送')
   }
 
+  const isCodeMode = loginMode === 'code'
+
   return (
-    <div
-      className="client-app"
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '48px 24px 24px',
-        position: 'relative',
-        overflowY: 'auto',
-        overflowX: 'hidden',
-        background: '#F5F6F8',
-      }}
-    >
-      {/* 内容外壳 */}
-      <div style={{ margin: 'auto 0', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-        {/* ===== Logo + 品牌区 ===== */}
-        <div className="login-brand">
-          <ShieldLogo size={56} />
-          <div className="login-brand__name">法智汇</div>
-          <div className="login-brand__tagline">客户案件进度 · 电子签约 · 一站式服务</div>
+    <div className="client-app" style={{ minHeight: '100vh', background: '#FFFFFF' }}>
+      <div
+        style={{
+          maxWidth: 375,
+          margin: '0 auto',
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '24px 24px 34px',
+        }}
+      >
+        {/* ===== 品牌区 ===== */}
+        <BrandLogo size={72} />
+        <div style={{ marginTop: 16, fontSize: 28, fontWeight: 700, color: '#0F172A', letterSpacing: 1 }}>
+          法智汇
+        </div>
+        <div style={{ marginTop: 4, fontSize: 14, color: '#64748B' }}>
+          您身边的一站式法律服务管家
         </div>
 
-        {/* ===== 登录卡片 ===== */}
-        <div className="login-card">
-          {/* Tab 切换 —— 下划线样式 */}
-          <div className="login-tabs">
-            {([
-              { key: 'password', label: '密码登录' },
-              { key: 'sms', label: '验证码登录' },
-            ] as const).map(tab => (
-              <button
-                key={tab.key}
-                type="button"
-                className={`login-tabs__item ${loginMode === tab.key ? 'login-tabs__item--active' : ''}`}
-                onClick={() => setLoginMode(tab.key)}
-              >
-                {tab.label}
-              </button>
-            ))}
-            {/* 滑动指示器 */}
-            <span
-              className="login-tabs__indicator"
-              style={{
-                transform: loginMode === 'password' ? 'translateX(0)' : 'translateX(100%)',
-              }}
-            />
-          </div>
+        {/* ===== 间隔 ===== */}
+        <div style={{ height: 40 }} />
 
-          <Form
-            name="client-login"
-            initialValues={{ phone: '', password: '', code: '' }}
-            onFinish={onFinish}
-            layout="vertical"
-            requiredMark={false}
+        <Form
+          form={form}
+          name="client-login"
+          initialValues={{ phone: '', code: '', password: '' }}
+          onFinish={onFinish}
+          layout="vertical"
+          requiredMark={false}
+          style={{ marginBottom: 0 }}
+        >
+          {/* 手机号 */}
+          <Form.Item
+            name="phone"
+            style={{ marginBottom: 16 }}
+            rules={[
+              { required: true, message: '请输入手机号' },
+              { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号' },
+            ]}
           >
-            {/* 手机号输入 */}
-            <div className="login-field">
-              <label className="login-field__label">手机号码</label>
-              <Form.Item
-                name="phone"
-                style={{ marginBottom: 0 }}
-                rules={[
-                  { required: true, message: '请输入手机号' },
-                  { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号' },
-                ]}
-              >
-                <Input
-                  prefix={<MobileOutlined className="login-input__icon" />}
-                  placeholder="请输入您的手机号"
-                  size="large"
-                  className="login-input"
-                />
-              </Form.Item>
-            </div>
+            <Input placeholder="请输入手机号" className="mp-login-input" />
+          </Form.Item>
 
-            {/* 密码 / 验证码输入 */}
-            {loginMode === 'sms' ? (
-              <div className="login-field">
-                <label className="login-field__label">验证码</label>
-                <Form.Item
-                  name="code"
-                  style={{ marginBottom: 0 }}
-                  rules={[{ required: true, message: '请输入验证码' }]}
-                >
-                  <div className="login-input-group">
-                    <Input
-                      prefix={<KeyOutlined className="login-input__icon" />}
-                      placeholder="短信验证码"
-                      size="large"
-                      className="login-input"
-                    />
-                    <button
-                      type="button"
-                      className="login-code-btn"
-                      disabled={countdown > 0}
-                      onClick={handleGetCode}
-                    >
-                      {countdown > 0 ? `${countdown}s 后重试` : '获取验证码'}
-                    </button>
-                  </div>
-                </Form.Item>
-              </div>
-            ) : (
-              <div className="login-field">
-                <label className="login-field__label">密码</label>
-                <Form.Item
-                  name="password"
-                  style={{ marginBottom: 0 }}
-                  rules={[{ required: true, message: '请输入密码' }]}
-                >
-                  <Input.Password
-                    prefix={<LockOutlined className="login-input__icon" />}
-                    placeholder="请输入密码（默认身份证号后8位）"
-                    size="large"
-                    className="login-input"
-                    iconRender={visible =>
-                      visible ? <EyeTwoTone style={{ color: '#8a92a0' }} /> : <EyeInvisibleOutlined style={{ color: '#8a92a0' }} />
-                    }
-                  />
-                </Form.Item>
-              </div>
-            )}
-
-            {/* 密码模式下的提示文字 */}
-            {loginMode === 'password' && (
-              <div className="login-hint">密码为身份证号后 8 位，忘记密码请联系客户管理员重置</div>
-            )}
-
-            {/* 登录按钮 —— 实心蓝色 */}
-            <button
-              type="submit"
-              className="login-submit-btn"
-              disabled={loading}
+          {/* 验证码模式：输入框 + 获取验证码按钮 */}
+          {isCodeMode ? (
+            <Form.Item
+              name="code"
+              style={{ marginBottom: 16 }}
+              rules={[{ required: true, message: '请输入验证码' }]}
             >
-              {loading ? '登录中...' : '登 录'}
-            </button>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <Input placeholder="请输入验证码" className="mp-login-input" style={{ flex: 1 }} />
+                <button
+                  type="button"
+                  className="mp-code-btn"
+                  disabled={countdown > 0}
+                  onClick={handleGetCode}
+                >
+                  {countdown > 0 ? `${countdown}s` : '获取验证码'}
+                </button>
+              </div>
+            </Form.Item>
+          ) : (
+            /* 密码模式：整行密码输入框 */
+            <Form.Item
+              name="password"
+              style={{ marginBottom: 16 }}
+              rules={[{ required: true, message: '请输入密码' }]}
+            >
+              <Input.Password
+                placeholder="请输入密码"
+                className="mp-login-input"
+                iconRender={visible =>
+                  visible
+                    ? <EyeTwoTone twoToneColor="#94A3B8" />
+                    : <EyeInvisibleOutlined style={{ color: '#94A3B8' }} />
+                }
+              />
+            </Form.Item>
+          )}
 
-            {/* 协议同意 */}
-            <div className="login-agree">
-              <Checkbox
-                checked={agreed}
-                onChange={e => setAgreed(e.target.checked)}
-                className="login-agree__checkbox"
-              >
-                <span className="login-agree__text">
-                  我已阅读并同意
-                  <a className="login-link">《用户协议》</a>
-                  与
-                  <a className="login-link">《隐私政策》</a>
-                </span>
-              </Checkbox>
-            </div>
-          </Form>
+          {/* 微信一键登录（主按钮） */}
+          <button type="button" className="mp-primary-btn" onClick={handleWechatLogin}>
+            微信一键登录
+          </button>
+
+          {/* 手机号登录（次按钮） */}
+          <button type="submit" className="mp-outline-btn" disabled={loading}>
+            {loading ? '登录中...' : isCodeMode ? '手机验证码登录' : '手机号密码登录'}
+          </button>
+        </Form>
+
+        {/* ===== 登录方式切换 + 说明 ===== */}
+        <div style={{ marginTop: 10 }}>
+          <div style={{ fontSize: 12, color: '#94A3B8', lineHeight: 1.6 }}>
+            {isCodeMode
+              ? '未开通短信验证时，验证码栏可直接填写身份证号后 8 位'
+              : '密码为身份证号后 8 位，忘记密码请联系客户管理员重置'}
+          </div>
+          <button
+            type="button"
+            onClick={() => switchMode(isCodeMode ? 'password' : 'code')}
+            style={{
+              marginTop: 6,
+              padding: 0,
+              border: 'none',
+              background: 'transparent',
+              fontSize: 12,
+              fontWeight: 500,
+              color: '#1E3A8A',
+              cursor: 'pointer',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+          >
+            {isCodeMode ? '使用密码登录 ›' : '使用验证码登录 ›'}
+          </button>
         </div>
 
+        {/* 弹性间隔 */}
+        <div style={{ flex: 1, minHeight: 24 }} />
 
-        {/* ===== 版权信息 ===== */}
-        <div className="login-copyright">Powered by 法智汇</div>
+        {/* ===== 协议行 ===== */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div
+            onClick={() => setAgreed(!agreed)}
+            style={{
+              width: 16,
+              height: 16,
+              borderRadius: 8,
+              flexShrink: 0,
+              background: agreed ? '#D97706' : '#FFFFFF',
+              border: agreed ? 'none' : '1px solid #E2E8F0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            {agreed && (
+              <svg width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M1 4 L3.5 6.5 L9 1" stroke="#FFFFFF" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </div>
+          <span style={{ fontSize: 12, color: '#94A3B8' }}>已阅读并同意</span>
+          <span style={{ fontSize: 12, color: '#B45309' }}>《用户协议》《隐私政策》</span>
+        </div>
+
+        {/* ===== 保障行（设计稿预留 100px） ===== */}
+        <div style={{ height: 100, paddingTop: 24, textAlign: 'center', fontSize: 11, color: '#94A3B8' }}>
+          实名认证 · 资金安全 · 数据加密
+        </div>
       </div>
 
-      {/* ===== 登录页专用样式 ===== */}
+      {/* ===== 登录页样式（对齐设计稿 01-登录页） ===== */}
       <style>{`
-        /* --- 品牌区 --- */
-        .login-brand {
-          text-align: center;
-          margin-bottom: 32px;
-        }
-        .login-brand__name {
-          font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'STSong', serif;
-          font-size: 26px;
-          font-weight: 700;
-          color: #1a1d23;
-          margin-top: 12px;
-          margin-bottom: 6px;
-          letter-spacing: 2px;
-        }
-        .login-brand__tagline {
-          font-size: 13px;
-          color: #8a92a0;
-          line-height: 1.6;
-        }
-
-        /* --- 登录卡片 --- */
-        .login-card {
-          width: 100%;
-          max-width: 380px;
-          background: #ffffff;
-          border: 1px solid #EBEDF0;
-          border-radius: 16px;
-          padding: 28px 24px 20px;
-          box-shadow: 0 1px 3px rgba(17, 24, 39, 0.04), 0 8px 24px rgba(17, 24, 39, 0.04);
-        }
-
-        /* --- Tab 切换（下划线样式） --- */
-        .login-tabs {
-          position: relative;
-          display: flex;
-          margin-bottom: 28px;
-          border-bottom: 1px solid #EEF0F3;
-        }
-        .login-tabs__item {
-          flex: 1;
-          position: relative;
-          padding: 0 0 14px;
-          font-size: 15px;
-          font-weight: 500;
-          color: #8a92a0;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          -webkit-tap-highlight-color: transparent;
-          transition: color 0.2s ease;
-        }
-        .login-tabs__item--active {
-          color: #1a1d23;
-          font-weight: 600;
-        }
-        .login-tabs__indicator {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          width: 50%;
-          height: 2.5px;
-          background: #165DFF;
-          border-radius: 2px;
-          transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        /* --- 表单字段 --- */
-        .login-field {
-          margin-bottom: 16px;
-        }
-        .login-field__label {
-          display: block;
-          font-size: 13px;
-          font-weight: 500;
-          color: #4a5361;
-          margin-bottom: 8px;
-        }
-        .login-input .ant-input-affix-wrapper,
-        .login-input.ant-input {
-          min-height: 48px !important;
-          height: 48px !important;
-          border-radius: 0 !important;
-          border: none !important;
-          border: none !important;
+        /* 裸 Input（手机号/验证码）与 Input.Password 的 affix-wrapper 统一外观 */
+        .mp-login-input.ant-input,
+        .mp-login-input.ant-input-affix-wrapper {
+          height: 52px !important;
+          border-radius: 12px !important;
+          border: 1px solid #E2E8F0 !important;
+          background: #F6F7F9 !important;
+          box-shadow: none !important;
           font-size: 15px !important;
+          padding: 0 16px !important;
+          display: flex !important;
+          align-items: center !important;
+        }
+        /* 内层原生 input 保持「裸输入」：去掉 antd 自带的 1px #C1C6D6 边框与 8px 圆角，
+           使密码框与手机号输入框（单层边框）视觉完全一致 */
+        .mp-login-input.ant-input-affix-wrapper > .ant-input {
+          height: 50px !important;
           padding: 0 !important;
+          margin: 0 !important;
+          border: none !important;
+          border-radius: 0 !important;
           background: transparent !important;
+          font-size: 15px !important;
+          line-height: 50px !important;
           box-shadow: none !important;
-          transition: border-color 0.2s ease !important;
+          outline: none !important;
         }
-        .login-input .ant-input-affix-wrapper:hover,
-        .login-input.ant-input:hover {
-          border-color: transparent !important;
-        }
-        .login-input .ant-input-affix-wrapper-focused,
-        .login-input.ant-input:focus {
+        .mp-login-input.ant-input-affix-wrapper > .ant-input:hover,
+        .mp-login-input.ant-input-affix-wrapper > .ant-input:focus,
+        .mp-login-input.ant-input-affix-wrapper > .ant-input:focus-visible,
+        .mp-login-input.ant-input-affix-wrapper-focused > .ant-input {
           border: none !important;
           box-shadow: none !important;
+          outline: none !important;
         }
-        .login-input__icon {
-          color: #B0B5BD;
-          font-size: 17px;
+        .mp-login-input.ant-input-affix-wrapper .ant-input-suffix {
+          margin-left: 8px !important;
         }
-        .login-input-group {
-          display: flex;
-          gap: 10px;
-          align-items: stretch;
+        .mp-login-input.ant-input:focus,
+        .mp-login-input.ant-input:hover,
+        .mp-login-input.ant-input-affix-wrapper-focused,
+        .mp-login-input.ant-input-affix-wrapper:hover {
+          border-color: #1E3A8A !important;
+          box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.08) !important;
         }
-        .login-input-group .ant-input-affix-wrapper,
-        .login-input-group .ant-input {
-          flex: 1;
+        .mp-login-input.ant-input::placeholder,
+        .mp-login-input.ant-input-affix-wrapper input::placeholder {
+          color: #94A3B8 !important;
+        }
+        .mp-login-input.ant-input:-webkit-autofill,
+        .mp-login-input.ant-input-affix-wrapper input:-webkit-autofill {
+          -webkit-box-shadow: 0 0 0 1000px #F6F7F9 inset !important;
+          -webkit-text-fill-color: #0F172A !important;
         }
 
-        /* --- 验证码按钮 --- */
-        .login-code-btn {
-          height: 48px;
-          padding: 0 16px;
+        .mp-code-btn {
+          width: 112px;
+          height: 52px;
+          flex-shrink: 0;
+          border: none;
+          border-radius: 12px;
+          background: #FEF3C7;
+          color: #B45309;
           font-size: 14px;
           font-weight: 500;
-          color: #165DFF;
-          background: #F0F4FF;
-          border: 1px solid #D6E4FF;
-          border-radius: 12px;
           cursor: pointer;
-          white-space: nowrap;
-          flex-shrink: 0;
-          transition: all 0.2s ease;
+          transition: background 0.2s ease;
           -webkit-tap-highlight-color: transparent;
         }
-        .login-code-btn:hover:not(:disabled) {
-          background: #E4EDFF;
-          border-color: #ADC6FF;
-        }
-        .login-code-btn:disabled {
-          color: #8a92a0;
-          background: #F5F6F8;
-          border-color: #EBEDF0;
+        .mp-code-btn:hover:not(:disabled) { background: #FDE68A; }
+        .mp-code-btn:disabled {
+          color: #94A3B8;
+          background: #F1F5F9;
           cursor: not-allowed;
         }
 
-        /* --- 提示文字 --- */
-        .login-hint {
-          font-size: 12px;
-          color: #8a92a0;
-          line-height: 1.6;
-          margin-bottom: 20px;
-        }
-
-        /* --- 登录按钮 --- */
-        .login-submit-btn {
+        .mp-primary-btn {
           width: 100%;
-          height: 50px;
-          margin-top: 8px;
-          font-size: 16px;
-          font-weight: 600;
-          letter-spacing: 2px;
-          color: #ffffff;
-          background: #165DFF;
+          height: 52px;
           border: none;
           border-radius: 12px;
+          background: #1E3A8A;
+          color: #FFFFFF;
+          font-size: 16px;
+          font-weight: 500;
           cursor: pointer;
-          box-shadow: 0 4px 14px rgba(22, 93, 255, 0.28);
+          box-shadow: 0 6px 16px rgba(30, 58, 138, 0.25);
           transition: all 0.2s ease;
           -webkit-tap-highlight-color: transparent;
         }
-        .login-submit-btn:hover:not(:disabled) {
-          background: #0E4FE0;
-          box-shadow: 0 6px 18px rgba(22, 93, 255, 0.36);
-        }
-        .login-submit-btn:active:not(:disabled) {
-          transform: scale(0.98);
-        }
-        .login-submit-btn:disabled {
-          background: #A8B8D8;
-          box-shadow: none;
-          cursor: not-allowed;
-        }
+        .mp-primary-btn:hover { background: #172E6B; }
+        .mp-primary-btn:active { transform: scale(0.98); }
 
-        /* --- 协议勾选 --- */
-        .login-agree {
+        .mp-outline-btn {
+          width: 100%;
+          height: 52px;
           margin-top: 16px;
-        }
-        .login-agree .ant-checkbox-wrapper {
-          align-items: flex-start !important;
-        }
-        .login-agree .ant-checkbox-inner {
-          border-radius: 4px !important;
-          border-color: #D0D5DD !important;
-          background: #ffffff !important;
-        }
-        .login-agree .ant-checkbox-checked .ant-checkbox-inner {
-          background-color: #165DFF !important;
-          border-color: transparent !important;
-        }
-        .login-agree__text {
-          font-size: 12px;
-          color: #8a92a0;
-          line-height: 1.6;
-        }
-        .login-link {
-          color: #165DFF;
-          text-decoration: none;
+          border: 1px solid #E2E8F0;
+          border-radius: 12px;
+          background: #FFFFFF;
+          color: #475569;
+          font-size: 16px;
+          font-weight: 500;
           cursor: pointer;
+          transition: all 0.2s ease;
+          -webkit-tap-highlight-color: transparent;
         }
-
-
-        /* --- 版权 --- */
-        .login-copyright {
-          margin-top: 20px;
-          font-size: 11px;
-          color: #C4C9D1;
-          letter-spacing: 2px;
-          text-align: center;
-        }
-
-        /* --- 自动填充颜色修正 --- */
-        .login-input input {
-          color: #1a1d23 !important;
-          font-size: 15px !important;
-          -webkit-text-fill-color: #1a1d23 !important;
-        }
-        .login-input input::placeholder {
-          color: #B0B5BD !important;
-          -webkit-text-fill-color: #B0B5BD !important;
-        }
-        .login-input input:-webkit-autofill {
-          -webkit-box-shadow: 0 0 0 1000px #FAFBFC inset !important;
-          -webkit-text-fill-color: #1a1d23 !important;
-          caret-color: #1a1d23 !important;
-        }
+        .mp-outline-btn:hover:not(:disabled) { border-color: #1E3A8A; color: #1E3A8A; }
+        .mp-outline-btn:active:not(:disabled) { transform: scale(0.98); }
+        .mp-outline-btn:disabled { color: #CBD5E1; cursor: not-allowed; }
       `}</style>
     </div>
   )

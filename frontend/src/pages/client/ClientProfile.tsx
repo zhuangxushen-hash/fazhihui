@@ -1,8 +1,35 @@
 import { useState } from 'react'
 import { Modal, message } from 'antd'
-import { UserOutlined, PhoneOutlined, MailOutlined, LogoutOutlined, FileTextOutlined, BellOutlined, StarOutlined, ArrowRightOutlined } from '@ant-design/icons'
+import {
+  FolderOutlined,
+  MessageOutlined,
+  FileTextOutlined,
+  CreditCardOutlined,
+  QuestionCircleOutlined,
+  BellOutlined,
+  SettingOutlined,
+  InfoCircleOutlined,
+  RightOutlined,
+  LogoutOutlined,
+} from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../../components/BottomNav'
+
+/** 菜单组1 */
+const MENU_GROUP_1 = [
+  { label: '我的案件', icon: FolderOutlined, path: '/client/cases' },
+  { label: '我的咨询', icon: MessageOutlined, path: '/client/ai-consult' },
+  { label: '我的归档', icon: FileTextOutlined, path: '/client/archive' },
+  // { label: '我的支付', icon: CreditCardOutlined, path: '/client/payment' }, // 功能暂未上线，暂时隐藏
+]
+
+/** 菜单组2 */
+const MENU_GROUP_2 = [
+  { label: '消息通知', icon: BellOutlined, path: '/client/notifications' },
+  { label: '帮助中心', icon: QuestionCircleOutlined, path: '/client/help' },
+  { label: '设置', icon: SettingOutlined, path: '' },
+  { label: '关于我们', icon: InfoCircleOutlined, path: '' },
+]
 
 export default function ClientProfile() {
   const navigate = useNavigate()
@@ -16,128 +43,151 @@ export default function ClientProfile() {
     navigate('/client/login')
   }
 
-  const menuItems = [
-    { label: '我的案件', desc: '查看案件进度与详情', icon: FileTextOutlined, color: '#0071e3', tint: 'rgba(0, 113, 227, 0.1)', path: '/client/cases' },
-    { label: '投诉反馈', desc: '提交投诉与意见反馈', icon: BellOutlined, color: '#e5484d', tint: 'rgba(229, 72, 77, 0.1)', path: '/client/complaint' },
-    { label: '服务评价', desc: '对已结案案件进行评价', icon: StarOutlined, color: '#f0a020', tint: 'rgba(240, 160, 32, 0.12)', path: '/client/service-rating' },
-  ]
+  const handleMenuClick = (item: { label: string; path: string }) => {
+    if (item.path) {
+      navigate(item.path)
+    } else {
+      message.info(`${item.label} 功能开发中`)
+    }
+  }
 
-  const infoItems = [
-    { label: '手机号', value: user.phone || '未设置', icon: PhoneOutlined },
-    { label: '邮箱', value: user.email || '未设置', icon: MailOutlined },
-  ]
+  /** 渲染菜单分组 */
+  const renderMenuGroup = (items: typeof MENU_GROUP_1) => (
+    <div
+      style={{
+        borderRadius: 16,
+        background: '#FFFFFF',
+        padding: '8px 16px',
+        marginBottom: 16,
+      }}
+    >
+      {items.map((item, index) => {
+        const Icon = item.icon
+        return (
+          <div
+            key={item.label}
+            onClick={() => handleMenuClick(item)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              height: 52,
+              cursor: 'pointer',
+              borderTop: index === 0 ? 'none' : '1px solid #F1F5F9',
+            }}
+          >
+            <Icon style={{ fontSize: 20, color: '#1E3A8A' }} />
+            <span style={{ flex: 1, fontSize: 15, color: '#0F172A' }}>{item.label}</span>
+            <RightOutlined style={{ fontSize: 12, color: '#94A3B8' }} />
+          </div>
+        )
+      })}
+    </div>
+  )
 
   return (
     <div className="client-app">
-      {/* 顶部应用栏 */}
-      <header className="c-topbar">
-        <span className="c-topbar__title" style={{ paddingRight: 0 }}>个人中心</span>
-      </header>
-
-      <main className="c-container" style={{ maxWidth: 1024, margin: '0 auto', width: '100%' }}>
-        {/* 用户信息卡 */}
-        <section style={{ marginBottom: 16 }}>
+      <main
+        className="c-container--with-nav"
+        style={{ maxWidth: 480, margin: '0 auto', width: '100%', padding: '16px 16px 88px' }}
+      >
+        {/* ===== 用户信息卡 ===== */}
+        <section
+          style={{
+            borderRadius: 20,
+            padding: 24,
+            marginBottom: 16,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 16,
+            background: 'linear-gradient(135deg, #1B2F63 0%, #1E3A8A 60%, #2547A0 100%)',
+            boxShadow: '0 8px 24px rgba(30, 58, 138, 0.25)',
+          }}
+        >
           <div
-            className="c-card"
             style={{
-              padding: 20,
-              background: 'linear-gradient(135deg, #1a2e4f, #131c2a)',
-              border: 'none',
-              position: 'relative',
-              overflow: 'hidden',
+              width: 64,
+              height: 64,
+              borderRadius: 32,
+              background: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 24,
+              fontWeight: 500,
+              color: '#1E3A8A',
+              flexShrink: 0,
             }}
           >
-            <div
+            {(user.real_name || '客').slice(0, 1)}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 18, fontWeight: 600, color: '#FFFFFF' }}>
+              {user.real_name || '客户'}
+            </div>
+            <div style={{ fontSize: 13, color: '#C7D2E8', marginTop: 4 }}>
+              {user.phone
+                ? `${user.phone.slice(0, 3)}****${user.phone.slice(-4)}`
+                : '未绑定手机号'}
+            </div>
+            <span
               style={{
-                position: 'absolute',
-                right: -40,
-                top: -40,
-                width: 160,
-                height: 160,
-                borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(0, 113, 227, 0.35), transparent 65%)',
+                display: 'inline-block',
+                marginTop: 6,
+                padding: '3px 10px',
+                borderRadius: 99,
+                fontSize: 11,
+                fontWeight: 500,
+                background: '#FEF3C7',
+                color: '#B45309',
               }}
-            />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, position: 'relative' }}>
-              <div
-                style={{
-                  width: 62,
-                  height: 62,
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #0071e3, #0059b5)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  fontSize: 30,
-                  flexShrink: 0,
-                }}
-              >
-                <UserOutlined />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 21, fontWeight: 700, color: '#ffffff' }}>{user.real_name || '客户'}</div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 4 }}>法智汇电子签约用户</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 联系方式 */}
-        <section style={{ marginBottom: 16 }}>
-          <div className="c-card">
-            {infoItems.map((item) => (
-              <div
-                key={item.label}
-                className="c-cell"
-                style={{ cursor: 'default' }}
-              >
-                <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(0,113,227,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <item.icon style={{ fontSize: 18, color: '#0071e3' }} />
-                </div>
-                <div className="c-cell__body">
-                  <div style={{ fontSize: 12, color: 'var(--cm-text-muted)' }}>{item.label}</div>
-                  <div style={{ fontSize: 15, color: 'var(--cm-text-strong)', fontWeight: 500, marginTop: 2 }}>{item.value}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 快捷入口 */}
-        <section style={{ marginBottom: 16 }}>
-          <div className="c-card">
-            {menuItems.map((item) => {
-              const Icon = item.icon
-              return (
-                <div key={item.label} className="c-cell" onClick={() => navigate(item.path)}>
-                  <div style={{ width: 40, height: 40, borderRadius: 12, background: item.tint, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Icon style={{ fontSize: 20, color: item.color }} />
-                  </div>
-                  <div className="c-cell__body">
-                    <div className="c-cell__title">{item.label}</div>
-                    <div className="c-cell__desc">{item.desc}</div>
-                  </div>
-                  <ArrowRightOutlined className="c-cell__arrow" />
-                </div>
-              )
-            })}
-          </div>
-        </section>
-
-        {/* 退出登录 */}
-        <section>
-          <div className="c-card">
-            <div
-              className="c-cell"
-              style={{ justifyContent: 'center' }}
-              onClick={() => setLogoutModalVisible(true)}
             >
-              <LogoutOutlined style={{ fontSize: 20, color: '#e5484d' }} />
-              <span style={{ fontSize: 16, color: '#e5484d', fontWeight: 600, marginLeft: 8 }}>退出登录</span>
-            </div>
+              普通会员
+            </span>
           </div>
         </section>
+
+        {/* ===== 菜单组1 ===== */}
+        {renderMenuGroup(MENU_GROUP_1)}
+
+        {/* ===== 菜单组2 ===== */}
+        {renderMenuGroup(MENU_GROUP_2)}
+
+        {/* ===== 联系客服 ===== */}
+        <div
+          onClick={() => navigate('/client/ai-consult')}
+          style={{
+            height: 48,
+            borderRadius: 12,
+            background: '#1E3A8A',
+            color: '#FFFFFF',
+            fontSize: 15,
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            boxShadow: '0 6px 16px rgba(30, 58, 138, 0.25)',
+          }}
+        >
+          联系客服
+        </div>
+
+        {/* ===== 退出登录 ===== */}
+        <div
+          onClick={() => setLogoutModalVisible(true)}
+          style={{
+            marginTop: 16,
+            textAlign: 'center',
+            fontSize: 14,
+            color: '#DC2626',
+            cursor: 'pointer',
+            padding: '12px 0',
+          }}
+        >
+          <LogoutOutlined style={{ marginRight: 6 }} />
+          退出登录
+        </div>
       </main>
 
       {/* 退出确认弹窗 */}

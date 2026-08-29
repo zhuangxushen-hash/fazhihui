@@ -1,10 +1,38 @@
 import { useState, useEffect } from 'react'
-import { List, Avatar, Spin } from 'antd'
-import { FileTextOutlined, BellOutlined, UserOutlined, ArrowRightOutlined, MessageOutlined, AppstoreOutlined, SafetyCertificateOutlined } from '@ant-design/icons'
+import { Spin, Empty } from 'antd'
+import {
+  BellOutlined,
+  MessageOutlined,
+  FolderOutlined,
+  AppstoreOutlined,
+  InboxOutlined,
+  FileTextOutlined,
+  SendOutlined,
+} from '@ant-design/icons'
 import axios from '../../api/axios'
 import { caseTypeLabel } from '../../utils/format'
 import { useNavigate } from 'react-router-dom'
 import BottomNav from '../../components/BottomNav'
+import { CASE_STATUS_LABELS, CASE_STATUS_PROGRESS, TONE_COLORS, caseStatusTone } from './shared'
+
+/** 案件状态文案 / 进度 / 配色统一取自 shared，与案件列表页保持一致 */
+const statusLabels = CASE_STATUS_LABELS
+const statusProgress = CASE_STATUS_PROGRESS
+const statusPill = TONE_COLORS
+
+/** 快捷入口（4 宫格） */
+const QUICK_ENTRIES = [
+  { title: '在线咨询', icon: MessageOutlined, path: '/client/ai-consult' },
+  { title: '案件查询', icon: FolderOutlined, path: '/client/cases' },
+  { title: '服务大厅', icon: AppstoreOutlined, path: '/client/service-hall' },
+  { title: '我的归档', icon: InboxOutlined, path: '/client/archive' },
+]
+
+/** 推荐服务 */
+const RECOMMEND_SERVICES = [
+  { name: '合同审查', desc: '48小时出具审查意见', price: '¥599 起', path: '/client/service-hall' },
+  { name: '文书代写', desc: '起诉状/答辩状专业代写', price: '¥899 起', path: '/client/service-hall' },
+]
 
 export default function ClientHome() {
   const [cases, setCases] = useState<any[]>([])
@@ -30,195 +58,299 @@ export default function ClientHome() {
     }
   }
 
-  const statusLabels: Record<string, string> = {
-    pending_assign: '待分配',
-    processing: '处理中',
-    filing: '立案阶段',
-    evidence: '举证阶段',
-    hearing: '开庭阶段',
-    appeal: '上诉阶段',
-    pending_close: '待结案',
-    closed: '已结案',
-  }
-
-  // 状态胶囊 class 映射
-  const statusPill: Record<string, string> = {
-    pending_assign: 'c-pill--warning',
-    processing: 'c-pill--primary',
-    filing: 'c-pill--primary',
-    evidence: 'c-pill--primary',
-    hearing: 'c-pill--warning',
-    appeal: 'c-pill--warning',
-    pending_close: 'c-pill--warning',
-    closed: 'c-pill--success',
-  }
-
-  const quickActions = [
-    {
-      title: '在线咨询',
-      desc: 'AI法律助手随时解答',
-      icon: MessageOutlined,
-      path: '/client/ai-consult',
-      tint: 'rgba(0, 113, 227, 0.1)',
-      color: '#0071e3',
-    },
-    {
-      title: '服务大厅',
-      desc: '发票/证据/材料一站式办理',
-      icon: AppstoreOutlined,
-      path: '/client/service-hall',
-      tint: 'rgba(240, 160, 32, 0.12)',
-      color: '#b9730d',
-    },
-    {
-      title: '投诉反馈',
-      desc: '24小时快速响应',
-      icon: BellOutlined,
-      path: '/client/complaint',
-      tint: 'rgba(229, 72, 77, 0.1)',
-      color: '#e5484d',
-    },
-    {
-      title: '服务评价',
-      desc: '对已结案案件进行评价',
-      icon: SafetyCertificateOutlined,
-      path: '/client/service-rating',
-      tint: 'rgba(46, 158, 91, 0.1)',
-      color: '#2e9e5b',
-    },
-  ]
-
-  const stats = [
-    { label: '我的案件', value: cases.length, path: '/client/cases' },
-    { label: '处理中', value: cases.filter(c => c.status === 'processing').length, path: '/client/cases' },
-    { label: '已结案', value: cases.filter(c => c.status === 'closed').length, path: '/client/cases' },
-  ]
-
   return (
     <div className="client-app">
-      {/* 顶部应用栏 */}
-      <header className="c-topbar" style={{ justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingLeft: 8 }}>
-          <Avatar
-            icon={<UserOutlined />}
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #0059b5, #0071e3)',
-              color: '#fff',
-            }}
-          />
-          <span style={{ fontSize: 19, fontWeight: 700, color: '#1a1d23', letterSpacing: '0.02em' }}>法智汇</span>
+      {/* ===== 页头：问候 + 消息 ===== */}
+      <header
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '8px 24px',
+          background: '#F6F7F9',
+        }}
+      >
+        <div>
+          <div style={{ fontSize: 17, fontWeight: 600, color: '#0F172A' }}>
+            您好，{user.real_name || '客户'}
+          </div>
+          <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>欢迎使用法智汇</div>
         </div>
-        <button
-          className="c-topbar__action"
-          aria-label="通知"
-          onClick={() => undefined}
+        <div
+          onClick={() => navigate('/client/notifications')}
+          style={{
+            position: 'relative',
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            background: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}
         >
-          <BellOutlined style={{ fontSize: 22, color: '#1a1d23' }} />
-        </button>
+          <BellOutlined style={{ fontSize: 18, color: '#475569' }} />
+          {cases.length > 0 && (
+            <span
+              style={{
+                position: 'absolute',
+                top: 9,
+                right: 10,
+                width: 6,
+                height: 6,
+                borderRadius: 3,
+                background: '#DC2626',
+              }}
+            />
+          )}
+        </div>
       </header>
 
-      <main className="c-container" style={{ maxWidth: 1024, margin: '0 auto', width: '100%' }}>
-        {/* 问候区 */}
+      <main
+        className="c-container--with-nav"
+        style={{ maxWidth: 480, margin: '0 auto', width: '100%', padding: '8px 16px 88px' }}
+      >
+        {/* ===== AI 智能咨询卡 ===== */}
+        <section
+          onClick={() => navigate('/client/ai-consult')}
+          style={{
+            borderRadius: 16,
+            padding: 20,
+            marginBottom: 16,
+            background: 'linear-gradient(135deg, #1B2F63 0%, #1E3A8A 55%, #2547A0 100%)',
+            boxShadow: '0 8px 24px rgba(30, 58, 138, 0.3)',
+            cursor: 'pointer',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: 18, fontWeight: 600, color: '#FFFFFF' }}>AI 智能法律咨询</div>
+            <svg width="28" height="28" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <polygon points="100,46 148,73 148,127 100,154 52,127 52,73" stroke="#F5B84C" strokeWidth="10" strokeLinejoin="round" />
+              <circle cx="100" cy="100" r="14" fill="#F5B84C" />
+            </svg>
+          </div>
+          <div style={{ fontSize: 12, color: '#C7D2E8', marginTop: 6 }}>
+            7×24 小时响应 · 覆盖 200+ 法律场景 · 支持上传合同/图片
+          </div>
+          {/* 输入条（占位展示） */}
+          <div
+            style={{
+              marginTop: 12,
+              height: 44,
+              borderRadius: 22,
+              background: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0 8px 0 16px',
+            }}
+          >
+            <span style={{ fontSize: 12, color: '#94A3B8' }}>描述您的法律问题，例如：公司拖欠工资怎么办？</span>
+            <div
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 15,
+                background: '#D97706',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <SendOutlined style={{ fontSize: 14, color: '#FFFFFF' }} />
+            </div>
+          </div>
+        </section>
+
+        {/* ===== 快捷入口 ===== */}
         <section style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 22, fontWeight: 700, color: '#1a1d23' }}>您好，{user.real_name || '客户'}</div>
-          <div style={{ fontSize: 13, color: 'var(--cm-text-muted)', marginTop: 4 }}>
-            今天有 {cases.length} 条案件动态需要您关注
-          </div>
-        </section>
-
-        {/* 数据统计 */}
-        <section style={{ marginBottom: 24 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-            {stats.map((stat, idx) => (
-              <div
-                key={idx}
-                className="c-card"
-                style={{ textAlign: 'center', padding: '16px 8px', cursor: 'pointer' }}
-                onClick={() => navigate(stat.path)}
-              >
-                <div style={{ fontSize: 24, fontWeight: 700, color: '#0071e3', fontVariantNumeric: 'tabular-nums' }}>{stat.value}</div>
-                <div style={{ fontSize: 12, color: 'var(--cm-text-muted)', marginTop: 4 }}>{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 快捷操作 */}
-        <section style={{ marginBottom: 24 }}>
-          <div className="c-section-title">
-            <span>快捷操作</span>
-            <span className="c-section-title__more">点击办理相关服务</span>
-          </div>
-          <div className="c-card">
-            {quickActions.map((action, index) => {
-              const Icon = action.icon
+          <div
+            style={{
+              borderRadius: 16,
+              background: '#FFFFFF',
+              padding: '16px 0',
+              display: 'flex',
+              boxShadow: '0 4px 16px rgba(15, 23, 42, 0.05)',
+            }}
+          >
+            {QUICK_ENTRIES.map(entry => {
+              const Icon = entry.icon
               return (
                 <div
-                  key={index}
-                  className="c-cell"
-                  onClick={() => navigate(action.path)}
+                  key={entry.title}
+                  onClick={() => navigate(entry.path)}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 8,
+                    cursor: 'pointer',
+                  }}
                 >
-                  <div style={{ width: 46, height: 46, borderRadius: 14, background: action.tint, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Icon style={{ fontSize: 22, color: action.color }} />
+                  <div
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 22,
+                      background: '#EEF2FB',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Icon style={{ fontSize: 20, color: '#1E3A8A' }} />
                   </div>
-                  <div className="c-cell__body">
-                    <div className="c-cell__title">{action.title}</div>
-                    <div className="c-cell__desc">{action.desc}</div>
-                  </div>
-                  <ArrowRightOutlined className="c-cell__arrow" />
+                  <span style={{ fontSize: 12, fontWeight: 500, color: '#475569' }}>{entry.title}</span>
                 </div>
               )
             })}
           </div>
         </section>
 
-        {/* 我的活跃案件 */}
-        <section>
-          <div className="c-section-title">
-            <span>我的活跃案件</span>
-          </div>
-          <div className="c-card">
+        {/* ===== 我的案件 ===== */}
+        <section style={{ marginBottom: 16 }}>
+          <div
+            style={{
+              borderRadius: 16,
+              background: '#FFFFFF',
+              padding: 16,
+              boxShadow: '0 4px 16px rgba(15, 23, 42, 0.05)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <span style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>我的案件</span>
+              <span
+                onClick={() => navigate('/client/cases')}
+                style={{ fontSize: 12, color: '#1E3A8A', cursor: 'pointer' }}
+              >
+                查看全部 ›
+              </span>
+            </div>
+
             {loading ? (
               <div className="c-loading"><Spin /></div>
             ) : cases.length === 0 ? (
-              <div className="c-empty">
-                <FileTextOutlined className="c-empty__icon" />
-                <div className="c-empty__title">暂无案件</div>
-                <div className="c-empty__desc">您可以通过签约付款创建新案件</div>
-              </div>
-            ) : (
-              <List
-                dataSource={cases}
-                split={false}
-                renderItem={(item, index) => {
-                  return (
-                    <List.Item
-                      className="c-cell"
-                      style={{ borderTop: index === 0 ? 'none' : '1px solid var(--cm-border)' }}
-                      onClick={() => navigate(`/client/case/${item.id}`)}
-                    >
-                      <div style={{ width: 42, height: 42, borderRadius: 12, background: 'rgba(0,113,227,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <FileTextOutlined style={{ fontSize: 18, color: '#0071e3' }} />
-                      </div>
-                      <div className="c-cell__body">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                          <span className="c-cell__title" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>案件编号: {item.case_no}</span>
-                          <span className={`c-pill ${statusPill[item.status] || 'c-pill--primary'}`} style={{ flexShrink: 0 }}>{statusLabels[item.status] || item.status}</span>
-                        </div>
-                        <div style={{ fontSize: 12, color: 'var(--cm-text)', marginTop: 3 }}>案由：{caseTypeLabel(item.case_type)}</div>
-                        <div style={{ fontSize: 11, color: 'var(--cm-text-muted)', marginTop: 2 }}>创建时间：{item.created_at}</div>
-                      </div>
-                      <ArrowRightOutlined className="c-cell__arrow" />
-                    </List.Item>
-                  )
-                }}
+              <Empty
+                image={<FileTextOutlined style={{ fontSize: 32, color: '#CBD5E1' }} />}
+                description={<span style={{ fontSize: 12, color: '#94A3B8' }}>暂无案件</span>}
               />
+            ) : (
+              cases.slice(0, 2).map(item => {
+                const pill = statusPill[caseStatusTone(item.status)] || statusPill.primary
+                const progress = statusProgress[item.status] ?? 30
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => navigate(`/client/case/${item.id}`)}
+                    style={{ cursor: 'pointer', paddingTop: 10, borderTop: '1px solid #F1F5F9' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                        <div
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 14,
+                            background: '#EEF2FB',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <FileTextOutlined style={{ fontSize: 14, color: '#1E3A8A' }} />
+                        </div>
+                        <span
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 500,
+                            color: '#0F172A',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {caseTypeLabel(item.case_type)}案
+                        </span>
+                      </div>
+                      <span
+                        style={{
+                          flexShrink: 0,
+                          padding: '3px 10px',
+                          borderRadius: 99,
+                          fontSize: 11,
+                          fontWeight: 500,
+                          background: pill.bg,
+                          color: pill.color,
+                        }}
+                      >
+                        {statusLabels[item.status] || item.status}
+                      </span>
+                    </div>
+
+                    {/* 进度条 */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                      <div style={{ flex: 1, height: 6, borderRadius: 3, background: '#E2E8F0' }}>
+                        <div
+                          style={{
+                            width: `${progress}%`,
+                            height: 6,
+                            borderRadius: 3,
+                            background: item.status === 'closed' ? '#059669' : '#D97706',
+                          }}
+                        />
+                      </div>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: item.status === 'closed' ? '#059669' : '#B45309',
+                        }}
+                      >
+                        {progress}%
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 8 }}>
+                      案号：{item.case_no || item.id?.slice(0, 8)}
+                    </div>
+                  </div>
+                )
+              })
             )}
           </div>
         </section>
+
+        {/* ===== 推荐服务（功能暂未上线，暂时隐藏） ===== */}
+        {/*
+        <section>
+          <div style={{ fontSize: 15, fontWeight: 600, color: '#0F172A', marginBottom: 10 }}>推荐服务</div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            {RECOMMEND_SERVICES.map(service => (
+              <div
+                key={service.name}
+                onClick={() => navigate(service.path)}
+                style={{
+                  flex: 1,
+                  borderRadius: 16,
+                  background: '#FFFFFF',
+                  padding: 14,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 16px rgba(15, 23, 42, 0.05)',
+                }}
+              >
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#0F172A' }}>{service.name}</div>
+                <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 4 }}>{service.desc}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#B45309', marginTop: 6 }}>{service.price}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+        */}
       </main>
 
       <BottomNav />

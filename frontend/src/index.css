@@ -1472,20 +1472,27 @@ a:hover {
 }
 
 /* === C端 移动端设计令牌（覆盖在 :root 之后，仅供 C端） === */
+/* 对齐「法智汇 C端 · 设计规范 V1.0」：藏蓝 × 金，小程序基准 375px */
 .client-app {
-  --cm-bg: #f4f5f7;
+  --cm-bg: #f6f7f9;
   --cm-card: #ffffff;
-  --cm-border: #eef0f3;
-  --cm-primary: #0071e3;
-  --cm-primary-strong: #0059b5;
-  --cm-text-strong: #1a1d23;
-  --cm-text: #4a5361;
-  --cm-text-muted: #8a92a0;
-  --cm-success: #2e9e5b;
-  --cm-warning: #f0a020;
-  --cm-danger: #e5484d;
+  --cm-border: #e8ebf0;
+  --cm-primary: #1e3a8a;
+  --cm-primary-strong: #172e6b;
+  --cm-primary-soft: #eef2fb;
+  --cm-gold: #d97706;
+  --cm-gold-strong: #b45309;
+  --cm-gold-soft: #fef3c7;
+  --cm-text-strong: #0f172a;
+  --cm-text: #475569;
+  --cm-text-muted: #94a3b8;
+  --cm-success: #059669;
+  --cm-success-soft: #e7f6ef;
+  --cm-warning: #d97706;
+  --cm-danger: #dc2626;
+  --cm-danger-soft: #fde8e8;
   --cm-radius: 16px;
-  --cm-gap: 12px;
+  --cm-gap: 16px;
 }
 
 /* === 顶部应用栏（C端） === */
@@ -1791,7 +1798,7 @@ a:hover {
   font-weight: 600;
 }
 
-/* === 底部导航（C端，安全区适配） === */
+/* === 底部导航（小程序原生 TabBar 样式：白底 + 顶部分隔线，50px + 34px 安全区） === */
 .client-bottom-nav {
   position: fixed;
   left: 0;
@@ -1800,19 +1807,16 @@ a:hover {
   z-index: 100;
   background: var(--cm-card);
   border-top: 1px solid var(--cm-border);
-  border-top-left-radius: 18px;
-  border-top-right-radius: 18px;
-  box-shadow: 0 -2px 16px rgba(17, 24, 39, 0.06);
   display: flex;
   justify-content: space-around;
   align-items: center;
-  height: calc(64px + env(safe-area-inset-bottom));
+  height: calc(50px + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   touch-action: pan-y;
 }
 .client-nav-item {
   flex: 1;
-  min-height: 56px;
+  min-height: 50px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1822,8 +1826,8 @@ a:hover {
   -webkit-tap-highlight-color: transparent;
   position: relative;
 }
-.client-nav-item__icon { font-size: 22px; line-height: 1; }
-.client-nav-item__label { font-size: 11px; font-weight: 500; }
+.client-nav-item__icon { font-size: 24px; line-height: 1; }
+.client-nav-item__label { font-size: 10px; font-weight: 500; }
 .client-nav-item--active .client-nav-item__icon { color: var(--cm-primary); }
 .client-nav-item--active .client-nav-item__label { color: var(--cm-primary); font-weight: 600; }
 .client-nav-item:not(.client-nav-item--active) .client-nav-item__icon,
@@ -1860,3 +1864,74 @@ a:hover {
   color: #1a1c1d !important;
 }
 
+
+/* ==========================================================================
+   C 端（小程序）通用表单控件 —— 对齐设计稿输入框规范
+   规范：高 44，圆角 12，#F6F7F9 底，1px #E2E8F0 描边，占位 #94A3B8，14pt
+   ========================================================================== */
+.mp-field-input.ant-input,
+.mp-field-input.ant-input-affix-wrapper {
+  background: #F6F7F9 !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  font-size: 14px !important;
+  padding: 0 12px !important;
+}
+/* Input.Password / 带前后缀的输入框：内层 input 不额外描边 */
+.mp-field-input.ant-input-affix-wrapper > .ant-input {
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.mp-field-input.ant-input::placeholder,
+.mp-field-input.ant-input-affix-wrapper input::placeholder {
+  color: #94A3B8 !important;
+}
+.mp-field-input.ant-input:hover,
+.mp-field-input.ant-input:focus,
+.mp-field-input.ant-input-affix-wrapper:hover,
+.mp-field-input.ant-input-affix-wrapper-focused {
+  border-color: #1E3A8A !important;
+  box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.08) !important;
+}
+
+/* 文本域 */
+.mp-field-textarea {
+  background: #F6F7F9 !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  font-size: 14px !important;
+  padding: 12px !important;
+  resize: none;
+}
+.mp-field-textarea::placeholder {
+  color: #94A3B8 !important;
+}
+.mp-field-textarea:hover,
+.mp-field-textarea:focus {
+  border-color: #1E3A8A !important;
+  box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.08) !important;
+}
+
+/* 下单选/复选组（antd Radio.Group 按钮态）统一为浅蓝底 + 藏蓝字 */
+.mp-seg .ant-radio-button-wrapper {
+  border: none !important;
+  background: #EEF2FB !important;
+  color: #1E3A8A !important;
+  font-size: 12px !important;
+  padding: 0 12px !important;
+  height: 30px !important;
+  line-height: 30px !important;
+  border-radius: 99px !important;
+}
+.mp-seg .ant-radio-button-wrapper::before {
+  display: none !important;
+}
+.mp-seg .ant-radio-button-wrapper-checked {
+  background: #1E3A8A !important;
+  color: #FFFFFF !important;
+}
