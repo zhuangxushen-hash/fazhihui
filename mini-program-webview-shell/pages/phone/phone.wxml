@@ -1,0 +1,21 @@
+<view class="container">
+  <view class="brand">
+    <view class="brand-name">法智汇</view>
+    <view class="slogan">专业法律服务，触手可及</view>
+  </view>
+
+  <view class="card">
+    <view class="title">微信手机号快捷登录</view>
+    <view class="desc">使用微信绑定的手机号快捷登录，用于建立您的客户档案与接收服务通知。我们仅会在您授权后获取手机号，并按《隐私保护指引》使用，不会用于其他用途。</view>
+
+    <button
+      class="btn-primary"
+      open-type="getPhoneNumber"
+      bindgetphonenumber="onGetPhoneNumber"
+      loading="{{submitting}}"
+      disabled="{{submitting}}"
+    >授权手机号并登录</button>
+
+    <view class="skip" bindtap="onSkip">暂不授权，直接进入 ›</view>
+  </view>
+</view>

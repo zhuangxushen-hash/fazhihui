@@ -1,0 +1,4 @@
+/* app.wxss 全局样式（留空即可，web-view 占满全屏） */
+page {
+  height: 100%;
+}
