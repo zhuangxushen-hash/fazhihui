@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { UserService } from '../user/user.service';
 import { User } from '../user/user.entity';
+import { Organization } from '../user/organization.entity';
 import { ClientProfile } from '../client/client-profile.entity';
 import { UserRole } from '../types';
 
@@ -21,6 +22,9 @@ export class AuthService {
     // C 端客户档案仓库：C 端账号以客户档案为准（与管理端账号切分）
     @InjectRepository(ClientProfile)
     private clientProfileRepository: Repository<ClientProfile>,
+    // 组织仓库：微信授权自动建客户档案时需要归属组织
+    @InjectRepository(Organization)
+    private orgRepository: Repository<Organization>,
   ) {}
 
   async validateUser(phone: string, password: string): Promise<User> {
@@ -116,7 +120,9 @@ export class AuthService {
    * 微信小程序手机号快捷登录（web-view 壳）：
    * 1. loginCode → auth.code2Session → openid（用户身份）；
    * 2. phoneCode → auth.getPhoneNumber → 手机号；
-   * 3. 按手机号匹配 C 端身份（与 clientLogin 同一套账号体系）并签发 JWT。
+   * 3. 按手机号匹配 C 端身份（与 clientLogin 同一套账号体系）并签发 JWT；
+   *    若手机号在 users(client) 与客户档案中均无匹配，则自动创建一条
+   *    source=「微信小程序」的客户档案（客户增加的一种来源方式），使其成为 C 端客户。
    * phoneCode / loginCode 均为 5 分钟内有效的一次性凭证。
    */
   async wxPhoneLogin(phoneCode: string, loginCode: string) {
@@ -186,9 +192,20 @@ export class AuthService {
         },
       };
     }
-    const profile = await this.clientProfileRepository.findOne({ where: { phone } });
+    let profile = await this.clientProfileRepository.findOne({ where: { phone } });
     if (!profile) {
-      throw new UnauthorizedException('该手机号未开通 C 端账号，请联系客户管理员录入客户信息');
+      // 微信授权即注册：自动生成一条「微信小程序」来源的客户档案，
+      // 使其成为 C 端客户（客户增加的一种来源方式），并可直接作为 C 端身份登录。
+      const organizationId = await this.resolveDefaultOrganizationId();
+      profile = this.clientProfileRepository.create({
+        name: `微信用户${phone.slice(-4)}`,
+        phone,
+        type: 'individual',
+        source: '微信小程序',
+        contact_name: phone,
+        organization_id: organizationId,
+      });
+      profile = await this.clientProfileRepository.save(profile);
     }
     const payload = { sub: profile.id, phone: profile.phone, role: UserRole.CLIENT };
     return {
@@ -202,6 +219,19 @@ export class AuthService {
         wx_openid: openid,
       },
     };
+  }
+
+  /**
+   * 解析微信授权自动建客户档案时的默认归属组织：
+   * 优先取种子创建的「法智汇律所」，否则取库中第一个组织；
+   * 两者皆无则明确报错，避免写出 organization_id 为空的脏数据。
+   */
+  private async resolveDefaultOrganizationId(): Promise<string> {
+    const named = await this.orgRepository.findOne({ where: { name: '法智汇律所' } });
+    if (named) return named.id;
+    const first = await this.orgRepository.find({ take: 1 });
+    if (first && first.length) return first[0].id;
+    throw new UnauthorizedException('系统未配置默认组织，无法创建客户档案，请联系管理员');
   }
 
   /**
