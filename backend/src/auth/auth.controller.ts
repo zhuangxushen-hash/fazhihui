@@ -47,4 +47,23 @@ export class AuthController {
   async verify(@Body() body: { token: string }) {
     return this.authService.verifyToken(body.token);
   }
+
+  // 微信小程序手机号快捷登录（web-view 壳）：phoneCode+loginCode 换 C 端 token
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @Post('wx-phone-login')
+  async wxPhoneLogin(
+    @Body() body: { phoneCode: string; loginCode: string },
+    @Req() req: Request,
+  ) {
+    const result = await this.authService.wxPhoneLogin(body.phoneCode, body.loginCode);
+    // 记录登录审计日志（不落敏感字段，仅记手机号）
+    await this.auditService.logAction({
+      user_id: result.user?.id,
+      user_name: result.user?.real_name,
+      action: 'wx-phone-login',
+      ip: req?.ip || (req?.connection as any)?.remoteAddress,
+      detail: JSON.stringify({ phone: result.user?.phone }),
+    });
+    return result;
+  }
 }
