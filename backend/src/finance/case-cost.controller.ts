@@ -15,7 +15,7 @@ import { UserRole } from '../types';
 
 @Controller('finance/case-costs')
 @UseGuards(JwtAuthGuard)
-@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.FINANCE)
+@Roles(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.FINANCE, UserRole.LAWYER, UserRole.ASSISTANT)
 export class CaseCostController {
   constructor(private caseCostService: CaseCostService) {}
 

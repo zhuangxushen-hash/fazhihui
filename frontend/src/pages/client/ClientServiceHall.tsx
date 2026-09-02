@@ -1,19 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { Modal, Select, Input, message, Empty, Spin } from 'antd'
 import {
-  ArrowLeftOutlined,
   FilePdfOutlined,
   UploadOutlined,
   BellOutlined,
   SafetyCertificateOutlined,
   DownloadOutlined,
-  CloudOutlined,
   MessageOutlined,
   FileSearchOutlined,
   EditOutlined,
   SolutionOutlined,
-  FileTextOutlined,
-  RightOutlined,
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import axios from '../../api/axios'
@@ -21,8 +17,8 @@ import { formatDateTime, formatFileSize, caseTypeLabel } from '../../utils/forma
 import BottomNav from '../../components/BottomNav'
 import ClientButton from '../../components/ClientButton'
 
-/** 法律服务列表（对齐需求文档 12.9.1 服务大厅 · 服务列表） */
-const SERVICE_LIST = [
+/** 法律服务列表（对齐需求文档 12.9.1 服务大厅 · 服务列表；卡片区块暂隐藏，保留数据待上线启用） */
+export const SERVICE_LIST = [
   {
     key: 'online-consult',
     name: '在线咨询',
@@ -101,10 +97,10 @@ export default function ClientServiceHall() {
     }
   }
 
-  /** 点击服务项：携带服务名进入 AI 咨询 */
-  const handlePickService = (service: typeof SERVICE_LIST[number]) => {
-    navigate('/client/ai-consult', { state: { service: service.name } })
-  }
+  /** 点击服务项：携带服务名进入 AI 咨询（服务卡片上线跳转后启用） */
+  // const handlePickService = (service: typeof SERVICE_LIST[number]) => {
+  //   navigate('/client/ai-consult', { state: { service: service.name } })
+  // }
 
   // 快捷办理入口（保留原有办理能力）
   const quickEntries = [
@@ -139,14 +135,6 @@ export default function ClientServiceHall() {
       bg: '#ede9fe',
       color: '#7c3aed',
       action: () => navigate('/client/service-rating'),
-    },
-    {
-      title: '云归档',
-      desc: '归档管理案件相关文件',
-      icon: CloudOutlined,
-      bg: '#e0f2fe',
-      color: '#0284c7',
-      action: () => navigate('/client/archive'),
     },
   ]
 
@@ -235,9 +223,8 @@ export default function ClientServiceHall() {
     <div className="client-app">
       {/* 顶部应用栏（小程序导航样式） */}
       <header className="c-topbar">
-        <button className="c-topbar__back" onClick={() => navigate('/client')}>
-          <ArrowLeftOutlined />
-        </button>
+        {/* 返回按钮：功能暂未上线，暂时隐藏，保留占位以维持标题居中 */}
+        <div style={{ width: 44 }} />
         <span className="c-topbar__title">线上服务大厅</span>
         <div style={{ width: 44 }} />
       </header>

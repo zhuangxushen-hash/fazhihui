@@ -2,12 +2,9 @@ import { useState, useEffect } from 'react'
 import { Spin, Empty } from 'antd'
 import {
   BellOutlined,
-  MessageOutlined,
   FolderOutlined,
   AppstoreOutlined,
-  InboxOutlined,
   FileTextOutlined,
-  SendOutlined,
 } from '@ant-design/icons'
 import axios from '../../api/axios'
 import { caseTypeLabel } from '../../utils/format'
@@ -20,19 +17,17 @@ const statusLabels = CASE_STATUS_LABELS
 const statusProgress = CASE_STATUS_PROGRESS
 const statusPill = TONE_COLORS
 
-/** 快捷入口（4 宫格） */
+/** 快捷入口（2 宫格） */
 const QUICK_ENTRIES = [
-  { title: '在线咨询', icon: MessageOutlined, path: '/client/ai-consult' },
   { title: '案件查询', icon: FolderOutlined, path: '/client/cases' },
   { title: '服务大厅', icon: AppstoreOutlined, path: '/client/service-hall' },
-  { title: '我的归档', icon: InboxOutlined, path: '/client/archive' },
 ]
 
-/** 推荐服务 */
-const RECOMMEND_SERVICES = [
-  { name: '合同审查', desc: '48小时出具审查意见', price: '¥599 起', path: '/client/service-hall' },
-  { name: '文书代写', desc: '起诉状/答辩状专业代写', price: '¥899 起', path: '/client/service-hall' },
-]
+/** 推荐服务（预留：服务大厅上线后展示） */
+// const RECOMMEND_SERVICES = [
+//   { name: '合同审查', desc: '48小时出具审查意见', price: '¥599 起', path: '/client/service-hall' },
+//   { name: '文书代写', desc: '起诉状/答辩状专业代写', price: '¥899 起', path: '/client/service-hall' },
+// ]
 
 export default function ClientHome() {
   const [cases, setCases] = useState<any[]>([])
@@ -112,59 +107,6 @@ export default function ClientHome() {
         className="c-container--with-nav"
         style={{ maxWidth: 480, margin: '0 auto', width: '100%', padding: '8px 16px 88px' }}
       >
-        {/* ===== AI 智能咨询卡 ===== */}
-        <section
-          onClick={() => navigate('/client/ai-consult')}
-          style={{
-            borderRadius: 16,
-            padding: 20,
-            marginBottom: 16,
-            background: 'linear-gradient(135deg, #1B2F63 0%, #1E3A8A 55%, #2547A0 100%)',
-            boxShadow: '0 8px 24px rgba(30, 58, 138, 0.3)',
-            cursor: 'pointer',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: 18, fontWeight: 600, color: '#FFFFFF' }}>AI 智能法律咨询</div>
-            <svg width="28" height="28" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <polygon points="100,46 148,73 148,127 100,154 52,127 52,73" stroke="#F5B84C" strokeWidth="10" strokeLinejoin="round" />
-              <circle cx="100" cy="100" r="14" fill="#F5B84C" />
-            </svg>
-          </div>
-          <div style={{ fontSize: 12, color: '#C7D2E8', marginTop: 6 }}>
-            7×24 小时响应 · 覆盖 200+ 法律场景 · 支持上传合同/图片
-          </div>
-          {/* 输入条（占位展示） */}
-          <div
-            style={{
-              marginTop: 12,
-              height: 44,
-              borderRadius: 22,
-              background: '#FFFFFF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '0 8px 0 16px',
-            }}
-          >
-            <span style={{ fontSize: 12, color: '#94A3B8' }}>描述您的法律问题，例如：公司拖欠工资怎么办？</span>
-            <div
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: 15,
-                background: '#D97706',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <SendOutlined style={{ fontSize: 14, color: '#FFFFFF' }} />
-            </div>
-          </div>
-        </section>
-
         {/* ===== 快捷入口 ===== */}
         <section style={{ marginBottom: 16 }}>
           <div

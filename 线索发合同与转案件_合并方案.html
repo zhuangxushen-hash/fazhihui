@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>线索「发合同」与「转化为案件」合并方案（代码核对）</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --card:#ffffff; --ink:#1f2937; --sub:#5b6470; --line:#d8dee6;
+    --accent:#2563eb; --pre:#1d6f5c; --post:#9a4b13; --warn:#b54708;
+    --ok:#0f7a4d; --ban:#b3261e; --node:#e8eefc; --nodeStroke:#2563eb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,sans-serif;
+       line-height:1.65;padding:32px;}
+  .wrap{max-width:1080px;margin:0 auto;}
+  h1{font-size:25px;margin:0 0 6px;}
+  h2{font-size:20px;margin:32px 0 12px;padding-left:10px;border-left:4px solid var(--accent);}
+  h3{font-size:16px;margin:18px 0 8px;}
+  .lead{color:var(--sub);font-size:14px;margin:0 0 8px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  table{width:100%;border-collapse:collapse;font-size:13.3px;}
+  th,td{border:1px solid var(--line);padding:9px 11px;vertical-align:top;text-align:left;}
+  th{background:#eef2f7;color:var(--ink);font-weight:600;}
+  tr:nth-child(even) td{background:#fafbfc;}
+  .tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;font-weight:600;margin-right:4px;vertical-align:middle;}
+  .tag.pre{background:#e6f4ef;color:var(--pre);}
+  .tag.post{background:#fbeee2;color:var(--post);}
+  .tag.warn{background:#fde9d8;color:var(--warn);}
+  .tag.ok{background:#e4f5ec;color:var(--ok);}
+  .tag.ban{background:#fde4e2;color:var(--ban);}
+  .tag.api{background:#e8eefc;color:var(--accent);font-family:ui-monospace,Menlo,Consolas,monospace;}
+  code{background:#eef1f5;padding:1px 6px;border-radius:5px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:#334155;}
+  svg{width:100%;height:auto;display:block;}
+  .legend{font-size:12px;color:var(--sub);margin-top:8px;}
+  .note{background:#fff8e6;border:1px solid #f0d999;border-radius:10px;padding:12px 16px;color:#8a5a00;font-size:13.5px;margin:14px 0;}
+  .ok-box{background:#e9f7ef;border:1px solid #bfe3cd;border-radius:10px;padding:12px 16px;color:#0f5a34;font-size:13.5px;margin:14px 0;}
+  .danger{background:#fdeaea;border:1px solid #f3c2bd;border-radius:10px;padding:12px 16px;color:#9a2b22;font-size:13.5px;margin:14px 0;}
+  ul{margin:6px 0;padding-left:20px;} li{margin:3px 0;}
+  .small{font-size:12.5px;color:var(--sub);}
+  .step{background:#eef4ff;border-left:3px solid var(--accent);padding:8px 14px;margin:8px 0;border-radius:6px;font-size:13.5px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>线索「发合同」与「转化为案件」合并方案</h1>
+<p class="lead">代码核对版 · 结论：两者业务语义一致（发合同签约 = 转化案件），但当前存在<b>两条独立入口 + 两套不对称建案逻辑</b>。建议收敛为单入口，并统一建案内核补齐差异。</p>
+
+<div class="note">
+<b>你的判断成立。</b> 业务上「签了委托合同，案件即成立」，所以「发合同」和「转案件」是同一件事。<br>
+代码现状：<code>fadada</code> 模块已实现<b>新流程</b>「线索 → 发合同(签约) → 签约完成自动生成案件」，而 <code>lead.service.convertToCase</code> 仍保留<b>旧入口</b>「线索直接建案」，二者并存、逻辑重复且不一致。
+</div>
+
+<h2>一、现状：三条「建案件」路径对比</h2>
+<div class="card">
+<table>
+<tr><th style="width:120px">路径</th><th>入口 / 方法</th><th>前置校验（Pre）</th><th>建案时做的事</th><th>回写 / 联动</th></tr>
+<tr>
+  <td><b>A. 线索直接转案件</b><br><span class="small">旧</span></td>
+  <td><span class="tag api">POST /leads/:id/convert</span><br><span class="small">lead.service.convertToCase:169</span></td>
+  <td>线索存在、组织归属校验</td>
+  <td><span class="tag ok">有利冲检索</span>（conflict_hold）<br><span class="tag ok">有客户档案</span><br><span class="tag ok">有应收台账</span><br>建案</td>
+  <td>回写线索 <code>conversion_status=converted</code>、<code>case_id</code><br><span class="tag warn">无合同关联</span></td>
+</tr>
+<tr>
+  <td><b>B. 商机转案件</b><br><span class="small">旧</span></td>
+  <td><span class="tag api">POST /opportunities/:id/convert-to-case</span><br><span class="small">opportunity.service.convertToCase:386</span></td>
+  <td>权限 + 商机未签约 + <span class="tag warn">谈案SOP强制节点校验</span></td>
+  <td>建案（client_id 占位 pending）</td>
+  <td>更新商机 SIGNED + 阶段日志；回写线索 <code>PENDING_SIGN</code> / converted</td>
+</tr>
+<tr>
+  <td><b>C. 线索发合同→签约建案</b><br><span class="small">新流程</span></td>
+  <td><span class="tag api">POST /fadada/sign-templates/:id/launch-from-lead</span><br><span class="small">fadada.launchSignFromLead:1297<br>generateCaseFromContract:1447</span></td>
+  <td>线索存在；创建合同+签约合规+法大大签署任务</td>
+  <td><span class="tag warn">无利冲检索</span><br><span class="tag ok">有客户档案</span>（按手机号）<br><span class="tag warn">无应收台账</span><br>建案（合同+case_supplement 映射）</td>
+  <td>回写合同 <code>stage=signed, case_id</code>；回写线索 converted；C端收案短信</td>
+</tr>
+</table>
+</div>
+
+<div class="danger">
+<b>关键不一致（合并时必须解决）：</b>
+<ul>
+  <li>路径 C（新流程）建案时<b>缺少利冲检索</b>与<b>缺少应收台账</b>，而路径 A 有。即：经发合同签约自动生成的案件，<b>不会被利冲挂起、也不会产生应收台账</b> —— 合规与财务闭环缺失。</li>
+  <li>路径 A 建案<b>不关联合同</b>（当时无合同）；路径 C 关联合同。合并后应统一「有合同」。</li>
+  <li>路径 B 有「谈案SOP强制节点」校验，路径 A/C 没有。合并时需统一合规门槛。</li>
+</ul>
+</div>
+
+<h2>二、合并目标架构</h2>
+<div class="card">
+<svg viewBox="0 0 900 250">
+  <defs><marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#5b6470"/></marker></defs>
+  <g font-size="12.5" text-anchor="middle">
+    <!-- 线索 -->
+    <rect x="14" y="100" width="80" height="40" rx="9" fill="#e8eefc" stroke="#2563eb"/>
+    <text x="54" y="125" fill="#1f2937">线索 Lead</text>
+
+    <!-- 公共建案内核 -->
+    <rect x="380" y="86" width="150" height="68" rx="10" fill="#e9f7ef" stroke="#0f7a4d"/>
+    <text x="455" y="111" fill="#0f5a34">公共建案内核</text>
+    <text x="455" y="129" fill="#0f5a34" font-size="11">利冲+客户档案</text>
+    <text x="455" y="144" fill="#0f5a34" font-size="11">+应收台账+建案</text>
+
+    <!-- 案件 -->
+    <rect x="800" y="100" width="80" height="40" rx="9" fill="#e4f5ec" stroke="#0f7a4d"/>
+    <text x="840" y="125" fill="#1f2937">案件</text>
+
+    <!-- 合同(发合同) 上方 -->
+    <rect x="170" y="18" width="130" height="40" rx="9" fill="#e8eefc" stroke="#2563eb"/>
+    <text x="235" y="43" fill="#1f2937">合同(signing)</text>
+
+    <!-- 法大大 -->
+    <rect x="330" y="18" width="120" height="40" rx="9" fill="#e8eefc" stroke="#2563eb"/>
+    <text x="390" y="43" fill="#1f2937">法大大签署</text>
+
+    <!-- 旧入口convertToCase 下方(改为复用内核或下线) -->
+    <rect x="170" y="180" width="170" height="40" rx="9" fill="#fde4e2" stroke="#b3261e"/>
+    <text x="255" y="205" fill="#1f2937">旧 convertToCase(复用内核)</text>
+
+    <!-- 箭头 -->
+    <line x1="94" y1="120" x2="378" y2="120" stroke="#5b6470" marker-end="url(#arr)"/>
+    <line x1="530" y1="120" x2="798" y2="120" stroke="#5b6470" marker-end="url(#arr)"/>
+    <line x1="235" y1="58" x2="300" y2="58" stroke="#5b6470" marker-end="url(#arr)"/>
+    <line x1="390" y1="58" x2="448" y2="84" stroke="#5b6470" marker-end="url(#arr)"/>
+    <line x1="235" y1="180" x2="378" y2="138" stroke="#b3261e" stroke-dasharray="4" marker-end="url(#arr)"/>
+    <line x1="60" y1="140" x2="180" y2="186" stroke="#b3261e" stroke-dasharray="4" marker-end="url(#arr)"/>
+  </g>
+</svg>
+<p class="legend">合并后：线索「转案件」唯一入口 = 发合同（launch-from-lead）→ 签署 → <b>公共建案内核</b>。旧 <code>convertToCase</code> 改为复用同一内核（或下线）。内核统一负责利冲、客户档案、应收台账、建案、回写合同/线索，消除不一致。</p>
+</div>
+
+<h2>三、合并方案（推荐）</h2>
+
+<div class="ok-box">
+<b>原则：</b>① 收敛入口 —— 线索「转案件」统一走发合同流程；② 统一内核 —— 抽一个公共建案函数，所有路径复用；③ 补齐缺口 —— 利冲、应收台账、SOP 校验在统一内核内一致执行。
+</div>
+
+<h3>步骤 1 · 抽出公共建案内核 <code>buildCaseFromLead</code></h3>
+<div class="step">新建 / 或放进 <code>fadada.service.ts</code> 或 <code>case.service.ts</code>：<br>
+<code>async buildCaseFromLead(ctx: { lead, contract?, caseFields, supplement })</code><br>
+职责（一次性封装，替换三处重复逻辑）：
+<ul>
+  <li>利冲检索 <code>conflictCheckService.check</code> → 命中置 <code>approval_status=conflict_hold</code>（<span class="tag warn">补齐路径 C 缺口</span>）</li>
+  <li>按手机号查找/建档客户档案 <code>clientProfile</code></li>
+  <li>按 <code>fee_amount/service_fee</code> 生成应收台账 <code>Receivable</code>（<span class="tag warn">补齐路径 C 缺口</span>）</li>
+  <li>建案件（案件号按组织规则；status 取组织默认；stage=intake）</li>
+  <li>回写：<code>contract.case_id, stage=signed</code> · <code>lead.conversion_status=converted, case_id</code></li>
+</ul>
+</div>
+
+<h3>步骤 2 · 新流程 <code>generateCaseFromContract</code> 改为调用内核</h3>
+<div class="step">
+文件 <code>fadada.service.ts:1447</code>。<br>
+将现有「手动建案 + 建客户档案」替换为 <code>buildCaseFromLead</code>，移除重复映射（合同→案件字段映射保留在外层 <code>caseFields</code> 入参）。<b>顺带补齐利冲与应收台账</b>。
+</div>
+
+<h3>步骤 3 · 旧 <code>convertToCase</code>（线索）改造</h3>
+<div class="step">
+文件 <code>lead.service.ts:169</code>。<br>
+方案二选一（见下「待确认」）：
+<ul>
+  <li><b>方案 X（推荐·最小改动）</b>：保留 <code>POST /leads/:id/convert</code> 作为「无合同快速建案」，内部改为调用 <code>buildCaseFromLead({ lead, contract:null })</code>，自动获得利冲/应收台账一致性。</li>
+  <li><b>方案 Y（彻底合并）</b>：下线 <code>convertToCase</code> 入口，前端线索页「转案件」按钮改为打开发合同 <code>launch-from-lead</code>（已有 <code>LeadSignLaunch</code> 组件）。</li>
+</ul>
+无论 X/Y，旧路径都不再自写建案逻辑。
+</div>
+
+<h3>步骤 4 · 商机路径 B 同步复用内核</h3>
+<div class="step">
+文件 <code>opportunity.service.ts:386</code>。<br>
+将其中「建案 + 更新商机 + 回写线索」的建案部分改为调用 <code>buildCaseFromLead</code>（<code>contract</code> 可空）。<b>保留</b>其「谈案SOP强制节点校验」（420-425 行），并建议把同样的 SOP 校验纳入发合同/签约完成时（统一合规门槛）。
+</div>
+
+<h3>步骤 5 · 前端收敛</h3>
+<div class="step">
+线索详情页「转案件」入口收敛为发合同流程。前端 <code>App.tsx:451</code> 注释已明确新流程方向；源码（<code>frontend/src</code>）未检索到直接调用 <code>/leads/:id/convert</code>，估计已转向发合同，需二次确认并移除任何残留的「转案件」独立按钮。
+</div>
+
+<h2>四、代码改动清单</h2>
+<div class="card">
+<table>
+<tr><th>文件</th><th>方法 / 行</th><th>动作</th></tr>
+<tr><td><code>fadada.service.ts</code> 或新建</td><td><code>buildCaseFromLead</code>（新增）</td><td>统一建案内核：利冲+客户档案+应收台账+建案+回写</td></tr>
+<tr><td><code>fadada.service.ts</code></td><td><code>generateCaseFromContract:1447</code></td><td>改为调用内核；删除重复建案/建档代码</td></tr>
+<tr><td><code>lead.service.ts</code></td><td><code>convertToCase:169</code></td><td>改为调用内核（方案X）或保留仅作兼容壳</td></tr>
+<tr><td><code>lead.controller.ts</code></td><td><code>POST /leads/:id/convert:156</code></td><td>方案Y时下线；方案X保留</td></tr>
+<tr><td><code>opportunity.service.ts</code></td><td><code>convertToCase:386</code></td><td>建案部分改调内核；保留SOP校验</td></tr>
+<tr><td><code>frontend/src</code></td><td>线索详情页</td><td>「转案件」→ 发合同入口；移除残留独立入口</td></tr>
+</table>
+</div>
+
+<h2>五、风险与回滚</h2>
+<div class="card">
+<ul>
+  <li><span class="tag ban">数据缺口</span> 历史已通过路径 C 生成的案件<b>缺应收台账</b>：合并后新案件不再缺，但存量需跑一次补数脚本（按 <code>contract.amount</code> 补应收台账、按当事人补利冲记录）。</li>
+  <li><span class="tag warn">合规升级</span> 给发合同流程补 SOP 强制节点/利冲后，已存在「未过SOP就发合同」的数据需评估是否回溯校验。</li>
+  <li><span class="tag warn">回滚</span> 内核改动用事务包裹；若下线 <code>convertToCase</code>，保留方法体为 deprecated 别名一段时间再删，便于灰度。</li>
+  <li><span class="tag ok">幂等</span> <code>generateCaseFromContract</code> 已有 <code>if(contract.case_id)</code> 幂等保护，复用内核不会重复建案。</li>
+</ul>
+</div>
+
+<h2>六、待确认（影响方案取舍）</h2>
+<div class="card">
+<ul>
+  <li>「转案件」入口是否彻底下线（方案Y），还是保留为「无合同快速建案」（方案X）？</li>
+  <li>发合同签约流程是否也要强制「谈案SOP节点」校验（同商机路径B）？合规侧需确认。</li>
+  <li>存量「路径C历史案件缺应收台账/利冲」是否要补数脚本？</li>
+  <li>前端是否确已无 <code>/leads/:id/convert</code> 调用点（需再搜 <code>frontend/src</code> 确认）？</li>
+</ul>
+</div>
+
+<h2>七、执行结果（方案Y 已落地 · 2026-08-31）</h2>
+<div class="card">
+<ul>
+  <li><span class="tag ok">已决定</span> 「转案件」入口<b>彻底下线</b>（方案Y），前端线索页唯一转化入口收敛为「发合同」（<code>/leads/sign/:id</code> → LeadSignLaunch，签约完成自动生成案件）。</li>
+  <li><span class="tag ok">已决定</span> <b>不做历史补数脚本</b>。</li>
+  <li><span class="tag ok">已确认</span> 前端确有调用点：<code>LeadManagement.tsx:131</code> 直接 <code>POST /leads/:id/convert</code>，已删除并改走发合同。</li>
+  <li><span class="tag warn">待确认</span> 发合同流程是否也要强制「谈案SOP节点」校验（同商机路径B）。</li>
+  <li><span class="tag warn">待处理</span> 发合同路径 C 的 <code>generateCaseFromContract</code> 仍缺利冲检索+应收台账（旧路径A才有）；因 CaseModule↔ClientModule 回边导致注入 ConflictCheckService 有循环依赖风险，需单独评估，未塞入本次合并。</li>
+</ul>
+<b>代码改动清单：</b>
+<table>
+<tr><th>文件</th><th>动作</th></tr>
+<tr><td><code>backend/src/lead/lead.controller.ts</code></td><td>删除 <code>POST /leads/:id/convert</code> 路由</td></tr>
+<tr><td><code>backend/src/lead/lead.service.ts</code></td><td>删除 <code>convertToCase</code> 方法 + 清理专属 import/构造注入（Case、ConflictCheckService、ClientProfile、Receivable、ReceivableStatus、caseRepository）</td></tr>
+<tr><td><code>frontend/src/pages/LeadManagement.tsx</code></td><td>删除「转化为案件」按钮/弹窗/handleConvert/handleConvertSubmit/convertVisible·convertForm·converting 状态/SwapOutlined 引用</td></tr>
+<tr><td><code>frontend/src/api/lead.ts</code></td><td>删除 <code>convertLeadToCase</code> helper</td></tr>
+</table>
+<p class="small">保留路径：B 商机转案件（<code>opportunity.convertToCase</code>）、C 发合同签约建案（<code>fadada.generateCaseFromContract</code>）。</p>
+</div>
+
+<p class="small">数据来源：<code>lead.service.ts</code>、<code>opportunity.service.ts</code>、<code>fadada.service.ts</code>、<code>fadada/sign-template.controller.ts</code>、<code>lead.controller.ts</code>、<code>frontend/src/App.tsx</code>。</p>
+
+</div>
+</body>
+</html>

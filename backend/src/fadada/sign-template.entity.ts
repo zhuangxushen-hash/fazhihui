@@ -34,6 +34,11 @@ export class SignTemplate {
   @Column({ type: 'boolean', default: true })
   enabled: boolean;
 
+  // 互动视频签（audio_video）播报内容配置：JSON 字符串
+  // 数组元素 { audioText: 播报内容(必填); answerText: 客户朗读回答(选填,默认"是的") }，最多 5 条
+  @Column({ type: 'text', nullable: true })
+  audio_video_infos: string;
+
   @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 

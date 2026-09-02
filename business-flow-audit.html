@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>法智汇 · 业务流转图与通畅性分析</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --card:#ffffff; --ink:#1f2937; --muted:#64748b;
+    --line:#e2e8f0; --primary:#1e3a8a; --primary-soft:#eef2fb;
+    --gold:#b45309; --gold-soft:#fef3c7;
+    --ok:#059669; --ok-soft:#d1fae5;
+    --broken:#dc2626; --broken-soft:#fee2e2;
+    --warn:#d97706; --warn-soft:#fef3c7;
+    --mock:#7c3aed; --mock-soft:#ede9fe;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.6;font-size:14px}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 80px}
+  header.top{background:linear-gradient(135deg,#1b2f63,#1e3a8a 60%,#2547a0);color:#fff;border-radius:16px;padding:26px 28px;margin-bottom:22px}
+  header.top h1{margin:0 0 6px;font-size:24px}
+  header.top p{margin:0;color:#c7d2e8;font-size:13px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin:16px 0 4px}
+  .legend span{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .d-ok{background:var(--ok)} .d-broken{background:var(--broken)} .d-warn{background:var(--warn)} .d-mock{background:var(--mock)}
+
+  /* 流转图 rail */
+  .rail{position:relative;padding-left:30px}
+  .rail::before{content:"";position:absolute;left:11px;top:8px;bottom:8px;width:3px;background:var(--line);border-radius:2px}
+  .stage{position:relative;margin:0 0 18px}
+  .stage::before{content:"";position:absolute;left:-24px;top:20px;width:18px;height:18px;border-radius:50%;
+    background:var(--primary);border:3px solid #fff;box-shadow:0 0 0 2px var(--primary-soft)}
+  .stage-head{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:var(--card);border:1px solid var(--line);border-left:4px solid var(--primary);
+    border-radius:12px;padding:10px 16px;margin-bottom:10px}
+  .stage-head .t{font-weight:600;font-size:15px}
+  .stage-head .r{font-size:12px;color:var(--muted)}
+  .steps{display:flex;flex-wrap:wrap;gap:10px;padding-left:4px}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 12px;min-width:200px;max-width:340px;flex:1 1 220px}
+  .step .n{font-weight:600;font-size:13px;display:flex;align-items:center;gap:7px}
+  .step .d{font-size:12px;color:var(--muted);margin-top:4px}
+  .badge{font-size:11px;font-weight:600;padding:1px 7px;border-radius:99px;white-space:nowrap}
+  .b-ok{background:var(--ok-soft);color:var(--ok)}
+  .b-broken{background:var(--broken-soft);color:var(--broken)}
+  .b-warn{background:var(--warn-soft);color:var(--warn)}
+  .b-mock{background:var(--mock-soft);color:var(--mock)}
+  .handoff{font-size:12px;color:var(--primary);background:var(--primary-soft);border-radius:8px;
+    padding:5px 10px;margin:2px 0 12px 4px;display:inline-block}
+
+  /* 区块 */
+  section.box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:18px 0}
+  section.box h2{margin:0 0 12px;font-size:18px;color:var(--primary);border-bottom:2px solid var(--primary-soft);padding-bottom:8px}
+  section.box h3{margin:18px 0 8px;font-size:15px}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--primary-soft);color:var(--primary);font-weight:600}
+  td code{background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:12px;color:#0f172a}
+  .tag{display:inline-block;font-size:11px;font-weight:600;padding:1px 8px;border-radius:99px;margin-right:4px}
+  .pill{padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600}
+  ul{margin:8px 0;padding-left:20px}
+  li{margin:5px 0}
+  .kpi{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0}
+  .kpi .c{flex:1;min-width:150px;background:var(--primary-soft);border-radius:12px;padding:12px 14px}
+  .kpi .c b{font-size:22px;color:var(--primary)}
+  .kpi .c span{font-size:12px;color:var(--muted)}
+  .note{background:var(--gold-soft);border-left:4px solid var(--gold);padding:10px 14px;border-radius:8px;font-size:13px;margin:10px 0}
+  .prio{P0;background:var(--broken-soft);color:var(--broken)} .p1{background:var(--warn-soft);color:var(--warn)} .p2{background:var(--primary-soft);color:var(--primary)}
+  .pri{border-radius:99px;padding:1px 9px;font-size:11px;font-weight:700}
+  .p0{background:var(--broken);color:#fff} .p1c{background:var(--warn);color:#fff} .p2c{background:var(--primary);color:#fff}
+  footer{color:var(--muted);font-size:12px;text-align:center;margin-top:30px}
+  a{color:var(--primary)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>法智汇 · 业务流转图与通畅性分析</h1>
+    <p>网推律所全链路一体化 SaaS ｜ 基于 backend/src 与 frontend/src 真实代码审计（带 file:line）｜ 审计时间 2026-09-01</p>
+  </header>
+
+  <div class="legend">
+    <span><i class="dot d-ok"></i>通畅（已实现且打通）</span>
+    <span><i class="dot d-warn"></i>半通 / 风险（可用但逻辑缺陷或弱一致）</span>
+    <span><i class="dot d-broken"></i>断点（流程断裂，一期必修）</span>
+    <span><i class="dot d-mock"></i>外壳 / Mock（无真实能力，仅占位）</span>
+  </div>
+
+  <!-- ============ 流转图 ============ -->
+  <section class="box">
+    <h2>一、完整业务流转图（端到端价值流）</h2>
+    <div class="rail">
+
+      <div class="stage">
+        <div class="stage-head"><div class="t">① 获客与线索生命周期</div><div class="r">角色：营销 / 销售</div></div>
+        <div class="steps">
+          <div class="step"><div class="n">广告/活码投放 <span class="badge b-warn">半通</span></div><div class="d">webhook 写 lead 通；活码 channel-tracking 仅计数，<b>不建 lead、无 source_channel</b>（scrm/channel-tracking.service:52）</div></div>
+          <div class="step"><div class="n">线索录入 <span class="badge b-ok">通</span></div><div class="d">手工 POST /leads（lead.controller:13）+ 投放 webhook（ad-platforms/webhook.controller:86）</div></div>
+          <div class="step"><div class="n">线索状态机 <span class="badge b-warn">风险</span></div><div class="d">两套状态并存：types/index:20 与 conversion_status（lead.entity:85）</div></div>
+          <div class="step"><div class="n">公海池 / 分配 <span class="badge b-warn">半通</span></div><div class="d">回收/领取/分配 Cron+手动通（lead-pool.service）；REGION 用 source_keyword 错配省市（lead-assignment.service:112）</div></div>
+        </div>
+      </div>
+      <div class="handoff">↓ 线索进入「邀约/谈案」闭环（lead_id 贯穿）</div>
+
+      <div class="stage">
+        <div class="stage-head"><div class="t">② 邀约与谈案</div><div class="r">角色：销售</div></div>
+        <div class="steps">
+          <div class="step"><div class="n">邀约任务 <span class="badge b-broken">断</span></div><div class="d">invite-task.service:33 仅建记录+站内通知，<b>无外呼/短信</b>；录音返回模拟 URL（:273）</div></div>
+          <div class="step"><div class="n">到所 → 谈案 <span class="badge b-ok">通</span></div><div class="d">ARRIVED 触发 lead→NEGOTIATING 并自动建商机（invite-task.service:211）</div></div>
+          <div class="step"><div class="n">谈案 SOP 实例化 <span class="badge b-ok">通</span></div><div class="d">talk-sop.service 按 case_type 展开模板，completeNode 触发合规质检（:339）</div></div>
+          <div class="step"><div class="n">谈案通过 → 商机/建案 <span class="badge b-warn">风险</span></div><div class="d">opportunity.service:431 建 Case pending_sign；但 client_id='pending' 占位（:434，未建真实客户档案）</div></div>
+        </div>
+      </div>
+      <div class="handoff">↓ 谈案通过 → 进入「发合同 / 签署」</div>
+
+      <div class="stage">
+        <div class="stage-head"><div class="t">③ 发合同与签署（法大大）</div><div class="r">角色：销售 / 签约</div></div>
+        <div class="steps">
+          <div class="step"><div class="n">发合同 launchSignFromLead <span class="badge b-ok">通</span></div><div class="d">建 Contract + SigningCompliance + 发起法大大签署（fadada.service:1308→1416）<br>旧路径 launchSignFromTemplate(:1186) 只发签不建案</div></div>
+          <div class="step"><div class="n">签署回调 → 建案 <span class="badge b-ok">通</span></div><div class="d">sign-task-finished → generateCaseFromContract(:1458)：upsert ClientProfile → 建 Case pending_assign（幂等 :1464）</div></div>
+          <div class="step"><div class="n">利冲检索 <span class="badge b-ok">通</span></div><div class="d">conflictCheckService.check 同步调用（:1562），命中置 conflict_hold；错误仅 log（非事务）</div></div>
+          <div class="step"><div class="n">应收台账 <span class="badge b-ok">通</span></div><div class="d">签约即建 Receivable PENDING（:1580），contract_amount 写入</div></div>
+          <div class="step"><div class="n">分润触发（签约即算） <span class="badge b-broken">断</span></div><div class="d">checkAndTriggerCommission(:1596) 强制 CLOSED+应收COMPLETED，签约瞬间<b>永 skip</b> → 假触发/死代码（commission.service:323）</div></div>
+        </div>
+      </div>
+      <div class="handoff">↓ 合同/案件 → 进入「办案」与「财务」双线（case_id / contract_id 关联）</div>
+
+      <div class="stage">
+        <div class="stage-head"><div class="t">④ 案件生成与办案</div><div class="r">角色：律师 / 助理</div></div>
+        <div class="steps">
+          <div class="step"><div class="n">建案 createCase <span class="badge b-ok">通</span></div><div class="d">case.service:172，含利冲+类案+SOP 生成</div></div>
+          <div class="step"><div class="n">办案 SOP → 任务 <span class="badge b-warn">风险</span></div><div class="d">createCaseSOP 展开 CaseTask 通（compliance.service:461）；但 generateTasksFromTemplate(:22)<b>全库无调用方=死代码</b></div></div>
+          <div class="step"><div class="n">任务联动阶段 <span class="badge b-broken">断</span></div><div class="d">任务靠模板静态 stage_id，<b>未与 Case.stage 动态联动</b></div></div>
+          <div class="step"><div class="n">文书 / AI 文书 <span class="badge b-mock">外壳</span></div><div class="d">legal-document.service:51 仅 {{key}} 正则替换；ai.service 全方法硬编码模板，<b>无 LLM 调用</b></div></div>
+          <div class="step"><div class="n">案件成本 → 财务 <span class="badge b-warn">半通</span></div><div class="d">case_cost.create 事务同步 business_funds（:43）；update/remove 在事务外、吞异常→弱一致</div></div>
+          <div class="step"><div class="n">预警 / 归档 <span class="badge b-warn">风险</span></div><div class="d">case-warning @Cron 真实通（:180）；archiveCase 仅写 archive_no，<b>不自动建卷宗</b></div></div>
+        </div>
+      </div>
+      <div class="handoff">↓ 案件进度/结案驱动「财务结算」与「客户端回流」</div>
+
+      <div class="stage">
+        <div class="stage-head"><div class="t">⑤ 财务聚合链路</div><div class="r">角色：财务</div></div>
+        <div class="steps">
+          <div class="step"><div class="n">收款 recordPayment <span class="badge b-warn">半通</span></div><div class="d">同步事务写 PaymentRecord+核销应收+回写 case.fee_collected（finance.service:143）；<b>但不写 BusinessFund 收支流水</b></div></div>
+          <div class="step"><div class="n">分润结算 <span class="badge b-warn">风险</span></div><div class="div d">结案+应收完成触发（case.service:766）；仅取 fee_amount、仅主办律师（commission.service:164/:245）</div></div>
+          <div class="step"><div class="n">发票 / 代扣 / 退费 <span class="badge b-mock">外壳</span></div><div class="d">invoice 无税控通道（invoice.service:44）；代扣/退费无支付网关、无 cron 自动触发</div></div>
+          <div class="step"><div class="n">对账 / 利润看板 <span class="badge b-warn">风险</span></div><div class="d">对账仅总额级非逐笔；单案利润<b>双口径不一致</b>；dashboard 利润率含 <code>Math.random()</code> 假数据（dashboard.service:440）</div></div>
+        </div>
+      </div>
+      <div class="handoff">↓ 财务结果回流经营看板；案件状态回流客户端</div>
+
+      <div class="stage">
+        <div class="stage-head"><div class="t">⑥ 客户端（C 端）回流</div><div class="r">角色：客户</div></div>
+        <div class="steps">
+          <div class="step"><div class="n">案件查看 / 签约预填 <span class="badge b-ok">通</span></div><div class="d">ClientCaseDetail 读 case（client.controller:21）；SignPrefill 回写 signing（client.service:777）</div></div>
+          <div class="step"><div class="n">投诉反馈 <span class="badge b-warn">风险</span></div><div class="d">双写 complaint + complaint_tickets（client.service:212）；工单同步包 try/catch 静默（:224）</div></div>
+          <div class="step"><div class="n">C 端归档 <span class="badge b-warn">半通</span></div><div class="d">写独立 client-archive 表，<b>与 B 端 case-archive 不互通</b>，B 端案卷管理不可见</div></div>
+          <div class="step"><div class="n">C 端支付 / 自助签约付费 <span class="badge b-broken">断</span></div><div class="d">Payment.tsx:154 直连 /finance/fee + /cases，二者 @Roles 均<b>不含 CLIENT→403</b>（finance.controller:18 / case.controller:15）；整条自助付费主流程断裂</div></div>
+        </div>
+      </div>
+      <div class="handoff">↺ 跨模块基线：安全 / 事件 / 共享内核</div>
+
+      <div class="stage">
+        <div class="stage-head"><div class="t">⑦ 跨模块基线与优化热点</div><div class="r">架构</div></div>
+        <div class="steps">
+          <div class="step"><div class="n">RBAC 守卫 <span class="badge b-broken">断</span></div><div class="d">roles.guard:36 无 @Roles 即 return true（opt-in/allow-by-default）→ 漏标装饰器即匿名越权；super_admin 直通（:68）</div></div>
+          <div class="step"><div class="n">审计覆盖 <span class="badge b-broken">断</span></div><div class="d">漏：投诉创建、归档上传、签约预填、C 端支付 createFee（finance.service:46 未调 audit）</div></div>
+          <div class="step"><div class="n">领域事件 / 消息 <span class="badge b-warn">缺失</span></div><div class="d">全仓 0 事件总线，@Cron 仅少数定时；其余全同步 service 互调</div></div>
+          <div class="step"><div class="n">模块耦合 / 共享内核 <span class="badge b-warn">风险</span></div><div class="d">forwardRef 出现在 18 个文件（case↔finance、client↔case、contract↔fadada）；UserRole/Case/User/Org 被全模块 import，未抽 shared-kernel</div></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ 通畅性总览 ============ -->
+  <section class="box">
+    <h2>二、通畅性总览</h2>
+    <div class="kpi">
+      <div class="c"><b>主链路</b><span>线索→谈案→发合同→回调建案→利冲→应收</span></div>
+      <div class="c"><b style="color:var(--ok)">通畅</b><span>核心业务闭环成立</span></div>
+      <div class="c"><b style="color:var(--broken)">6 处断点</b><span>①活码无归因 ②邀约无外呼 ③分润签约假触发 ④SOP任务不联动 ⑤C端支付403 ⑥RBAC opt-in</span></div>
+      <div class="c"><b style="color:var(--mock)">多处外壳</b><span>AI文书 / 发票 / 代扣 / 退费 为 Mock</span></div>
+    </div>
+    <table>
+      <thead><tr><th>阶段</th><th>通畅</th><th>半通/风险</th><th>断点</th><th>外壳</th></tr></thead>
+      <tbody>
+        <tr><td>① 获客线索</td><td>webhook写lead、手工录lead</td><td>双状态机并存；REGION分配错配</td><td>活码不建lead/无归因</td><td>—</td></tr>
+        <tr><td>② 邀约谈案</td><td>到所→谈案→SOP→商机</td><td>谈案通过 client_id='pending' 占位</td><td>邀约无外呼/短信</td><td>录音模拟URL</td></tr>
+        <tr><td>③ 发合同签署</td><td>发合同、回调建案、利冲、应收</td><td>建案+财务非事务、靠try/catch兜底</td><td>分润签约即触发永skip</td><td>—</td></tr>
+        <tr><td>④ 办案</td><td>建案、SOP展开CaseTask、成本事务同步</td><td>成本update/remove弱一致；归档不建卷</td><td>任务与Case.stage不联动</td><td>文书/AI=模板mock</td></tr>
+        <tr><td>⑤ 财务</td><td>收款核销应收、结案触发分润</td><td>收款不写BusinessFund；分润仅fee/仅主办；对账总额级；利润双口径</td><td>—</td><td>发票/代扣/退费无通道</td></tr>
+        <tr><td>⑥ C端回流</td><td>案件查看、签约预填</td><td>投诉工单静默；归档B端不可见</td><td>支付/建案被403拦截</td><td>—</td></tr>
+        <tr><td>⑦ 跨模块</td><td>—</td><td>无事件总线、全同步耦合；共享内核未抽</td><td>RBAC opt-in；审计漏覆盖</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============ 关键断点 ============ -->
+  <section class="box">
+    <h2>三、必须修复的关键断点（一期上线前）</h2>
+    <ul>
+      <li><b>🔴 C 端自助付费主流程断裂</b>：<code>Payment.tsx:154</code> 直连 <code>/finance/fee</code> 与 <code>/cases</code>，二者 <code>@Roles</code> 均不含 CLIENT → 被 403。应改走 <code>/client</code> 专用接口，由 <code>client.service</code> 内部调 <code>finance.recordPayment</code> 并写 receivable/payment_record（若一期要开放 C 端支付）。</li>
+      <li><b>🔴 分润「签约即算」为假触发</b>：<code>fadada.service:1596</code> 在签约瞬间调 <code>checkAndTriggerCommission</code>，但强制 CLOSED+应收COMPLETED 永远不满足（<code>commission.service:323</code>）→ 死代码。应删除或改为仅留痕，统一由「结案+应收完成」事件驱动。</li>
+      <li><b>🔴 RBAC 守卫 allow-by-default</b>：<code>roles.guard.ts:36-38</code> 无 <code>@Roles</code> 即放行 → 漏标装饰器即越权。<b>一期安全 P0</b>，改为 deny-by-default。</li>
+      <li><b>🟠 活码与线索脱节</b>：<code>channel-tracking.service:52</code> 只计数不建 lead，投放漏斗无法归因。</li>
+      <li><b>🟠 邀约无外呼/短信</b>：<code>invite-task.service:33</code> 仅站内通知，与「邀约即外呼」预期不符（需明确产品边界或接入 SmsService）。</li>
+      <li><b>🟠 办案任务与案件阶段不联动</b>：<code>CaseTask</code> 静态 stage_id，无随 <code>Case.stage</code> 推进自动激活；且 <code>generateTasksFromTemplate</code> 为死代码。</li>
+      <li><b>🟠 谈案通过 client_id='pending' 占位</b>：<code>opportunity.service:434</code> 未建真实客户档案，导致案件-客户关联虚挂。</li>
+    </ul>
+  </section>
+
+  <!-- ============ 依赖优化空间 ============ -->
+  <section class="box">
+    <h2>四、依赖与架构优化空间（按优先级）</h2>
+
+    <h3><span class="pri p0">P0</span> 安全与核心业务断点</h3>
+    <ul>
+      <li><b>RBAC deny-by-default</b>：<code>roles.guard.ts:36</code> 改为无 <code>@Roles</code> 即 403；super_admin 仍需显式授权。</li>
+      <li><b>打通 C 端支付/建案回流</b>：新增 <code>/client/pay</code>、<code>/client/case/create</code> 专用接口（CLIENT 可见），内部调 <code>finance.recordPayment</code>+建案，写 receivable/payment_record，消除 403 死路。</li>
+      <li><b>修复分润触发</b>：删除签约即触发死代码，统一由「结案 + 应收 COMPLETED」事件驱动；补全多角色分润（commission.service:245 TODO）。</li>
+    </ul>
+
+    <h3><span class="pri p1">P1</span> 解耦与一致性</h3>
+    <ul>
+      <li><b>引入领域事件（EventEmitter2）</b>：把 投诉→工单、支付→分润/推送、签约完成→案件状态、成本→财务 改为事件订阅，消除 <code>forwardRef</code> 同步紧耦合（fadada↔case/finance）。</li>
+      <li><b>发合同建案事务边界</b>：<code>generateCaseFromContract</code> 的建案+利冲+应收四处独立 save（fadada.service:1557/1562/1580/1596）无事务，存在部分态；建议 saga 或显式事务+补偿。</li>
+      <li><b>收款补齐收支流水</b>：<code>recordPayment</code>（finance.service:143）写 PaymentRecord+核销应收，但<b>不写 BusinessFund</b>，导致经营看板/单案利润与收支流水割裂；应在同一事件里写 business_funds。</li>
+      <li><b>统一利润口径</b>：<code>getCaseProfitAnalysis</code> / <code>getProjectRevenueOverview</code> / <code>dashboard</code> 三套口径不一致，且 <code>dashboard.service:440</code> 含 <code>Math.random()</code> 假利润率 → 移除随机值、收敛到单一聚合服务。</li>
+    </ul>
+
+    <h3><span class="pri p2">P2</span> 数据归属与审计</h3>
+    <ul>
+      <li><b>归档表统一</b>：<code>client-archive</code> 与 <code>case-archive</code>/<code>archive-volume</code> 二表不互通，C 端归档 B 端不可见 → 合一或建关联视图。</li>
+      <li><b>审计补齐</b>：<code>createComplaint</code>、<code>uploadArchive</code>、签约预填、<code>createFee</code> 等关键写操作补 <code>auditService.logAction</code>（漏覆盖 6 类）。</li>
+      <li><b>共享内核抽取</b>：UserRole/Case/User/Organization 等被全模块 import，抽 <code>shared-kernel</code> 模块降低耦合。</li>
+      <li><b>线索-客户关联</b>：lead 无 client_id、ClientProfile 无 lead_id（仅 phone 隐式关联）→ 建真实外键，闭合「线索→客户」链路。</li>
+    </ul>
+
+    <h3><span class="pri p2">P2</span> 外壳能力（二/三期，非一期阻断）</h3>
+    <ul>
+      <li>AI 文书 / 类案：<code>ai.service</code> 接真实 LLM；</li>
+      <li>发票：接税控/第三方（航信/法大大）开票通道；</li>
+      <li>代扣 / 退费：接真实支付网关 + @Cron 自动触发；</li>
+      <li>对账：改逐笔勾对（payment↔invoice↔fund）+ 定时；</li>
+      <li>活码归因、邀约外呼/短信、SOP 任务随阶段联动。</li>
+    </ul>
+
+    <div class="note">
+      <b>结论：</b>主业务价值流（获客→线索→谈案→发合同→回调建案→利冲→应收→办案→结案分润）是<b>通畅成立</b>的；需要在一期前修复的是 <b>6 个明确断点</b>（尤其 C 端支付 403、分润假触发、RBAC opt-in 三处），并把 <b>AI/发票/代扣/退费</b> 等外壳明确标注为「演示版」以免对外承诺假能力。架构层面最高杠杆的优化是 <b>引入领域事件解耦 + RBAC deny-by-default + 统一财务聚合口径</b>。
+    </div>
+  </section>
+
+  <footer>法智汇业务流转审计 · 基于代码静态追踪（5 路并行探查，file:line 实证）· 仅供一期上线决策参考</footer>
+</div>
+</body>
+</html>

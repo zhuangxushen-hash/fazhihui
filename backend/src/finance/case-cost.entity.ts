@@ -6,6 +6,10 @@ export enum CostType {
   MARKETING = 'marketing', // 投放成本
   LABOR = 'labor', // 人力成本
   CASE_HANDLING = 'case_handling', // 办案成本
+  PRESERVATION = 'preservation', // 保全
+  LITIGATION = 'litigation', // 诉讼
+  HEARING = 'hearing', // 开庭
+  TRAVEL = 'travel', // 差旅
   OTHER = 'other', // 其他
 }
 

@@ -14,12 +14,46 @@ import { SigningCompliance, SigningStatus } from '../compliance/signing-complian
 import { SmsService } from '../sms/sms.service';
 // 组织管理 → 认证授权：企业授权记录（corp_auths 表）
 import { CorpAuth } from './corp-auth.entity';
+// 新流程（线索→发合同→签约完成生成案件）：直接操作合同/案件/线索/客户档案实体
+import { Contract } from '../contract/contract.entity';
+import { Case } from '../case/case.entity';
+import { Lead } from '../lead/lead.entity';
+import { ClientProfile } from '../client/client-profile.entity';
+import { CaseStatusConfig } from '../case/case-status-config.entity';
+// 案件/合同编号按组织规则生成
+import { NumberRuleService } from '../number-rule/number-rule.service';
+import { NumberType } from '../number-rule/number-rule.entity';
+// 发合同建案路径补齐：利冲检索 + 应收台账 + 分润自动触发
+import { ConflictCheckService } from '../case/conflict-check.service';
+import { Receivable, ReceivableStatus } from '../finance/receivable.entity';
+import { CommissionService } from '../finance/commission.service';
 
 // 法大大运行模式：
 // - mock：本地模拟全流程（开发/演示，无真实账号）
 // - uat：调用法大大测试环境（UAT，真实联调）
 // - prod：调用法大大正式环境（FASC-OpenAPI）
 export type FadadaMode = 'mock' | 'prod' | 'uat';
+
+/**
+ * 互动视频签（audio_video）播报内容。
+ * 法大大要求：每条 audioText 150 字以内（2026 年 4 月起支持 500 字），
+ * 最多 5 条、合计至少 50 个字符；answerText 为要求用户朗读的回答（默认"是的"），
+ * skipVerification 是否跳过回答验证（默认 false 不跳过）。
+ * 前置条件：法大大账号需订购计费项「互动视频签功能-Signing-video-recording-Function」。
+ * 如各律所需定制播报文案，直接修改本数组即可（UTF-8 中文）。
+ */
+const DEFAULT_AUDIO_VIDEO_INFOS: Array<{
+  audioText: string;
+  answerText: string;
+  skipVerification: boolean;
+}> = [
+  {
+    audioText:
+      '您正在签署一份法律服务合同。请在充分阅读并理解合同全部条款后，确认合同当事人信息与您本人信息一致，且合同服务内容、收费标准及双方权利义务均符合您的真实意愿，再进行本次签署。',
+    answerText: '是的',
+    skipVerification: false,
+  },
+];
 
 export interface SigningClientInfo {
   clientUserId: string;
@@ -71,8 +105,28 @@ export class FadadaService {
     // 组织管理 → 认证授权：企业授权记录
     @InjectRepository(CorpAuth)
     private corpAuthRepository: Repository<CorpAuth>,
+    // 新流程：发合同创建合同记录、签约完成生成案件
+    @InjectRepository(Contract)
+    private contractRepository: Repository<Contract>,
+    @InjectRepository(Case)
+    private caseRepository: Repository<Case>,
+    @InjectRepository(Lead)
+    private leadRepository: Repository<Lead>,
+    @InjectRepository(ClientProfile)
+    private clientProfileRepository: Repository<ClientProfile>,
+    @InjectRepository(CaseStatusConfig)
+    private caseStatusConfigRepository: Repository<CaseStatusConfig>,
+    // 编号规则（合同号/案件编号）
+    private numberRuleService: NumberRuleService,
     // C 端短信提醒：法大大电子签完成后触发收案立项短信
     private smsService: SmsService,
+    // 利冲检索（发合同建案即做利益冲突校验）
+    private conflictCheckService: ConflictCheckService,
+    // 分润自动触发（签约即算分润，幂等）
+    private commissionService: CommissionService,
+    // 应收台账（签约即建应收）
+    @InjectRepository(Receivable)
+    private receivableRepository: Repository<Receivable>,
   ) {}
 
   /**
@@ -512,10 +566,13 @@ export class FadadaService {
             notification: { sendNotification: false },
           },
           signConfigInfo: {
-            verifyMethods: ['face', 'sms'],
+            // C端客户验证方式只保留互动视频签（audio_video）：签署时录制音视频
+            verifyMethods: ['audio_video'],
             identifiedView: true,
             readingToEnd: true,
             signerSignMethod: 'standard',
+            // 互动视频签：签署时录制音视频（配合 verifyMethods=audio_video）
+            audioVideoInfos: DEFAULT_AUDIO_VIDEO_INFOS,
           },
         };
     const actors: any[] = [clientActor];
@@ -575,6 +632,31 @@ export class FadadaService {
   }
 
   /**
+   * 获取签署音视频下载链接（互动视频签 audio_video 录制，flv 格式，有效期 24 小时）。
+   * 注意：签署完成后一般 5 分钟才可下载；法大大仅保存 3 天，需在有效期内及时获取。
+   * 调用法大大接口 /sign-task/actor/get-audio-video-download-url（SDK 未封装，走通用 request）。
+   */
+  async getSignAudioVideoUrl(signTaskId: string, actorId: string): Promise<string> {
+    if (this.mode === 'mock') return '';
+    await this.assertProdReady();
+    const res = await this.signTaskClient.request({
+      url: '/sign-task/actor/get-audio-video-download-url',
+      reqMethod: 'POST',
+      req: { signTaskId, actorId },
+    });
+    const data = res?.data?.data;
+    if (!data) {
+      throw new Error('法大大签署音视频获取失败：' + (res?.data?.msg || '未知错误'));
+    }
+    // 法大大开放平台文档未明确响应字段名，兼容多种可能命名
+    const downloadUrl = data.downloadUrl || data.url || data.audioVideoUrl || data.videoUrl || data.fileUrl || '';
+    if (!downloadUrl) {
+      throw new Error('法大大签署音视频获取失败：返回数据缺少下载地址');
+    }
+    return downloadUrl;
+  }
+
+  /**
    * 基于法大大「签署任务模板 sign-template」发起签署任务（B端案件详情发起签约）。
    * - prod：createWithTemplate 创建签署任务 → start → 获取客户签署链接
    * - mock：返回本地模拟签署页
@@ -595,6 +677,8 @@ export class FadadaService {
     lawyer?: { lawyerUserId: string; name: string; mobile?: string };
     // 预填字段值列表（固定值 + 业务员预填），配合 fillFieldValues 在定稿前写入
     fillValues?: Array<{ docId?: string | number; fieldId?: string; fieldName?: string; fieldValue: string }>;
+    // 互动视频签（audio_video）播报内容（模板管理按模板配置，未配置时回退默认）
+    audioVideoInfos?: Array<{ audioText: string; answerText?: string }>;
   }): Promise<{ signTaskId: string; actorId: string; signUrl: string; mode: FadadaMode }> {
     if (!this.enabled) {
       throw new Error('法大大电子签未启用（FADADA_ENABLED=false）');
@@ -608,6 +692,11 @@ export class FadadaService {
       };
     }
     await this.assertProdReady();
+    // 互动视频签（audio_video）播报内容：优先使用模板管理中配置的内容（每模板可不同），未配置时回退默认播报内容
+    const audioVideoInfos: any[] =
+      params.audioVideoInfos && params.audioVideoInfos.length > 0
+        ? params.audioVideoInfos
+        : DEFAULT_AUDIO_VIDEO_INFOS;
     // 读取签署模板详情，获取模板内定义的参与方标识（actorId），以便按序匹配签区。
     // 业务约定：person 参与方 = 客户（C端签名），corp 参与方 = 律所（发起方用印）。
     const tmplDetail = await this.fetchSignTemplateDetail(params.signTemplateId);
@@ -628,8 +717,9 @@ export class FadadaService {
     // permissions 同时含 fill 与 sign：客户打开单链接后先补充必填控件，再执行签约动作
     // 个人快捷签：客户持有有效手机号时开启免登签署（freeLogin），打开链接直接进入合同详情页，
     // 无需登录法大大账号；identifiedView=false 允许未实名用户查看任务，
-    // 实名认证与签署意愿验证合二为一。快捷签仅对个人参与方有效，
-    // 且意愿验证方式仅支持 实名手机号(sms)/人脸识别(face)，故快捷签场景收窄 verifyMethods。
+    // 实名认证与签署意愿验证合二为一。快捷签仅对个人参与方有效。
+    // C端客户验证方式统一只保留互动视频签（audio_video）：签署时语音播报并录制音视频，
+    // 不再使用人脸(face)与短信(sms)验证。快捷签与普通签（无手机号降级）均走互动视频签。
     // 快捷签判断：个人客户有手机号即可开启免登签署（freeLogin + identifiedView=false）。
     // 无手机号时降级为普通签署（identifiedView=true，需实名后查看）。
     const isQuickSign = !!params.client?.mobile;
@@ -638,8 +728,8 @@ export class FadadaService {
     );
     const clientActorSignConfig = isQuickSign
       ? ({
-          // 快捷签意愿验证：仅允许人脸识别后签署（限制为 face 方式）
-          verifyMethods: ['face'],
+          // 快捷签意愿验证：使用互动视频签（audio_video）后签署（原人脸 face 改为互动视频签）
+          verifyMethods: ['audio_video'],
           identifiedView: false,
           freeLogin: true,
           readingToEnd: true,
@@ -648,10 +738,13 @@ export class FadadaService {
           free_login: true,
           identified_view: false,
           reading_to_end: true,
-          signer_sign_method: 'standard'
+          signer_sign_method: 'standard',
+          // 互动视频签播报内容（配合 verifyMethods=audio_video 启用音视频录制）
+          audioVideoInfos,
         })
-      : ({ verifyMethods: ['sms', 'face'], identifiedView: true, readingToEnd: true, signerSignMethod: 'standard',
-          free_login: false, identified_view: true, reading_to_end: true, signer_sign_method: 'standard' });
+      : ({ verifyMethods: ['audio_video'], identifiedView: true, readingToEnd: true, signerSignMethod: 'standard',
+          free_login: false, identified_view: true, reading_to_end: true, signer_sign_method: 'standard',
+          audioVideoInfos });
     const clientActor = {
       actor: {
         actorId: clientActorId,
@@ -1103,6 +1196,8 @@ export class FadadaService {
     lawyer?: { lawyerUserId: string; name: string; mobile?: string };
     // 预填字段值列表（固定值 + 业务员预填）
     fillValues?: Array<{ docId?: string | number; fieldId?: string; fieldName?: string; fieldValue: string }>;
+    // 互动视频签（audio_video）播报内容（模板管理按模板配置，未配置时回退默认）
+    audioVideoInfos?: Array<{ audioText: string; answerText?: string }>;
   }) {
     // 1. 创建签约合规记录（pending，引用法大大签署模板）
     const signing: SigningCompliance = await this.signingComplianceRepository.save(
@@ -1135,6 +1230,7 @@ export class FadadaService {
         corp: params.corp,
         lawyer: params.lawyer,
         fillValues: params.fillValues,
+        audioVideoInfos: params.audioVideoInfos,
       });
       // 3. 回填签署任务信息并更新状态
       signing.fadada_sign_task_id = res.signTaskId;
@@ -1178,6 +1274,348 @@ export class FadadaService {
       // 作废旧签约失败不影响本次新签约的正常使用，仅记录日志便于排查
       this.logger.warn(`作废旧签约失败 caseId=${caseId} clientId=${clientId}: ${(e as Error)?.message || e}`);
     }
+  }
+
+  // ==================== 新流程：线索 → 发合同(签约) → 签约完成生成案件 ====================
+
+  /** 回退合同号（未配置组织编号规则时使用） */
+  private fallbackContractNo(): string {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
+    return `HT-${y}${m}${d}-${rand}`;
+  }
+
+  /** 回退案件号（未配置组织编号规则时使用） */
+  private fallbackCaseNo(): string {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
+    return `AJ-${y}${m}${d}-${rand}`;
+  }
+
+  /**
+   * 新流程「发合同(签约)」：从线索发起，与案件无关。
+   * 1) 创建合同记录（stage=signing，关联线索，保存生成案件补充信息 case_supplement）
+   * 2) 创建签约合规记录（case_id 空串、lead_id/contract_id 关联）
+   * 3) 基于签署模板发起法大大签署任务
+   * 签署完成后由回调自动生成案件（generateCaseFromContract）。
+   */
+  async launchSignFromLead(params: {
+    leadId: string;
+    lawyerId: string;
+    organizationId: string;
+    subject: string;
+    signTemplateId: string;
+    signTemplateLocalId?: string;
+    subjectType: 'person' | 'corp';
+    client?: SigningClientInfo;
+    corp?: SigningCorpInfo;
+    lawyer?: { lawyerUserId: string; name: string; mobile?: string };
+    fillValues?: Array<{ docId?: string | number; fieldId?: string; fieldName?: string; fieldValue: string }>;
+    audioVideoInfos?: Array<{ audioText: string; answerText?: string }>;
+    // 合同基础信息（发合同页填写；合同上已有的字段）
+    contract?: {
+      type?: string;
+      amount?: number;
+      fee_type?: string;
+      payment_method?: string;
+      start_date?: string;
+      end_date?: string;
+      remarks?: string;
+    };
+    // 批量补充的「生成案件用」信息（合同上没有的字段）
+    caseSupplement?: {
+      case_type?: string;
+      case_category?: string;
+      case_name?: string;
+      opposing_party?: string;
+      assignee_lawyer_id?: string;
+      assistant_lawyer_ids?: string[];
+      fee_amount?: number;
+      fee_type?: string;
+      payment_method?: string;
+      description?: string;
+      contact_address?: string;
+      court?: string;
+    };
+  }) {
+    const lead = await this.leadRepository.findOne({ where: { id: params.leadId } });
+    if (!lead) throw new Error('线索不存在');
+    const orgId = lead.organization_id || params.organizationId;
+
+    // 1. 创建合同记录（发合同 → 待签署）
+    let contractNo: string | null = null;
+    try {
+      const bizType = NumberRuleService.mapContractTypeToBizType(params.contract?.type || 'entrust');
+      if (bizType) {
+        contractNo = await this.numberRuleService.generateNumber(orgId, {
+          numberType: NumberType.CONTRACT,
+          bizType,
+        });
+      }
+    } catch (e) {
+      this.logger.warn(`发合同：按编号规则生成合同号失败，回退随机编号 ${(e as Error)?.message || e}`);
+    }
+    const supplement = params.caseSupplement || {};
+    const clientName = params.subjectType === 'corp'
+      ? params.corp?.corpName || lead.contact_name || lead.phone
+      : params.client?.userName || lead.contact_name || lead.phone;
+    const clientPhone = params.client?.mobile || lead.phone || '';
+    const contract = await this.contractRepository.save(
+      this.contractRepository.create({
+        contract_no: contractNo || this.fallbackContractNo(),
+        title: params.subject || '法律服务合同',
+        type: params.contract?.type || 'entrust',
+        client_name: clientName,
+        client_phone: clientPhone,
+        amount: params.contract?.amount ?? (lead.amount ? Number(lead.amount) : 0),
+        start_date: params.contract?.start_date ? new Date(params.contract.start_date) : undefined,
+        end_date: params.contract?.end_date ? new Date(params.contract.end_date) : undefined,
+        stage: 'signing',
+        status: 'active',
+        remarks: params.contract?.remarks || null,
+        fee_type: params.contract?.fee_type || supplement.fee_type || null,
+        payment_method: params.contract?.payment_method || supplement.payment_method || null,
+        related_lead_id: lead.id,
+        lead_lawyer_id: supplement.assignee_lawyer_id || null,
+        template_id: params.signTemplateLocalId || null,
+        case_supplement: JSON.stringify(supplement),
+        organization_id: orgId,
+      } as Partial<Contract>),
+    );
+
+    // 2. 创建签约合规记录（无案件，case_id 空串）
+    const signing: SigningCompliance = await this.signingComplianceRepository.save(
+      this.signingComplianceRepository.create({
+        case_id: '',
+        client_id: '',
+        lead_id: lead.id,
+        contract_id: contract.id,
+        lawyer_id: params.lawyerId,
+        organization_id: orgId,
+        contract_template_id: params.signTemplateId,
+        subject_type: params.subjectType,
+        status: SigningStatus.PENDING,
+        verify_status: 'none',
+        id_card_no: params.client?.idCardNo || null,
+        corp_name: params.corp?.corpName || null,
+        corp_ident_no: params.corp?.corpIdentNo || null,
+        legal_rep_name: params.corp?.legalRepName || null,
+        contract_content: params.subject,
+        prefill_values: params.fillValues && params.fillValues.length > 0 ? JSON.stringify(params.fillValues) : null,
+      } as Partial<SigningCompliance>),
+    );
+
+    try {
+      // 3. 基于签署模板发起法大大签署任务
+      const res = await this.createSignTaskFromTemplate({
+        signingId: signing.id,
+        subject: params.subject,
+        signTemplateId: params.signTemplateId,
+        subjectType: params.subjectType,
+        client: params.client,
+        corp: params.corp,
+        lawyer: params.lawyer,
+        fillValues: params.fillValues,
+        audioVideoInfos: params.audioVideoInfos,
+      });
+      signing.fadada_sign_task_id = res.signTaskId;
+      signing.fadada_actor_id = res.actorId;
+      signing.sign_url = (res as any).embedUrl || res.signUrl;
+      await this.signingComplianceRepository.save(signing);
+      return {
+        contractId: contract.id,
+        contractNo: contract.contract_no,
+        signingId: signing.id,
+        signTaskId: res.signTaskId,
+        actorId: res.actorId,
+        signUrl: (res as any).embedUrl || res.signUrl,
+        mode: res.mode,
+      };
+    } catch (e) {
+      // 发起失败：清理合同与签约记录，避免脏数据
+      await this.signingComplianceRepository.remove(signing).catch(() => undefined);
+      await this.contractRepository.remove(contract).catch(() => undefined);
+      throw e;
+    }
+  }
+
+  /**
+   * 签约完成自动生成案件：合同字段 + 发合同时批量补充的信息 填入案件管理。
+   * 映射关系（合同 → 案件）：
+   *   client_name/client_phone → client_name/client_phone
+   *   amount → fee_amount/service_fee/amount
+   *   sign_date → filing_date（签约即收案）
+   *   lead_lawyer_id → assignee_lawyer_id
+   *   case_supplement（案由/案件大类/案件名称/对方当事人/收费方式/案件描述…）→ 对应案件字段
+   * 同时回写：contract.case_id、case.contract_id、线索转化状态、案件状态取组织默认状态。
+   */
+  async generateCaseFromContract(contractId: string): Promise<Case | null> {
+    const contract = await this.contractRepository.findOne({ where: { id: contractId } });
+    if (!contract) {
+      this.logger.warn(`生成案件失败：合同 ${contractId} 不存在`);
+      return null;
+    }
+    if (contract.case_id) {
+      // 已生成过案件，幂等返回
+      const existed = await this.caseRepository.findOne({ where: { id: contract.case_id } });
+      if (existed) return existed;
+    }
+
+    let supplement: any = {};
+    try {
+      supplement = contract.case_supplement ? JSON.parse(contract.case_supplement) : {};
+    } catch (e) {
+      supplement = {};
+    }
+    const lead = contract.related_lead_id
+      ? await this.leadRepository.findOne({ where: { id: contract.related_lead_id } })
+      : null;
+
+    // 客户档案：按手机号查找，无则自动建档（保证 C 端可见案件）
+    let clientId: string | null = null;
+    const phone = contract.client_phone || lead?.phone || '';
+    if (phone) {
+      let profile = await this.clientProfileRepository.findOne({ where: { phone } });
+      if (!profile) {
+        const created = this.clientProfileRepository.create({
+          name: contract.client_name || lead?.contact_name || `客户${phone.slice(-4)}`,
+          phone,
+          type: 'individual',
+          source: '合同签约',
+          contact_name: contract.client_name || lead?.contact_name || phone,
+          organization_id: contract.organization_id,
+        } as Partial<ClientProfile>);
+        profile = await this.clientProfileRepository.save(created);
+      }
+      clientId = profile.id;
+    }
+
+    // 案件编号：优先按组织编号规则，回退 AJ- 随机
+    let caseNo: string | null = null;
+    try {
+      const bizType = NumberRuleService.mapCategoryToBizType(supplement.case_category || 'civil');
+      if (bizType) {
+        caseNo = await this.numberRuleService.generateNumber(contract.organization_id, {
+          numberType: NumberType.CASE,
+          bizType,
+        });
+      }
+    } catch (e) {
+      this.logger.warn(`生成案件编号失败，回退随机编号：${(e as Error)?.message || e}`);
+    }
+
+    const statusConfigRepo = this.caseStatusConfigRepository;
+    let statusCode = 'pending_assign';
+    try {
+      const defaults = await statusConfigRepo.find({
+        where: { organization_id: contract.organization_id, enabled: true },
+        order: { is_default: 'DESC', sort_order: 'ASC' },
+      });
+      if (defaults.length) statusCode = (defaults.find((d: any) => d.is_default) || defaults[0]).code;
+    } catch (e) {
+      this.logger.warn(`读取组织默认案件状态失败，使用 pending_assign：${(e as Error)?.message || e}`);
+    }
+
+    const now = new Date();
+    const caseEntity = this.caseRepository.create({
+      case_type: supplement.case_type || lead?.case_type || 'other',
+      case_category: supplement.case_category || 'civil',
+      case_name: supplement.case_name || contract.title,
+      client_name: contract.client_name,
+      client_phone: contract.client_phone || lead?.phone,
+      client_id: clientId || undefined,
+      client_type: contract.client_name === supplement.opposing_party ? 'enterprise' : 'individual',
+      opposing_party: supplement.opposing_party || null,
+      contact_address: supplement.contact_address || lead?.contact_address || null,
+      court: supplement.court || null,
+      amount: Number(contract.amount) || undefined,
+      fee_amount: supplement.fee_amount != null ? Number(supplement.fee_amount) : Number(contract.amount) || undefined,
+      service_fee: supplement.fee_amount != null ? Number(supplement.fee_amount) : Number(contract.amount) || undefined,
+      fee_type: supplement.fee_type || contract.fee_type || null,
+      payment_method: supplement.payment_method || contract.payment_method || null,
+      description: supplement.description || lead?.case_description || lead?.business_summary || null,
+      assignee_lawyer_id: supplement.assignee_lawyer_id || contract.lead_lawyer_id || null,
+      assistant_lawyer_ids: Array.isArray(supplement.assistant_lawyer_ids) && supplement.assistant_lawyer_ids.length
+        ? JSON.stringify(supplement.assistant_lawyer_ids) : null,
+      case_source: '合同签约',
+      source_detail: lead ? `线索-${lead.source_channel || ''}` : null,
+      referrer: lead?.referrer || null,
+      status: statusCode as any,
+      stage: 'intake',
+      filing_date: contract.sign_date || now,
+      case_no: caseNo || this.fallbackCaseNo(),
+      contract_id: contract.id,
+      related_lead_id: contract.related_lead_id || null,
+      organization_id: contract.organization_id,
+    } as Partial<Case>);
+    // 案件与应收放进同一数据库事务，保证原子性：要么「案件 + 应收」都写入、要么都回滚，
+    // 彻底消除原先各自独立 save 导致的「有案无应收」半成功状态。
+    const savedCase = await this.caseRepository.manager.transaction(async (manager) => {
+      const c = await manager.save(caseEntity);
+      const feeAmount = Number(c.fee_amount || 0);
+      await manager.save(
+        manager.create(Receivable, {
+          case_id: c.id,
+          organization_id: c.organization_id,
+          contract_amount: feeAmount,
+          received_amount: 0,
+          pending_amount: feeAmount,
+          status: ReceivableStatus.PENDING,
+        }),
+      );
+      return c;
+    });
+
+    // ===== 发合同建案路径补齐（设计缺口 G2/G3）=====
+    // 1) 利益冲突检索：签约建案即做校验。命中冲突【或】查询异常，均将案件挂起待合规复核，
+    //    不再静默放行（利冲是合规红线，失败必须可见、可补检）。
+    try {
+      const conflictResult = await this.conflictCheckService.check({
+        partyName: savedCase.client_name || '',
+        opposingParty: savedCase.opposing_party || '',
+        partyPhone: savedCase.client_phone || undefined,
+        orgId: savedCase.organization_id,
+        caseId: savedCase.id,
+        checkerId: savedCase.assignee_lawyer_id || undefined,
+      });
+      if (conflictResult.check_result === 'conflict') {
+        await this.caseRepository.update(savedCase.id, { approval_status: 'conflict_hold' } as any);
+      }
+    } catch (conflictErr) {
+      // 利冲查询异常：仍挂起案件待人工复核，并强告警（不再静默吞掉导致漏检）
+      await this.caseRepository
+        .update(savedCase.id, { approval_status: 'conflict_hold' } as any)
+        .catch(() => undefined);
+      this.logger.error(`签约建案利冲检索失败，案件已挂起待复核 caseId=${savedCase.id}`, conflictErr);
+    }
+
+    // 2) 分润：签约时案件未结案、应收未完成，checkAndTriggerCommission 必然 skipped（属无效死代码）。
+    //    分润统一由「结案 / 全款到账」触发（见 case.service:766/989、finance.service:202），此处移除无效调用。
+
+    // 回写合同：已签 + 关联案件
+    await this.contractRepository.update(contract.id, {
+      stage: 'signed',
+      case_id: savedCase.id,
+      sign_date: contract.sign_date || now,
+    });
+
+    // 回写线索：转化完成
+    if (lead) {
+      await this.leadRepository.update(lead.id, {
+        case_id: savedCase.id,
+        conversion_status: 'converted',
+        conversion_time: now,
+        contact_result: 'converted',
+      } as any);
+    }
+    this.logger.log(`合同签约完成自动生成案件：合同 ${contract.contract_no} → 案件 ${savedCase.case_no}`);
+    return savedCase;
   }
 
   /**
@@ -1255,6 +1693,30 @@ export class FadadaService {
             }
             await this.signingComplianceRepository.save(target);
             this.logger.log(`签署状态回调已更新签约记录 ${target.id}: status=${target.status}`);
+            // 新流程：发合同（线索驱动，无案件）签约完成 → 自动生成案件（合同字段+补充信息填入案件管理）
+            if (
+              target.status === SigningStatus.SIGNED &&
+              !target.case_id &&
+              target.contract_id
+            ) {
+              try {
+                const newCase = await this.generateCaseFromContract(target.contract_id);
+                if (newCase) {
+                  target.case_id = newCase.id;
+                  await this.signingComplianceRepository.save(target);
+                }
+              } catch (genErr) {
+                // 建案失败不再静默：标记合同 stage=case_failed，后台合同列表可见并可重跑生成案件，
+                // 避免「有签约、无案件」隐形失败。
+                await this.contractRepository
+                  .update(target.contract_id, { stage: 'case_failed' } as any)
+                  .catch(() => undefined);
+                this.logger.error(
+                  `签约完成自动生成案件失败 contractId=${target.contract_id}: ${(genErr as Error)?.message || genErr}`,
+                  (genErr as Error)?.stack,
+                );
+              }
+            }
             // 法大大电子签完成：客户签约完成，触发收案立项短信（失败不影响回调主流程）
             if (target.status === SigningStatus.SIGNED && target.case_id) {
               this.triggerSms(target.case_id, 'filing');

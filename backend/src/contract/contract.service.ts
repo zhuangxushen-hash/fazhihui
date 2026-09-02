@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, EntityManager, In } from 'typeorm';
+import { Repository, DataSource, EntityManager, In, Brackets } from 'typeorm';
 import { Contract } from './contract.entity';
 import { ContractStage } from './contract-stage.entity';
 import { SealService } from '../seal/seal.service';
@@ -25,13 +25,14 @@ export const ContractType = {
 
 // 合同阶段常量
 export const ContractStageEnum = {
-  DRAFTING: 'drafting',       // 起草
-  REVIEWING: 'reviewing',     // 审查
-  SIGNED: 'signed',           // 已签
-  PERFORMING: 'performing',   // 履行
-  COMPLETED: 'completed',     // 完成
-  TERMINATED: 'terminated',   // 解约
-  VOIDED: 'voided',           // 作废
+  SIGNING: 'signing',       // 发合同待签（新流程：线索→发合同→签约）
+  DRAFTING: 'drafting',     // 起草
+  REVIEWING: 'reviewing',   // 审查
+  SIGNED: 'signed',         // 已签
+  PERFORMING: 'performing', // 履行
+  COMPLETED: 'completed',   // 完成
+  TERMINATED: 'terminated', // 解约
+  VOIDED: 'voided',         // 作废
 } as const;
 
 // 合同状态常量
@@ -228,11 +229,16 @@ export class ContractService {
     start_date?: string;
     end_date?: string;
     document_keyword?: string;
+    case_id?: string;
     page?: number;
     limit?: number;
   }): Promise<{ data: Contract[]; total: number }> {
     const query = this.contractRepository.createQueryBuilder('contract')
       .where('contract.organization_id = :orgId', { orgId });
+
+    if (filters?.case_id) {
+      query.andWhere('contract.case_id = :caseId', { caseId: filters.case_id });
+    }
 
     if (filters?.type) {
       query.andWhere('contract.type = :type', { type: filters.type });
@@ -291,6 +297,49 @@ export class ContractService {
         '(contract.contract_document_name LIKE :dkw OR contract.contract_document_no LIKE :dkw)',
         { dkw },
       );
+    }
+
+    // 案件维度「过期待签」隐藏（时间感知）：
+    // 同一案件下，若某个合同模板已有「已签(signed)」合同，
+    // 则仅隐藏该模板下【签发时间早于最近一份已签合同】的「待签约(signing)」合同；
+    // 已签之后新签发的待签约合同仍正常展示（满足「签之前的不显示、之后新发的要显示」）。
+    // 仅在按案件查询时生效；跨案件不互相影响。
+    if (filters?.case_id) {
+      const signedRefRows = await this.contractRepository
+        .createQueryBuilder('s')
+        .select('s.template_id', 'template_id')
+        .addSelect('MAX(s.created_at)', 'signed_at')
+        .where('s.case_id = :caseId', { caseId: filters.case_id })
+        .andWhere('s.stage = :signed', { signed: ContractStageEnum.SIGNED })
+        .andWhere('s.template_id IS NOT NULL')
+        .groupBy('s.template_id')
+        .getRawMany();
+
+      const refs = signedRefRows
+        .map((r) => r as Record<string, unknown>)
+        .map((r) => ({ template_id: r.template_id as string, signed_at: r.signed_at }))
+        .filter((r) => !!r.template_id && r.signed_at != null);
+
+      if (refs.length) {
+        query.andWhere(
+          new Brackets((qb) => {
+            refs.forEach((ref, i) => {
+              qb.orWhere(
+                '(contract.stage = :signing AND contract.template_id = :tpl' +
+                  i +
+                  ' AND contract.created_at < :tplTime' +
+                  i +
+                  ')',
+                {
+                  signing: ContractStageEnum.SIGNING,
+                  ['tpl' + i]: ref.template_id,
+                  ['tplTime' + i]: ref.signed_at,
+                },
+              );
+            });
+          }),
+        );
+      }
     }
 
     query.orderBy('contract.updated_at', 'DESC');

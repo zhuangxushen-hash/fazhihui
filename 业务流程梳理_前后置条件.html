@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>法智汇 全链路业务流程梳理（含前置/后置条件 · 代码核对版）</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --card:#ffffff; --ink:#1f2329; --sub:#5b6168;
+    --line:#e3e6eb; --brand:#2563eb; --brand-soft:#eef4ff;
+    --pre:#7c3aed; --pre-soft:#f3edff; --post:#0d9488; --post-soft:#e6f7f4;
+    --warn:#b45309; --warn-soft:#fef3e2; --red:#dc2626; --grid:#eef1f5;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    line-height:1.65;}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 22px 80px;}
+  header.top{background:linear-gradient(120deg,#1e3a8a,#2563eb);color:#fff;border-radius:16px;padding:28px 30px;margin-bottom:26px;}
+  header.top h1{margin:0 0 8px;font-size:24px;}
+  header.top p{margin:0;opacity:.9;font-size:14px;}
+  .tag{display:inline-block;background:rgba(255,255,255,.18);border-radius:999px;padding:3px 12px;font-size:12px;margin-right:8px;margin-top:10px;}
+  section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-bottom:20px;box-shadow:0 1px 2px rgba(16,24,40,.04);}
+  h2{font-size:19px;margin:0 0 4px;display:flex;align-items:center;gap:8px;}
+  h2 .num{background:var(--brand);color:#fff;width:26px;height:26px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;}
+  h3{font-size:15px;margin:22px 0 8px;color:var(--sub);}
+  .lead{color:var(--sub);font-size:14px;margin:6px 0 16px;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:10px;}
+  th,td{border:1px solid var(--line);padding:9px 11px;vertical-align:top;text-align:left;}
+  th{background:var(--grid);font-weight:600;white-space:nowrap;}
+  .stage-name{font-weight:600;color:var(--brand);}
+  .pre{color:var(--pre);font-weight:600;}
+  .post{color:var(--post);font-weight:600;}
+  .pre-box td:nth-child(2){background:var(--pre-soft);}
+  .post-box td:nth-child(2){background:var(--post-soft);}
+  .code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:#f1f3f7;border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:#334155;}
+  .warn{background:var(--warn-soft);border-left:4px solid var(--warn);padding:12px 14px;border-radius:8px;margin:14px 0;font-size:13.5px;}
+  .warn b{color:var(--warn);}
+  .flow{background:#0f172a;border-radius:12px;padding:18px;overflow-x:auto;margin:14px 0;}
+  .flow svg{display:block;margin:0 auto;}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;margin:10px 0 4px;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .dot{width:12px;height:12px;border-radius:3px;display:inline-block;}
+  .summary{columns:2;column-gap:26px;font-size:13.5px;}
+  .summary li{margin:4px 0;break-inside:avoid;}
+  footer{color:var(--sub);font-size:12.5px;text-align:center;margin-top:30px;}
+  .pill{font-size:12px;padding:2px 8px;border-radius:6px;background:var(--brand-soft);color:var(--brand);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>法智汇 · 全链路业务流程梳理</h1>
+  <p>基于需求文档（V3）+ 后端源码（NestJS / TypeORM）核对，重点补全「每个环节的前置条件 / 后置条件」。</p>
+  <div>
+    <span class="tag">线索 → 邀约 → 商机 → 案件 → 合同 → 收款 → 分润 → 归档</span>
+    <span class="tag">代码核对版</span>
+    <span class="tag">2026-08-28</span>
+  </div>
+</header>
+
+<section>
+  <h2><span class="num">0</span>一图看懂主线闭环</h2>
+  <div class="flow">
+    <svg width="900" height="220" viewBox="0 0 900 220" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,Segoe UI,PingFang SC,sans-serif">
+      <defs>
+        <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L7,3 L0,6 Z" fill="#94a3b8"/>
+        </marker>
+      </defs>
+      <!-- nodes -->
+      <g font-size="13" text-anchor="middle">
+        <rect x="20" y="85" rx="10" width="92" height="44" fill="#eef4ff" stroke="#2563eb"/>
+        <text x="66" y="112" fill="#1e3a8a">线索 Lead</text>
+
+        <rect x="140" y="85" rx="10" width="92" height="44" fill="#eef4ff" stroke="#2563eb"/>
+        <text x="186" y="112" fill="#1e3a8a">邀约 Invite</text>
+
+        <rect x="260" y="85" rx="10" width="92" height="44" fill="#eef4ff" stroke="#2563eb"/>
+        <text x="306" y="112" fill="#1e3a8a">商机 Opp</text>
+
+        <rect x="380" y="85" rx="10" width="92" height="44" fill="#f3edff" stroke="#7c3aed"/>
+        <text x="426" y="112" fill="#5b21b6">案件 Case</text>
+
+        <rect x="500" y="85" rx="10" width="92" height="44" fill="#f3edff" stroke="#7c3aed"/>
+        <text x="546" y="112" fill="#5b21b6">合同 Contract</text>
+
+        <rect x="620" y="85" rx="10" width="92" height="44" fill="#e6f7f4" stroke="#0d9488"/>
+        <text x="666" y="112" fill="#065f5b">收款/应收</text>
+
+        <rect x="740" y="85" rx="10" width="92" height="44" fill="#e6f7f4" stroke="#0d9488"/>
+        <text x="786" y="112" fill="#065f5b">分润/归档</text>
+      </g>
+      <!-- arrows -->
+      <g stroke="#94a3b8" stroke-width="1.6" marker-end="url(#ar)">
+        <line x1="112" y1="107" x2="138" y2="107"/>
+        <line x1="232" y1="107" x2="258" y2="107"/>
+        <line x1="352" y1="107" x2="378" y2="107"/>
+        <line x1="472" y1="107" x2="498" y2="107"/>
+        <line x1="592" y1="107" x2="618" y2="107"/>
+        <line x1="712" y1="107" x2="738" y2="107"/>
+      </g>
+      <!-- parallel auto side effects -->
+      <g font-size="11" fill="#64748b">
+        <text x="306" y="62" text-anchor="middle">到所→自动建商机</text>
+        <text x="426" y="158" text-anchor="middle">建案同时：利冲检索+客户档案+应收台账</text>
+        <text x="666" y="158" text-anchor="middle">全款到账→触发分润</text>
+        <text x="786" y="158" text-anchor="middle">结案→评价+结案报告+短信</text>
+      </g>
+      <g stroke="#cbd5e1" stroke-dasharray="4 3" fill="none">
+        <path d="M260,128 C260,150 426,150 426,140"/>
+        <path d="M380,128 C380,150 666,150 666,140"/>
+        <path d="M740,128 C740,150 786,150 786,140"/>
+      </g>
+    </svg>
+  </div>
+  <div class="legend">
+    <span><i class="dot" style="background:#2563eb"></i>获客/谈案域</span>
+    <span><i class="dot" style="background:#7c3aed"></i>办案域</span>
+    <span><i class="dot" style="background:#0d9488"></i>财务/归档域</span>
+    <span><i class="dot" style="background:#94a3b8"></i>自动联动（虚线）</span>
+  </div>
+</section>
+
+<!-- ============ 1 线索 ============ -->
+<section>
+  <h2><span class="num">1</span>线索（Lead）生命周期</h2>
+  <p class="lead">核心文件：<span class="code">lead/lead.service.ts</span> · <span class="code">lead/invite-task.service.ts</span> · 实体 <span class="code">lead.entity.ts</span></p>
+
+  <h3>① 线索创建 create()</h3>
+  <table>
+    <tr><th style="width:120px">项</th><th>内容</th></tr>
+    <tr class="pre-box"><td class="pre">前置条件</td><td>手机号合法；同手机号 <b>7 天内</b>已存在线索 → 不入新表，直接返回旧线索（去重，见代码 <span class="code">created_at &gt; now-7d</span>）。</td></tr>
+    <tr class="post-box"><td class="post">后置动作</td><td>写入 Lead；随后异步 <b>自动匹配分配规则</b>（<span class="code">matchAndAssign</span>，异常静默不阻断）。</td></tr>
+  </table>
+
+  <h3>② 分配销售 assignSales()</h3>
+  <table>
+    <tr><th style="width:120px">项</th><th>内容</th></tr>
+    <tr class="pre-box"><td class="pre">前置条件</td><td>线索存在。</td></tr>
+    <tr class="post-box"><td class="post">后置动作</td><td><span class="code">assign_sales_id</span> 赋值，<span class="code">status = PENDING_FOLLOW（待跟进）</span>。</td></tr>
+  </table>
+
+  <h3>③ 添加跟进 createFollowUp()</h3>
+  <table>
+    <tr><th style="width:120px">项</th><th>内容</th></tr>
+    <tr class="pre-box"><td class="pre">前置条件</td><td>线索存在。</td></tr>
+    <tr class="post-box"><td class="post">后置动作</td><td>写入跟进记录；<span class="code">status = FOLLOWING（跟进中）</span>，<span class="code">follow_up_time = now</span>。</td></tr>
+  </table>
+
+  <h3>④ 公海回流 autoRecycle()</h3>
+  <table>
+    <tr><th style="width:120px">项</th><th>内容</th></tr>
+    <tr class="pre-box"><td class="pre">前置条件</td><td><span class="code">status = PENDING_FOLLOW</span> 且 <span class="code">created_at</span> 早于阈值（默认 <b>24 小时</b>）。</td></tr>
+    <tr class="post-box"><td class="post">后置动作</td><td>批量置 <span class="code">status = LOST</span>（即回流并标记为流失）。</td></tr>
+  </table>
+  <div class="warn"><b>⚠ 文档与代码不一致：</b>需求文档（5.3 / 13.7）写的是「72 小时无跟进回流公海」，而 <span class="code">autoRecycle(timeoutHours=24)</span> 默认参数与「线索分配后 72 小时」口径不同。若以代码为准，待跟进线索 24 小时即判流失，需向产品确认是否要统一为 72h。</div>
+
+  <h3>⑤ 线索编辑 update()</h3>
+  <table>
+    <tr><th style="width:120px">项</th><th>内容</th></tr>
+    <tr class="pre-box"><td class="pre">前置条件</td><td>线索存在；若改手机号，必须 <b>未被其他线索占用</b>（<span class="code">ConflictException</span> 拦截「该手机号已存在其他线索」）。</td></tr>
+    <tr class="post-box"><td class="post">后置动作</td><td>仅 patch 传入字段，避免误清空。</td></tr>
+  </table>
+</section>
+
+<!-- ============ 2 邀约 ============ -->
+<section>
+  <h2><span class="num">2</span>邀约（InviteTask）与「到所自动建商机」</h2>
+  <p class="lead">核心文件：<span class="code">lead/invite-task.service.ts</span></p>
+
+  <h3>① 创建邀约 createInviteTask()</h3>
+  <table>
+    <tr><th style="width:120px">项</th><th>内容</th></tr>
+    <tr class="pre-box"><td class="pre">前置条件</td><td>线索存在；操作人角色 ∈ {SALES, ORG_ADMIN, SUPER_ADMIN}。</td></tr>
+    <tr class="post-box"><td class="post">后置动作</td><td>写入 InviteTask；若 <span class="code">result=SUCCESS</span> → 线索 <span class="code">status=INVITING（邀约中）</span>；若 <span class="code">result=INVALID</span> → 线索 <span class="code">LOST</span>。</td></tr>
+  </table>
+
+  <h3>② 更新到所 updateTaskStatus(ARRIVED)</h3>
+  <table>
+    <tr><th style="width:120px">项</th><th>内容</th></tr>
+    <tr class="pre-box"><td class="pre">前置条件</td><td>任务存在且 <span class="code">inviter_id == 当前用户</span>。</td></tr>
+    <tr class="post-box"><td class="post">后置动作</td><td>线索 <span class="code">status=NEGOTIATING（谈案中）</span>；<b>自动预建商机</b>（<span class="code">createOpportunity</span>，若线索已有商机则跳过；异常静默）。NOT_ARRIVED → 线索回到 FOLLOWING。</td></tr>
+  </table>
+  <div class="warn"><b>⚠ 文档缺失：</b>需求文档未明确「邀约到所 → 自动预建商机」这条自动化，代码（13.8 缺口3）已实现，是本产品拉通谈案域的关键衔接点。</div>
+
+  <h3>③ 录音上传 uploadRecording()</h3>
+  <table>
+    <tr><th style="width:120px">项</th><th>内容</th></tr>
+    <tr class="post-box"><td class="post">后置动作</td><td>保存录音 URL；若带转写文本则<b>异步触发谈案 AI 质检</b>（<span class="code">runTalkQualityCheck</span>，异常静默）。</td></tr>
+  </table>
+</section>
+
+<!-- ============ 3 商机 ============ -->
+<section>
+  <h2><span class="num">3</span>商机（Opportunity）谈案成交流程</h2>
+  <p class="lead">核心文件：<span class="code">lead/opportunity.service.ts</span> · <span class="code">lead/talk-sop.service.ts</span></p>
+
+  <h3>① 创建商机 createOpportunity()</h3>
+  <table>
+    <tr><th style="width:120px">项</th><th>内容</th></tr>
+    <tr class="pre-box"><td class="pre">前置条件</td><td>所属线索存在；该线索<b>尚未创建过商机</b>（<span class="code">BadRequestException: 该线索已创建商机</span>，保障一对一）。</td></tr>
+    <tr class="post-box"><td class="post">后置动作</td><td>创建商机 <span class="code">stage=FIRST_CONTACT（初步沟通）、status=ACTIVE</span>；写阶段变更日志；线索 <span class="code">status=NEGOTIATING</span>。</td></tr>
+  </table>
+
+  <h3>② 阶段推进 updateStage()</h3>
+  <table>
+    <tr><th style="width:120px">项</th><th>内容</th></tr>
+    <tr class="pre-box"><td class="pre">前置条件</td><td>商机存在；SALES 仅能操作自己的商机（<span class="code">negotiator_id == userId</span>）。</td></tr>
+    <tr class="post-box"><td class="post">后置动作</td><td>更新 <span class="code">stage</span>（初步沟通→方案设计→报价→签约）；写阶段日志。报价项变更后自动重算 <span class="code">quote_amount</span>。</td></tr>
+  </table>
+
+  <h3>③ 签约转化 convertToCase()（关键闭环）</h3>
+  <table>
+    <tr><th style="width:120px">项</th><th>内容</th></tr>
+    <tr class="pre-box"><td class="pre">前置条件</td><td>
+      <ul style="margin:0;padding-left:18px">
+        <li>商机存在、线索存在；</li>
+        <li>商机 <span class="code">stage != SIGNED</span>（已签约则报错）；</li>
+        <li><b>谈案 SOP 强制节点全部完成</b>（<span class="code">checkRequiredNodesCompleted</span>，未完成则报「以下强制节点未完成」）。</li>
+      </ul>
+    </td></tr>
+    <tr class="post-box"><td class="post">后置动作</td><td>
+      事务内：新建案件（<span class="code">status=PENDING_ASSIGN</span>，带回 <span class="code">lead_id / opportunity_id</span>）；商机 <span class="code">stage=SIGNED、status=COMPLETED、conversion_time</span>；线索 <span class="code">status=PENDING_SIGN、conversion_status=converted</span>。
+    </td></tr>
+  </table>
+  <div class="warn"><b>⚠ 文档缺失：</b>文档把「报价→签约→收款」画成独立节点，但代码里「签约转化」必须过 <b>谈案 SOP 强制节点</b> 这道卡口，这是防止违规签约的实质校验，务必写入流程。</div>
+
+  <h3>④ 标记为流失 markAsLost()</h3>
+  <table>
+    <tr><th style="width:120px">项</th><th>内容</th></tr>
+    <tr class="pre-box"><td class="pre">前置条件</td><td>商机存在且权限匹配。</td></tr>
+    <tr class="post-box"><td class="post">后置动作</td><td>商机 <span class="code">stage=LOST、status=COMPLETED</span>；线索 <span class="code">status=LOST</span>。</td></tr>
+  </table>
+</section>
+
+<!-- ============ 4 案件 ============ -->
+<section>
+  <h2><span class="num">4</span>案件（Case）办案交付流程</h2>
+  <p class="lead">核心文件：<span class="code">case/case.service.ts</span> · 实体 <span class="code">case.entity.ts</span></p>
+
+  <h3>① 新建案件 create()</h3>
+  <table>
+    <tr><th style="width:120px">项</th><th>内容</th></tr>
+    <tr class="pre-box"><td class="pre">前置条件</td><td>必须带 <span class="code">organization_id</span>，否则拒绝。</td></tr>
+    <tr class="post-box"><td class="post">后置动作</td><td>
+      事务内：生成案件编号（<span class="code">AJ-YYYYMMDD-XXXX</span> 或组织编号规则）；<b>风险等级自动评级</b>（金额&gt;50万 / 期限&lt;15天 / 刑事·行政案由 → medium/high）；<b>利冲检索</b>（命中则 <span class="code">approval_status=conflict_hold</span>）。<br>
+      事务外（异常静默）：<b>类案匹配</b>结果追加到描述；<b>办案 SOP 自动生成</b>。
+    </td></tr>
+  </table>
+
+  <h3>② 分配律师 assignLawyer()</h3>
+  <table>
+    <tr><th style="width:120px">项</th><th>内容</th></tr>
+    <tr class="pre-box"><td class="pre">前置条件</td><td>案件存在。</td></tr>
+    <tr class="post-box"><td class="post">后置动作</td><td><span class="code">assignee_lawyer_id</span> 赋值，<span class="code">status=PROCESSING（办理中）</span>；若有关联合同则回写合同主办律师。</td></tr>
+  </table>
+
+  <h3>③ 审批流 submitApproval / approve / reject</h3>
+  <table>
+    <tr><th style="width:120px">项</th><th>内容</th></tr>
+    <tr class="pre-box"><td class="pre">前置条件</td><td>案件存在。</td></tr>
+    <tr class="post-box"><td class="post">后置动作</td><td><span class="code">approval_status</span> 在 pending↔approved/rejected 间流转；若原 stage=intake，审批通过自动转 <span class="code">processing</span>。</td></tr>
+  </table>
+
+  <h3>④ 结案 closeCase()（关键闭环）</h3>
+  <table>
+    <tr><th style="width:120px">项</th><th>内容</th></tr>
+    <tr class="pre-box"><td class="pre">前置条件</td><td>案件存在（通常经 <span class="code">updateStatus(CLOSED)</span> 进入）。</td></tr>
+    <tr class="post-box"><td class="post">后置动作</td><td>
+      事务内：<span class="code">status=CLOSED</span>；若合同处于 signed/performing → 合同 <span class="code">stage=completed</span>；若应收 <span class="code">已收 ≥ 应收总额</span> → 合同 <span class="code">is_settled=true</span>；<b>触发分润检查</b>（异常静默）。<br>
+      事务外：<b>触发客户评价</b>（C 端）、<b>自动生成结案报告文书</b>、推送 C 端结案短信。
+    </td></tr>
+  </table>
+
+  <h3>⑤ 结案归档 archiveCase()</h3>
+  <table>
+    <tr><th style="width:120px">项</th><th>内容</th></tr>
+    <tr class="pre-box"><td class="pre">前置条件</td><td>案件存在；通常已结案。</td></tr>
+    <tr class="post-box"><td class="post">后置动作</td><td><span class="code">stage=closed</span> 并生成归档编号；同样执行「合同完结 + 应收结清 + 分润触发」联动；推送办结短信。批量归档 <span class="code">batchArchive</span> 逐个复用、单失败计数不中断。</td></tr>
+  </table>
+
+  <h3>⑥ 变更 / 解约 / 作废</h3>
+  <table>
+    <tr><th style="width:120px">项</th><th>内容</th></tr>
+    <tr class="post-box"><td class="post">后置动作</td><td><span class="code">changeCase</span> → change_status=changed；<span class="code">terminateCase</span> → status=terminated；<span class="code">voidCase</span> → status=voided。三者均记录原因/操作人/时间并写审计日志。</td></tr>
+  </table>
+  <div class="warn"><b>⚠ 文档与代码不一致：</b>文档案件状态只有「待受理/办理中/已结案/已归档」，但代码实际使用多维字段组合：<span class="code">status</span>(PENDING_ASSIGN/PROCESSING/CLOSED/TERMINATED/VOIDED)、<span class="code">stage</span>(intake/processing/closing/closed)、<span class="code">approval_status</span>(pending/approved/rejected/conflict_hold)、<span class="code">change_status</span>。建议以代码状态机为准重写文档枚举。</div>
+</section>
+
+<!-- ============ 5 合同 ============ -->
+<section>
+  <h2><span class="num">5</span>合同（Contract）与用印</h2>
+  <p class="lead">核心文件：<span class="code">contract/contract.service.ts</span></p>
+  <table>
+    <tr><th style="width:140px">环节</th><th class="pre">前置条件</th><th class="post">后置动作</th></tr>
+    <tr>
+      <td><b>起草 create</b></td>
+      <td>关联案件存在（通常签约转化后）。</td>
+      <td><span class="code">stage=DRAFTING（草稿）</span>，写入阶段流水。</td>
+    </tr>
+    <tr>
+      <td><b>提交审批 submitApproval</b></td>
+      <td>合同存在。</td>
+      <td><span class="code">approval_status=pending</span>。</td>
+    </tr>
+    <tr>
+      <td><b>审批通过 approve</b></td>
+      <td>合同存在。</td>
+      <td><span class="code">approval_status=approved</span>。</td>
+    </tr>
+    <tr>
+      <td><b>签署 sign</b></td>
+      <td>审批通过（业务上）。</td>
+      <td><span class="code">stage=SIGNED</span>（C 端另走法大大电子签，见 12.9.2）。</td>
+    </tr>
+    <tr>
+      <td><b>交回 / 解约 / 作废</b></td>
+      <td>合同存在。</td>
+      <td>分别对应 <span class="code">return / terminate / void</span> 阶段变更 + 阶段流水。<br>用印（seal）单独走审批引擎。</td>
+    </tr>
+  </table>
+</section>
+
+<!-- ============ 6 财务 ============ -->
+<section>
+  <h2><span class="num">6</span>收款、应收账款与分润结算</h2>
+  <p class="lead">核心文件：<span class="code">finance/finance.service.ts</span> · <span class="code">finance/commission.service.ts</span> · <span class="code">finance/receivable.entity.ts</span></p>
+
+  <h3>① 开票 / 登记收款（应收台账来源）</h3>
+  <p class="lead">线索/商机转案件时已<b>自动预建应收台账</b>（Receivable，<span class="code">status=PENDING</span>，contract_amount=fee）。后续通过 <span class="code">receivables/:id/record-payment</span> 登记。</p>
+
+  <h3>② 登记收款 recordPayment()（关键闭环）</h3>
+  <table>
+    <tr><th style="width:120px">项</th><th>内容</th></tr>
+    <tr class="pre-box"><td class="pre">前置条件</td><td>应收台账存在；<span class="code">amount &gt; 0</span>（否则 <span class="code">BadRequestException</span>）。</td></tr>
+    <tr class="post-box"><td class="post">后置动作</td><td>
+      事务内：写 PaymentRecord(PAID)；累加 <span class="code">received_amount</span>，重算 <span class="code">pending_amount</span>；
+      若 <span class="code">已收 ≥ 应收</span> → 应收 <span class="code">status=COMPLETED</span>；
+      回写案件 <span class="code">fee_collected / settled_amount</span>；
+      <b>应收变 COMPLETED → 自动触发分润检查</b>。
+    </td></tr>
+  </table>
+
+  <h3>③ 分润计算 calculateCommission / checkAndTriggerCommission()</h3>
+  <table>
+    <tr><th style="width:120px">项</th><th>内容</th></tr>
+    <tr class="pre-box"><td class="pre">前置条件</td><td>
+      <b>案件必须已结案</b>（<span class="code">status == CLOSED</span>，否则「案件未结案，无法计算分润」）；
+      <b>且应收台账已结清</b>（<span class="code">ReceivableStatus.COMPLETED</span>，否则「款项未结清」）。
+    </td></tr>
+    <tr class="post-box"><td class="post">后置动作</td><td>按「角色类型 + 案由」匹配分润规则（固定/百分比/阶梯），生成 <span class="code">CommissionRecord（待结算）</span>；<span class="code">markPaid()</span> 后状态转 PAID。</td></tr>
+  </table>
+  <div class="warn"><b>⚠ 文档缺失：</b>「收款 → 分润」是自动串联的（全款到账即触发），文档只在 13.7.3 提到，但未在财务章节列明触发条件；建议补进 8.9 分润配置说明。</div>
+</section>
+
+<!-- ============ 7 客户C端 ============ -->
+<section>
+  <h2><span class="num">7</span>客户端（C 端）关键衔接</h2>
+  <p class="lead">核心文件：<span class="code">client/client.service.ts</span> · <span class="code">fadada/*</span></p>
+  <ul style="font-size:13.5px">
+    <li><b>AI 咨询转人工</b>：C 端识别复杂问题 → 按手机号/姓名 <b>自动建线索</b>（来源关键词=<span class="code">AI咨询转人工</span>），7 天去重，复用自动分配规则。</li>
+    <li><b>在线签约</b>：法大大电子签（实名三要素 + 人脸/短信核验）→ 签署任务 → 状态回调（pending/verified/signed）。</li>
+    <li><b>在线支付</b>：微信/支付宝/银行卡，支付成功回调触发电子发票开具。</li>
+    <li><b>结案评价 / 我的归档</b>：结案后 C 端可评价（联动律师评级中心），并可查询/下载归档卷宗。</li>
+  </ul>
+</section>
+
+<!-- ============ 文档缺口汇总 ============ -->
+<section>
+  <h2><span class="num">8</span>需求文档 vs 代码：主要缺口清单</h2>
+  <table>
+    <tr><th style="width:40px">#</th><th>主题</th><th>文档口径</th><th>代码实际</th><th>建议</th></tr>
+    <tr><td>1</td><td>公海回流时限</td><td>72 小时无跟进</td><td><span class="code">autoRecycle(timeoutHours=24)</span> 默认 24h</td><td>统一口径（建议确认业务真实意图）</td></tr>
+    <tr><td>2</td><td>线索状态枚举</td><td>待分配/跟进中/已成交/已流失</td><td>PENDING_FOLLOW/FOLLOWING/INVITING/NEGOTIATING/PENDING_SIGN/LOST + conversion_status</td><td>以代码状态机补全</td></tr>
+    <tr><td>3</td><td>案件状态枚举</td><td>待受理/办理中/已结案/已归档</td><td>status + stage + approval_status + change_status 多维</td><td>重写枚举与状态图</td></tr>
+    <tr><td>4</td><td>邀约到所→商机</td><td>未明确</td><td>到所（ARRIVED）自动预建商机</td><td>补进谈案流程</td></tr>
+    <tr><td>5</td><td>签约强制校验</td><td>仅「报价→签约」</td><td>签约转化须谈案 SOP 强制节点完成</td><td>补进商机流程</td></tr>
+    <tr><td>6</td><td>收款→分润</td><td>仅提及</td><td>全款到账自动触发 Commission</td><td>补进财务流程</td></tr>
+    <tr><td>7</td><td>建案联动</td><td>未细化</td><td>转案件同时：利冲检索 + 客户档案 + 应收台账</td><td>补进案件创建节点</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">9</span>核心闭环（一句话总结）</h2>
+  <div class="summary">
+    <ul>
+      <li>线索→案件：<span class="code">POST /leads/:id/convert</span> 事务内自动做利冲检索 + 客户档案 + 应收台账。</li>
+      <li>商机→案件：<span class="code">POST /opportunities/:id/convert-to-case</span> 校验 SOP 强制节点后签约，建案并回写线索。</li>
+      <li>收款→分润：<span class="code">receivables/:id/record-payment</span> 全款到账触发 <span class="code">checkAndTriggerCommission</span>。</li>
+      <li>案件→归档：<span class="code">POST /cases/:id/archive</span> 联动归档卷宗 + 合同完结 + 分润 + 客户短信。</li>
+      <li>客户→服务：C 端评价联动律师评级；投诉含处理与升级；舆情/合规→站内推送。</li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  本梳理由 WorkBuddy 基于 <code>需求文档V3.md</code> 与 <code>backend/src</code> 源码核对生成 · 仅覆盖主链路，子模块（投放/合规/人事/知识库）可按需继续深挖。
+</footer>
+
+</div>
+</body>
+</html>

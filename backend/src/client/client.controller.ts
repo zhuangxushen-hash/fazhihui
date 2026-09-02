@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, BadRequestException, Res } from '@nestjs/common';
+import { Response } from 'express';
+import * as fs from 'fs';
 import { ClientService } from './client.service';
 import { ComplaintType, UserRole } from '../types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -32,6 +34,21 @@ export class ClientController {
   @Post('cases/:id/documents/list')
   getCaseDocuments(@Param('id') id: string, @Body() body: { client_id: string }) {
     return this.clientService.getCaseDocuments(id, body.client_id);
+  }
+
+  // C端下载案件文书（客户本人上传或 B 端勾选「展示给客户」的本地存储文件）
+  @Post('cases/:id/documents/:docId/download')
+  async downloadCaseDocument(
+    @Param('id') id: string,
+    @Param('docId') docId: string,
+    @Body() body: { client_id: string },
+    @Res() res: Response,
+  ) {
+    const fileInfo = await this.clientService.getCaseDocumentForDownload(id, docId, body.client_id);
+    res.setHeader('Content-Type', fileInfo.mime);
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileInfo.name)}"`);
+    const fileStream = fs.createReadStream(fileInfo.path);
+    fileStream.pipe(res);
   }
 
   @Post('ai/consult')
@@ -172,6 +189,12 @@ export class ClientController {
     return this.clientService.getSignStatus(body);
   }
 
+  // 获取签署音视频下载链接（互动视频签录制，签署完成后 5 分钟左右可获取）
+  @Post('sign/audio-video')
+  getSignAudioVideo(@Body() body: { signing_id: string; client_id: string }) {
+    return this.clientService.getSignAudioVideo(body);
+  }
+
   // ==================== 模板签约 C 端预填流程 ====================
   // C端查询案件下待签约/待预填的签约记录（进入现有 C 端流程补充信息并签约）
   @Post('cases/:id/signings')
@@ -180,6 +203,15 @@ export class ClientController {
     @Body() body: { client_id: string },
   ) {
     return this.clientService.getActiveSignings({ client_id: body.client_id, case_id: id });
+  }
+
+  // C端查询案件下已签署的签约记录（供案件详情展示签署音视频入口）
+  @Post('cases/:id/signed-signings')
+  getSignedSignings(
+    @Param('id') id: string,
+    @Body() body: { client_id: string },
+  ) {
+    return this.clientService.getSignedSignings({ client_id: body.client_id, case_id: id });
   }
 
   // C端获取待签约任务中客户需要补充填写的字段（用于复用 C 端页面做预填）

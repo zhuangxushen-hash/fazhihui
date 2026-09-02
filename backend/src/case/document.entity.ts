@@ -29,6 +29,10 @@ export class Document {
   @Column({ default: false })
   is_ai_generated: boolean;
 
+  // B端上传时可选：是否展示给 C 端客户（案件详情-相关文书）
+  @Column({ type: 'boolean', default: false, comment: '是否展示给C端客户' })
+  visible_to_client: boolean;
+
   @ManyToOne(() => Case, caseEntity => caseEntity.documents)
   case: Case;
 

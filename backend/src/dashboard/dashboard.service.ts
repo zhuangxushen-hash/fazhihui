@@ -19,7 +19,7 @@ import { CaseTask, CaseTaskStatus } from '../case/case-task.entity';
 import { CaseWarning } from '../case/case-warning.entity';
 import { CaseCost } from '../finance/case-cost.entity';
 import { ComplianceCheckResult } from '../compliance/compliance-check-result.entity';
-import { ComplaintTicket } from '../compliance/complaint-ticket.entity';
+import { ComplaintTicket, TicketStatus } from '../compliance/complaint-ticket.entity';
 import { ReportTemplate } from './report-template.entity';
 import { ReportExportLog } from './report-export-log.entity';
 import { ServiceRating } from '../client/service-rating.entity';
@@ -544,6 +544,79 @@ export class DashboardService {
       rectification_rate: rectificationRate,
       complaint_rate: complaintRate,
       overdue_case_count: overdueCaseCount,
+    };
+  }
+
+  /**
+   * 投诉率看板聚合
+   * - 投诉案件率 = 被投诉案件数（去重，关联了案件的工单）/ 案件总数
+   * - 投诉金额 = 被投诉案件的合同金额（receivables.contract_amount）合计
+   * - 附带：投诉工单总数、解决率、来源分布、类型分布
+   */
+  async getComplaintRateStats(orgId: string): Promise<{
+    total_cases: number;
+    complaint_ticket_count: number;
+    cases_with_complaint: number;
+    complaint_case_rate: number;
+    complaint_amount: number;
+    resolved_count: number;
+    resolved_rate: number;
+    by_source: { source: string; count: number }[];
+    by_type: { type: string; count: number }[];
+  }> {
+    const totalCases = await this.caseRepository.count({ where: { organization_id: orgId } });
+
+    const tickets = await this.complaintTicketRepository.find({ where: { organization_id: orgId } });
+    const complaintTicketCount = tickets.length;
+
+    // 被投诉案件（按 case_id 去重）
+    const complainedCaseIds = [...new Set(tickets.map(t => t.case_id).filter(Boolean))] as string[];
+    const casesWithComplaint = complainedCaseIds.length;
+
+    const complaintCaseRate = totalCases > 0 ? (casesWithComplaint / totalCases) * 100 : 0;
+
+    // 投诉金额：被投诉案件的合同金额合计
+    let complaintAmount = 0;
+    if (complainedCaseIds.length > 0) {
+      const amtResult = await this.receivableRepository.createQueryBuilder('r')
+        .select('COALESCE(SUM(r.contract_amount), 0)', 'total')
+        .where('r.organization_id = :orgId', { orgId })
+        .andWhere('r.case_id IN (:...ids)', { ids: complainedCaseIds })
+        .getRawOne();
+      complaintAmount = parseFloat(amtResult?.total || '0');
+    }
+
+    const resolvedCount = tickets.filter(
+      t => t.status === TicketStatus.RESOLVED || t.status === TicketStatus.CLOSED,
+    ).length;
+    const resolvedRate = complaintTicketCount > 0 ? (resolvedCount / complaintTicketCount) * 100 : 0;
+
+    // 来源分布
+    const bySourceMap: Record<string, number> = {};
+    for (const t of tickets) {
+      const k = t.source_channel || 'other';
+      bySourceMap[k] = (bySourceMap[k] || 0) + 1;
+    }
+    const by_source = Object.entries(bySourceMap).map(([source, count]) => ({ source, count }));
+
+    // 类型分布
+    const byTypeMap: Record<string, number> = {};
+    for (const t of tickets) {
+      const k = t.complaint_type || 'other';
+      byTypeMap[k] = (byTypeMap[k] || 0) + 1;
+    }
+    const by_type = Object.entries(byTypeMap).map(([type, count]) => ({ type, count }));
+
+    return {
+      total_cases: totalCases,
+      complaint_ticket_count: complaintTicketCount,
+      cases_with_complaint: casesWithComplaint,
+      complaint_case_rate: complaintCaseRate,
+      complaint_amount: complaintAmount,
+      resolved_count: resolvedCount,
+      resolved_rate: resolvedRate,
+      by_source,
+      by_type,
     };
   }
 

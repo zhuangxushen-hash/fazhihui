@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>「发合同自动建案」改进说明（产品经理版）</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f7fa; color: #1f2937; line-height: 1.7; padding: 32px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; }
+  h1 { font-size: 26px; color: #1e3a8a; margin-bottom: 6px; }
+  .sub { color: #6b7280; font-size: 14px; margin-bottom: 24px; }
+  .card {
+    background: #fff; border-radius: 14px; padding: 24px 28px; margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-left: 5px solid #1e3a8a;
+  }
+  .card.warn { border-left-color: #dc2626; }
+  .card.ok { border-left-color: #16a34a; }
+  .card.tip { border-left-color: #f59e0b; }
+  h2 { font-size: 19px; margin-bottom: 12px; color: #111827; }
+  p { margin-bottom: 10px; }
+  .hl { background: #fef3c7; padding: 1px 5px; border-radius: 4px; font-weight: 600; }
+  .red { color: #dc2626; font-weight: 600; }
+  .green { color: #16a34a; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  th, td { border: 1px solid #e5e7eb; padding: 10px 12px; text-align: left; vertical-align: top; }
+  th { background: #eff6ff; color: #1e3a8a; font-weight: 600; }
+  td.before { background: #fef2f2; }
+  td.after { background: #f0fdf4; }
+  .step {
+    display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px;
+    background: #fff; border-radius: 12px; padding: 16px 18px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+  }
+  .step .num {
+    flex: 0 0 30px; height: 30px; border-radius: 50%; background: #1e3a8a; color: #fff;
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px;
+  }
+  .step .body { flex: 1; }
+  .step .body b { color: #111827; }
+  .tag { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 10px; margin-right: 6px; }
+  .tag.b { background: #fee2e2; color: #b91c1c; }
+  .tag.a { background: #dcfce7; color: #15803d; }
+  .flow {
+    background: #0f172a; color: #e2e8f0; border-radius: 12px; padding: 20px; font-size: 13px;
+    font-family: "SFMono-Regular", Consolas, monospace; line-height: 1.9; overflow-x: auto;
+  }
+  .flow .g { color: #4ade80; }
+  .flow .r { color: #f87171; }
+  .flow .y { color: #fbbf24; }
+  .note { font-size: 13px; color: #6b7280; margin-top: 8px; }
+  ul { margin: 8px 0 8px 20px; }
+  li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>「客户签完合同，系统自动建案件」改进说明</h1>
+  <div class="sub">产品经理版 · 不含任何技术术语 · 讲清"改了啥、对生意有啥用、前后差别"</div>
+
+  <div class="card">
+    <h2>一句话结论</h2>
+    <p>客户在电子签上签完合同后，系统会<span class="hl">自动生成案件、自动建应收款、自动查利益冲突</span>。
+    之前这套"自动动作"有个大隐患——<b>中途某一步出错了，系统会假装成功继续走，谁都不知道出问题了</b>，
+    导致财务账和实际对不上、合规风险漏检。这次把这 4 个"假装成功"的漏洞全部堵上，让<span class="green">出错就看得见、账目不会再错乱</span>。</p>
+  </div>
+
+  <div class="card warn">
+    <h2>为什么之前很危险（对生意的影响）</h2>
+    <p>设想一个真实场景：客户签了 10 万块的合同，系统应该自动建一个案件、并记一笔"待收 10 万"。</p>
+    <ul>
+      <li><span class="red">账目对不上：</span>案件建成功了，但应收款那一步悄悄失败 → 财务系统里"有案无钱"，老板看利润永远是错的，还发现不了。</li>
+      <li><span class="red">合规漏检：</span>利益冲突检查（同一律师不能代理对立双方）出错了，系统闷声跳过 → 风险案件没人复核，出事才暴露。</li>
+      <li><span class="red">隐形失败：</span>整条建案失败，系统只偷偷记了一笔日志 → 合同签了、案子却没建出来，客户来问"我的案子呢"才发现。</li>
+      <li><span class="red">误导性的分钱：</span>签约瞬间系统"试图"给律师算提成，但规则根本不满足，永远算不出来还假装跑了 → 让人误以为提成已触发。</li>
+    </ul>
+    <p class="note">这类问题最可怕的地方：<b>没有报错弹窗、没有红色提示，一切看起来都正常</b>，直到月底对账或客户投诉才爆雷。</p>
+  </div>
+
+  <div class="card ok">
+    <h2>这次改了哪 4 件事（人话版）</h2>
+
+    <div class="step">
+      <div class="num">1</div>
+      <div class="body">
+        <b>"建案件"和"建应收款"绑成一笔，要么都成、要么都不成</b><br/>
+        以前是两步分开的，中间失败了就留下"半拉子"。现在改成<span class="green">一个动作一次性完成</span>：
+        案件和应收款同时写入；万一失败，自动回退到什么都没发生的状态。从此再也不会出现"有案无钱"。
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">2</div>
+      <div class="body">
+        <b>利益冲突检查卡住了，案件先挂起等人看，不再闷头跳过</b><br/>
+        查冲突时如果系统自己出错了，现在会把案件标记为<span class="green">"待合规复核"</span>，
+        并在后台亮起强提醒，由合规同事人工确认没问题再放行。风险案件不会再无声溜过去。
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">3</div>
+      <div class="body">
+        <b>整条建案失败，合同会亮红灯，看得见、能重跑</b><br/>
+        万一建案整段失败，合同现在会被打上<span class="green">"建案失败"</span>的标记，
+        直接在合同列表里显示出来（带红灯），运营一眼能看到，点一下就能重新生成案件。不再藏起来。
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">4</div>
+      <div class="body">
+        <b>删掉那段"永远算不出提成却假装跑了"的逻辑</b><br/>
+        签约时系统原本会去触发律师提成计算，但提成规则要求"案件结案 + 全款到账"才算，
+        签约那一刻根本不可能满足，所以<span class="red">永远算不出来</span>。这段是误导性的死逻辑，已删除。
+        提成改回统一在<span class="green">"案件结案 / 客户全款到账"</span>时触发（那套本来就能用），口径干净一致。
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>修改前后对比（一句话一张表）</h2>
+    <table>
+      <thead>
+        <tr><th>环节</th><th class="before">改之前 ❌</th><th class="after">改之后 ✅</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>建案件 + 应收款</td>
+          <td class="before">两步分开，可能"有案无钱"</td>
+          <td class="after">一笔绑死，要么全成要么全退</td>
+        </tr>
+        <tr>
+          <td>利益冲突检查出错</td>
+          <td class="before">闷声跳过，风险漏检</td>
+          <td class="after">挂起"待复核"+强提醒，人工把关</td>
+        </tr>
+        <tr>
+          <td>建案整段失败</td>
+          <td class="before">偷偷记日志，隐形失败</td>
+          <td class="after">合同标"建案失败"，可见可重跑</td>
+        </tr>
+        <tr>
+          <td>签约时算律师提成</td>
+          <td class="before">永远算不出却假装跑了（误导）</td>
+          <td class="after">删除，统一结案/全款时才算</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>改完之后，流程长这样（简化版）</h2>
+    <div class="flow">
+<span class="g">客户签完电子合同</span>
+   ↓
+<span class="y">系统检查：合同是不是"已签 + 没建过案 + 有合同"？</span>
+   ↓ 是
+<span class="g">一次性完成：建案件 + 建应收款（绑在一起，不分开）</span>
+   ↓
+<span class="y">查利益冲突：</span>
+   正常 → 有冲突？<span class="r">挂起"待合规复核"</span> + 提醒
+   查出错 → <span class="r">同样挂起"待复核"</span> + 强提醒（不再跳过）
+   ↓
+<span class="g">案件建好，正常进入办案流程</span>
+   ↓
+<span class="y">（不再在签约时算提成）</span>
+   ↓
+客户全款到账 / 案件结案 → <span class="g">这时才自动算律师提成</span>
+    </div>
+    <p class="note">对比改之前：建案件和应收款是分开两步、利益冲突出错会跳过、建案失败藏着、签约时还会白跑一遍永远失败的提成。</p>
+  </div>
+
+  <div class="card tip">
+    <h2>还差一步（建议下一步做）</h2>
+    <p>现在"建案失败"的合同虽然能看见了，但<span class="hl">还得人工去点重跑</span>。
+    建议加一个"一键重新生成案件"的按钮（或系统定时自动重试），让运营不用手动介入就能把失败的合同补建好。</p>
+    <p class="note">这个不在本次改动范围内，可作为上线后的小优化。其余 3 项数据一致性问题本次已全部解决。</p>
+  </div>
+
+  <div class="card ok">
+    <h2>对上线意味着什么</h2>
+    <ul>
+      <li><span class="green">财务账更可靠：</span>不会再出现"系统说有案、财务说没钱"的对不上。</li>
+      <li><span class="green">合规更稳：</span>利益冲突查不出来时，案件会被拦下等人审，不会裸奔。</li>
+      <li><span class="green">运营更省心：</span>真出问题时，合同列表直接亮红灯，不用等客户投诉才发现。</li>
+      <li><span class="green">逻辑更诚实：</span>提成只在真正该算的时候算，不再有"假装跑了"的误导。</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

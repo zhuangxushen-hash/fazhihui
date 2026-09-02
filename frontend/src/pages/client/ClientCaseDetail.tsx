@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Spin } from 'antd'
+import { Spin, message } from 'antd'
 import {
   LeftOutlined,
   PhoneOutlined,
@@ -8,6 +8,7 @@ import {
   DownloadOutlined,
   FileAddOutlined,
   EditOutlined,
+  VideoCameraOutlined,
 } from '@ant-design/icons'
 import axios from '../../api/axios'
 import { formatDateTime, formatFileSize, caseTypeLabel } from '../../utils/format'
@@ -17,6 +18,17 @@ import { Card, Pill, EmptyState, caseStatusLabel } from './shared'
 
 /** 案件阶段步骤（设计稿：立案 → 调查 → 审理 → 执行 → 结案） */
 const STEPS = ['立案', '调查', '审理', '执行', '结案']
+
+/** 客户归档文件类型标签 */
+const ARCHIVE_TYPE_LABELS: Record<string, string> = {
+  document: '文书',
+  evidence: '证据',
+  contract: '合同',
+  invoice: '发票',
+  correspondence: '函件',
+}
+const getArchiveTypeLabel = (type: string) =>
+  ARCHIVE_TYPE_LABELS[type] || type || '文书'
 
 /** 案件状态 → 当前处于第几步（0 起，-1 表示尚未进入） */
 const STATUS_STEP: Record<string, number> = {
@@ -63,6 +75,8 @@ export default function ClientCaseDetail() {
   const [documents, setDocuments] = useState<any[]>([])
   const [payments, setPayments] = useState<any[]>([])
   const [activeSignings, setActiveSignings] = useState<any[]>([])
+  const [signedSignings, setSignedSignings] = useState<any[]>([])
+  const [archives, setArchives] = useState<any[]>([])
 
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
@@ -73,8 +87,10 @@ export default function ClientCaseDetail() {
       fetchCaseDetail(id)
       fetchTimeline(id)
       fetchDocuments(id)
+      fetchArchives(id)
       fetchPayments()
       fetchActiveSignings(id)
+      fetchSignedSignings(id)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
@@ -116,6 +132,42 @@ export default function ClientCaseDetail() {
     }
   }
 
+  /** 下载文书：外链直接打开，本地存储文件（B端共享）走 C 端受控下载接口 */
+  const handleDownloadDocument = async (doc: any) => {
+    if (doc.file_url) {
+      window.open(doc.file_url, '_blank')
+      return
+    }
+    if (!doc.id) return
+    try {
+      const res: any = await axios.post(
+        `/client/cases/${id}/documents/${doc.id}/download`,
+        { client_id: user.id },
+        { responseType: 'blob', timeout: 60000 },
+      )
+      const url = URL.createObjectURL(res)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = doc.file_name || '文书'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      message.error('文件下载失败')
+    }
+  }
+
+  /** 客户归档文件（仅本人上传，天然隔离 B 端文件） */
+  const fetchArchives = async (caseId: string) => {
+    try {
+      const res: any = await axios.post(`/client/archives/${caseId}`, { client_id: user.id })
+      setArchives(Array.isArray(res) ? res : [])
+    } catch (error) {
+      // 错误已由拦截器统一处理
+    }
+  }
+
   /** 费用明细 */
   const fetchPayments = async () => {
     try {
@@ -135,6 +187,37 @@ export default function ClientCaseDetail() {
       setActiveSignings(Array.isArray(res) ? res : [])
     } catch (error) {
       // 错误已由拦截器统一处理
+    }
+  }
+
+  /** 已签署签约记录（展示签署音视频入口） */
+  const fetchSignedSignings = async (caseId: string) => {
+    try {
+      const res: any = await axios.post(`/client/cases/${caseId}/signed-signings`, {
+        client_id: user.id,
+      })
+      setSignedSignings(Array.isArray(res) ? res : [])
+    } catch (error) {
+      // 错误已由拦截器统一处理
+    }
+  }
+
+  /** 查看签署音视频（互动视频签录制，签署完成后约 5 分钟可获取，链接 24 小时有效） */
+  const handleViewSignAudioVideo = async (signingId: string) => {
+    try {
+      const res: any = await axios.post('/client/sign/audio-video', {
+        signing_id: signingId,
+        client_id: user.id,
+      })
+      const url = res?.download_url
+      if (!url) {
+        message.warning('暂未获取到签署音视频，请签署完成 5 分钟后再试')
+        return
+      }
+      const win = window.open(url, '_blank')
+      if (!win) window.location.href = url
+    } catch (error) {
+      message.warning('获取签署音视频失败，请稍后重试')
     }
   }
 
@@ -353,6 +436,65 @@ export default function ClientCaseDetail() {
                 </Card>
               ))}
 
+            {/* 已签署 · 签署音视频入口（互动视频签录制） */}
+            {signedSignings.length > 0 &&
+              signedSignings.map((signing) => (
+                <Card key={signing.signing_id} style={{ background: '#F0FDF4' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 14,
+                        background: '#FFFFFF',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <VideoCameraOutlined style={{ fontSize: 20, color: '#16A34A' }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: '#0F172A' }}>已签署</div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: '#64748B',
+                          marginTop: 2,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {signing.subject}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleViewSignAudioVideo(signing.signing_id)}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: 12,
+                        border: 'none',
+                        background: '#16A34A',
+                        color: '#FFFFFF',
+                        fontSize: 12,
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <VideoCameraOutlined />
+                      查看音视频
+                    </button>
+                  </div>
+                </Card>
+              ))}
+
             {/* 进度时间线 */}
             <Card style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>进度时间线</div>
@@ -379,7 +521,7 @@ export default function ClientCaseDetail() {
               )}
             </Card>
 
-            {/* 相关文书 */}
+            {/* 相关文书（客户本人上传 + B端勾选共享的文件） */}
             <Card style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>相关文书（已脱敏）</div>
               {documents.length === 0 ? (
@@ -403,14 +545,84 @@ export default function ClientCaseDetail() {
                           }}
                         >
                           {doc.file_name}
+                          {!doc.from_client && (
+                            <span
+                              style={{
+                                display: 'inline-block',
+                                marginLeft: 6,
+                                padding: '0 6px',
+                                borderRadius: 4,
+                                fontSize: 10,
+                                lineHeight: '16px',
+                                color: '#1E3A8A',
+                                background: 'rgba(30, 58, 138, 0.08)',
+                                verticalAlign: 1,
+                              }}
+                            >
+                              律师共享
+                            </span>
+                          )}
                         </div>
                         <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>
+                          {doc.file_type || ''}
+                          {doc.file_type && doc.file_size ? ' · ' : ''}
                           {doc.file_size ? formatFileSize(doc.file_size) : ''}
                         </div>
                       </div>
                     </div>
                     <a
                       href={doc.file_url || '#'}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => {
+                        // 本地存储文件（B端共享）没有直链，走受控下载接口
+                        if (!doc.file_url) {
+                          e.preventDefault()
+                          handleDownloadDocument(doc)
+                        }
+                      }}
+                      style={{ color: '#1E3A8A', flexShrink: 0 }}
+                    >
+                      <DownloadOutlined style={{ fontSize: 18 }} />
+                    </a>
+                  </div>
+                ))
+              )}
+            </Card>
+
+            {/* 客户归档文件（仅显示本人从 C 端上传的归档，B 端文件不在此展示） */}
+            <Card style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>客户归档文件</div>
+              {archives.length === 0 ? (
+                <div style={{ fontSize: 12, color: '#94A3B8' }}>暂无归档文件</div>
+              ) : (
+                archives.map((arc, i) => (
+                  <div
+                    key={arc.id || i}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                      <FileTextOutlined style={{ fontSize: 16, color: '#1E3A8A', flexShrink: 0 }} />
+                      <div style={{ minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontSize: 13,
+                            color: '#0F172A',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {arc.file_name}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>
+                          {getArchiveTypeLabel(arc.file_type)}
+                          {arc.file_size ? ` · ${formatFileSize(arc.file_size)}` : ''}
+                        </div>
+                      </div>
+                    </div>
+                    <a
+                      href={arc.file_url || '#'}
                       target="_blank"
                       rel="noreferrer"
                       style={{ color: '#1E3A8A', flexShrink: 0 }}
@@ -521,7 +733,7 @@ export default function ClientCaseDetail() {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/client/ai-consult')}
+              onClick={() => navigate('/client/complaint')}
               style={{
                 flex: 1,
                 height: 48,
@@ -539,7 +751,7 @@ export default function ClientCaseDetail() {
               }}
             >
               <MessageOutlined />
-              在线咨询
+              意见反馈
             </button>
           </div>
         </div>

@@ -36,6 +36,7 @@ const typeColorMap: Record<string, string> = {
 
 // 合同阶段中文映射
 const stageLabelMap: Record<string, string> = {
+  signing: '发合同待签',
   drafting: '起草中',
   reviewing: '审查中',
   signed: '已签订',
@@ -47,6 +48,7 @@ const stageLabelMap: Record<string, string> = {
 
 // 合同阶段 Tag 颜色
 const stageColorMap: Record<string, string> = {
+  signing: 'warning',
   drafting: 'default',
   reviewing: 'processing',
   signed: 'success',
@@ -58,6 +60,7 @@ const stageColorMap: Record<string, string> = {
 
 // 合同阶段 Stitch 变体映射
 const stageStitchMap: Record<string, string> = {
+  signing: 'stitch-tag stitch-tag-warning',
   drafting: 'stitch-tag stitch-tag-primary',
   reviewing: 'stitch-tag stitch-tag-info',
   signed: 'stitch-tag stitch-tag-success',
@@ -210,6 +213,7 @@ const returnStageTabs = [
 // Tab 阶段分类
 const stageTabs = [
   { key: '', label: '全部' },
+  { key: 'signing', label: '发合同待签' },
   { key: 'drafting', label: '起草中' },
   { key: 'reviewing', label: '审查中' },
   { key: 'signed', label: '已签订' },
@@ -417,6 +421,8 @@ export default function ContractManagement() {
       if (values.seal_usage_status) params.seal_usage_status = values.seal_usage_status
       if (values.start_date) params.start_date = values.start_date
       if (values.end_date) params.end_date = values.end_date
+      // 关联案件筛选：按案件查询，后端会隐藏同模板已签约后的待签约合同
+      if (values.case_id) params.case_id = values.case_id
       // 主TAB切换：合同交回TAB使用return_status筛选
       if (activeMainTab === 'return') {
         params.return_status = activeReturnTab || (values.return_status ?? undefined)

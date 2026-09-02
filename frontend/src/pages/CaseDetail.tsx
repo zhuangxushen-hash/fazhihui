@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Spin, Button, Tag, Space, message, Upload, Timeline, Empty, Alert, Card, Modal, Input,
-  Form, InputNumber, Select, DatePicker, Switch, Popconfirm, Badge,
+  Form, InputNumber, Select, DatePicker, Switch, Popconfirm, Badge, Checkbox,
 } from 'antd'
 import {
   ArrowLeftOutlined, UploadOutlined, DownloadOutlined, FolderOutlined,
@@ -12,11 +12,13 @@ import {
 import dayjs from 'dayjs'
 import axios from '../api/axios'
 import { getCaseDetail, updateCaseDetail, deleteCase } from '../api/case'
+import { getCaseCosts, getCaseCostSummary, createCaseCost, updateCaseCost, deleteCaseCost } from '../api/finance'
 // 法大大签署模板：B端签约模板信息维护 + 案件详情「发起签约」
 import { getUsers, UserItem } from '../api/user'
 import { getSchedules, createSchedule } from '../api/schedule'
 import { getWorklogs, createWorklog } from '../api/worklog'
 import { theme } from '../constants/theme'
+import { getCaseStatuses, CaseStatusItem, FALLBACK_CASE_STATUSES } from '../api/caseStatus'
 
 // === 参考金助理项目案件详情功能设计 ===
 // 支持详情查看 + 编辑保存 + 多人当事人 + 删除入口
@@ -246,6 +248,30 @@ const contractReturnStatusLabelMap: Record<string, string> = {
   partial: '已部分交回',
 }
 
+// 案件成本类型中文标签映射
+const costTypeLabelMap: Record<string, string> = {
+  preservation: '保全',
+  litigation: '诉讼',
+  hearing: '开庭',
+  travel: '差旅',
+  case_handling: '办案成本',
+  marketing: '投放成本',
+  labor: '人力成本',
+  other: '其他',
+}
+
+// 案件成本类型下拉选项（保全/诉讼/开庭等为办案常见成本）
+const costTypeOptions = [
+  { label: '保全', value: 'preservation' },
+  { label: '诉讼', value: 'litigation' },
+  { label: '开庭', value: 'hearing' },
+  { label: '差旅', value: 'travel' },
+  { label: '办案成本', value: 'case_handling' },
+  { label: '投放成本', value: 'marketing' },
+  { label: '人力成本', value: 'labor' },
+  { label: '其他', value: 'other' },
+]
+
 const marketingLabelMap = (type: string) => ({
   fixed: '固定收费',
   risk: '风险收费',
@@ -319,11 +345,12 @@ export default function CaseDetail() {
   // 协办律师候选人列表（供多人协办选择）
   const [lawyerOptions, setLawyerOptions] = useState<{ label: string; value: string }[]>([])
   // 上传文档：确认文档名称弹窗状态
-  const [docNameModal, setDocNameModal] = useState<{ visible: boolean; fileName: string; docName: string; docType: string }>({
+  const [docNameModal, setDocNameModal] = useState<{ visible: boolean; fileName: string; docName: string; docType: string; visibleToClient: boolean }>({
     visible: false,
     fileName: '',
     docName: '',
     docType: '',
+    visibleToClient: false,
   })
   // 附件类型预设选项（成交合同、律师函）+ 支持自定义
   const [docTypeOptions, setDocTypeOptions] = useState<{ value: string; label: string }[]>([
@@ -351,6 +378,14 @@ export default function CaseDetail() {
   const [worklogModalVisible, setWorklogModalVisible] = useState(false)
   const [worklogForm] = Form.useForm()
 
+  // 案件成本相关状态（录入后同步财务台账）
+  const [caseCosts, setCaseCosts] = useState<any[]>([])
+  const [caseCostSummary, setCaseCostSummary] = useState<any>({ total_amount: 0, count: 0 })
+  const [costLoading, setCostLoading] = useState(false)
+  const [costModalVisible, setCostModalVisible] = useState(false)
+  const [costForm] = Form.useForm()
+  const [editingCost, setEditingCost] = useState<any>(null)
+
   // 法大大签署任务模板（B端签约模板信息维护）
   // 组织列表：模板下拉标注所属组织（超管可不限组织选择签约模板）
   // 「发起签约」弹窗
@@ -359,8 +394,28 @@ export default function CaseDetail() {
   
   const user = JSON.parse(localStorage.getItem('user') || '{}')
 
+  // 组织级自定义案件状态字典（用于详情页状态标签，接口失败时回退静态默认值）
+  const [statusConfigs, setStatusConfigs] = useState<CaseStatusItem[]>(
+    FALLBACK_CASE_STATUSES.map((s, i) => ({
+      id: `fallback-${i}`, organization_id: '', name: s.name, code: s.code, kind: s.kind,
+      sort_order: i, enabled: true, is_default: i === 0, created_at: '', updated_at: '',
+    })),
+  )
+
   // 合并预设选项和自定义选项
   const allCaseTypeOptions = [...caseTypeOptions, ...customCaseTypeOptions]
+
+  // 状态标签：优先取组织自定义字典，未命中再回退静态映射，仍未命中显示状态码原文
+  const statusLabelOf = (code: string): string => {
+    const found = statusConfigs.find((s) => s.code === code)
+    if (found) return found.name
+    return caseStatusLabelMap[code] || code || '-'
+  }
+  const statusKindOf = (code: string): PillKind => {
+    const found = statusConfigs.find((s) => s.code === code)
+    if (found && found.kind) return found.kind as PillKind
+    return caseStatusKindMap[code] || 'neutral'
+  }
 
   // 处理案由搜索和新增
   const handleCaseTypeSearch = (input: string) => {
@@ -440,10 +495,38 @@ export default function CaseDetail() {
     }
   }
 
+  // 获取案件关联的成本列表与汇总
+  const fetchCaseCosts = async () => {
+    if (!id) return
+    setCostLoading(true)
+    try {
+      const [listRes, summaryRes] = await Promise.all([
+        getCaseCosts(id),
+        getCaseCostSummary(id).catch(() => null),
+      ])
+      const list = (listRes?.data ?? listRes) as any[]
+      setCaseCosts(Array.isArray(list) ? list : [])
+      const sum = (summaryRes?.data ?? summaryRes) as any
+      setCaseCostSummary(sum || { total_amount: 0, count: 0 })
+    } catch (error) {
+      setCaseCosts([])
+    } finally {
+      setCostLoading(false)
+    }
+  }
+
   useEffect(() => {
     fetchDetail()
     fetchSchedules()
     fetchWorklogs()
+    fetchCaseCosts()
+    // 加载组织自定义案件状态字典（用于状态标签配色/文案）
+    getCaseStatuses(user.organization_id)
+      .then((res: any) => {
+        const list = (Array.isArray(res) ? res : null) || res?.data || []
+        if (Array.isArray(list) && list.length) setStatusConfigs(list)
+      })
+      .catch(() => { /* 保留回退默认值 */ })
     // 加载协办律师候选人（供多人协办下拉选择）
     getUsers({})
       .then((res: any) => {
@@ -462,6 +545,7 @@ export default function CaseDetail() {
       fileName: file.name,
       docName: file.name,
       docType: '',
+      visibleToClient: false,
     })
     return false
   }
@@ -489,6 +573,7 @@ export default function CaseDetail() {
     formData.append('uploader_id', user.id as string)
     formData.append('doc_type', docNameModal.docType.trim())
     formData.append('name', docNameModal.docName.trim())
+    formData.append('visible_to_client', docNameModal.visibleToClient ? 'true' : 'false')
     try {
       await axios.post(`/cases/${id}/documents/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -560,6 +645,63 @@ export default function CaseDetail() {
       } else {
         message.error('日志创建失败')
       }
+    }
+  }
+
+  // 打开成本录入/编辑弹窗
+  const openCostModal = (cost?: any) => {
+    setEditingCost(cost || null)
+    if (cost) {
+      costForm.setFieldsValue({
+        cost_type: cost.cost_type,
+        amount: cost.amount,
+        incurred_date: cost.incurred_date ? dayjs(cost.incurred_date) : undefined,
+        description: cost.description,
+      })
+    } else {
+      costForm.resetFields()
+    }
+    setCostModalVisible(true)
+  }
+
+  // 保存成本（新建/编辑），提交后由后端同步财务台账
+  const handleSaveCost = async () => {
+    try {
+      const values = await costForm.validateFields()
+      if (!id) return
+      const payload = {
+        case_id: id,
+        organization_id: user.organization_id || detail?.organization_id,
+        cost_type: values.cost_type,
+        amount: Number(values.amount),
+        description: values.description || '',
+        incurred_date: values.incurred_date ? dayjs(values.incurred_date).format('YYYY-MM-DD') : undefined,
+      }
+      if (editingCost) {
+        await updateCaseCost(editingCost.id, payload)
+        message.success('成本已更新')
+      } else {
+        await createCaseCost(payload)
+        message.success('成本已录入，并已同步至财务台账')
+      }
+      setCostModalVisible(false)
+      costForm.resetFields()
+      setEditingCost(null)
+      fetchCaseCosts()
+    } catch (error: any) {
+      if (error?.errorFields) return
+      message.error('保存失败，请重试')
+    }
+  }
+
+  // 删除成本（同步作废财务台账记录）
+  const handleDeleteCost = async (costId: string) => {
+    try {
+      await deleteCaseCost(costId)
+      message.success('成本已删除')
+      fetchCaseCosts()
+    } catch (error) {
+      message.error('删除失败')
     }
   }
 
@@ -781,7 +923,6 @@ export default function CaseDetail() {
         <Space>
           {!editing ? (
             <>
-              <Button type="primary" icon={<FileTextOutlined />} onClick={() => navigate(`/cases/${id}/sign`)}>发起签约</Button>
               <Button type={detail?.assignee_lawyer_id ? 'default' : 'primary'} onClick={() => setAssignVisible(true)}>
                 {detail?.assignee_name ? '更换律师' : '分配律师'}
               </Button>
@@ -1036,6 +1177,7 @@ export default function CaseDetail() {
           { key: 'team', label: '团队' },
           { key: 'timeline', label: '时间节点' },
           { key: 'finance', label: '费用' },
+          { key: 'cost', label: '案件成本' },
           { key: 'property', label: '案件属性' },
           { key: 'schedule', label: '日程' },
           { key: 'worklog', label: '工作日志' },
@@ -1051,7 +1193,7 @@ export default function CaseDetail() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <span style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 22, fontWeight: 700, color: theme.textBase }}>{c.case_no || '-'}</span>
-                  <StatusPill text={caseStatusLabelMap[c.status] || '-'} kind={caseStatusKindMap[c.status] || 'neutral'} />
+                  <StatusPill text={statusLabelOf(c.status)} kind={statusKindOf(c.status)} />
                   <Tag style={{ borderRadius: 999 }}>{stageLabelMap[c.stage] || '-'}</Tag>
                   <StatusPill text={riskLabelMap[c.risk_level] || '-'} kind={(c.risk_level as PillKind) || 'neutral'} />
                 </div>
@@ -1174,6 +1316,62 @@ export default function CaseDetail() {
               <Field label="已到账金额">{fmtMoney(f.settled_amount)}</Field>
               <Field label="质保金">{fmtMoney(f.quality_deposit)}</Field>
             </FieldGrid>
+          </SectionCard>
+            </>
+            ) },
+
+            { key: 'cost', label: '案件成本', children: (
+            <>
+          {/* 案件成本：录入后自动同步财务台账（业务款-支出） */}
+          <SectionCard
+            title="案件成本"
+            extra={
+              <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => openCostModal()}>
+                录入成本
+              </Button>
+            }
+          >
+            {costLoading ? (
+              <div style={{ textAlign: 'center', padding: 24 }}><Spin /></div>
+            ) : (
+              <>
+                <div style={{ fontSize: 13, color: theme.textTertiary, marginBottom: 12 }}>
+                  共 {caseCosts.length} 笔成本，合计 <span style={{ color: theme.error, fontWeight: 600 }}>{fmtMoney(caseCostSummary?.total_amount)}</span>
+                  {' '}（已同步至财务台账）
+                </div>
+                {caseCosts.length === 0 ? (
+                  <Empty description="暂无案件成本" image={Empty.PRESENTED_IMAGE_SIMPLE}>
+                    <Button type="primary" icon={<PlusOutlined />} onClick={() => openCostModal()}>录入成本</Button>
+                  </Empty>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {caseCosts.map((item: any) => (
+                      <div
+                        key={item.id}
+                        style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: 12, border: '1px solid #e8e8ea', borderRadius: 8, background: '#fafafb', gap: 12 }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                            <Tag color="volcano">{costTypeLabelMap[item.cost_type] || item.cost_type}</Tag>
+                            <span style={{ fontWeight: 600, fontSize: 14, color: theme.error }}>{fmtMoney(item.amount)}</span>
+                            {item.incurred_date && <span style={{ fontSize: 12, color: theme.textTertiary }}>{fmtDate(item.incurred_date)}</span>}
+                          </div>
+                          {item.description && (
+                            <div style={{ fontSize: 13, color: theme.textSecondary, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{item.description}</div>
+                          )}
+                        </div>
+                        <Space className="stitch-btn-group">
+                          <Button type="link" size="small" onClick={() => openCostModal(item)}>编辑</Button>
+                          <Popconfirm title="确定删除该成本吗？同步至财务台账的记录将一并作废。" okText="删除" cancelText="取消" onConfirm={() => handleDeleteCost(item.id)}>
+                            <Button type="link" size="small" danger>删除</Button>
+                          </Popconfirm>
+                        </Space>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
           </SectionCard>
             </>
             ) },
@@ -1385,7 +1583,9 @@ export default function CaseDetail() {
                   <div>
                     <div style={{ fontWeight: 600, color: theme.textBase, fontSize: 13 }}>{String(doc.name ?? '')}</div>
                     <div style={{ fontSize: 12, color: theme.textTertiary, marginTop: 2 }}>
-                      <Tag color="blue" style={{ marginRight: 4 }}>{String(doc.doc_type || '未分类')}</Tag> · {fmtTime(doc.created_at)}
+                      <Tag color="blue" style={{ marginRight: 4 }}>{String(doc.doc_type || '未分类')}</Tag>
+                      {doc.visible_to_client && <Tag color="green" style={{ marginRight: 4 }}>已共享给客户</Tag>}
+                      {' '}· {fmtTime(doc.created_at)}
                     </div>
                   </div>
                   <Space className="stitch-btn-group">
@@ -1442,6 +1642,14 @@ export default function CaseDetail() {
             placeholder="请输入文档名称"
             maxLength={200}
           />
+          <div style={{ marginTop: 16 }}>
+            <Checkbox
+              checked={docNameModal.visibleToClient}
+              onChange={(e) => setDocNameModal({ ...docNameModal, visibleToClient: e.target.checked })}
+            >
+              展示给客户（该文件将在 C 端案件详情-相关文书中对客户可见）
+            </Checkbox>
+          </div>
         </Modal>
 
         {/* 新增日程弹窗 */}
@@ -1559,7 +1767,39 @@ export default function CaseDetail() {
               />
             </Form.Item>
           </Form>
-        </Modal>        {/* 分配律师 Modal */}
+        </Modal>
+
+        {/* 录入/编辑案件成本弹窗 */}
+        <Modal
+          title={editingCost ? '编辑案件成本' : '录入案件成本'}
+          open={costModalVisible}
+          okText={editingCost ? '保存' : '录入'}
+          cancelText="取消"
+          onOk={handleSaveCost}
+          onCancel={() => {
+            setCostModalVisible(false)
+            costForm.resetFields()
+            setEditingCost(null)
+          }}
+          destroyOnClose
+        >
+          <Form form={costForm} layout="vertical" preserve={false}>
+            <Form.Item name="cost_type" label="成本类型" rules={[{ required: true, message: '请选择成本类型' }]}>
+              <Select placeholder="请选择成本类型（保全/诉讼/开庭等）" options={costTypeOptions} />
+            </Form.Item>
+            <Form.Item name="amount" label="金额（元）" rules={[{ required: true, message: '请输入金额' }]}>
+              <InputNumber style={{ width: '100%' }} min={0} precision={2} placeholder="请输入金额" />
+            </Form.Item>
+            <Form.Item name="incurred_date" label="发生日期">
+              <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" placeholder="请选择发生日期" />
+            </Form.Item>
+            <Form.Item name="description" label="说明">
+              <Input.TextArea rows={3} placeholder="如：诉讼费、保全担保费、开庭差旅费等" maxLength={500} />
+            </Form.Item>
+          </Form>
+        </Modal>
+
+        {/* 分配律师 Modal */}
         <Modal
           title="分配主办律师"
           open={assignVisible}

@@ -525,6 +525,7 @@ export class CaseService {
     userId: string,
     docType?: string,
     name?: string,
+    visibleToClient?: boolean,
   ): Promise<Document> {
     const uploadDir = path.join(process.cwd(), 'uploads', 'documents', caseId);
     if (!fs.existsSync(uploadDir)) {
@@ -543,6 +544,8 @@ export class CaseService {
       doc_type: docType || null,
       case_id: caseId,
       uploaded_by_id: userId,
+      // B端上传时可选：是否展示给 C 端客户（默认不展示）
+      visible_to_client: !!visibleToClient,
     });
     const saved = await this.documentRepository.save(document);
 

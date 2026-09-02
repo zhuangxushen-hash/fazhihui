@@ -49,9 +49,6 @@ const menuGroups: MenuGroup[] = [
       { key: '/dashboard/sales-performance', label: '销售团队绩效' },
       { key: '/dashboard/case-efficiency', label: '办案效能分析' },
       { key: '/dashboard/compliance-risk', label: '合规风险监控' },
-      { key: '/dashboard/custom-report', label: '自定义报表' },
-      { key: '/dashboard/hr-efficiency', label: '人效分析' },
-      { key: '/dashboard/profit-model', label: '盈利模型' },
     ],
   },
   {
@@ -66,13 +63,6 @@ const menuGroups: MenuGroup[] = [
       { key: '/invite-workbench', label: '邀约工作台' },
       { key: '/talk-workbench', label: '谈案工作台' },
       { key: '/talk-sop', label: '谈案SOP' },
-      // 合并原SCRM私域 6项
-      { key: '/scrm/live-codes', label: '活码管理' },
-      { key: '/scrm/channels', label: '渠道追踪' },
-      { key: '/scrm/tags', label: '客户标签' },
-      { key: '/scrm/sidebar', label: '企微侧边栏' },
-      { key: '/scrm/reach', label: '私域触达' },
-      { key: '/scrm/chat-archives', label: '聊天存档' },
     ],
   },
   {
@@ -89,8 +79,6 @@ const menuGroups: MenuGroup[] = [
       { key: '/contracts', label: '合同管理' },
       { key: '/property-preservation', label: '财产保全' },
       { key: '/conflict-check', label: '利冲检索' },
-      { key: '/bids', label: '投标管理' },
-      { key: '/due-diligence', label: '尽调宝' },
       { key: '/compliance/export', label: '案件归档' },
       // 合并原文档管理 2项
       { key: '/documents', label: '我的文档' },
@@ -103,8 +91,6 @@ const menuGroups: MenuGroup[] = [
     label: '合规风控',
     children: [
       { key: '/compliance', label: '投诉管理' },
-      { key: '/compliance-management', label: '合规管理' },
-      { key: '/compliance/public-opinion', label: '舆情监控' },
     ],
   },
   {
@@ -116,11 +102,6 @@ const menuGroups: MenuGroup[] = [
       { key: '/finance-operation', label: '财务经营' },
       { key: '/finance/project-collection', label: '项目收款台账' },
       { key: '/finance/income-expenditure', label: '收支综合' },
-      // 代扣管理
-      { key: '/finance/fixed-cost-withholding', label: '固定费用代扣' },
-      { key: '/finance/salary-fees-withholding', label: '工资代扣' },
-      { key: '/finance/income-tax-withholding', label: '个税结算' },
-      { key: '/finance/withholding-offset', label: '代扣撤销冲抵' },
       // 报表与打印
       { key: '/finance/account-statistics', label: '账户台账' },
       { key: '/finance/paper-invoice-print', label: '纸质发票打印' },
@@ -146,11 +127,6 @@ const menuGroups: MenuGroup[] = [
       { key: '/marketing/ad-plans', label: '投放计划' },
       { key: '/marketing/conversion', label: '转化归因' },
       { key: '/marketing/materials', label: '素材管理' },
-      { key: '/marketing/ai-content', label: 'AI内容生成' },
-      { key: '/marketing/social-accounts', label: '公域账号' },
-      { key: '/marketing/live-management', label: '直播管理' },
-      { key: '/marketing/work-phone', label: '工作手机' },
-      { key: '/marketing/content-preview', label: '内容预审' },
     ],
   },
   {
@@ -170,8 +146,6 @@ const menuGroups: MenuGroup[] = [
       { key: '/notifications', label: '消息通知' },
       { key: '/notifications/publish', label: '发布通知' },
       { key: '/service-ratings', label: '评价管理' },
-      // AI与智能
-      { key: '/ai-nav', label: 'AI工具' },
       // 系统配置
       { key: '/system/deployment-config', label: '部署配置' },
       { key: '/system/brand-customization', label: '品牌定制' },
@@ -184,19 +158,7 @@ const menuGroups: MenuGroup[] = [
     icon: <SolutionOutlined />,
     label: '人事行政',
     children: [
-      // 人事管理
-      { key: '/hr/personnel', label: '人事管理' },
-      { key: '/hr/attendance-leave', label: '人事考勤' },
-      { key: '/hr/materials', label: '物品管理' },
-      { key: '/hr/activities', label: '活动管理' },
-      // 个人办公
-      { key: '/worklogs', label: '工作日志' },
-      { key: '/worklog-print', label: '工时打印' },
-      { key: '/schedules', label: '日程管理' },
-      { key: '/tasks', label: '任务中心' },
-      { key: '/knowledge-management', label: '知识管理' },
-      { key: '/diagram-tool', label: '可视化绘图' },
-      // 审批与用印
+      // 审批与用印（合同签约闭环必要）
       { key: '/approval-center', label: '审批中心' },
       { key: '/seals', label: '用印管理' },
       { key: '/approval/finance-withdrawal', label: '财务提款审批' },
@@ -267,18 +229,18 @@ const menuGroups: MenuGroup[] = [
 // 角色-一级菜单分组访问矩阵：每个角色能看到哪些分组
 // 已关闭 social（同事圈）和 orders（订单管理）功能
 const roleGroupAccess: Record<string, string[]> = {
-  super_admin: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'marketing', 'system', 'hr', 'comprehensive', 'shortcut', 'lawyer-center'],
-  org_admin: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'marketing', 'system', 'hr', 'comprehensive', 'shortcut', 'lawyer-center'],
+  super_admin: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'marketing', 'system', 'hr'],
+  org_admin: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'marketing', 'system', 'hr'],
   // marketing 原有 scrm→crm, office→hr, document→case, lawtool/ainav→comprehensive, personal→system
-  marketing: ['dashboard', 'crm', 'case', 'marketing', 'hr', 'comprehensive', 'shortcut', 'system'],
+  marketing: ['dashboard', 'crm', 'case', 'marketing', 'hr', 'system'],
   // sales 原有 scrm→crm, office→hr, document→case, lawtool/ainav→comprehensive, personal→system
-  sales: ['dashboard', 'crm', 'case', 'compliance', 'hr', 'comprehensive', 'shortcut', 'system'],
+  sales: ['dashboard', 'crm', 'case', 'compliance', 'hr', 'system'],
   // lawyer 原有 office→hr, document→case, lawtool/ainav→comprehensive, personal→system
-  lawyer: ['dashboard', 'crm', 'case', 'compliance', 'hr', 'comprehensive', 'shortcut', 'lawyer-center', 'system'],
+  lawyer: ['dashboard', 'crm', 'case', 'compliance', 'hr', 'system'],
   // assistant 原有 office→hr, document→case, lawtool/ainav→comprehensive, personal→system
-  assistant: ['dashboard', 'crm', 'case', 'compliance', 'hr', 'comprehensive', 'shortcut', 'lawyer-center', 'system'],
+  assistant: ['dashboard', 'crm', 'case', 'compliance', 'hr', 'system'],
   // finance 原有 office→hr, document→case, lawtool/ainav→comprehensive, personal→system（system 已有）
-  finance: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'system', 'hr', 'comprehensive', 'shortcut'],
+  finance: ['dashboard', 'crm', 'case', 'compliance', 'finance', 'system', 'hr'],
   client: [],
 }
 
@@ -413,25 +375,7 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
     '/approval/repay-approve': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'finance', 'sales', 'marketing'],
     '/approval/invoice-repay': ['super_admin', 'org_admin', 'lawyer', 'assistant', 'finance', 'sales', 'marketing'],
   },
-  // 综合管理
-  comprehensive: {
-    '/comprehensive/query': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
-    '/statistical-analysis': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
-    '/internal-projects': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
-    '/bid-performances': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
-    '/law-tools': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
-  },
-  // 快捷工具（第三阶段新增：协作案源/疑难案件/协作律所）
-  shortcut: {
-    '/shortcut/cooperative-source': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
-    '/shortcut/difficult-cases': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
-    '/shortcut/cooperative-firms': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
-  },
-  // 律师中心（第三阶段新增：律师评级/评级管理）
-  'lawyer-center': {
-    '/lawyer-center/rating': ['super_admin', 'org_admin', 'lawyer', 'assistant'],
-    '/lawyer-center/rating-manage': ['super_admin', 'org_admin'],
-  },
+  // 以下分组（综合管理/快捷工具/律师中心）为第三期功能，已从 roleGroupAccess 移除以做软砍
   // 已关闭：同事圈和订单管理功能
   // // 同事圈（第三阶段新增：动态流/发布动态）
   // social: {

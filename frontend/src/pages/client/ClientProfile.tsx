@@ -2,10 +2,6 @@ import { useState } from 'react'
 import { Modal, message } from 'antd'
 import {
   FolderOutlined,
-  MessageOutlined,
-  FileTextOutlined,
-  CreditCardOutlined,
-  QuestionCircleOutlined,
   BellOutlined,
   SettingOutlined,
   InfoCircleOutlined,
@@ -18,15 +14,12 @@ import BottomNav from '../../components/BottomNav'
 /** 菜单组1 */
 const MENU_GROUP_1 = [
   { label: '我的案件', icon: FolderOutlined, path: '/client/cases' },
-  { label: '我的咨询', icon: MessageOutlined, path: '/client/ai-consult' },
-  { label: '我的归档', icon: FileTextOutlined, path: '/client/archive' },
   // { label: '我的支付', icon: CreditCardOutlined, path: '/client/payment' }, // 功能暂未上线，暂时隐藏
 ]
 
 /** 菜单组2 */
 const MENU_GROUP_2 = [
   { label: '消息通知', icon: BellOutlined, path: '/client/notifications' },
-  { label: '帮助中心', icon: QuestionCircleOutlined, path: '/client/help' },
   { label: '设置', icon: SettingOutlined, path: '' },
   { label: '关于我们', icon: InfoCircleOutlined, path: '' },
 ]
@@ -155,7 +148,7 @@ export default function ClientProfile() {
 
         {/* ===== 联系客服 ===== */}
         <div
-          onClick={() => navigate('/client/ai-consult')}
+          onClick={() => navigate('/client/complaint')}
           style={{
             height: 48,
             borderRadius: 12,

@@ -89,6 +89,13 @@ export class DashboardController {
     return this.dashboardService.getRiskStats(finalOrgId);
   }
 
+  /** 投诉率看板：投诉案件率 + 投诉金额 + 来源/类型分布 */
+  @Get('complaint-rate-stats')
+  getComplaintRateStats(@Query('org_id') orgId: string, @Request() req?: any) {
+    const finalOrgId = orgId || req?.user?.organization_id;
+    return this.dashboardService.getComplaintRateStats(finalOrgId);
+  }
+
   // ==================== 8.1 投放转化漏斗看板增强 ====================
 
   /** 获取漏斗筛选项 */

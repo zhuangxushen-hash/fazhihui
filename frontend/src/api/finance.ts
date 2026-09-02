@@ -44,3 +44,25 @@ export const getCaseProfitAnalysis = (caseId: string) => {
 export const getProfitStats = (orgId: string) => {
   return axios.get('/finance/profit-stats', { params: { org_id: orgId } });
 };
+
+// ========== 案件成本 ==========
+
+export const getCaseCosts = (caseId: string) => {
+  return axios.get(`/finance/case-costs/case/${caseId}`);
+};
+
+export const getCaseCostSummary = (caseId: string) => {
+  return axios.get(`/finance/case-costs/summary/${caseId}`);
+};
+
+export const createCaseCost = (data: any) => {
+  return axios.post('/finance/case-costs', data);
+};
+
+export const updateCaseCost = (id: string, data: any) => {
+  return axios.put(`/finance/case-costs/${id}`, data);
+};
+
+export const deleteCaseCost = (id: string) => {
+  return axios.delete(`/finance/case-costs/${id}`);
+};

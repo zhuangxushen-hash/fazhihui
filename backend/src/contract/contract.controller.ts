@@ -37,6 +37,7 @@ export class ContractController {
     @Query('start_date') start_date?: string,
     @Query('end_date') end_date?: string,
     @Query('document_keyword') document_keyword?: string,
+    @Query('case_id') caseId?: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
     @Request() req?: any,
@@ -59,6 +60,7 @@ export class ContractController {
       start_date,
       end_date,
       document_keyword,
+      case_id: caseId,
       page,
       limit,
     });

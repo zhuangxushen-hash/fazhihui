@@ -73,6 +73,11 @@ export class Contract {
   @Column({ type: 'varchar', nullable: true, comment: '合同模板ID' })
   template_id: string;
 
+  // 发合同时业务员批量补充的「生成案件用」信息（JSON 字符串）：
+  // 案由/案件大类/案件名称/对方当事人/主办律师/收费金额/收费方式/案件描述等
+  @Column({ type: 'text', nullable: true, comment: '生成案件补充信息JSON' })
+  case_supplement: string;
+
   // 审查意见
   @Column({ type: 'text', nullable: true, comment: '审查意见' })
   review_comment: string;

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Form, Input, InputNumber, message, Spin } from 'antd'
-import { LeftOutlined, LockOutlined, EditOutlined } from '@ant-design/icons'
+import { LockOutlined } from '@ant-design/icons'
 import axios from '../../api/axios'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { Card, Pill } from './shared'
 
 /**
@@ -17,7 +17,6 @@ export default function SignPrefill() {
   const [subject, setSubject] = useState('委托代理合同')
   const [signingId, setSigningId] = useState('')
   const [form] = Form.useForm()
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
   const user = JSON.parse(localStorage.getItem('client_user') || '{}')
@@ -257,10 +256,11 @@ export default function SignPrefill() {
             </div>
           </div>
 
-          {/* 预览合同 */}
+          {/* 预览合同（点击触发确认签署跳转） */}
           <button
             type="button"
-            onClick={() => message.info('合同预览功能开发中')}
+            onClick={handleSubmit}
+            disabled={submitting}
             style={{
               height: 48,
               borderRadius: 12,
@@ -272,7 +272,7 @@ export default function SignPrefill() {
               cursor: 'pointer',
             }}
           >
-            预览合同
+            {submitting ? '提交中...' : '预览合同'}
           </button>
 
           {/* ===== 确认签署（功能暂未上线，暂时隐藏） ===== */}

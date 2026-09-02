@@ -1,6 +1,7 @@
 import { Injectable, Inject, forwardRef, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
+import * as fs from 'fs';
 import { Case } from '../case/case.entity';
 import { Document } from '../case/document.entity';
 import { Evidence } from '../case/evidence.entity';
@@ -129,12 +130,58 @@ export class ClientService {
     return this.documentRepository.save(document);
   }
 
-  async getCaseDocuments(caseId: string, clientId: string): Promise<Document[]> {
+  async getCaseDocuments(caseId: string, clientId: string): Promise<any[]> {
     const caseEntity = await this.caseRepository.findOne({ where: { id: caseId } });
     if (!caseEntity || caseEntity.client_id !== clientId) {
       throw new Error('案件不存在或无权访问');
     }
-    return this.documentRepository.find({ where: { case_id: caseId }, order: { created_at: 'DESC' } });
+    // documents 表为 C 端与 B 端共用，C 端可见范围：
+    // 1) 客户本人上传的文书（uploaded_by_id = clientId）
+    // 2) B 端上传时勾选了「展示给客户」的文件（visible_to_client = true）
+    const docs = await this.documentRepository.find({
+      where: [
+        { case_id: caseId, uploaded_by_id: clientId },
+        { case_id: caseId, visible_to_client: true },
+      ],
+      order: { created_at: 'DESC' },
+    });
+    // 归一化为 C 端展示字段，并标记来源（客户上传 / 律师共享）
+    return docs.map((d) => ({
+      id: d.id,
+      file_name: d.name,
+      file_size: d.size,
+      file_type: d.doc_type || d.file_type,
+      // B端上传走本地存储（file_path 为服务器路径，无 file_url）；C端历史数据可能为外链
+      file_url: /^https?:\/\//.test(d.file_path || '') ? d.file_path : undefined,
+      from_client: d.uploaded_by_id === clientId,
+    }));
+  }
+
+  /**
+   * C端下载案件文书（B端共享的本地存储文件走此接口流式下载）
+   * 仅允许下载：客户本人上传的文书，或 B 端勾选「展示给客户」的文件
+   */
+  async getCaseDocumentForDownload(
+    caseId: string,
+    docId: string,
+    clientId: string,
+  ): Promise<{ path: string; name: string; mime: string }> {
+    const caseEntity = await this.caseRepository.findOne({ where: { id: caseId } });
+    if (!caseEntity || caseEntity.client_id !== clientId) {
+      throw new NotFoundException('案件不存在');
+    }
+    const doc = await this.documentRepository.findOne({ where: { id: docId, case_id: caseId } });
+    if (!doc) {
+      throw new NotFoundException('文档不存在');
+    }
+    if (doc.uploaded_by_id !== clientId && !doc.visible_to_client) {
+      // 统一 404，避免泄露文档存在性
+      throw new NotFoundException('文档不存在');
+    }
+    if (!doc.file_path || /^https?:\/\//.test(doc.file_path) || !fs.existsSync(doc.file_path)) {
+      throw new NotFoundException('文档文件不存在');
+    }
+    return { path: doc.file_path, name: doc.name, mime: doc.file_type || 'application/octet-stream' };
   }
 
   async aiConsult(question: string): Promise<{ answer: string; related_laws: string[] }> {
@@ -174,13 +221,20 @@ export class ClientService {
         client_phone: complaintData.client_phone,
         organization_id: complaintData.organization_id,
       });
-    } catch (err) {}
+    } catch (err) {
+      // 投诉工单同步失败不应阻断投诉主流程，但需记录以便排查数据未进入投诉管理的问题
+      console.error('[client] 同步投诉工单到合规通道失败:', err);
+    }
 
     return savedComplaint;
   }
 
-  async getClientComplaints(clientId: string): Promise<Complaint[]> {
-    return this.complaintRepository.find({ where: { client_id: clientId }, order: { created_at: 'DESC' } });
+  async getClientComplaints(clientId: string): Promise<ComplaintTicket[]> {
+    // 客户投诉已统一收敛到 complaint_tickets（与 B 端投诉管理同源），此处直接读取工单
+    return this.complaintTicketRepository.find({
+      where: { client_id: clientId },
+      order: { updated_at: 'DESC' },
+    });
   }
 
   async getClientPayments(clientId: string): Promise<PaymentRecord[]> {
@@ -610,6 +664,49 @@ export class ClientService {
       fadada_sign_task_id: signing.fadada_sign_task_id,
       sign_url: signing.sign_url,
     };
+  }
+
+  /**
+   * 获取签署音视频下载链接（互动视频签 audio_video 录制，flv 格式，有效期 24 小时）。
+   * 签署完成后一般 5 分钟才可下载；法大大仅保存 3 天，需在有效期内及时获取。
+   */
+  async getSignAudioVideo(body: { signing_id: string; client_id: string }): Promise<any> {
+    const signing = await this.findSigning(body.signing_id, body.client_id);
+    if (!signing.fadada_sign_task_id) {
+      throw new Error('该签约未关联法大大签署任务，无法获取音视频');
+    }
+    const downloadUrl = await this.fadadaService.getSignAudioVideoUrl(
+      signing.fadada_sign_task_id,
+      signing.fadada_actor_id || signing.client_id,
+    );
+    return {
+      signing_id: signing.id,
+      download_url: downloadUrl,
+      mode: this.fadadaService.mode,
+    };
+  }
+
+  /**
+   * C端查询案件下「已签署」的签约记录（供案件详情展示已签署合同与签署音视频入口）。
+   * 按创建时间取最新一条，仅返回已签署（signed）记录。
+   */
+  async getSignedSignings(body: { client_id: string; case_id?: string }): Promise<any[]> {
+    const where: any = {
+      client_id: body.client_id,
+      status: SigningStatus.SIGNED,
+    };
+    if (body.case_id) where.case_id = body.case_id;
+    const list = await this.signingComplianceRepository.find({
+      where,
+      order: { created_at: 'DESC' },
+    });
+    return list.slice(0, 1).map((s) => ({
+      signing_id: s.id,
+      case_id: s.case_id,
+      subject: s.contract_content || '法律顾问签约',
+      signed_time: s.signed_time || s.updated_at,
+      fadada_sign_task_id: s.fadada_sign_task_id,
+    }));
   }
 
   /**

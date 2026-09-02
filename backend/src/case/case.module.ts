@@ -29,6 +29,10 @@ import { LegalDocumentController } from './legal-document.controller';
 import { SimilarCaseController } from './similar-case.controller';
 // 利冲检索控制器
 import { ConflictCheckController } from './conflict-check.controller';
+// 案件状态字典（组织级自定义）
+import { CaseStatusConfigController } from './case-status-config.controller';
+import { CaseStatusConfigService } from './case-status-config.service';
+import { CaseStatusConfig } from './case-status-config.entity';
 
 // 服务
 import { CaseTaskService } from './case-task.service';
@@ -74,6 +78,8 @@ import { ConflictCheck } from './conflict-check.entity';
       // 合同与应收
       Contract,
       Receivable,
+      // 案件状态字典
+      CaseStatusConfig,
     ]),
     forwardRef(() => ContractModule),
     forwardRef(() => FinanceModule),
@@ -107,6 +113,8 @@ import { ConflictCheck } from './conflict-check.entity';
     SimilarCaseService,
     // 利冲检索服务
     ConflictCheckService,
+    // 案件状态字典服务
+    CaseStatusConfigService,
   ],
   controllers: [
     // 保留原有控制器
@@ -125,6 +133,8 @@ import { ConflictCheck } from './conflict-check.entity';
     SimilarCaseController,
     // 利冲检索控制器
     ConflictCheckController,
+    // 案件状态字典控制器
+    CaseStatusConfigController,
   ],
   // Phase4: 导出 ConflictCheckService，供 LeadModule 等模块使用（利冲检查）
   exports: [ConflictCheckService],

@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>法智汇 · 详细产品流程图（含判断环节 + 报错）</title>
+<style>
+  :root{--bg:#f6f8fb;--card:#fff;--ink:#1f2937;--sub:#64748b;--line:#e5e9f0;
+    --red:#dc2626;--redbg:#fef2f2;--orange:#ea580c;--orangebg:#fff7ed;
+    --yellow:#ca8a04;--yellowbg:#fefce8;--green:#16a34a;--greenbg:#f0fdf4;
+    --blue:#2563eb;--bluebg:#eff6ff;--grey:#64748b;--greybg:#f1f5f9;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,sans-serif;line-height:1.6}
+  header{padding:28px 26px 20px;background:linear-gradient(120deg,#0f172a,#1e3a8a);color:#fff}
+  header h1{margin:0 0 6px;font-size:22px}
+  header p{margin:0;color:#cbd5e1;font-size:13px}
+  .wrap{max-width:1080px;margin:0 auto;padding:22px 18px 80px}
+  nav{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line);padding:9px 14px;display:flex;gap:12px;flex-wrap:wrap;font-size:12px}
+  nav a{color:var(--blue);text-decoration:none;font-weight:600}
+  section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin:16px 0;box-shadow:0 1px 3px rgba(15,23,42,.04)}
+  h2{font-size:18px;margin:0 0 4px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+  h3{font-size:14px;margin:16px 0 6px;color:#334155}
+  .lead{color:var(--sub);font-size:13px;margin:4px 0 12px}
+  .legend{font-size:12px;color:var(--sub);margin:8px 0;display:flex;gap:14px;flex-wrap:wrap}
+  .lg{display:inline-flex;align-items:center;gap:5px}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .d-blue{background:var(--blue)}.d-yellow{background:var(--yellow)}.d-red{background:var(--red)}.d-grey{background:#94a3b8}
+  /* 横向总览 */
+  .overview{display:flex;gap:4px;flex-wrap:wrap;align-items:stretch;margin:12px 0}
+  .ov{flex:1;min-width:120px;border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff}
+  .ov b{font-size:13px;display:block;margin-bottom:3px}
+  .ov span{font-size:11px;color:var(--sub)}
+  .ov .arr{color:#94a3b8;font-size:18px;text-align:center;display:flex;align-items:center}
+  /* timeline */
+  .timeline{border-left:3px solid #cbd5e1;margin:14px 0 4px 8px;padding-left:0}
+  .step{position:relative;margin:0 0 12px 0;padding-left:26px}
+  .step::before{content:'';position:absolute;left:-9px;top:7px;width:13px;height:13px;border-radius:50%;background:var(--blue);border:3px solid #fff;box-shadow:0 0 0 1px var(--blue)}
+  .step.red::before{background:var(--red);box-shadow:0 0 0 1px var(--red)}
+  .step.grey::before{background:#94a3b8;box-shadow:0 0 0 1px #94a3b8}
+  .step.yellow::before{background:var(--yellow);box-shadow:0 0 0 1px var(--yellow)}
+  .node{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .node .ttl{font-weight:700;font-size:13px;color:#1e293b}
+  .node .sub{font-size:11px;color:var(--sub);margin-bottom:4px}
+  .branch{font-size:12px;margin-top:6px;padding-left:4px}
+  .branch .judge{color:#92400e;font-weight:700}
+  .branch .go{color:#334155}
+  .err{background:var(--redbg);border:1px solid #fecaca;color:#991b1b;border-radius:8px;padding:5px 9px;font-size:12px;margin-top:6px}
+  .err b{color:#b91c1c}
+  .silent{background:var(--greybg);border:1px solid #e2e8f0;color:#475569;border-radius:8px;padding:5px 9px;font-size:12px;margin-top:6px}
+  .todo{background:var(--yellowbg);border:1px solid #fde68a;color:#854d0e;border-radius:8px;padding:5px 9px;font-size:12px;margin-top:6px}
+  code{background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:11px;color:#b91c1c;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .skipnote{background:#fffbeb;border:1px dashed #f59e0b;color:#92400e;border-radius:8px;padding:8px 12px;font-size:12px;margin:10px 0}
+  .kpi{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0}
+  .kpi div{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:8px 14px}
+  .kpi b{display:block;font-size:18px;color:var(--blue)}
+  .kpi span{font-size:11px;color:var(--sub)}
+</style>
+</head>
+<body>
+<header>
+  <h1>法智汇 · 详细产品流程图（含每个判断环节 + 报错）</h1>
+  <p>基于真实代码逐行梳理 · 每条链路细到 if 分支与报错文案 · 2026-09-01 · 不含「C端支付」（本期不做）</p>
+</header>
+
+<nav>
+  <a href="#overview">总览</a>
+  <a href="#l1">① 线索生命周期</a>
+  <a href="#l2">② 发合同→建案→利冲→应收→分润</a>
+  <a href="#l3">③ 办案 SOP→文书→成本→结案</a>
+  <a href="#l4">④ 财务收款→分润→对账→发票→代扣→退费</a>
+  <a href="#l5">⑤ 合规投诉 + 客户端回流</a>
+</nav>
+
+<div class="wrap">
+
+<!-- 总览 -->
+<section id="overview">
+  <h2>总览 · 主价值流</h2>
+  <div class="overview">
+    <div class="ov"><b>① 获客/线索</b><span>活码只计数·归因缺失</span></div>
+    <div class="ov"><b>➜ ② 谈案/邀约</b><span>无外呼·SOP空壳</span></div>
+    <div class="ov"><b>➜ ③ 发合同建案</b><span>补偿动作静默吞错</span></div>
+    <div class="ov"><b>➜ ④ 办案</b><span>任务不自动·文书模板</span></div>
+    <div class="ov"><b>➜ ⑤ 财务</b><span>分润漏算·发票壳</span></div>
+    <div class="ov"><b>➜ ⑥ 客户端</b><span>案件/投诉/归档</span></div>
+  </div>
+  <div class="kpi">
+    <div><b>5</b><span>条主链路详图</span></div>
+    <div><b>40+</b><span>判断/分支节点</span></div>
+    <div><b>30+</b><span>报错/异常文案</span></div>
+    <div><b>12</b><span>静默吞错点</span></div>
+  </div>
+  <div class="legend">
+    <span class="lg"><span class="dot d-blue"></span>处理节点</span>
+    <span class="lg"><span class="dot d-yellow"></span>判断分支</span>
+    <span class="lg"><span class="dot d-red"></span>报错/阻断</span>
+    <span class="lg"><span class="dot d-grey"></span>静默吞错（不阻断但留隐患）</span>
+  </div>
+  <p class="lead">图例说明：红色报错框是"用户会看到错误提示或功能中断"的环节；灰色静默框是"代码出错但系统假装成功继续走"的隐患（最危险，因为没人知道出问题了）。</p>
+</section>
+
+<!-- ============ 链路1 ============ -->
+<section id="l1">
+  <h2>① 线索生命周期</h2>
+  <p class="lead">角色：营销岗 / 销售 / 谈案律师。入口：广告 webhook、手工录入、活码。</p>
+  <div class="timeline">
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤1 · webhook 写入线索</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go">平台配置/签名缺失 → 抛 <code>验签失败</code>；<code>!data.phone</code> → 抛 <code>线索缺少手机号</code>；<code>resolveOrgId</code> 为 null → 抛 <code>无法识别线索归属组织</code></span></div>
+      <div class="silent">静默：7 天内同手机号 → 直接返回旧线索、不报错（去重）</div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤2 · 手工 createLead</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go">前端 phone 必填；后端未做 phone 校验（空值靠数据库报错）；客户字段非必填</span></div>
+      <div class="silent">静默：<code>matchAndAssign</code> 自动分配包 try/catch 吞错（分配失败不提示）</div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤3 · 活码 channel-tracking</div>
+      <div class="todo">⚠ 活码只做扫码计数，<b>从不写 Lead</b> → 所以"来源渠道 source_channel"永远不填，线索归因丢失（来源线索实际走 webhook / 手工录入）</div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤4 · 线索状态机 LeadStatus</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go">手动切（updateStatus/assignSales→PENDING_FOLLOW/createFollowUp→FOLLOWING）；自动切（邀约 SUCCESS→INVITING、到所→NEGOTIATING、签约→PENDING_SIGN、流失→LOST）</span></div>
+      <div class="silent">静默：<code>updateStatus</code> 无枚举校验 → 任意脏值可写入、不阻断</div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤5 · 进公海池（Cron 凌晨1点 / 手动）</div>
+      <div class="branch"><span class="judge">◈ 判断（手动 manualRecycle）：</span><span class="go">线索不存在 → <code>404</code>；未分配 → <code>BadRequest 该线索未分配，无法释放</code>；非本人 → <code>Forbidden 只能释放自己负责的线索</code></span></div>
+      <div class="silent">自动：超时(被跟进超7天)且有负责人 → 入池+LOST；已在池 → warn 跳过</div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤6 · 认领 claim</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go">记录不存在 → <code>404 公海池记录不存在</code>；跨组织 → <code>403</code>；<code>status≠AVAILABLE</code> → <code>BadRequest 该线索已被领取或已废弃</code>；<code>take_count≥3</code> → 置 DISCARDED + <code>BadRequest 该线索已达到最大领取次数，已被废弃</code></span></div>
+      <div class="silent">静默：成功通知包 try/catch（通知失败不提示）</div>
+    </div></div>
+
+    <div class="step grey"><div class="node">
+      <div class="ttl">步骤7 · 再分配 reassignLead</div>
+      <div class="todo">⚠ 死代码：方法存在但<b>无 controller 路由、无前端调用</b> → 销售之间无法在系统里转派线索（只能线下口头说）</div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤8 · 邀约 invite-task</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go">线索不存在 → <code>404</code>；用户不存在 → <code>404</code>；角色非 sales/admin → <code>Forbidden 只有邀约岗和管理员可以创建邀约任务</code></span></div>
+      <div class="branch"><span class="judge">◈ 结果分支：</span><span class="go">SUCCESS→INVITING；INVALID→LOST；其余 PENDING</span></div>
+      <div class="silent">无外呼：仅建记录 + 站内 notify（"成功/失败"对用户=状态变更+通知，无真实外呼回执）；录音质检 try/catch 吞错</div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤9 · 谈案 talk / talk-sop</div>
+      <div class="branch"><span class="judge">◈ 判断（到所）：</span><span class="go">ARRIVED→NEGOTIATING + 建商机（已存在 → <code>BadRequest 该线索已创建商机</code>，但调用处 catch 静默）；NOT_ARRIVED→FOLLOWING</span></div>
+      <div class="branch"><span class="judge">◈ 谈案结果：</span><span class="go">通过 = 转案件(lead→PENDING_SIGN)；不通过 = 标记流失(→LOST)；待定 = 停留 NEGOTIATING</span></div>
+      <div class="err">阻断（转案件）：已签约 → <code>BadRequest 该商机已签约</code>；强制 SOP 节点未完成 → <code>BadRequest 以下强制节点未完成：…</code></div>
+      <div class="silent">质检：关键词命中 REJECT，但整段 try/catch 吞掉（质检异常无感知）</div>
+    </div></div>
+
+  </div>
+</section>
+
+<!-- ============ 链路2 ============ -->
+<section id="l2">
+  <h2>② 发合同 → 签署 → 建案 → 利冲 → 应收 → 分润（核心链路）</h2>
+  <p class="lead">角色：律师/助理。这是全系统最复杂、隐患最多的链路。补偿动作（利冲/应收/分润）全部被"静默吞错"，且分润触发条件结构性不满足。</p>
+  <div class="timeline">
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤0 · 发合同入口 launchSignFromLead</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go">仅校验 <code>!lead</code> → <code>Error 线索不存在</code>；无 case_id/客户必填校验</span></div>
+      <div class="silent">合同号按编号规则生成失败 → catch 回退随机号；clientName 按 corp/person 兜底</div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤1-2 · 建合同记录 + 建签约合规记录</div>
+      <div class="silent">合同金额缺失 → 0 静默入库；签约合规记录 case_id 存空串（仅绑 lead/contract）</div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤3 · 发起签署 createSignTaskFromTemplate</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go"><code>!enabled</code> → <code>法大大电子签未启用</code>；<code>mode==='mock'</code> → 返回本地模拟链接（不走真实签署）</span></div>
+      <div class="err">prod 下：模板/参与方异常冒泡；无 signTaskId → <code>法大大模板签署任务创建失败：…</code></div>
+      <div class="silent">预填字段逐字段 try 容错，单字段失败仅 warn 跳过；prod 返回 signUrl 为空（真实链接后续再取）</div>
+    </div></div>
+
+    <div class="step red"><div class="node">
+      <div class="ttl">步骤4 · 发起失败清理</div>
+      <div class="err">catch(e)：先 remove(signing) 再 remove(contract)（均静默），然后 <code>throw e</code> → 前端收到异常（HTTP 500 / 业务错误）</div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤5 · 客户签署完成回调 handleCallback</div>
+      <div class="silent">先 <code>res.json({msg:'success'})</code> 再异步处理；<b>任何异常仍返回 success</b>（防法大大重试风暴）</div>
+    </div></div>
+
+    <div class="step grey"><div class="node">
+      <div class="ttl">步骤6 · 回调验签 verifyCallbackSign</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go">未配置 AppSecret → 返回 null（跳过）；缺 sign/timestamp → false；HMAC 不等 → false</span></div>
+      <div class="todo">⚠ 验签失败（false）→ controller 直接 <code>return</code>，<b>事件被静默丢弃、不重试</b>（可能丢签署结果）；返回 null 反而放行。另：<code>verifyCallbackToken</code> 是死代码从未调用</div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤7 · 签署完成状态分支</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go">sign-task-finished → SIGNED；sign-task-signed → REVIEWING；拒绝/撤销 → REJECTED</span></div>
+      <div class="branch"><span class="judge">◈ 触发建案条件：</span><span class="go"><code>status===SIGNED && !case_id && contract_id</code></span></div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤8 · 建案 generateCaseFromContract</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go"><code>!contract</code> → return null 静默；已 case_id → 幂等返回（防重复建案）</span></div>
+      <div class="silent">case_supplement JSON 解析失败 → catch 置空；无手机号 → clientId=null 静默；编号生成失败 → catch 回退 AJ-随机；默认状态读取失败 → 回退 pending_assign</div>
+      <div class="err">建案 save 失败 → 抛出异常，被步骤7 的 catch 记录日志，<b>签名记录不写 case_id</b></div>
+    </div></div>
+
+    <div class="step grey"><div class="node">
+      <div class="ttl">步骤9 · 利益冲突检索 conflictCheckService.check</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go">当事人与对方同命中 → <code>conflict</code>；仅一方 → <code>warning</code>；否则 <code>clear</code></span></div>
+      <div class="todo">⚠ 命中冲突仅置 <code>approval_status:'conflict_hold'</code>（留痕），<b>不阻断建案</b>；利冲异常仅 logger.error，案件已建 → 利冲失败无人知</div>
+    </div></div>
+
+    <div class="step grey"><div class="node">
+      <div class="ttl">步骤10 · 应收台账 receivable save</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go">feeAmount=0 也建 PENDING 应收；客户缺失不校验（案件已有 client 关联）</span></div>
+      <div class="todo">⚠ 应收保存异常仅 logger.error → <b>应收漏建，但案件照常生成 → 财务账实不符</b></div>
+    </div></div>
+
+    <div class="step red"><div class="node">
+      <div class="ttl">步骤11 · 分润触发 checkAndTriggerCommission</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go"><code>status!==CLOSED</code> → skipped；<code>receivable!==COMPLETED</code> → skipped；已存在 → skipped</span></div>
+      <div class="err">🔴 签约时案件为 pending_assign（非 CLOSED）、应收为 PENDING（非 COMPLETED）→ <b>永远 skipped，分润永不在签约触发（死代码分支）</b>；异常仅 failed++ 静默</div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤12 · 回写</div>
+      <div class="silent">更新 contract 为 signed + case_id；线索转 converted（无论利冲/应收/分润是否成功）</div>
+    </div></div>
+
+    <div class="step red"><div class="node">
+      <div class="ttl">步骤13 · 事务性（架构隐患）</div>
+      <div class="err">🔴 建案 / 利冲 / 应收 / 分润 <b>各自独立 save，无事务包裹</b>。任一步 catch 仅记日志、不回滚前序写库 → 留下"有案无应收 / 有案无分润"的不一致态（只有步骤3整段发起失败才整体清理）</div>
+    </div></div>
+
+  </div>
+</section>
+
+<!-- ============ 链路3 ============ -->
+<section id="l3">
+  <h2>③ 办案：案件 → SOP/任务 → 文书 → 成本 → 预警 → 结案</h2>
+  <p class="lead">角色：办案律师/助理。重点隐患：SOP 任务实例化函数无人调用（空壳），状态流转零校验，文书是模板拼装非真 AI。</p>
+  <div class="timeline">
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤1 · 案件创建（B端）case.service.create</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go"><code>!organizationId</code> → <code>BadRequest 缺少组织信息</code></span></div>
+      <div class="silent">无必填字段校验（客户/案件名非强制）；create 内无自动分配律师（独立接口，无人分配不报错）；利冲/类案/SOP 生成均 try/catch 静默</div>
+    </div></div>
+
+    <div class="step grey"><div class="node">
+      <div class="ttl">步骤2 · 办案 SOP / 任务实例化</div>
+      <div class="todo">⚠ <code>generateTasksFromTemplate</code> <b>无调用方（空壳）</b>。真实路径是 <code>createCaseSOP</code>（创建案件时调用），按 case_type 读模板写 CaseTask。<b>case.stage 变更不触发任务实例化</b> → 律师看不到随阶段推进的待办</div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤3 · 阶段/状态流转 updateStatus</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go"><code>status===CLOSED</code> → 走结案；其余状态 <code>repository.update</code> <b>无任何合法性校验</b> → 任意互转均放行</span></div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤4 · 文书生成 generateDocument</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go">模板缺失 → <code>Error 模板不存在</code></span></div>
+      <div class="todo">⚠ 非真 LLM：仅 <code>{{key}}</code> 正则替换 / 字符串拼装（ai.service 未调用）。结案自动生成报告走 try/catch 静默</div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤5 · 案件成本 case-cost.service</div>
+      <div class="branch"><span class="judge">◈ 判断（更新）：</span><span class="go"><code>!existing</code> → <code>NotFound 成本记录不存在</code></span></div>
+      <div class="silent">create 事务内 save + 同步写 BusinessFund 支出；update 作废旧 fund+重写（静默 catch）；remove 删除后 fund 置 voided（静默）</div>
+      <div class="branch"><span class="judge">◈ 角色：</span><span class="go">LAWYER / ASSISTANT 均可增删改，<b>无细粒度区分</b></span></div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤6 · 预警（Cron 定时）</div>
+      <div class="branch"><span class="judge">◈ 条件：</span><span class="go">仅对在办案件按 advanceDays[7,3,1] 生成；超期升级 URGENT</span></div>
+      <div class="silent">generateWarnings 每天0点 / checkOverdueWarnings 每小时 / checkOverdueReceivables 每天1点；失败均 try/catch 仅 logger.error；notify catch(e){} 吞错</div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤7 · 结案 closeCase</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go">结案<b>不要求分润/应收完成</b>，直接置 CLOSED；仅当 contract 应收 recvAmt≥totalAmt 时置 is_settled</span></div>
+      <div class="silent">分润：因需 status===CLOSED 才满足 → <b>实际靠结案触发</b>（此处 catch 静默）。保全回写风险备注/预警失败均 catch(err){} 吞</div>
+    </div></div>
+
+  </div>
+</section>
+
+<!-- ============ 链路4 ============ -->
+<section id="l4">
+  <h2>④ 财务：收款 → 分润 → 对账 → 发票 → 代扣 → 退费</h2>
+  <p class="lead">角色：财务。重点隐患：收款不写收支总账（收支割裂）、分润漏算协办、对账永不报错、发票/代扣/退费是状态壳。</p>
+  <div class="timeline">
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤1 · 收款 recordPayment</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go"><code>!amount||amount<=0</code> → <code>收款金额必须大于0</code>；receivable 不存在 → <code>应收台账不存在</code></span></div>
+      <div class="branch"><span class="judge">◈ 状态分支：</span><span class="go">newReceived≥合同额 → COMPLETED；>0 → PARTIAL；否则 PENDING</span></div>
+      <div class="silent">超额不报错、无重复收款校验；<b>① 不写 BusinessFund（收支割裂）② 完成后触发分润 try/catch 吞 ③ 审计失败静默</b></div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤2 · 分润 checkAndTriggerCommission</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go"><code>status!==CLOSED</code> → skipped；<code>receivable!==COMPLETED</code> → skipped；已存在 → skipped</span></div>
+      <div class="branch"><span class="judge">◈ 计算：</span><span class="go">要求 CLOSED 否则 <code>案件未结案</code>；COMPLETED 否则 <code>款项未结清</code>；基数仅 fee_amount（非实收）</span></div>
+      <div class="todo">⚠ 参与者<b>仅主办律师</b>（TODO：协办/邀约/谈案岗未实现）→ 其余角色分不到钱</div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤3 · 对账 runReconciliation</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go">逐笔遍历 receivable 计 match/mismatch；paymentRecord 总额与 received 差额>0.01 追加 mismatch；作废/冲红发票各追加</span></div>
+      <div class="silent">状态恒置 COMPLETED；payment 汇总异常、发票查询异常均静默 → <b>对账不一致永不报错，仅 mismatch_count 计数</b></div>
+    </div></div>
+
+    <div class="step grey"><div class="node">
+      <div class="ttl">步骤4 · 发票 create / issue</div>
+      <div class="silent">税率默认 0.06；状态默认 ISSUED；<b>无真实税控/第三方通道（全壳，纯 DB 写入）</b>；issueInvoice 仅改状态，无外部调用、无失败分支</div>
+    </div></div>
+
+    <div class="step grey"><div class="node">
+      <div class="ttl">步骤5 · 代扣 executeWithholding</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go">记录不存在 → <code>代扣记录不存在</code>；<code>status!==PENDING</code> → <code>仅待代扣状态的记录可以执行</code></span></div>
+      <div class="silent">无 @Cron（仅手动）；无真实网关；成功后置 COMPLETED + 写 BusinessFund expense → <b>"扣款"为伪操作，仅改状态+插支出</b>；批量异常转 FAILED 记原因</div>
+    </div></div>
+
+    <div class="step grey"><div class="node">
+      <div class="ttl">步骤6 · 退费 payRefund</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go">审核 PENDING→APPROVED 回减 receivable（received 钳0、无余额上限）；<code>payRefund</code> 要求 <code>status!==APPROVED</code> → <code>仅已审核通过的退费记录可以打款</code>；不存在 → <code>退费记录不存在</code></span></div>
+      <div class="silent">打款不真实：仅 PENDING→PAID 改状态，<b>无银行出款、无失败分支 → 账实不符</b></div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤7 · 单案利润 getProjectRevenueOverview</div>
+      <div class="branch"><span class="judge">◈ 计算：</span><span class="go">net_profit = BusinessFund 收入 − BusinessFund 支出</span></div>
+      <div class="todo">⚠ 注释称"含 case_cost"但代码<b>未查 case_cost 表</b> → 成本漏算；因步骤1 不写 BusinessFund 收入 → 收入侧也失真（无报错）</div>
+    </div></div>
+
+  </div>
+</section>
+
+<!-- ============ 链路5 ============ -->
+<section id="l5">
+  <h2>⑤ 合规投诉 + 客户端回流</h2>
+  <p class="lead">角色：客户(C端) / 合规岗。本期不做 C 端支付（已标注）。</p>
+  <div class="timeline">
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤1 · C端投诉提交 createComplaint</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go">TS 层 type/client_id/... 必填，但 service 层<b>无任何必填校验</b>直接落库；case_id 可选（可无关联案件提交）</span></div>
+      <div class="silent">source_channel 不透传，后端硬编码 CLIENT_PORTAL；工单同步 try/catch 失败仅 console.error → <b>"投诉成功但工单可能未进 B端"</b></div>
+      <div class="todo">⚠ 类型不一致：前端 service_quality/progress/fee_issue/other vs 后端 service_attitude/case_progress…（as any 原样入库 → 标签回落"其他"）；上传凭证 POST /upload <b>后端无路由 → 404</b>，catch 后提示"上传失败，请重试"，降级为无凭证</div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤2 · B端工单三来源</div>
+      <div class="branch"><span class="judge">◈ 来源：</span><span class="go">① C端提交同步（CLIENT_PORTAL）② 手动建单（必填 source_channel/type/severity/title/content）③ 低分评价自动建单（type=low_score_rating, HIGH）</span></div>
+      <div class="silent">权限：compliance.controller 无 CLIENT 角色 → C端不可访问 B端工单</div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤3 · 工单流转 / 升级</div>
+      <div class="branch"><span class="judge">◈ 状态：</span><span class="go">PENDING→PROCESSING(assign)→RESOLVED→CLOSED(归档)/ESCALATED</span></div>
+      <div class="silent">ticket 不存在 → return null 不抛错（前端易拿 null 异常）；escalate 任意状态可调用无前置校验</div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤4 · 投诉率看板 getComplaintRateStats</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go">totalCases=0 → 投诉案件率=0；count=0 → 解决率=0；仅当被投诉案件非空才查 receivables，否则金额恒 0；无 receivables → COALESCE 兜底 0</span></div>
+      <div class="silent">by_source / by_type 缺省 other</div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤5 · C端案件查看</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go">/client/cases 按 client_id 查（无越权判断），空 → 前端"暂无案件"；/client/cases/:id：<code>!caseEntity || client_id!==clientId</code> → <code>NotFound 案件不存在</code>（统一 404 防泄露，无权限等同不存在）</span></div>
+    </div></div>
+
+    <div class="step"><div class="node">
+      <div class="ttl">步骤6 · C端签约预填 SignPrefill</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go">findSigning 不存在 → <code>签约记录不存在或无权访问</code>；无 fadada_sign_task_id → <code>该签约尚未完成发起，缺少签署任务ID</code>；法大大异常 → <code>BadRequest(签约失败)</code></span></div>
+      <div class="silent">必填仅前端 field.required 驱动，后端不二次校验；提交后 status REVIEWING，返回 sign_url 进法大大签署页</div>
+    </div></div>
+
+    <div class="step grey"><div class="node">
+      <div class="ttl">步骤7 · C端归档 ClientArchive</div>
+      <div class="branch"><span class="judge">◈ 判断：</span><span class="go">前端 file 必填（message.error）；无 file_url 时提示"文件暂无可下载地址"</span></div>
+      <div class="todo">⚠ file_url 写死 <code>/uploads/archives/..</code> 后端原样存，<b>无真实落盘</b> → 下载路径不存在 404；C端 client_archives 与 B端 case_archives <b>两张独立表、互不相通</b></div>
+    </div></div>
+
+    <div class="step grey"><div class="node">
+      <div class="ttl">步骤8 · C端支付 / 付款</div>
+      <div class="skipnote">🚫 <b>本期不做</b>（按你的要求暂不涉及）。注：此前审计发现该路径存在 403 阻断，但因本期不排期，图中略去。</div>
+    </div></div>
+
+  </div>
+</section>
+
+<div class="wrap" style="padding-top:0">
+  <section>
+    <h2>附：最该修的"静默吞错"清单（最危险，因为没人知道出问题）</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr><th>链路</th><th>位置</th><th>吞错后果</th></tr></thead>
+      <tbody>
+        <tr><td>发合同建案</td><td>利冲/应收/分润 try/catch（fadada:1562-1599）</td><td>有案无应收/无分润，财务账实不符</td></tr>
+        <tr><td>发合同建案</td><td>回调验签失败丢弃事件（controller:67）</td><td>签署结果可能丢失且不重试</td></tr>
+        <tr><td>财务</td><td>收款不写 BusinessFund（finance:143）</td><td>收支总账割裂，单案利润失真</td></tr>
+        <tr><td>财务</td><td>对账异常静默（reconciliation:103/118）</td><td>账目不一致永不报警</td></tr>
+        <tr><td>合规</td><td>投诉工单同步失败仅 console.error（client:226）</td><td>客户以为投诉成功，实际工单没进 B端</td></tr>
+        <tr><td>办案</td><td>保全风险回写/预警 catch(err){}</td><td>风险备注与预警失败无感知</td></tr>
+      </tbody>
+    </table>
+    <p class="lead">说明：本图所有判断条件与报错文案均来自对 backend/src 与 frontend/src 的逐行静态扫描，未运行构建。落地任意修复前建议本地 <code>npx tsc --noEmit</code> 终验。</p>
+  </section>
+</div>
+
+</div>
+</body>
+</html>

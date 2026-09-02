@@ -16,7 +16,7 @@ const LeadManagement = lazy(() => import('./pages/LeadManagement'))
 const ClientManagement = lazy(() => import('./pages/ClientManagement'))
 const CaseManagement = lazy(() => import('./pages/CaseManagement'))
 const CaseDetail = lazy(() => import('./pages/CaseDetail'))
-const CaseSignLaunch = lazy(() => import('./pages/CaseSignLaunch'))
+const LeadSignLaunch = lazy(() => import('./pages/LeadSignLaunch'))
 const ContractManagement = lazy(() => import('./pages/ContractManagement'))
 const ComplaintManagement = lazy(() => import('./pages/ComplaintManagement'))
 const ComplianceCenter = lazy(() => import('./pages/ComplianceCenter'))
@@ -26,6 +26,7 @@ const ClientCaseList = lazy(() => import('./pages/client/ClientCaseList'))
 const ClientCaseDetail = lazy(() => import('./pages/client/ClientCaseDetail'))
 const AIConsult = lazy(() => import('./pages/client/AIConsult'))
 const Complaint = lazy(() => import('./pages/client/Complaint'))
+const MyComplaints = lazy(() => import('./pages/client/MyComplaints'))
 const Payment = lazy(() => import('./pages/client/Payment'))
 const ClientProfile = lazy(() => import('./pages/client/ClientProfile'))
 // Phase 1 案件办案模块
@@ -448,6 +449,9 @@ function App() {
           <Route path="/dashboard/profit-model" element={<ProtectedRoute><ProfitModelSimulator /></ProtectedRoute>} />
           {/* 线索CRM */}
           <Route path="/leads" element={<ProtectedRoute><LeadManagement /></ProtectedRoute>} />
+          {/* 发合同(签约)：新流程 洽谈(线索)→发合同→生成案件→案件管理，与案件解耦 */}
+          <Route path="/leads/sign" element={<ProtectedRoute><LeadSignLaunch /></ProtectedRoute>} />
+          <Route path="/leads/sign/:leadId" element={<ProtectedRoute><LeadSignLaunch /></ProtectedRoute>} />
           <Route path="/client-management" element={<ProtectedRoute><ClientManagement /></ProtectedRoute>} />
           <Route path="/lead-pool" element={<ProtectedRoute><LeadPool /></ProtectedRoute>} />
           <Route path="/invite-workbench" element={<ProtectedRoute><InviteWorkbench /></ProtectedRoute>} />
@@ -458,7 +462,6 @@ function App() {
           {/* 案件办案 */}
           <Route path="/cases" element={<ProtectedRoute><CaseManagement /></ProtectedRoute>} />
           <Route path="/cases/:id" element={<ProtectedRoute><CaseDetail /></ProtectedRoute>} />
-          <Route path="/cases/:caseId/sign" element={<ProtectedRoute><CaseSignLaunch /></ProtectedRoute>} />
           <Route path="/case-sop" element={<ProtectedRoute><CaseSOPConfig /></ProtectedRoute>} />
           <Route path="/case-warning" element={<ProtectedRoute><CaseWarningCenter /></ProtectedRoute>} />
           <Route path="/legal-documents" element={<ProtectedRoute><LegalDocumentGen /></ProtectedRoute>} />
@@ -552,6 +555,7 @@ function App() {
           <Route path="/client/sign-prefill" element={<ClientProtectedRoute><SignPrefill /></ClientProtectedRoute>} />
           <Route path="/client/ai-consult" element={<ClientProtectedRoute><AIConsult /></ClientProtectedRoute>} />
           <Route path="/client/complaint" element={<ClientProtectedRoute><Complaint /></ClientProtectedRoute>} />
+          <Route path="/client/my-complaints" element={<ClientProtectedRoute><MyComplaints /></ClientProtectedRoute>} />
           <Route path="/client/payment" element={<ClientProtectedRoute><Payment /></ClientProtectedRoute>} />
           <Route path="/client/service-hall" element={<ClientProtectedRoute><ClientServiceHall /></ClientProtectedRoute>} />
           <Route path="/client/service-rating" element={<ClientProtectedRoute><ServiceRating /></ClientProtectedRoute>} />

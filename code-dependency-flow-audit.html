@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>法智汇 · 代码依赖 · 流程 · 报错分支 · 缺失清单 总审计</title>
+<style>
+  :root{
+    --bg:#f6f8fb; --card:#ffffff; --ink:#1f2937; --sub:#64748b; --line:#e5e9f0;
+    --red:#dc2626; --redbg:#fef2f2; --orange:#ea580c; --orangebg:#fff7ed;
+    --yellow:#ca8a04; --yellowbg:#fefce8; --green:#16a34a; --greenbg:#f0fdf4;
+    --blue:#2563eb; --bluebg:#eff6ff; --purple:#7c3aed; --purplebg:#f5f3ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,sans-serif;line-height:1.6}
+  header{padding:32px 28px 24px;background:linear-gradient(120deg,#0f172a,#1e3a8a);color:#fff}
+  header h1{margin:0 0 6px;font-size:24px}
+  header p{margin:0;color:#cbd5e1;font-size:13px}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 20px 80px}
+  nav{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;gap:14px;flex-wrap:wrap;font-size:13px}
+  nav a{color:var(--blue);text-decoration:none;font-weight:600}
+  nav a:hover{text-decoration:underline}
+  section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin:18px 0;box-shadow:0 1px 3px rgba(15,23,42,.04)}
+  h2{font-size:19px;margin:0 0 4px;padding-bottom:10px;border-bottom:2px solid var(--line)}
+  h3{font-size:15px;margin:22px 0 8px;color:var(--ink)}
+  .lead{color:var(--sub);font-size:13px;margin:6px 0 14px}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#f1f5f9;font-weight:600;color:#334155}
+  code{background:#f1f5f9;padding:1px 6px;border-radius:5px;font-size:12px;color:#b91c1c;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .tag{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
+  .t-red{background:var(--redbg);color:var(--red)}
+  .t-orange{background:var(--orangebg);color:var(--orange)}
+  .t-yellow{background:var(--yellowbg);color:var(--yellow)}
+  .t-green{background:var(--greenbg);color:var(--green)}
+  .t-blue{background:var(--bluebg);color:var(--blue)}
+  .t-grey{background:#f1f5f9;color:#475569}
+  .flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin:16px 0}
+  .stage{flex:1;min-width:140px;border:1px solid var(--line);border-radius:10px;padding:12px;position:relative;background:#fff}
+  .stage h4{margin:0 0 6px;font-size:13px}
+  .stage .who{font-size:11px;color:var(--sub);margin-bottom:6px}
+  .stage ul{margin:6px 0 0;padding-left:16px;font-size:12px;color:#475569}
+  .arrow{display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:22px;padding:0 2px}
+  .pill{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+  .p-red{background:var(--red)} .p-orange{background:var(--orange)} .p-yellow{background:var(--yellow)} .p-green{background:var(--green)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:780px){.grid2{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}}
+  .callout{border-left:4px solid var(--blue);background:var(--bluebg);padding:10px 14px;border-radius:0 8px 8px 0;font-size:13px;margin:12px 0}
+  .callout.red{border-color:var(--red);background:var(--redbg)}
+  .callout.orange{border-color:var(--orange);background:var(--orangebg)}
+  .kpi{display:flex;gap:14px;flex-wrap:wrap;margin:12px 0}
+  .kpi div{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:10px 16px;min-width:120px}
+  .kpi b{display:block;font-size:22px;color:var(--blue)}
+  .kpi span{font-size:12px;color:var(--sub)}
+  .legend{font-size:12px;color:var(--sub);margin:8px 0}
+  ul.tight{margin:6px 0;padding-left:18px}
+  ul.tight li{margin:4px 0}
+  .small{font-size:12px;color:var(--sub)}
+</style>
+</head>
+<body>
+<header>
+  <h1>法智汇 · 代码依赖 / 流程 / 报错分支 / 缺失清单 总审计</h1>
+  <p>基于真实代码（backend/src · frontend/src）静态扫描 + 5+ 路探查代理交叉核验 · 2026-09-01 · 全部带 file:line</p>
+</header>
+
+<nav>
+  <a href="#overview">总览</a>
+  <a href="#deps">① 模块依赖图</a>
+  <a href="#flow">② 业务流转图</a>
+  <a href="#errors">③ 报错分支</a>
+  <a href="#contract">④ 前后端契约缺口</a>
+  <a href="#model">⑤ 数据模型缺口</a>
+  <a href="#missing">⑥ 缺失清单</a>
+  <a href="#roadmap">⑦ 行动路线</a>
+</nav>
+
+<div class="wrap">
+
+<!-- ============ 总览 ============ -->
+<section id="overview">
+  <h2>总览 · 一页结论</h2>
+  <div class="kpi">
+    <div><b>47</b><span>后端注册业务模块</span></div>
+    <div><b>2</b><span>真实循环依赖环</span></div>
+    <div><b>5</b><span>🔴 阻断性报错分支</span></div>
+    <div><b>4</b><span>🔴 C端 403 主流程卡死</span></div>
+    <div><b>6+</b><span>🟠 数据不一致/半通</span></div>
+    <div><b>6</b><span>🟡 纯演示/mock 模块</span></div>
+  </div>
+  <p class="lead">主业务价值流（获客→线索→谈案→发合同→建案→办案→财务）逻辑上<strong>通畅</strong>，但被三类问题拉低可用性：①<strong>架构级报错分支</strong>（RBAC 免鉴权、静默吞错导致账实不符）；②<strong>前后端契约缺口</strong>（C端支付/建案被 403、上传端点不存在）；③<strong>数据模型漂移</strong>（状态枚举前后端不一致、外键缺失）。下面分章给出确凿证据与缺失清单。</p>
+  <div class="legend">
+    图例：<span class="pill p-green"></span>通畅
+    <span class="pill p-orange"></span>半通/数据不一致
+    <span class="pill p-yellow"></span>占位/未实现（演示）
+    <span class="pill p-red"></span>阻断/报错
+  </div>
+</section>
+
+<!-- ============ ① 依赖图 ============ -->
+<section id="deps">
+  <h2>① 后端模块依赖图</h2>
+  <p class="lead">来源：<code>backend/src/app.module.ts:67-142</code> 注册 47 个模块；逐模块读取 <code>*.module.ts</code> 的 imports / forwardRef / exports。</p>
+
+  <h3>1.1 依赖矩阵（核心模块）</h3>
+  <table>
+    <thead><tr><th>模块</th><th>imports 关键项</th><th>forwardRef（循环信号）</th><th>exports</th></tr></thead>
+    <tbody>
+      <tr><td><b>FadadaModule</b></td><td>Sms, NumberRule</td><td><code>fadada.module.ts:52</code>→Case；<code>:54</code>→Finance</td><td>4 services</td></tr>
+      <tr><td><b>CaseModule</b></td><td>User, Compliance, Audit, Sms, NumberRule</td><td><code>case.module.ts:84</code>→Contract；<code>:85</code>→Finance；<code>:90</code>→Client</td><td>ConflictCheckService</td></tr>
+      <tr><td><b>FinanceModule</b></td><td>User, Audit</td><td>无</td><td>CommissionService</td></tr>
+      <tr><td><b>ContractModule</b></td><td>Audit, NumberRule</td><td><code>contract.module.ts:22</code>→Seal</td><td>ContractService</td></tr>
+      <tr><td><b>ClientModule</b></td><td>Sms, Fadada(<b>直接import</b>)</td><td><code>client.module.ts:59</code>→Compliance；<code>:61</code>→Lead</td><td>ClientService, ClientProfileService</td></tr>
+      <tr><td><b>LeadModule</b></td><td>Audit</td><td><code>lead.module.ts:73</code>→Case；<code>:75</code>→Compliance</td><td>LeadService</td></tr>
+      <tr><td><b>MarketingModule</b></td><td>Compliance</td><td><code>marketing.module.ts:73</code>→Lead</td><td>—</td></tr>
+      <tr><td><b>ComplianceModule</b></td><td>User</td><td>无</td><td>ComplianceService</td></tr>
+    </tbody>
+  </table>
+
+  <h3>1.2 🔴 真实循环依赖环（会拖慢启动、增加耦合）</h3>
+  <div class="callout red">
+    <b>环 A（Fadada → Case → Client → Fadada）：</b>
+    <code>fadada.module.ts:52</code>(→Case) → <code>case.module.ts:90</code>(→Client) → <code>client.module.ts:62</code>(→Fadada，<u>直接 import 未用 forwardRef</u>)<br/>
+    <b>环 B（Lead → Case → Client → Lead）：</b>
+    <code>lead.module.ts:73</code>(→Case) → <code>case.module.ts:90</code>(→Client) → <code>client.module.ts:61</code>(→Lead)
+  </div>
+
+  <h3>1.3 共享实体热点（跨模块重复 forFeature）</h3>
+  <p class="small">User <b>16</b> 处 · Case <b>16</b> 处 · Lead <b>7</b> 处 · Receivable <b>6</b> 处 · ClientProfile <b>5</b> 处 · ComplaintTicket <b>3</b> 处 · Organization <b>3</b> 处。建议抽 <code>shared-kernel</code> 模块统一导出实体与基础 repository，替换 16+ 处重复声明。</p>
+
+  <h3>1.4 弱接入模块（仅单 page 直接 axios，无 <code>api/*.ts</code> 客户端，易与后端漂移）</h3>
+  <p class="small">FakeLive / StatisticalAnalysis / Comprehensive / InternalProject / LawTool / ArchiveVolume。</p>
+
+  <h3>1.5 最该做的 3 个依赖优化</h3>
+  <ul class="tight">
+    <li><b>打破环 A / 环 B</b>：将 <code>ConflictCheckService</code>/<code>ClientService</code> 下沉为独立 <code>ConflictCheckModule</code> 或抽象接口；把 <code>ClientProfile</code>/<code>Lead</code> 基础读写移入 shared-kernel，消除 <code>Client→Fadada</code>、<code>Client→Lead</code> 直接模块引用。</li>
+    <li><b>建立 shared-kernel</b>：集中导出 User/Case/Organization/Receivable/Lead/ClientProfile 实体与通用 repository。</li>
+    <li><b>补齐弱接入模块的 <code>api/*.ts</code> 客户端</b>，并清理多余防御性 forwardRef（如 Fadada→Finance、Case→Finance 实为单向）。</li>
+  </ul>
+</section>
+
+<!-- ============ ② 流转图 ============ -->
+<section id="flow">
+  <h2>② 端到端业务流转图</h2>
+  <p class="lead">主链路 7 阶段，每阶段标注状态（绿=通畅 / 橙=半通 / 黄=占位 / 红=阻断）。</p>
+  <div class="flow">
+    <div class="stage">
+      <h4>① 获客 · 投放</h4>
+      <div class="who">营销岗</div>
+      <span class="pill p-orange"></span><span class="small">半通</span>
+      <ul>
+        <li>webhook 写 lead ✓</li>
+        <li>活码仅计数，不写 <code>lead.source_channel</code> → <b>来源无法归因</b></li>
+        <li>投放计划无 Lead 注入</li>
+      </ul>
+    </div>
+    <div class="arrow">➜</div>
+    <div class="stage">
+      <h4>② 线索 · 公海</h4>
+      <div class="who">销售</div>
+      <span class="pill p-green"></span><span class="small">通畅</span>
+      <ul>
+        <li>LeadStatus 前后端一致 ✓</li>
+        <li>已分配线索 <b>无法转派</b>（reassignLead 无路由）</li>
+        <li>Lead→Client 无外键</li>
+      </ul>
+    </div>
+    <div class="arrow">➜</div>
+    <div class="stage">
+      <h4>③ 谈案 · 邀约</h4>
+      <div class="who">销售/谈案律师</div>
+      <span class="pill p-orange"></span><span class="small">半通</span>
+      <ul>
+        <li>谈案 SOP 实例化 ✓</li>
+        <li>邀约仅站内通知，<b>无外呼/短信</b></li>
+        <li>谈案质检关键词匹配非 AI</li>
+      </ul>
+    </div>
+  </div>
+  <div class="flow">
+    <div class="stage">
+      <h4>④ 发合同 · 建案</h4>
+      <div class="who">律师/助理</div>
+      <span class="pill p-orange"></span><span class="small">半通</span>
+      <ul>
+        <li><code>fadada.service.ts:1308</code> 发合同</li>
+        <li><code>:1458</code> 签署回调建案 ✓</li>
+        <li><code>:1562</code> 利冲 / <code>:1580</code> 应收（<b>各自 try/catch 静默</b> → 账实不符风险）</li>
+        <li><code>:1596</code> 分润触发（<b>永 skipped</b>）</li>
+      </ul>
+    </div>
+    <div class="arrow">➜</div>
+    <div class="stage">
+      <h4>⑤ 办案 · SOP</h4>
+      <div class="who">办案律师</div>
+      <span class="pill p-orange"></span><span class="small">半通</span>
+      <ul>
+        <li><code>case-task.service:22</code> <b>任务实例化无调用方（空壳）</b></li>
+        <li>任务与 <code>Case.stage</code> 不联动</li>
+        <li>AI 文书 = 正则替换无 LLM</li>
+        <li>案件成本已同步 BusinessFund ✓</li>
+      </ul>
+    </div>
+    <div class="arrow">➜</div>
+    <div class="stage">
+      <h4>⑥ 财务 · 分润</h4>
+      <div class="who">财务</div>
+      <span class="pill p-yellow"></span><span class="small">占位</span>
+      <ul>
+        <li>收款/对账 ✓（对账仅总额级）</li>
+        <li>分润 <b>仅主办律师</b>（commission:252 TODO）</li>
+        <li>发票 <b>无税控通道</b>（invoice:45 全壳）</li>
+        <li>代扣/退费 <b>无网关/无 cron</b></li>
+      </ul>
+    </div>
+  </div>
+  <div class="flow">
+    <div class="stage">
+      <h4>⑦ 客户端回流</h4>
+      <div class="who">C端客户</div>
+      <span class="pill p-red"></span><span class="small">阻断</span>
+      <ul>
+        <li>案件查看 / 签约预填 / 投诉 / 归档 ✓（入口）</li>
+        <li><b>支付：POST /cases + /finance/fee 均 403</b></li>
+        <li>上传凭证 <b>POST /upload 404</b></li>
+        <li>归档文件写死路径无落盘</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ③ 报错分支 ============ -->
+<section id="errors">
+  <h2>③ 报错 / 异常分支全量</h2>
+  <p class="lead">分类：<span class="tag t-red">阻断</span> 架构级 / <span class="tag t-orange">静默</span> 吞错致数据不一致 / <span class="tag t-yellow">占位</span> 未实现 / <span class="tag t-grey">前端</span> 调用层。</p>
+
+  <h3>3.1 🔴 阻断性 / 架构级</h3>
+  <table>
+    <thead><tr><th>位置</th><th>现象</th><th>后果</th></tr></thead>
+    <tbody>
+      <tr><td><code>auth/roles.guard.ts:36-38</code></td><td><code>if(!requiredRoles||length===0) return true</code> —— 任何未加 <code>@Roles</code> 的接口<b>免鉴权放行</b></td><td>漏一个装饰器即<b>匿名越权</b>；全局守卫在 auth.module:37 注册为 APP_GUARD</td></tr>
+      <tr><td><code>fadada/fadada.service.ts:1578-1592</code></td><td>签约建案时"应收台账"写库被 try/catch 包裹，catch 仅 logger.error</td><td>应收失败 → 案件已 signed 但<b>无应收台账 → 财务账实不符</b></td></tr>
+      <tr><td><code>frontend Payment.tsx:122 / :154</code></td><td>C端支付直连 <code>POST /cases</code> 与 <code>POST /finance/fee</code>，后端 <code>@Roles</code> 均不含 CLIENT</td><td><b>403</b> → 支付主流程完全中断</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.2 🟠 静默吞错（主流程不阻断，但数据会不一致）</h3>
+  <table>
+    <thead><tr><th>位置</th><th>吞错内容</th></tr></thead>
+    <tbody>
+      <tr><td><code>fadada.service.ts:1561-1599</code></td><td>利冲检索 / 应收台账 / 分润自动触发 三段各自 try/catch，失败仅 logger.error</td></tr>
+      <tr><td><code>property-preservation.service.ts:241/286/332/338</code></td><td>回写案件 risk_notes / 生成到期预警失败被空 catch 吞掉</td></tr>
+      <tr><td><code>case.service.ts:465/488/767/772/785/790/822/850/878/990</code></td><td>多处空 catch（状态变更/分配/预警回写无感知）</td></tr>
+      <tr><td><code>contract.service.ts:681/689 · lead.service.ts:38 · invite-task.service.ts:218/288 · talk-sop.service.ts:406 · reconciliation.service.ts:103/118 · overdue-warning.service.ts:165</code></td><td>空 catch 或部分吞错</td></tr>
+    </tbody>
+  </table>
+  <div class="callout orange"><b>叠加风险：</b>静默吞错 + 无事务边界（建案+利冲+应收四处独立 save）→ 一旦中间任一步失败，系统处于"半完成"态且无人知会。</div>
+
+  <h3>3.3 🔴 死代码 / 不可达分支</h3>
+  <table>
+    <thead><tr><th>位置</th><th>现象</th></tr></thead>
+    <tbody>
+      <tr><td><code>fadada.service.ts:1594-1599</code> + <code>commission.service.ts:323-325</code></td><td>注释"签约即算分润"调用 <code>checkAndTriggerCommission</code>，但该函数强制 <code>status===CLOSED && 应收 COMPLETED</code>；签约瞬间永不满足 → <b>永远 skipped，分润永不在此触发（注释与实现矛盾）</b></td></tr>
+      <tr><td><code>case-task.service.generateTasksFromTemplate:22</code></td><td>SOP 任务实例化函数<b>无调用方</b> → 模板空壳</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.4 🟡 占位 / 未实现（纯演示，对外需标注）</h3>
+  <table>
+    <thead><tr><th>位置</th><th>现象</th></tr></thead>
+    <tbody>
+      <tr><td><code>commission.service.ts:252</code></td><td>TODO：分润<b>只算主办律师</b>，协办/邀约/谈案岗永不分润（财务损失）</td></tr>
+      <tr><td><code>invoice.service.ts:45</code></td><td>开票<b>无第三方/税控通道</b>（全壳，仅写状态）</td></tr>
+      <tr><td><code>due-diligence.service.ts:21/130</code></td><td><code>generateMockReport</code> 返回 <code>91100000MOCK…</code> 假数据</td></tr>
+      <tr><td><code>seal.service.ts:490</code></td><td>seal_medium 占位永久返回基础结果</td></tr>
+      <tr><td><code>ai.service.ts:52</code> / <code>legal-document.service.ts:51</code></td><td>AI 文书仅正则替换/写死模板，无 LLM</td></tr>
+      <tr><td><code>public-opinion.service</code></td><td>舆情无爬虫/API/定时 → 纯手工录入</td></tr>
+      <tr><td><code>dashboard.service.ts:440</code></td><td>利润率含 <code>Math.random()</code> 假数据</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.5 非 HTTP 异常（返回 500 且信息不可控）</h3>
+  <p class="small"><code>client.service.ts:127/294/446/513/590/676/741…</code> 与 <code>fadada.service.ts:288/305/325/606/621/649/684/824/1015/1035/1092/1348/1733/1742</code> 大量 <code>throw new Error(...)</code>。这些会直接抛 500，且错误信息可能泄漏内部实现（应改为对应 *Exception 或统一错误包装）。</p>
+
+  <h3>3.6 前端调用层报错</h3>
+  <p class="small"><code>api/axios.ts:27-60</code> 拦截器：401 登出跳登录、403→"您没有权限"、其余 message.error。风险：后端 <code>throw new Error</code> 的 500 信息会原样展示；后端漏 <code>@Roles</code> 时本应 403 的调用会变成 200 → 前端无感知越权。</p>
+
+  <h3>3.7 ⚠️ 最危险的 5 个报错分支</h3>
+  <ol class="tight">
+    <li><code>roles.guard.ts:36-38</code> 无 <code>@Roles</code> 即 return true → 免鉴权/越权（架构级）</li>
+    <li><code>fadada.service.ts:1578-1592</code> 签约建案应收 try/catch 吞错 → 财务账实不符</li>
+    <li><code>fadada:1596 + commission:323</code> "签约即算分润"永远 skipped + 分润失败静默 → 漏算分润</li>
+    <li><code>commission.service.ts:252</code> TODO 仅主办律师分润 → 其余角色分润永久丢失</li>
+    <li><code>fadada/client</code> 大量 <code>throw new Error</code> → 500 且错误信息不可控</li>
+  </ol>
+</section>
+
+<!-- ============ ④ 契约缺口 ============ -->
+<section id="contract">
+  <h2>④ 前后端契约缺口</h2>
+  <p class="lead">逐文件核对 <code>frontend/src/pages/client/*.tsx</code> 与 <code>backend/src/*/controller.ts</code> 的 <code>@Roles</code> 与路由。</p>
+
+  <h3>4.1 🔴 C端 403 全量清单（主流程卡死）</h3>
+  <table>
+    <thead><tr><th>前端位置</th><th>调用</th><th>后端 @Roles</th><th>结果</th></tr></thead>
+    <tbody>
+      <tr><td><code>Payment.tsx:122</code></td><td><code>POST /cases</code></td><td><code>case.controller.ts:13/15</code> SUPER_ADMIN/ORG_ADMIN/SALES/LAWYER/ASSISTANT/FINANCE（<b>无 CLIENT</b>）</td><td><b>403</b>；且 client 模块<b>无建案写接口</b> → 签约卡死</td></tr>
+      <tr><td><code>Payment.tsx:154</code></td><td><code>POST /finance/fee</code></td><td><code>finance.controller.ts:16/18</code> SUPER_ADMIN/ORG_ADMIN/FINANCE（<b>无 CLIENT</b>）</td><td><b>403</b>；client 模块无创建支付接口 → 支付卡死</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.2 🔴 404 端点（前端调了后端没有）</h3>
+  <table>
+    <thead><tr><th>前端位置</th><th>调用</th><th>结果</th></tr></thead>
+    <tbody>
+      <tr><td><code>Complaint.tsx:58</code></td><td><code>POST /upload</code></td><td>后端无 <code>@Controller('upload')</code> 或 <code>@Post('upload')</code> → <b>404</b>，投诉凭证上传失效（降级无证据）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.3 🟠 字段 / 存储 mismatch</h3>
+  <table>
+    <thead><tr><th>位置</th><th>问题</th></tr></thead>
+    <tbody>
+      <tr><td><code>ClientArchive.tsx:101</code></td><td>写死 <code>file_url:'/uploads/archives/...'</code>，但无 <code>/upload</code> 落盘 → <b>归档文件实际不存在</b>，仅存路径字符串</td></tr>
+      <tr><td>投诉表单 <code>Complaint.tsx:82-91</code></td><td>提交字段与 <code>client.controller.ts:59 createComplaint</code> 一致（无 mismatch），source_channel 由后端内部置 CLIENT_PORTAL ✓</td></tr>
+      <tr><td><code>Payment → /finance/fee</code></td><td>多传 payment_method/paid/paid_at，后端仅用 case_id/amount/organization_id/description，多余字段被忽略（无硬错）</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.4 B 端抽查（发合同 / 案件成本 / 投诉管理）</h3>
+  <p class="small">三者 <code>@Roles</code> 与前端角色假设匹配，未发现 403；B 端风险在字段/DTO 而非越权。结论：<b>契约缺口集中在 C 端支付/建案/上传三条路径</b>。</p>
+</section>
+
+<!-- ============ ⑤ 数据模型缺口 ============ -->
+<section id="model">
+  <h2>⑤ 实体 / 枚举 / 状态机不一致</h2>
+  <p class="lead">核对 backend <code>types/index.ts</code> / 各 entity 与 frontend <code>types/index.ts</code> / 页面硬编码值。</p>
+
+  <h3>5.1 🟠 状态机前后端漂移</h3>
+  <table>
+    <thead><tr><th>概念</th><th>后端</th><th>前端</th><th>后果</th></tr></thead>
+    <tbody>
+      <tr><td>CaseStatus</td><td><code>types/index.ts:38-49</code> 10 值（含 terminated/voided）</td><td><code>types/index.ts:38-47</code> 仅 8 值，但页面硬编码 'terminated'/'voided'（<code>CaseManagement.tsx:552/1118</code>）</td><td>类型定义与运行时代码打架</td></tr>
+      <tr><td>Case.stage</td><td>裸 varchar（intake/processing/closing/closed）<code>case.entity.ts:269-270</code></td><td>前端硬编码 4 值，枚举未含 stage</td><td>无后端枚举约束，易写脏值</td></tr>
+      <tr><td>投诉类型</td><td><code>TicketComplaintType</code>（实体，5 值）</td><td><code>types/index.ts</code> ComplaintType 3 值（弃用孤儿）+ api/compliance.ts 用实体值</td><td>三处定义漂移，易误用</td></tr>
+      <tr><td>收款状态</td><td><code>ReceivableStatus</code> pending/partial/completed/overdue</td><td>无枚举，案件级 <code>payment_status</code> 另套词汇</td><td>双套"收款"词汇无映射</td></tr>
+      <tr><td>LeadStatus</td><td colspan="2" style="text-align:center">前后端一致 ✓</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.2 🟠 缺失外键 / 关联字段</h3>
+  <ul class="tight">
+    <li><b>Case</b> 的 <code>client_id/lead_id/contract_id/assignee_lawyer_id</code> 全是裸 <code>@Column({nullable:true})</code>，无 @ManyToOne 约束（<code>case.entity.ts:24-31/169</code>）；仅 assignee_lawyer 有真关系。→ 逻辑关联、无 DB 外键、无级联，统计易失真。</li>
+    <li><b>Case.lead_id 与 related_lead_id 重复</b>（<code>:30</code> 与 <code>:174</code>）语义重叠。</li>
+    <li><b>Lead → Client 无外键</b>：Lead 实体无 client_id（仅 case_id:77），转客户靠手工。</li>
+    <li><b>ComplaintTicket.case_id / client_id</b> 裸 varchar 可空（<code>complaint-ticket.entity.ts:83-95</code>），无约束。</li>
+    <li><b>Receivable 仅 case_id 裸列，无 client_id</b>（<code>receivable.entity.ts:26</code>），与案件客户无法联动。</li>
+  </ul>
+
+  <h3>5.3 重复 / 分散的枚举</h3>
+  <p class="small">① 案件状态：后端枚举 + 裸 varchar(stage/change_status) + DB 可配置 caseStatus API 三套；② 投诉类型：types 枚举 × 实体 TicketComplaintType × 前端 api 三处；③ 渠道类：LeadSource/AdChannel/AdPlatform/TicketSourceChannel/ChannelTracking 各自为政。</p>
+
+  <h3>5.4 最该补的 3 个数据模型缺口</h3>
+  <ol class="tight">
+    <li><b>Case.client_id/lead_id/contract_id 改真 @ManyToOne 外键</b>（含级联），合并 lead_id 与 related_lead_id 重复字段。</li>
+    <li><b>Lead 增 client_id 外键 + Client/Case 增"所属销售 owner_sales_id"</b>，打通销售业绩归因闭环。</li>
+    <li><b>收敛"收款状态"为单一枚举</b>，并在 Case 增"分润已发放 disbursed 标记"字段关联 profit-share 状态。</li>
+  </ol>
+</section>
+
+<!-- ============ ⑥ 缺失清单 ============ -->
+<section id="missing">
+  <h2>⑥ 缺失清单（按优先级）</h2>
+
+  <h3><span class="tag t-red">P0</span> 一期上线必修（<u>纯代码可补</u>，不依赖外部服务）</h3>
+  <table>
+    <thead><tr><th>缺失项</th><th>证据</th><th>修法</th></tr></thead>
+    <tbody>
+      <tr><td>RBAC 改 deny-by-default</td><td><code>roles.guard.ts:36-38</code></td><td>无 <code>@Roles</code> 时默认拒绝（401/403），仅白名单放行</td></tr>
+      <tr><td>C端支付/建案回流</td><td><code>Payment.tsx:122/154</code> 403</td><td>新增 <code>/client/*</code> 写接口内部调 recordPayment / 建案；或给 /cases、/finance/fee 加 CLIENT 角色</td></tr>
+      <tr><td>上传端点 + 真实存储</td><td><code>Complaint.tsx:58</code> 404</td><td>新增 <code>POST /upload</code>（或改用既有带前缀上传接口），落盘到 uploads</td></tr>
+      <tr><td>分润触发统一由"结案+应收完成"事件驱动</td><td><code>fadada:1596 + commission:323</code> 假触发</td><td>删除签约处死代码，改在结案/应收完成时触发</td></tr>
+      <tr><td>销售再分配入口</td><td><code>lead-assignment.service:184</code> 无路由</td><td>给 reassignLead 补 controller 路由 + 前端入口</td></tr>
+      <tr><td>律师 SOP 任务实例化</td><td><code>case-task.service:22</code> 无调用方</td><td>建案/阶段流转时调用 generateTasksFromTemplate</td></tr>
+      <tr><td>营销线索归因</td><td><code>channel-tracking.service:52</code></td><td>活码/投放回写 lead.source_channel</td></tr>
+      <tr><td>管理员审计补齐</td><td>audit.service 对 user 模块 0 命中</td><td>用户/角色/权限/菜单/组织写操作补审计</td></tr>
+      <tr><td>非 HTTP 异常改造</td><td>client/fadada 大量 <code>throw new Error</code></td><td>统一为 *Exception 或错误包装</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="tag t-orange">P1</span> 数据一致性 / 架构治理（<u>纯代码可补</u>）</h3>
+  <table>
+    <thead><tr><th>缺失项</th><th>证据</th><th>修法</th></tr></thead>
+    <tbody>
+      <tr><td>实体外键与关联约束</td><td><code>case.entity.ts:24-31</code> 裸列</td><td>改 @ManyToOne + 级联；合并重复字段</td></tr>
+      <tr><td>状态枚举统一</td><td>CaseStatus/stage/投诉类型/收款 漂移</td><td>收敛为单一后端枚举，前端引用同一份</td></tr>
+      <tr><td>收款写 BusinessFund</td><td><code>finance.service.ts recordPayment(:143)</code></td><td>收款同步写 business_funds，消除收支割裂</td></tr>
+      <tr><td>统一三套利润口径</td><td>getCaseProfitAnalysis / getProjectRevenueOverview / dashboard 不一致</td><td>统一聚合口径，移除 <code>Math.random()</code></td></tr>
+      <tr><td>事件化解耦 forwardRef</td><td>环 A / 环 B</td><td>引入 EventEmitter2 领域事件，下沉 ConflictCheck/Client 为独立模块，抽 shared-kernel</td></tr>
+      <tr><td>归档二表合一</td><td>client-archive 与 case-archive 分离</td><td>合并为统一 archive 实体</td></tr>
+    </tbody>
+  </table>
+
+  <h3><span class="tag t-yellow">P2</span> 需外部服务 / 二三期（<u>当前为 mock，对外需标注"演示"</u>）</h3>
+  <table>
+    <thead><tr><th>缺失项</th><th>证据</th><th>依赖</th></tr></thead>
+    <tbody>
+      <tr><td>AI 文书 / AI 咨询</td><td><code>ai.service.ts:52</code> 无 LLM</td><td>接真实 LLM（密钥/网关）</td></tr>
+      <tr><td>发票开票</td><td><code>invoice.service.ts:45</code> 全壳</td><td>税控/第三方开票通道</td></tr>
+      <tr><td>代扣 / 退费打款</td><td>无网关、无 @Cron 自动触发</td><td>支付/银行网关 + 定时任务</td></tr>
+      <tr><td>外呼 / 短信邀约</td><td><code>invite-task.service:33</code> 仅站内</td><td>短信/呼叫中心服务</td></tr>
+      <tr><td>舆情监控</td><td>public-opinion 纯手工</td><td>爬虫/采集数据源</td></tr>
+      <tr><td>直播 / 数字人 / 伪直播 / 内容生成</td><td>营销演示项</td><td>第三方直播/数字人 API</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ ⑦ 行动路线 ============ -->
+<section id="roadmap">
+  <h2>⑦ 建议行动路线</h2>
+  <div class="callout"><b>第一步（一期上线前，1–2 天，纯代码）：</b>先把 P0 的"阻断性"项打掉——RBAC deny-by-default、C端支付/建案回流、/upload 端点、分润真触发、非 HTTP 异常改造。这几项不修，一期 C 端付费闭环与系统安全都不成立。</div>
+  <div class="callout orange"><b>第二步（一期稳定后，3–5 天）：</b>做 P1 数据治理——外键约束、枚举统一、收款写 BusinessFund、利润口径统一、事件化解耦。否则数据会逐渐失真、统计报表不可信。</div>
+  <div class="callout red"><b>第三步（二三期）：</b>按 PRD 分期接外部服务，并把 P2 的 mock 模块从 <code>app.module</code> 移除或页面明确标"演示版"，避免对外承诺假能力。</div>
+  <p class="small">说明：本报告所有结论均来自对 <code>backend/src</code> 与 <code>frontend/src</code> 的静态扫描与多路探查代理交叉核验，未运行构建。落地任意一项前建议本地 <code>cd backend && npx tsc --noEmit</code> 与 <code>cd frontend && npm run build</code> 终验。</p>
+</section>
+
+</div>
+</body>
+</html>

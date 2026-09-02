@@ -16,6 +16,14 @@ export class SigningCompliance {
   @Column({ type: 'varchar', nullable: false })
   case_id: string;
 
+  // 新流程（线索→发合同→签约完成生成案件）：发合同时尚无案件，case_id 存空串，
+  // 签署完成后由回调自动生成案件并回写 case_id
+  @Column({ type: 'varchar', nullable: true, comment: '关联线索ID（发合同流程）' })
+  lead_id: string;
+
+  @Column({ type: 'varchar', nullable: true, comment: '关联合同ID（发合同流程）' })
+  contract_id: string;
+
   @Column({ type: 'varchar', nullable: false })
   client_id: string;
 

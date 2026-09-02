@@ -54,12 +54,29 @@ export default function Dashboard({ hideTabs = false }: DashboardProps) {
   const [lawyerStats, setLawyerStats] = useState<any[]>([])
   const [caseTypeProfit, setCaseTypeProfit] = useState<any[]>([])
   const [riskStats, setRiskStats] = useState<any>({})
+  const [complaintRate, setComplaintRate] = useState<any>({})
 
   // ========== 角色化工作台：新增状态 ==========
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const [previewRole, setPreviewRole] = useState<RoleType | null>(null)
   const currentRole = (previewRole || user.role || 'super_admin') as RoleType
   const roleConfig = roleDashboardConfig[currentRole]
+
+  // 投诉率看板：来源/类型字典
+  const sourceChannelLabelMap: Record<string, string> = {
+    client_portal: 'C端',
+    phone: '电话',
+    wechat: '微信',
+    enterprise_wechat: '企业微信',
+    other: '其他',
+  }
+  const complaintTypeLabelMap: Record<string, string> = {
+    service_attitude: '服务态度',
+    case_progress: '案件进展',
+    fee_issue: '收费问题',
+    lawyer_professional: '律师专业度',
+    other: '其他',
+  }
 
   // 销售角色专属数据（mock）
   const [salesData, setSalesData] = useState({
@@ -103,7 +120,17 @@ export default function Dashboard({ hideTabs = false }: DashboardProps) {
     fetchLawyerStats()
     fetchCaseTypeProfit()
     fetchRiskStats()
+    fetchComplaintRate()
   }, [])
+
+  const fetchComplaintRate = async () => {
+    try {
+      const res = await axios.get('/dashboard/complaint-rate-stats', { params: { org_id: user.organization_id } })
+      setComplaintRate((res as Record<string, unknown>) || {})
+    } catch (error) {
+      // 错误已由拦截器统一处理
+    }
+  }
 
   // 角色切换时加载对应角色的 mock 数据
   useEffect(() => {
@@ -1158,6 +1185,124 @@ export default function Dashboard({ hideTabs = false }: DashboardProps) {
           )}
         </Row>
       )}
+
+      {/* === 投诉率看板（经营总览通用模块） === */}
+      <Row gutter={[16, 16]}>
+        <Col xs={24}>
+          <Card
+            title={
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <WarningOutlined style={{ color: theme.error }} />
+                <span style={cardTitleStyle}>投诉率看板</span>
+              </span>
+            }
+            headStyle={cardHeadStyle}
+            extra={
+              <span style={{ fontSize: 12, color: theme.textTertiary }}>
+                被投诉案件 {complaintRate.cases_with_complaint || 0} / 总案件 {complaintRate.total_cases || 0}
+              </span>
+            }
+          >
+            <Row gutter={[16, 16]}>
+              {/* 投诉案件率 */}
+              <Col xs={24} md={12}>
+                <div
+                  style={{
+                    background: 'rgba(186, 26, 26, 0.05)',
+                    border: '1px solid rgba(186, 26, 26, 0.15)',
+                    borderRadius: 12,
+                    padding: 20,
+                  }}
+                >
+                  <div style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 8 }}>投诉案件率</div>
+                  <div
+                    style={{
+                      fontFamily: "'Noto Serif SC', serif",
+                      fontSize: 32,
+                      fontWeight: 700,
+                      color: theme.error,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {(complaintRate.complaint_case_rate || 0).toFixed(1)}%
+                  </div>
+                  <div style={{ fontSize: 12, color: theme.textTertiary, marginTop: 6 }}>
+                    被投诉案件占比 = 被投诉案件数 ÷ 案件总数
+                  </div>
+                  <Progress
+                    percent={complaintRate.complaint_case_rate || 0}
+                    strokeColor={theme.error}
+                    showInfo={false}
+                    size="small"
+                    style={{ marginTop: 12 }}
+                  />
+                </div>
+              </Col>
+              {/* 投诉金额 */}
+              <Col xs={24} md={12}>
+                <div
+                  style={{
+                    background: 'rgba(0, 113, 227, 0.05)',
+                    border: '1px solid rgba(0, 113, 227, 0.15)',
+                    borderRadius: 12,
+                    padding: 20,
+                  }}
+                >
+                  <div style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 8 }}>投诉金额</div>
+                  <div
+                    style={{
+                      fontFamily: "'Noto Serif SC', serif",
+                      fontSize: 32,
+                      fontWeight: 700,
+                      color: theme.primaryDark,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    ¥{(complaintRate.complaint_amount || 0).toLocaleString()}
+                  </div>
+                  <div style={{ fontSize: 12, color: theme.textTertiary, marginTop: 6 }}>
+                    被投诉案件合同金额合计
+                  </div>
+                  <div style={{ fontSize: 12, color: theme.textSecondary, marginTop: 12 }}>
+                    投诉工单总数：{complaintRate.complaint_ticket_count || 0} · 解决率：
+                    <span style={{ color: theme.success, fontWeight: 600 }}>
+                      {(complaintRate.resolved_rate || 0).toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+
+            {/* 来源 / 类型分布 */}
+            <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+              <Col xs={24} md={12}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: theme.textBase, marginBottom: 12 }}>投诉来源分布</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {(complaintRate.by_source && complaintRate.by_source.length > 0)
+                    ? complaintRate.by_source.map((s: any) => (
+                        <Tag key={s.source} style={{ borderRadius: 999, fontSize: 13, padding: '2px 12px' }}>
+                          {sourceChannelLabelMap[s.source] || s.source}：{s.count}
+                        </Tag>
+                      ))
+                    : <span style={{ color: theme.textTertiary, fontSize: 13 }}>暂无投诉数据</span>}
+                </div>
+              </Col>
+              <Col xs={24} md={12}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: theme.textBase, marginBottom: 12 }}>投诉类型分布</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {(complaintRate.by_type && complaintRate.by_type.length > 0)
+                    ? complaintRate.by_type.map((t: any) => (
+                        <Tag key={t.type} color="blue" style={{ borderRadius: 999, fontSize: 13, padding: '2px 12px' }}>
+                          {complaintTypeLabelMap[t.type] || t.type}：{t.count}
+                        </Tag>
+                      ))
+                    : <span style={{ color: theme.textTertiary, fontSize: 13 }}>暂无投诉数据</span>}
+                </div>
+              </Col>
+            </Row>
+          </Card>
+        </Col>
+      </Row>
 
       {/* ========== 角色专属模块（角色化工作台新增） ========== */}
 

@@ -151,18 +151,4 @@ export class LeadController {
     return this.leadService.updateFee(id, body.service_fee);
   }
 
-  // 线索转化为案件
-  @Post(':id/convert')
-  async convertToCase(
-    @Param('id') id: string,
-    @Body() body?: Partial<{ case_no: string; assignee_lawyer_id: string; fee_amount: number }>,
-    @Request() req?: any,
-  ) {
-    const existing = await this.leadService.findById(id);
-    if (!existing) throw new NotFoundException('线索不存在');
-    if (req?.user?.organization_id && existing.organization_id !== req.user.organization_id) {
-      throw new ForbiddenException('无权访问该资源');
-    }
-    return this.leadService.convertToCase(id, body);
-  }
 }

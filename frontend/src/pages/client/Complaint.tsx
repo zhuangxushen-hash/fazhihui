@@ -1,16 +1,16 @@
-import { useState } from 'react'
-import { Form, Input, message, Spin } from 'antd'
+import { useState, useEffect } from 'react'
+import { Form, Input, message, Spin, Select } from 'antd'
 import { LeftOutlined, PlusOutlined, LoadingOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import axios from '../../api/axios'
-import { createComplaint } from '../../api/client'
+import { createComplaint, getClientCases } from '../../api/client'
 import { Card } from './shared'
 
 /** 投诉类型（设计稿：服务态度 / 办理进度 / 收费问题 / 其他） */
 const COMPLAINT_TYPES = [
-  { value: 'service_attitude', label: '服务态度' },
+  { value: 'service_quality', label: '服务态度' },
   { value: 'progress', label: '办理进度' },
-  { value: 'fee', label: '收费问题' },
+  { value: 'fee_issue', label: '收费问题' },
   { value: 'other', label: '其他' },
 ]
 
@@ -18,11 +18,35 @@ export default function Complaint() {
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [activeType, setActiveType] = useState<string>('service_attitude')
+  const [activeType, setActiveType] = useState<string>('service_quality')
   const [evidence, setEvidence] = useState<string[]>([])
+  const [caseOptions, setCaseOptions] = useState<any[]>([])
+  const [selectedCaseId, setSelectedCaseId] = useState<string | undefined>(undefined)
   const navigate = useNavigate()
 
   const user = JSON.parse(localStorage.getItem('client_user') || '{}')
+
+  /** 加载当前客户的在办案件，供「投诉对象」关联选择 */
+  useEffect(() => {
+    let mounted = true
+    if (user?.id) {
+      getClientCases({ client_id: user.id })
+        .then((res: any) => {
+          if (!mounted) return
+          const arr = Array.isArray(res) ? res : []
+          setCaseOptions(
+            arr.map((c: any) => ({
+              value: c.id,
+              label: `${c.case_no || c.case_name || '案件'} · ${c.case_name || ''}`.trim(),
+            })),
+          )
+        })
+        .catch(() => {})
+    }
+    return () => {
+      mounted = false
+    }
+  }, [user?.id])
 
   /** 上传凭证（复用服务大厅的上传接口，返回可访问 URL） */
   const handleUpload = async (file: File) => {
@@ -62,11 +86,14 @@ export default function Complaint() {
         client_name: user.real_name || user.name || '',
         client_phone: values.phone || user.phone || '',
         organization_id: user.organization_id,
+        case_id: selectedCaseId,
         evidence_files: evidence.length ? JSON.stringify(evidence) : undefined,
       })
       message.success('投诉提交成功，我们将在 24 小时内响应')
       form.resetFields()
       setEvidence([])
+      setSelectedCaseId(undefined)
+      navigate('/client/my-complaints')
     } catch (error) {
       // 错误已由拦截器统一处理
     } finally {
@@ -114,7 +141,19 @@ export default function Complaint() {
             <LeftOutlined style={{ fontSize: 18, color: '#0F172A' }} />
           </button>
           <span style={{ flex: 1, fontSize: 17, fontWeight: 600, color: '#0F172A' }}>投诉与建议</span>
-          <div style={{ width: 87, flexShrink: 0 }} />
+          <div
+            onClick={() => navigate('/client/my-complaints')}
+            style={{
+              width: 87,
+              flexShrink: 0,
+              textAlign: 'right',
+              fontSize: 13,
+              color: '#1E3A8A',
+              cursor: 'pointer',
+            }}
+          >
+            我的投诉
+          </div>
         </div>
 
         {/* ===== 内容区 ===== */}
@@ -160,15 +199,17 @@ export default function Complaint() {
               })}
             </div>
 
-            {/* 投诉对象 */}
+            {/* 投诉对象（关联案件，选填） */}
             <div style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>投诉对象</div>
-            <Form.Item name="target" style={{ marginBottom: 0 }}>
-              <Input
-                placeholder="请选择案件/律师"
-                className="mp-field-input"
-                style={{ height: 44, borderRadius: 12 }}
-              />
-            </Form.Item>
+            <Select
+              value={selectedCaseId}
+              onChange={setSelectedCaseId}
+              placeholder="请选择关联案件（选填）"
+              allowClear
+              style={{ height: 44, borderRadius: 12 }}
+              options={caseOptions}
+              notFoundContent={caseOptions.length ? '无匹配案件' : '暂无可关联案件'}
+            />
 
             {/* 联系电话 */}
             <div style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>联系电话</div>

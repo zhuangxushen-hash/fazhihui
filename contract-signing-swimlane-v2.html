@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>发合同 → 建案 → 利冲/应收/分润 泳道图（修改后 v2）</title>
+<style>
+  :root{
+    --c-sales:#2563eb; --c-fdd:#7c3aed; --c-client:#0891b2; --c-cb:#db2777;
+    --c-case:#16a34a; --c-conflict:#d97706; --c-fin:#dc2626;
+    --bg:#ffffff; --ink:#1f2937; --muted:#6b7280;
+    --branch:#fff8e1; --branch-b:#f5a623;
+    --err:#fdecea; --err-b:#e74c3c;
+    --silent:#eceff1; --silent-b:#90a4ae;
+    --fix:#ecfdf5; --fix-b:#10b981;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:#f4f6fb;color:var(--ink);padding:24px;line-height:1.6}
+  .wrap{max-width:1500px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0 22px;font-size:12px}
+  .legend span{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;background:#fff;border:1px solid #e5e7eb}
+  .dot{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .lanes{display:flex;gap:10px;align-items:stretch}
+  .lane{flex:1;min-width:0;background:#fbfcfe;border-radius:12px;border-top:4px solid #ccc;padding:8px}
+  .lane h3{font-size:13px;margin:4px 0 10px;text-align:center;padding:6px;border-radius:8px;color:#fff}
+  .lane.sales{border-top-color:var(--c-sales)} .lane.sales h3{background:var(--c-sales)}
+  .lane.fdd{border-top-color:var(--c-fdd)} .lane.fdd h3{background:var(--c-fdd)}
+  .lane.client{border-top-color:var(--c-client)} .lane.client h3{background:var(--c-client)}
+  .lane.cb{border-top-color:var(--c-cb)} .lane.cb h3{background:var(--c-cb)}
+  .lane.case{border-top-color:var(--c-case)} .lane.case h3{background:var(--c-case)}
+  .lane.conflict{border-top-color:var(--c-conflict)} .lane.conflict h3{background:var(--c-conflict)}
+  .lane.fin{border-top-color:var(--c-fin)} .lane.fin h3{background:var(--c-fin)}
+  .node{background:#fff;border:1px solid #e3e8ef;border-radius:9px;padding:9px 10px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .node.fix{border:1px solid var(--fix-b);box-shadow:0 0 0 2px rgba(16,185,129,.15)}
+  .stage{font-size:10px;color:#9aa3af;font-weight:700;letter-spacing:.5px}
+  .node .t{font-weight:600;font-size:13px;margin:2px 0 4px}
+  .desc{font-size:11.5px;color:#374151}
+  .tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:4px;margin-top:5px;background:#eef2ff;color:#4338ca}
+  .branch{background:var(--branch);border-left:3px solid var(--branch-b);padding:5px 7px;border-radius:4px;font-size:11px;margin-top:6px}
+  .err{background:var(--err);border-left:3px solid var(--err-b);padding:5px 7px;border-radius:4px;font-size:11px;margin-top:6px}
+  .silent{background:var(--silent);border-left:3px solid var(--silent-b);padding:5px 7px;border-radius:4px;font-size:11px;margin-top:6px}
+  .fixbox{background:var(--fix);border-left:3px solid var(--fix-b);padding:6px 8px;border-radius:4px;font-size:11.5px;margin-top:6px}
+  .fixtag{color:#047857;font-weight:700;font-size:11px;margin-top:5px}
+  .handoff{font-size:11px;color:#1e3a8a;margin-top:7px;font-weight:600}
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;margin:14px 0;font-size:12.5px}
+  th,td{border:1px solid #e5e7eb;padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#f1f5f9;font-weight:600}
+  .sev0{color:#e74c3c;font-weight:700}.sev1{color:#d97706;font-weight:700}.sev2{color:#0891b2;font-weight:700}
+  .ok{color:#047857;font-weight:700}
+  section{background:#fff;border-radius:12px;padding:18px 20px;margin:18px 0;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+  h2{font-size:17px;margin:0 0 10px}
+  .note{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;font-size:12.5px;margin-top:10px}
+  code{background:#f3f4f6;padding:1px 5px;border-radius:4px;font-size:11.5px}
+  .foot{color:var(--muted);font-size:12px;margin-top:8px}
+  .badge{display:inline-block;background:#10b981;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>发合同 → 建案 → 利冲 / 应收 / 分润　泳道图 <span class="badge">修改后 v2</span></h1>
+  <div class="sub">基于真实代码（已改 <code>fadada.service.ts</code>）。<span class="ok">绿色边框节点 = 本次修改点</span>。所有判断与报错标注源码行号。本期不含 C 端支付。</div>
+
+  <div class="legend">
+    <span><i class="dot" style="background:var(--branch-b)"></i> 判断分支</span>
+    <span><i class="dot" style="background:var(--err-b)"></i> 报错 / 阻断</span>
+    <span><i class="dot" style="background:var(--silent-b)"></i> 静默吞错（已修复为可见）</span>
+    <span><i class="dot" style="background:var(--fix-b)"></i> 🔧 本次修改点</span>
+  </div>
+
+  <div class="lanes">
+
+    <!-- ① 销售 -->
+    <div class="lane sales">
+      <h3>① 销售 / 谈案律师<br>（B端）</h3>
+      <div class="node">
+        <div class="stage">S1 · 发起发合同</div>
+        <div class="t">填写合同信息并发起</div>
+        <div class="desc">发合同页填写客户/案由/收费/主体 + 「生成案件用」补充信息，调用 <code>launchSignFromLead</code>。</div>
+        <div class="branch">⚠ 判断：线索是否存在？否 → 报错「线索不存在」阻断（<code>:1348</code>）。</div>
+        <div class="silent">静默：合同号生成失败 → 回退随机编号（<code>:1361</code>）。</div>
+        <div class="handoff">↘ 交还【法大大】创建签署任务</div>
+      </div>
+      <div class="node">
+        <div class="stage">S2 · 生成 PDF + 建记录</div>
+        <div class="t">建 Contract + 签约记录</div>
+        <div class="desc">生成 PDF、保存 Contract（stage=signing）、SigningCompliance，再 <code>createSignTaskFromTemplate</code> 发起法大大。</div>
+        <div class="err">报错：法大大上传/处理失败 → throw（<code>:1733/:1742</code>）。</div>
+        <div class="silent">静默：发起失败 → 删除脏数据 Contract+Signing 再 throw（<code>:1442</code>）。</div>
+      </div>
+    </div>
+
+    <!-- ② 法大大 -->
+    <div class="lane fdd">
+      <h3>② 法大大电子签<br>（第三方·当前 MOCK）</h3>
+      <div class="node">
+        <div class="stage">S3 · 返回签署链接</div>
+        <div class="t">发起签署任务成功</div>
+        <div class="desc">返回 signTaskId / signUrl（当前为 mock）。</div>
+        <div class="handoff">↘ 交还【客户】实名 + 签署</div>
+      </div>
+      <div class="node">
+        <div class="stage">S4 · 推送签署回调</div>
+        <div class="t">sign-task-finished</div>
+        <div class="desc">客户签署完成回调 <code>handleCallback</code>。</div>
+        <div class="branch">⚠ eventId 缺失 → 丢弃事件；找不到 Signing → 无动作；按事件类型置状态（<code>:1629/:1682/:1686</code>）。</div>
+        <div class="handoff">↘ 交还【回调模块】校验并触发建案</div>
+      </div>
+    </div>
+
+    <!-- ③ 客户 -->
+    <div class="lane client">
+      <h3>③ 客户<br>（C端）</h3>
+      <div class="node">
+        <div class="stage">S5 · 收链接 + 实名 + 签署</div>
+        <div class="t">客户完成签署</div>
+        <div class="desc">点击链接，实名认证 + 签署。</div>
+        <div class="branch">⚠ 实名失败 → verify_status=failed；被拒/撤销 → 案件永不生成。</div>
+        <div class="handoff">↘ 交还【法大大】推送回调</div>
+      </div>
+    </div>
+
+    <!-- ④ 回调 -->
+    <div class="lane cb">
+      <h3>④ 回调 / Fadada 模块<br>（后端）</h3>
+      <div class="node">
+        <div class="stage">S6 · 回调校验</div>
+        <div class="t">判定是否触发建案</div>
+        <div class="desc">对 <code>handleCallback</code> 内判断是否建案。</div>
+        <div class="branch">⚠ status===SIGNED 且 无 case_id 且有 contract_id → 调 <code>generateCaseFromContract</code>（<code>:1697</code>）。</div>
+        <div class="handoff">↘ 交还【案件模块】生成案件</div>
+      </div>
+      <div class="node fix">
+        <div class="stage">S10 · 回写 + 短信（修改后）</div>
+        <div class="t">建案失败不再隐形</div>
+        <div class="desc">建案成功则回写 signing.case_id；失败则标记合同。</div>
+        <div class="fixtag">🔧 本次修改</div>
+        <div class="fixbox">建案整体抛错 → <b>contract.stage 标记为 <code>'case_failed'</code></b>，后台合同列表立即可见、可重跑生成案件（原：仅 logger.error 默默吞掉，造成「有签约、无案件」隐形失败）。代码 <code>:1708-1713</code>。</div>
+        <div class="branch">判断：status===SIGNED 且 有 case_id → 触发收案短信（失败不影响）。</div>
+      </div>
+    </div>
+
+    <!-- ⑤ 案件 -->
+    <div class="lane case">
+      <h3>⑤ 案件模块<br>（Case）</h3>
+      <div class="node fix">
+        <div class="stage">S7 · 生成案件 + 应收（修改后）</div>
+        <div class="t">generateCaseFromContract</div>
+        <div class="desc">合同字段 + 补充信息填入案件；按手机号自动建档客户。</div>
+        <div class="fixtag">🔧 本次修改（核心）</div>
+        <div class="fixbox">🔧 <b>建案与建应收放进同一 DB 事务</b>（<code>manager.transaction</code>，<code>:1559</code>）：要么「案件+应收」都写入，要么都回滚。<br>原：各自独立 save，应收失败会留下「有案无应收」的半成功状态 —— 现已杜绝。</div>
+        <div class="silent">保留：合同不存在→warn return；已建→幂等；JSON错/编号错/默认状态错→静默回退（这些不影响一致性）。</div>
+        <div class="handoff">↘ 交还【利冲模块】冲突检索</div>
+        <div class="handoff">↘ 交还【财务模块】建应收（已在事务内）</div>
+        <div class="handoff">↘ 交还【④ 回调】回写合同 / 线索</div>
+      </div>
+      <div class="node">
+        <div class="stage">S12 · 回写合同 / 线索</div>
+        <div class="t">建案收尾</div>
+        <div class="desc">回写 contract（stage=signed, case_id）、lead（converted）。</div>
+      </div>
+    </div>
+
+    <!-- ⑥ 利冲 -->
+    <div class="lane conflict">
+      <h3>⑥ 利冲模块<br>（Compliance）</h3>
+      <div class="node fix">
+        <div class="stage">S8 · 利益冲突检索（修改后）</div>
+        <div class="t">conflictCheckService.check</div>
+        <div class="desc">签约建案即做利冲校验。</div>
+        <div class="branch">⚠ 命中冲突 → approval_status='conflict_hold' 挂起待复核（不阻断建案，<code>:1587</code>）。</div>
+        <div class="fixtag">🔧 本次修改</div>
+        <div class="fixbox">🔧 利冲查询<b>失败不再静默放过</b>：catch 中同样把案件挂起 <code>conflict_hold</code> + 强告警日志（<code>:1590-1595</code>）。原：仅 logger.error 静默，导致利益冲突漏检且无人知晓。</div>
+      </div>
+    </div>
+
+    <!-- ⑦ 财务 -->
+    <div class="lane fin">
+      <h3>⑦ 财务模块<br>（Finance）</h3>
+      <div class="node fix">
+        <div class="stage">S9 · 建应收（修改后）</div>
+        <div class="t">签约即建 receivable</div>
+        <div class="desc">按 fee_amount 建应收（received=0, pending=全额, PENDING）。</div>
+        <div class="fixtag">🔧 本次修改</div>
+        <div class="fixbox">🔧 应收创建已移入 S7 的<b>同一事务</b>：若应收落库失败，整个建案事务回滚 → 案件也不建 → 由 S10 标记 <code>case_failed</code> 暴露并重跑。彻底消除「有案无应收」账实不符。</div>
+      </div>
+      <div class="node fix">
+        <div class="stage">S11 · 分润（修改后）</div>
+        <div class="t">移除签约时的无效调用</div>
+        <div class="desc">建案后不再调用分润检查。</div>
+        <div class="fixtag">🔧 本次修改</div>
+        <div class="fixbox">🔧 <b>删除签约时的 <code>checkAndTriggerCommission</code> 调用</b>（<code>:1594</code> 旧代码）。原因：签约时案件未结案、应收未完成，该方法必然 <code>skipped</code>（<code>commission:323/325</code>），是永远不生效的死代码，且会掩盖「分润未生成」的真相。<br>分润现<b>统一由「结案 / 全款到账」触发</b>（<code>case.service:766/989</code>、<code>finance.service:202</code>），逻辑诚实、口径一致。</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===================== 修改前后对比 ===================== -->
+  <section>
+    <h2>一、修改前后对比（5 处实质改动）</h2>
+    <table>
+      <thead><tr><th>环节</th><th>修改前（v1）</th><th>修改后（v2）</th><th>风险消除</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>建案 + 应收</b><br><code>:1557-1592</code></td>
+          <td class="sev0">各自独立 save，无事务。应收失败 → 留下「有案无应收」半成功。</td>
+          <td class="ok">同一 DB 事务（<code>manager.transaction</code>），原子提交/回滚。</td>
+          <td class="ok">账实不符根因消除</td>
+        </tr>
+        <tr>
+          <td><b>利冲查询失败</b><br><code>:1573</code></td>
+          <td class="sev0">catch 仅 logger.error，静默放行，利益冲突漏检。</td>
+          <td class="ok">catch 中挂起案件 <code>conflict_hold</code> + 强告警，待人工复核。</td>
+          <td class="ok">合规漏检可见可补</td>
+        </tr>
+        <tr>
+          <td><b>建案整体失败</b><br><code>:1708</code></td>
+          <td class="sev0">仅 logger.error，签约完成却无案件，隐形失败。</td>
+          <td class="ok">标记 <code>contract.stage='case_failed'</code>，后台可见、可重跑。</td>
+          <td class="ok">«有签约无案件»不再隐形</td>
+        </tr>
+        <tr>
+          <td><b>分润（签约即算）</b><br><code>:1594</code></td>
+          <td class="sev1">调用必 skipped 的死代码，注释却写「签约即算分润」，误导。</td>
+          <td class="ok">删除该调用；分润统一由结案/全款触发，口径一致。</td>
+          <td class="ok">消除死代码与误导</td>
+        </tr>
+        <tr>
+          <td><b>失败可观测性</b></td>
+          <td class="sev0">4 处静默吞错，全靠看日志。</td>
+          <td class="ok">3 处改为业务状态可见（conflict_hold / case_failed）+ 告警。</td>
+          <td class="ok">运维可主动发现</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="note">📌 仍保留的静默项（属可接受的设计，不改动）：合同号/编号/默认状态读取失败回退随机值；合同不存在/已建/JSON 解析失败回退。这些只影响数据规范性、不影响一致性，且重试成本低。</div>
+  </section>
+
+  <!-- ===================== 静默吞错现状 ===================== -->
+  <section>
+    <h2>二、原 6 处「静默吞错」现状</h2>
+    <table>
+      <thead><tr><th>#</th><th>环节</th><th>v1 后果</th><th>v2 状态</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>建案整体失败</td><td class="sev0">有签约无案件，隐形</td><td class="ok">✅ 标记 case_failed 可见可重跑</td></tr>
+        <tr><td>2</td><td>利冲查询失败</td><td class="sev1">漏检利益冲突</td><td class="ok">✅ 挂起 conflict_hold + 强告警</td></tr>
+        <tr><td>3</td><td>建应收失败</td><td class="sev0">有案无应收</td><td class="ok">✅ 事务回滚 → 案件不建 → case_failed</td></tr>
+        <tr><td>4</td><td>分润调用失败</td><td class="sev1">分润未生成无提示</td><td class="ok">✅ 删除无效调用，分润改由结案/全款触发</td></tr>
+        <tr><td>5</td><td>分润条件永不满足</td><td class="sev0">死代码</td><td class="ok">✅ 已删除该死代码路径</td></tr>
+        <tr><td>6</td><td>编号回退</td><td>数据不规范</td><td>保留（可接受）</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ===================== 验证 ===================== -->
+  <section>
+    <h2>三、本次改动验证</h2>
+    <table>
+      <tbody>
+        <tr><td><b>改动文件</b></td><td><code>backend/src/fadada/fadada.service.ts</code>（2 处：<code>generateCaseFromContract</code> 内建案+应收事务化/利冲升级/删分润；<code>handleCallback</code> 建案失败标记）</td></tr>
+        <tr><td><b>编译校验</b></td><td class="ok">✅ <code>npx tsc --noEmit</code> 退出码 0，无类型错误（已实测）</td></tr>
+        <tr><td><b>事务安全性</b></td><td>用 <code>caseRepository.manager.transaction</code>，无需新增 DataSource 注入，复用现有 Repository；Receivable 类已在文件顶部 import（<code>:28</code>）。</td></tr>
+        <tr><td><b>数据兼容性</b></td><td><code>Contract.stage</code> 为 varchar（<code>contract.entity.ts:47</code>），新增 <code>'case_failed'</code> 可直接存储，无需改表结构。</td></tr>
+      </tbody>
+    </table>
+    <div class="foot">说明：已同步生成 v1（修改前）与 v2（修改后）两份泳道图，可对照查看。本图不含 C 端支付（本期不做）。下一步建议：补一个「case_failed 合同重跑建案」的后台按钮或定时补偿任务，让失败可自助恢复。</div>
+  </section>
+</div>
+</body>
+</html>

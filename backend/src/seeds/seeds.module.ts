@@ -13,7 +13,6 @@ import { FollowUp } from '../lead/follow-up.entity';
 import { Case } from '../case/case.entity';
 import { Document } from '../case/document.entity';
 import { ComplianceRecord } from '../compliance/compliance-record.entity';
-import { Complaint } from '../compliance/complaint.entity';
 import { MarketingContent } from '../compliance/marketing-content.entity';
 import { SalesCompliance } from '../compliance/sales-compliance.entity';
 import { SigningCompliance } from '../compliance/signing-compliance.entity';
@@ -27,7 +26,7 @@ import { MarketingMaterial } from '../marketing/marketing-material.entity';
 import * as bcrypt from 'bcryptjs';
 import {
   UserRole, LeadSource, LeadStatus, CaseType, CaseStatus, ComplianceType, ComplianceResult,
-  ComplaintType, ComplaintStatus, FeeRole,
+  FeeRole,
   AdChannel, ConversionEventType, AdPlatform, AdAccountStatus, AdPlanStatus,
   AdMaterialType, AdMaterialStatus, MaterialComplianceStatus,
   SocialPlatform, SocialAuthStatus,
@@ -161,7 +160,6 @@ import { FakeLiveViewer } from '../fake-live/fake-live-viewer.entity';
     Case,
     Document,
     ComplianceRecord,
-    Complaint,
     MarketingContent,
     SalesCompliance,
     SigningCompliance,
@@ -290,8 +288,6 @@ export class SeedsModule implements OnModuleInit {
     private readonly documentRepository: Repository<Document>,
     @InjectRepository(ComplianceRecord)
     private readonly complianceRecordRepository: Repository<ComplianceRecord>,
-    @InjectRepository(Complaint)
-    private readonly complaintRepository: Repository<Complaint>,
     @InjectRepository(MarketingContent)
     private readonly marketingContentRepository: Repository<MarketingContent>,
     @InjectRepository(SalesCompliance)
@@ -552,7 +548,6 @@ export class SeedsModule implements OnModuleInit {
     await this.seedLeads(orgId, userMap);
     await this.seedCases(orgId, userMap);
     await this.seedComplianceRecords(orgId, userMap);
-    await this.seedComplaints(orgId, userMap);
     await this.seedFinanceData(orgId, userMap);
     await this.seedPaymentRecords(orgId, userMap);
     await this.seedMarketingMaterials(orgId, userMap);
@@ -1270,157 +1265,6 @@ export class SeedsModule implements OnModuleInit {
       const existing = await this.complianceRecordRepository.findOne({ where: { content: data.content } });
       if (!existing) {
         await this.complianceRecordRepository.save({
-          ...data,
-          organization_id: orgId,
-        });
-      }
-    }
-  }
-
-  private async seedComplaints(orgId: string, userMap: Record<string, User>) {
-    const clientUser = userMap['13800138007'];
-    const clientUser2 = userMap['13800138011'];
-    const adminUser = userMap['13800138001'];
-    const complianceUser = userMap['13800138010'];
-
-    const complaintData = [
-      {
-        type: ComplaintType.SERVICE_QUALITY,
-        content: '律师回复不及时，多次联系都没有回应，严重影响案件进度',
-        status: ComplaintStatus.NEW,
-        client_id: clientUser?.id,
-        client_name: '孙八',
-        client_phone: '13800138007',
-        case_no: '2026京0108民初0002号',
-      },
-      {
-        type: ComplaintType.FEE_ISSUE,
-        content: '收费不合理，咨询了一次就收取了5000元，感觉被坑了',
-        status: ComplaintStatus.PROCESSING,
-        client_id: clientUser?.id,
-        client_name: '孙八',
-        client_phone: '13800138007',
-        assignee_id: adminUser?.id,
-        process_note: '已联系客户了解情况，正在核实收费标准',
-        case_no: '2026京0105民初0001号',
-      },
-      {
-        type: ComplaintType.SERVICE_QUALITY,
-        content: '律师助理态度不好，询问案件进展时很不耐烦',
-        status: ComplaintStatus.CLOSED,
-        client_id: clientUser2?.id,
-        client_name: '刘十二',
-        client_phone: '13800138011',
-        assignee_id: complianceUser?.id,
-        process_note: '已对助理进行批评教育，向客户道歉',
-        resolution: '问题已解决，客户表示满意',
-        satisfaction_score: 4,
-        case_no: '2026京0101民初0004号',
-      },
-      {
-        type: ComplaintType.PROGRESS,
-        content: '案件已经三个月了，一点进展都没有，律师总是说在处理',
-        status: ComplaintStatus.NEW,
-        client_id: clientUser?.id,
-        client_name: '孙八',
-        client_phone: '13800138007',
-        case_no: '2026京0102民初0005号',
-      },
-      {
-        type: ComplaintType.RESULT,
-        content: '判决结果不满意，律师没有尽力争取权益',
-        status: ComplaintStatus.PROCESSING,
-        client_id: clientUser2?.id,
-        client_name: '刘十二',
-        client_phone: '13800138011',
-        assignee_id: adminUser?.id,
-        process_note: '正在分析判决书，评估是否有上诉可能',
-        case_no: '2025京0106民初0006号',
-      },
-      {
-        type: ComplaintType.FEE_ISSUE,
-        content: '合同约定的费用是3万元，现在又要额外收取2万元',
-        status: ComplaintStatus.CLOSED,
-        client_id: clientUser?.id,
-        client_name: '孙八',
-        client_phone: '13800138007',
-        assignee_id: complianceUser?.id,
-        process_note: '核实后发现是误解，已向客户解释清楚',
-        resolution: '客户理解，问题解决',
-        satisfaction_score: 3,
-        case_no: '京朝劳人仲字[2026]第0003号',
-      },
-      {
-        type: ComplaintType.SERVICE_QUALITY,
-        content: '律师开庭迟到，影响了案件审理',
-        status: ComplaintStatus.NEW,
-        client_id: clientUser2?.id,
-        client_name: '刘十二',
-        client_phone: '13800138011',
-        case_no: '2026京0105民初0007号',
-      },
-      {
-        type: ComplaintType.PROGRESS,
-        content: '交了材料后就没有消息了，不知道案件到哪个阶段了',
-        status: ComplaintStatus.PROCESSING,
-        client_id: clientUser?.id,
-        client_name: '孙八',
-        client_phone: '13800138007',
-        assignee_id: adminUser?.id,
-        process_note: '已要求律师及时反馈案件进展',
-        case_no: '2026京0108民初0008号',
-      },
-      {
-        type: ComplaintType.SERVICE_QUALITY,
-        content: '律师在法庭上表现不佳，没有充分举证',
-        status: ComplaintStatus.CLOSED,
-        client_id: clientUser2?.id,
-        client_name: '刘十二',
-        client_phone: '13800138011',
-        assignee_id: complianceUser?.id,
-        process_note: '已与律师沟通，要求改进',
-        resolution: '律师已改进，客户接受',
-        satisfaction_score: 3,
-        case_no: '京朝劳人仲字[2026]第0009号',
-      },
-      {
-        type: ComplaintType.OTHER,
-        content: '律所地址变更没有通知，导致白跑一趟',
-        status: ComplaintStatus.NEW,
-        client_id: clientUser?.id,
-        client_name: '孙八',
-        client_phone: '13800138007',
-      },
-      {
-        type: ComplaintType.FEE_ISSUE,
-        content: '发票迟迟不开，财务报销有问题',
-        status: ComplaintStatus.PROCESSING,
-        client_id: clientUser2?.id,
-        client_name: '刘十二',
-        client_phone: '13800138011',
-        assignee_id: adminUser?.id,
-        process_note: '已催促财务尽快开具发票',
-        case_no: '2026京0101刑初0010号',
-      },
-      {
-        type: ComplaintType.SERVICE_QUALITY,
-        content: '律师更换没有提前通知，对新律师不了解',
-        status: ComplaintStatus.CLOSED,
-        client_id: clientUser?.id,
-        client_name: '孙八',
-        client_phone: '13800138007',
-        assignee_id: complianceUser?.id,
-        process_note: '已向客户解释更换原因，介绍新律师背景',
-        resolution: '客户接受新律师，问题解决',
-        satisfaction_score: 4,
-        case_no: '2026京0102民初0011号',
-      },
-    ];
-
-    for (const data of complaintData) {
-      const existing = await this.complaintRepository.findOne({ where: { content: data.content } });
-      if (!existing) {
-        await this.complaintRepository.save({
           ...data,
           organization_id: orgId,
         });

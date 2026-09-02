@@ -99,7 +99,7 @@ export class SignTemplateController {
   @Patch(':id')
   async update(
     @Param('id') id: string,
-    @Body() dto: { name?: string; description?: string; owner_id?: string; enabled?: boolean },
+    @Body() dto: { name?: string; description?: string; owner_id?: string; enabled?: boolean; audio_video_infos?: string },
     @Request() req: any,
   ) {
     await this.resolveTemplate(id, req.user);
@@ -136,6 +136,22 @@ export class SignTemplateController {
     @Request() req: any,
   ) {
     const tmpl = await this.resolveTemplate(id, req.user);
+    // 读取模板上配置的互动视频签播报内容（JSON 字符串 → 数组），未配置时后端回退默认播报内容
+    // 仅保留播报内容与客户朗读回答两个配置项，剥离 skipVerification，避免旧数据跳过回答验证
+    let audioVideoInfos: Array<{ audioText: string; answerText?: string }> | undefined;
+    if (tmpl.audio_video_infos) {
+      try {
+        audioVideoInfos = (JSON.parse(tmpl.audio_video_infos) as Array<{ audioText?: string; answerText?: string }>)
+          .filter((i) => i && (i.audioText || '').trim())
+          .map((i) => ({
+            audioText: i.audioText as string,
+            answerText: i.answerText || undefined,
+          }));
+        if (audioVideoInfos.length === 0) audioVideoInfos = undefined;
+      } catch {
+        audioVideoInfos = undefined;
+      }
+    }
     return this.fadadaService.launchSignFromTemplate({
       caseId: dto.case_id,
       clientId: dto.client_id,
@@ -148,6 +164,89 @@ export class SignTemplateController {
       corp: dto.corp,
       lawyer: dto.lawyer,
       fillValues: dto.fillValues,
+      audioVideoInfos,
+    });
+  }
+
+  /**
+   * 新流程「发合同(签约)」：从线索发起，与案件无关。
+   * 创建合同记录（stage=signing）+ 签约记录 + 法大大签署任务；
+   * 签约完成后由回调自动生成案件（合同字段+补充信息填入案件管理）。
+   */
+  @Post(':id/launch-from-lead')
+  async launchFromLead(
+    @Param('id') id: string,
+    @Body() dto: {
+      lead_id: string;
+      subject: string;
+      subject_type?: 'person' | 'corp';
+      // 个人客户信息（subject_type=person）
+      client?: { clientUserId?: string; userName: string; idCardNo?: string; mobile?: string };
+      // 企业客户信息（subject_type=corp）
+      corp?: { corpName: string; corpIdentNo: string; legalRepName?: string };
+      // 律师作为签约方之一
+      lawyer?: { lawyerUserId: string; name: string; mobile?: string };
+      // 预填字段值（固定值 + 业务员预填）
+      fillValues?: Array<{ docId?: string | number; fieldId?: string; fieldName?: string; fieldValue: string }>;
+      // 合同基础信息（合同上已有的字段）
+      contract?: {
+        type?: string;
+        amount?: number;
+        fee_type?: string;
+        payment_method?: string;
+        start_date?: string;
+        end_date?: string;
+        remarks?: string;
+      };
+      // 批量补充的「生成案件用」信息（合同上没有的字段）
+      case_supplement?: {
+        case_type?: string;
+        case_category?: string;
+        case_name?: string;
+        opposing_party?: string;
+        assignee_lawyer_id?: string;
+        assistant_lawyer_ids?: string[];
+        fee_amount?: number;
+        fee_type?: string;
+        payment_method?: string;
+        description?: string;
+        contact_address?: string;
+        court?: string;
+      };
+    },
+    @Request() req: any,
+  ) {
+    const tmpl = await this.resolveTemplate(id, req.user);
+    // 互动视频签播报内容（模板级配置，未配置时后端回退默认）
+    let audioVideoInfos: Array<{ audioText: string; answerText?: string }> | undefined;
+    if (tmpl.audio_video_infos) {
+      try {
+        audioVideoInfos = (JSON.parse(tmpl.audio_video_infos) as Array<{ audioText?: string; answerText?: string }>)
+          .filter((i) => i && (i.audioText || '').trim())
+          .map((i) => ({
+            audioText: i.audioText as string,
+            answerText: i.answerText || undefined,
+          }));
+        if (audioVideoInfos.length === 0) audioVideoInfos = undefined;
+      } catch {
+        audioVideoInfos = undefined;
+      }
+    }
+    return this.fadadaService.launchSignFromLead({
+      leadId: dto.lead_id,
+      lawyerId: req.user.id,
+      organizationId: req.user.organization_id || req.user.id,
+      subject: dto.subject || tmpl.name,
+      signTemplateId: tmpl.sign_template_id,
+      signTemplateLocalId: tmpl.id,
+      subjectType: dto.subject_type || 'person',
+      client: dto.client ? { ...dto.client, clientUserId: dto.client.clientUserId || dto.client.mobile || '' } : undefined,
+      corp: dto.corp,
+      lawyer: dto.lawyer,
+      fillValues: dto.fillValues,
+      audioVideoInfos,
+      contract: dto.contract,
+      caseSupplement: dto.case_supplement,
     });
   }
 

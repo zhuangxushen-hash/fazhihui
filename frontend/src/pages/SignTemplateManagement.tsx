@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Table, Button, Modal, Form, Input, Select, Space, message, Card, Switch, Tag, Typography, Popconfirm } from 'antd'
-import { PlusOutlined, EditOutlined, FieldTimeOutlined, DeleteOutlined, ArrowLeftOutlined, ReloadOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, FieldTimeOutlined, DeleteOutlined, ArrowLeftOutlined, ReloadOutlined, MinusCircleOutlined } from '@ant-design/icons'
 // 法大大签署任务模板维护（组织管理 → 操作栏跳转进入）
 import {
   getSignTemplateList,
@@ -15,6 +15,7 @@ import {
   SignTemplateField,
   SignFillMode,
   AUTO_SOURCE_OPTIONS,
+  AudioVideoInfo,
 } from '../api/signTemplate'
 import { formatDateTime } from '../utils/format'
 import { theme } from '../constants/theme'
@@ -83,18 +84,36 @@ export default function SignTemplateManagement() {
   const handleSignTemplateAdd = () => {
     setSignTemplateEditing(null)
     signTemplateForm.resetFields()
-    signTemplateForm.setFieldsValue({ enabled: true })
+    signTemplateForm.setFieldsValue({
+      enabled: true,
+      // 默认给出一条播报内容，便于直接修改；客户朗读回答默认"是的"
+      audio_video_infos: [{ audioText: '', answerText: '是的' }],
+    })
     setSignTemplateModalVisible(true)
   }
 
   // 编辑签约模板
   const handleSignTemplateEdit = (record: SignTemplate) => {
     setSignTemplateEditing(record)
+    // 解析模板配置的互动视频签播报内容（JSON 字符串 → 数组），供编辑表单回填
+    let audioVideoInfos: AudioVideoInfo[] = []
+    if (record.audio_video_infos) {
+      try {
+        audioVideoInfos = JSON.parse(record.audio_video_infos) as AudioVideoInfo[]
+      } catch {
+        audioVideoInfos = []
+      }
+    }
+    // 未配置播报内容时，默认展示一行验证配置输入框，便于直接填写
+    if (!Array.isArray(audioVideoInfos) || audioVideoInfos.length === 0) {
+      audioVideoInfos = [{ audioText: '', answerText: '是的' }]
+    }
     signTemplateForm.setFieldsValue({
       name: record.name,
       sign_template_id: record.sign_template_id,
       description: record.description,
       enabled: record.enabled,
+      audio_video_infos: audioVideoInfos,
     })
     setSignTemplateModalVisible(true)
   }
@@ -102,11 +121,16 @@ export default function SignTemplateManagement() {
   // 提交签约模板（新增/编辑）
   const handleSignTemplateSubmit = async (values: Record<string, unknown>) => {
     try {
+      // 播报内容表单数组 → JSON 字符串（过滤空条目；未配置时存 undefined，后端回退默认播报内容）
+      const audioVideoInfos = (values.audio_video_infos as AudioVideoInfo[] | undefined) || []
+      const validAudioVideoInfos = audioVideoInfos.filter((i) => i && (i.audioText || '').trim())
+      const audioVideoInfosJson = validAudioVideoInfos.length > 0 ? JSON.stringify(validAudioVideoInfos) : undefined
       if (signTemplateEditing) {
         await updateSignTemplate(signTemplateEditing.id, {
           name: values.name as string,
           description: (values.description as string) || undefined,
           enabled: (values.enabled as boolean) ?? true,
+          audio_video_infos: audioVideoInfosJson,
         })
         message.success('签约模板已更新')
       } else {
@@ -117,6 +141,7 @@ export default function SignTemplateManagement() {
           enabled: (values.enabled as boolean) ?? true,
           // 组织数据隔离：新增模板归属于当前选中的组织（组织管理员由后端强制为本组织）
           organization_id: organizationId,
+          audio_video_infos: audioVideoInfosJson,
         })
         message.success('签约模板已新增')
       }
@@ -268,7 +293,7 @@ export default function SignTemplateManagement() {
         open={signTemplateModalVisible}
         onCancel={() => setSignTemplateModalVisible(false)}
         footer={null}
-        width={560}
+        width={720}
       >
         <Form form={signTemplateForm} layout="vertical" onFinish={handleSignTemplateSubmit}>
           <Form.Item name="name" label="模板名称" rules={[{ required: true, message: '请输入模板名称' }]}>
@@ -282,6 +307,42 @@ export default function SignTemplateManagement() {
           </Form.Item>
           <Form.Item name="enabled" label="启用" valuePropName="checked">
             <Switch />
+          </Form.Item>
+          {/* 互动视频签播报内容：每个模板可独立配置，签署时对客户语音播报并录制音视频 */}
+          <Form.Item
+            label="互动视频签播报内容"
+            tooltip="客户签署时语音播报并录制音视频（最多5条，每条播报内容150字以内，合计至少50个字符）。每条包含：播报内容（系统对客户朗读的文字）与客户朗读回答（要求客户照着读出的回答，选填，默认“是的”）；未配置时使用系统默认播报内容"
+          >
+            <Form.List name="audio_video_infos">
+              {(fields, { add, remove }) => (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {fields.map(({ key, name, ...restField }) => (
+                    <div key={key} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'audioText']}
+                        style={{ marginBottom: 0, flex: 1 }}
+                        rules={[{ required: true, message: '请输入播报内容' }]}
+                      >
+                        <Input.TextArea placeholder="播报内容：系统向客户朗读的文字（150字以内）" rows={2} maxLength={500} showCount />
+                      </Form.Item>
+                      <Form.Item {...restField} name={[name, 'answerText']} style={{ marginBottom: 0, width: 170 }}>
+                        <Input placeholder="客户朗读回答（默认：是的）" />
+                      </Form.Item>
+                      <MinusCircleOutlined style={{ marginTop: 8, color: '#999', fontSize: 16 }} onClick={() => remove(name)} />
+                    </div>
+                  ))}
+                  <Button
+                    type="dashed"
+                    icon={<PlusOutlined />}
+                    disabled={fields.length >= 5}
+                    onClick={() => add({ audioText: '', answerText: '是的' })}
+                  >
+                    添加播报内容（最多5条）
+                  </Button>
+                </div>
+              )}
+            </Form.List>
           </Form.Item>
           <Form.Item>
             <Space>

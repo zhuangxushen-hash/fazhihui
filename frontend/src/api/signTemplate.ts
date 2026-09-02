@@ -11,8 +11,18 @@ export interface SignTemplate {
   description?: string
   owner_id?: string
   enabled: boolean
+  // 互动视频签（audio_video）播报内容配置：JSON 字符串（数组元素含 audioText/answerText）
+  audio_video_infos?: string
   created_at: string
   updated_at: string
+}
+
+// 互动视频签播报内容单条配置
+export interface AudioVideoInfo {
+  // 播报内容（必填）：系统向客户朗读的文字
+  audioText: string
+  // 客户朗读回答（选填）：要求客户照读的回答，默认"是的"
+  answerText?: string
 }
 
 // 新增/更新签署模板参数
@@ -23,6 +33,7 @@ export interface SaveSignTemplateParams {
   owner_id?: string
   enabled?: boolean
   organization_id?: string
+  audio_video_infos?: string
 }
 
 // 个人客户签署信息（subject_type=person）
@@ -97,6 +108,59 @@ export const launchSign = (id: string, data: LaunchSignParams) => {
   return axios.post<LaunchSignResult>(`/sign-template/${encodeURIComponent(id)}/launch`, data)
 }
 
+// 「生成案件补充信息」：发合同时批量填写合同上没有、生成案件需要的字段
+export interface CaseSupplement {
+  case_type?: string
+  case_category?: string
+  case_name?: string
+  opposing_party?: string
+  assignee_lawyer_id?: string
+  assistant_lawyer_ids?: string[]
+  fee_amount?: number
+  fee_type?: string
+  payment_method?: string
+  description?: string
+  contact_address?: string
+  court?: string
+}
+
+// 发合同（线索驱动）参数：合同基础信息 + 补充信息
+export interface LaunchSignFromLeadParams {
+  lead_id: string
+  subject: string
+  subject_type?: 'person' | 'corp'
+  client?: { clientUserId?: string; userName: string; idCardNo?: string; mobile?: string }
+  corp?: SignCorpInfo
+  lawyer?: { lawyerUserId: string; name: string; mobile?: string }
+  fillValues?: Array<{ docId?: string | number; fieldId?: string; fieldName?: string; fieldValue: string }>
+  contract?: {
+    type?: string
+    amount?: number
+    fee_type?: string
+    payment_method?: string
+    start_date?: string
+    end_date?: string
+    remarks?: string
+  }
+  case_supplement?: CaseSupplement
+}
+
+// 发合同结果：合同已创建（待签），签约完成后回调自动生成案件
+export interface LaunchSignFromLeadResult {
+  contractId: string
+  contractNo: string
+  signingId: string
+  signTaskId: string
+  actorId: string
+  signUrl: string
+  mode: 'mock' | 'prod' | 'uat'
+}
+
+/** 「发合同(签约)」：从线索发起，与案件无关；签约完成后自动生成案件 */
+export const launchSignFromLead = (id: string, data: LaunchSignFromLeadParams) => {
+  return axios.post<LaunchSignFromLeadResult>(`/sign-template/${encodeURIComponent(id)}/launch-from-lead`, data)
+}
+
 // ==================== 模板字段配置 ====================
 
 // 模板字段填写方式
@@ -132,38 +196,28 @@ export interface SaveFieldConfigItem {
   enabled?: boolean
 }
 
-// 模板字段自动带出键选项（业务员预填字段，发起签约时可从案件详情任意字段自动带出）
+// 模板字段自动带出键选项（业务员预填字段）
+// 新流程：发合同从「洽谈(线索)」发起，字段值从线索自动带出；
+// 旧的 case.*/client.*/team.*/timeline.* 键在发合同页做了兼容映射（带不出时留空手填）
 export const AUTO_SOURCE_OPTIONS = [
-  // 案件信息
-  { label: '案件编号', value: 'case.case_no' },
-  { label: '案件名称', value: 'case.case_name' },
-  { label: '法院案号', value: 'case.case_number' },
-  { label: '案件大类', value: 'case.case_category' },
-  { label: '案由', value: 'case.case_type' },
-  { label: '案件状态', value: 'case.status' },
-  { label: '办理阶段', value: 'case.stage' },
-  { label: '风险等级', value: 'case.risk_level' },
-  { label: '案件描述', value: 'case.description' },
-  // 当事人/客户
-  { label: '客户名称', value: 'client.name' },
-  { label: '手机号', value: 'client.mobile' },
-  { label: '客户类型', value: 'client.type' },
-  { label: '联系地址', value: 'client.address' },
-  { label: '证件号', value: 'client.identity_no' },
-  { label: '原告', value: 'client.plaintiff' },
-  { label: '被告', value: 'client.defendant' },
-  { label: '对方当事人', value: 'client.opposing_party' },
-  // 团队
-  { label: '承办律师', value: 'team.assignee_name' },
-  { label: '主办律师', value: 'team.handler_name' },
-  { label: '协办律师', value: 'team.co_handler_name' },
-  { label: '经办律师', value: 'lawyer.name' },
-  // 时间节点
-  { label: '立案日期', value: 'timeline.filing_date' },
-  { label: '开庭日期', value: 'timeline.hearing_date' },
-  { label: '举证期限', value: 'timeline.evidence_deadline' },
-  { label: '上诉期限', value: 'timeline.appeal_deadline' },
-  { label: '截止时间', value: 'timeline.deadline' },
+  // 线索/客户信息
+  { label: '客户姓名', value: 'lead.name' },
+  { label: '手机号', value: 'lead.mobile' },
+  { label: '案由', value: 'lead.case_type' },
+  { label: '咨询内容', value: 'lead.description' },
+  { label: '预估金额', value: 'lead.amount' },
+  { label: '单位名称', value: 'lead.unit_name' },
+  { label: '联系地址', value: 'lead.address' },
+  { label: '省份', value: 'lead.province' },
+  { label: '城市', value: 'lead.city' },
+  { label: '业务摘要', value: 'lead.business_summary' },
+  { label: '转介绍人', value: 'lead.referrer' },
+  { label: '来源渠道', value: 'lead.source_channel' },
+  { label: '主办人', value: 'lead.handler' },
+  { label: '业务员', value: 'lead.assignee' },
+  // 兼容旧配置键（发合同页映射到线索字段）
+  { label: '客户名称(兼容)', value: 'client.name' },
+  { label: '手机号(兼容)', value: 'client.mobile' },
   // 其他
   { label: '律所名称', value: 'firm.name' },
 ]

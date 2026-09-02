@@ -198,7 +198,7 @@ export class CaseController {
   async uploadDocumentFile(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
-    @Body() body: { doc_type?: string; name?: string },
+    @Body() body: { doc_type?: string; name?: string; visible_to_client?: string | boolean },
     @Request() req?: any,
   ) {
     const existing = await this.caseService.findById(id);
@@ -209,7 +209,9 @@ export class CaseController {
     if (!file) {
       throw new BadRequestException('未上传文件');
     }
-    return this.caseService.uploadDocumentFile(id, file, req?.user?.id, body.doc_type, body.name);
+    // multipart 表单传的是字符串 'true'/'false'，统一归一化为布尔
+    const visibleToClient = body.visible_to_client === true || body.visible_to_client === 'true';
+    return this.caseService.uploadDocumentFile(id, file, req?.user?.id, body.doc_type, body.name, visibleToClient);
   }
 
   // 案件文档下载（回流保存的本地文件）

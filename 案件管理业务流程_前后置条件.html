@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>案件管理业务流程与前后置条件（代码核对版）</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --card:#ffffff; --ink:#1f2937; --sub:#5b6470;
+    --line:#d8dee6; --accent:#2563eb; --pre:#1d6f5c; --post:#9a4b13;
+    --warn:#b54708; --ok:#0f7a4d; --ban:#b3261e;
+    --nodeFill:#e8eefc; --nodeStroke:#2563eb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,sans-serif;
+       line-height:1.6;padding:32px;}
+  .wrap{max-width:1080px;margin:0 auto;}
+  h1{font-size:26px;margin:0 0 6px;}
+  h2{font-size:20px;margin:34px 0 12px;padding-left:10px;border-left:4px solid var(--accent);}
+  h3{font-size:16px;margin:20px  ️0 8px;}
+  .lead{color:var(--sub);font-size:14px;margin:0 0 8px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+        padding:18px 20px;margin:14px 0;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th,td{border:1px solid var(--line);padding:9px 11px;vertical-align:top;text-align:left;}
+  th{background:#eef2f7;color:var(--ink);font-weight:600;}
+  tr:nth-child(even) td{background:#fafbfc;}
+  .tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;
+       font-weight:600;margin-right:4px;}
+  .tag.pre{background:#e6f4ef;color:var(--pre);}
+  .tag.post{background:#fbeee2;color:var(--post);}
+  .tag.api{background:#e8eefc;color:var(--accent);font-family:ui-monospace,Menlo,Consolas,monospace;}
+  .tag.warn{background:#fde9d8;color:var(--warn);}
+  .tag.ok{background:#e4f5ec;color:var(--ok);}
+  .tag.ban{background:#fde4e2;color:var(--ban);}
+  code{background:#eef1f5;padding:1px 6px;border-radius:5px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:#334155;}
+  svg{width:100%;height:auto;display:block;}
+  .note{background:#fff8e6;border:1px solid #f0d999;border-radius:10px;padding:12px 16px;color:#8a5a00;font-size:13.5px;margin:14px 0;}
+  .legend{font-size:12px;color:var(--sub);margin-top:8px;}
+  .small{font-size:12.5px;color:var(--sub);}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr;}}
+  ul{margin:6px 0 6px 0;padding-left:20px;}
+  li{margin:3px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>案件管理业务流程与前后置条件</h1>
+<p class="lead">代码核对版 · 基于 <code>backend/src/case/*</code> 实际实现（NestJS + TypeORM）· 与上层需求文档口径存在差异，差异处已标注。</p>
+
+<div class="card">
+<div class="note">
+<b>核心结论：案件是「四维状态机」。</b> 需求文档通常把它们混为一个「案件状态」，但代码里同一张 <code>cases</code> 表用四个独立字段描述案件的不同侧面：
+</div>
+<table>
+<tr><th style="width:150px">状态维度</th><th style="width:230px">枚举值（代码）</th><th>含义</th></tr>
+<tr>
+  <td><b>status</b><br><span class="small">办案节点</span></td>
+  <td><code>pending_assign → processing → filing → evidence → hearing → appeal → pending_close → closed</code><br>
+      <span class="small">异常岔路：terminated（解约）、voided（作废）</span></td>
+  <td>沿真实诉讼/办案节点的细粒度进度。注意 <code>filing/evidence/hearing/appeal</code> 在需求文档未明确，预警模块正是基于这些状态扫描在办案件。</td>
+</tr>
+<tr>
+  <td><b>stage</b><br><span class="small">生命周期</span></td>
+  <td><code>intake → processing → closing → closed</code></td>
+  <td>粗粒度生命周期。审批通过（若当前为 intake）自动转 processing；结案报告置 closing；归档置 closed。</td>
+</tr>
+<tr>
+  <td><b>change_status</b><br><span class="small">变更态</span></td>
+  <td><code>normal → changed / terminated / voided</code></td>
+  <td>变更/解约/作废标记，独立于 status，用于区分「实质终态」与「仅记录变更」。</td>
+</tr>
+<tr>
+  <td><b>approval_status</b><br><span class="small">审批/利冲</span></td>
+  <td><code>pending / approved / rejected / conflict_hold</code></td>
+  <td>案件审批流（提交→通过/驳回）与利冲检索结果（命中冲突则 conflict_hold）。</td>
+</tr>
+</table>
+</div>
+
+<h2>一、案件状态流转图（代码实际）</h2>
+<div class="card">
+<svg viewBox="0 0 880 220">
+  <!-- 主流程横向 -->
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#5b6470"/>
+    </marker>
+  </defs>
+  <!-- 节点 -->
+  <g font-size="12" text-anchor="middle">
+    <rect x="10" y="90" width="96" height="34" rx="8" fill="#e8eefc" stroke="#2563eb"/>
+    <text x="58" y="111" fill="#1f2937">pending_assign</text>
+
+    <rect x="126" y="90" width="96" height="34" rx="8" fill="#e8eefc" stroke="#2563eb"/>
+    <text x="174" y="111" fill="#1f2937">processing</text>
+
+    <rect x="242" y="90" width="72" height=" 34" rx="8" fill="#e8eefc" stroke="#2563eb"/>
+    <text x="278" y="111" fill="#1f2937">filing</text>
+
+    <rect x="334" y="90" width="86" height="34" rx="8" fill="#e8eefc" stroke="#2563eb"/>
+    <text x="377" y="111" fill="#1f2937">evidence</text>
+
+    <rect x="440" y="90" width="80" height="34" rx="8" fill="#e8eefc" stroke="#2563eb"/>
+    <text x="480" y="111" fill="#1f2937">hearing</text>
+
+    <rect x="540" y="90" width="72" height="34" rx="8" fill="#e8eefc" stroke="#2563eb"/>
+    <text x="576" y="111" fill="#1f2937">appeal</text>
+
+    <rect x="632" y="90" width="100" height="34" rx="8" fill="#e8eefc" stroke="#2563eb"/>
+    <text x="682" y="111" fill="#1f2937">pending_close</text>
+
+    <rect x="752" y="90" width="100" height="34" rx="8" fill="#e4f5ec" stroke="#0f7a4d"/>
+    <text x="802" y="111" fill="#1f2937">closed</text>
+
+    <!-- 箭头 -->
+    <line x1="106" y1="107" x2="124" y2="107" stroke="#5b6470" marker-end="url(#arr)"/>
+    <line x1="222" y1="107" x2="240" y2="107" stroke="#5b6470" marker-end="url(#arr)"/>
+    <line x1="318" y1="107" x2="332" y2="107" stroke="#5b6470" marker-end="url(#arr)"/>
+    <line x1="420" y1="107" x2="438" y2="107" stroke="#5b6470" marker-end="url(#arr)"/>
+    <line x1="520" y1="107" x2="538" y2="107" stroke="#5b6470" marker-end="url(#arr)"/>
+    <line x1="612" y1="107" x2="630" y2="107" stroke="#5b6470" marker-end="url(#arr)"/>
+    <line x1="732" y1="107" x2="750" y2="107" stroke="#5b6470" marker-end="url(#arr)"/>
+
+    <!-- 分支：terminated / voided -->
+    <rect x="332" y="20" width="96" height="32" rx="8" fill="#fde4e2" stroke="#b3261e"/>
+    <text x="380" y="40" fill="#1f2937">terminated（解约）</text>
+    <rect x="332" y="158" width="96" height="32" rx="8" fill="#fde4e2" stroke="#b3261e"/>
+    <text x="380" y="178" fill="#1f2937">voided（作废）</text>
+
+    <line x1="380" y1="52" x2="380" y2="88" stroke="#b3261e" marker-end="url(#arr)"/>
+    <line x1="380" y1="124" x2="380" y2="157" stroke="#b3261e" marker-end="url(#arr)"/>
+  </g>
+</svg>
+<p class="legend">说明：<code>terminated</code> / <code>voided</code> 为异常岔路，可从任意有效 status 直接跳转（解约/作废接口会同时写 status 与 change_status）。<code>status</code> 各节点之间的流转并非全部由单一接口强制驱动，多由人工更新或预警/结案动作触发。</p>
+</div>
+
+<h2>二、核心业务环节：前置 / 主流程 / 后置</h2>
+
+<div class="card">
+<table>
+<tr><th style="width:120px">环节</th><th style="width:230px">前置条件（Pre）</th><th>主流程动作</th><th style="width:200px">后置联动（Post）</th><th style="width:150px">API / 代码位置</th></tr>
+
+<tr>
+  <td><b>1. 案件创建</b><br><span class="small">create</span></td>
+  <td>
+    <span class="tag pre">必填</span> <code>organization_id</code>（空值守卫，否则 400）
+    <br><span class="tag pre">业务</span> client_name、case_type、case_category 等入参
+  </td>
+  <td>
+    ① 风险评级 <code>analyzeRisk</code>（金额&gt;50万 / 临近期限&lt;15天 / 刑事行政 → high/medium/low）<br>
+    ② 事务内：生成案号（组织规则 <code>generateCaseNoByRule</code> 否则 <code>AJ-</code>），落库；再做利冲检索，命中则 <code>approval_status=conflict_hold</code>
+  </td>
+  <td>
+    <span class="tag post">事务外·静默</span> 类案匹配前3条写入 description<br>
+    <span class="tag post">事务外·静默</span> 按模板生成 SOP 任务 <code>createCaseSOP</code>
+  </td>
+  <td><span class="tag api">POST /cases</span><br><span class="small">case.service.ts:172</span></td>
+</tr>
+
+<tr>
+  <td><b>2. 案件分配</b><br><span class="small">assignLawyer</span></td>
+  <td><span class="tag pre">存在</span> 案件存在</td>
+  <td>更新 <code>assignee_lawyer_id</code> 且 <code>status=processing</code></td>
+  <td><span class="tag post">联动</span> 若有关联合同，回写 <code>contract.lead_lawyer_id</code></td>
+  <td><span class="tag api">PUT /cases/:id/assign</span><br><span class="tag api">POST /cases/batch-assign</span><br><span class="small">case.service.ts:501</span></td>
+</tr>
+
+<tr>
+  <td><b>3. 审批流</b><br><span class="small">approval</span></td>
+  <td>
+    <span class="tag pre">权限</span> submit=SUPER_ADMIN/ORG_ADMIN/LAWYER；approve/reject=SUPER_ADMIN/ORG_ADMIN
+  </td>
+  <td>
+    submit：<code>approval_status=pending</code><br>
+    approve：<code>approval_status=approved</code>，记 approver/time/comment；若 <code>stage=intake</code> 自动转 <code>stage=processing</code><br>
+    reject：<code>approval_status=rejected</code>
+  </td>
+  <td><span class="tag post">联动</span> approve 后若有合同且已分配主办律师 → 回写 <code>contract.lead_lawyer_id</code></td>
+  <td><span class="tag api">POST /cases/:id/submit-approval</span><br><span class="tag api">POST /cases/:id/approve</span><br><span class="tag api">POST /cases/:id/reject</span><br><span class="small">case.service.ts:1068</span></td>
+</
+tr>
+
+<tr>
+  <td><b>4. 利冲检索</b><br><span class="small">conflict-check</span></td>
+  <td><span class="tag pre">自动</span> 案件创建时自动 <code>check</code>；亦支持手动 <code>deepCheck</code></td>
+  <td>
+    命中规则：当事人姓名 ∧ 对方当事人姓名 同命中一案件 → <code>conflict</code>（明确冲突）；仅一方命中 → <code>warning</code>；否则 <code>clear</code>
+  </td>
+  <td>
+    <span class="tag post">联动</span> conflict → 案件 <code>approval_status=conflict_hold</code><br>
+    <span class="tag post">审批</span> deepCheck 落库 <code>approval_status=pending</code>，主管 approve/reject；reject 回写案件 <code>approval_status=rejected</code>
+  </td>
+  <td><span class="tag api">conflict-check.*</span><br><span class="small">conflict-check.service.ts:26</span></td>
+</tr>
+
+<tr>
+  <td><b>5. SOP办案任务</b><br><span class="small">case-task</span></td>
+  <td><span class="tag pre">模板</span> 默认模板：民事/交通/劳动/债务</td>
+  <td>
+    创建时按模板生成任务（<code>PENDING</code>）；任务状态：<code>pending→in_progress→completed/verified</code>，另有 <code>overdue/cancelled</code><br>
+    完成/验收自动写 <code>completed_at</code> + <code>progress=100</code>；父任务随子任务联动
+  </td>
+  <td><span class="tag post">联动</span> 进度汇总回写案件 <code>progress</code>（calculateCaseProgress）；超期任务定时转 <code>overdue</code></td>
+  <td><span class="tag api">case-task.controller</span><br><span class="small">case-task.service.ts:22</span></td>
+</tr>
+
+<tr>
+  <td><b>6. 预警生成</b><br><span class="small">case-warning</span></td>
+  <td>
+    <span class="tag pre">扫描范围</span> status ∈ {processing,filing,evidence,hearing,appeal} 的在办案件<br>
+    <span class="tag pre">规则</span> 节点剩余天数命中 <code>rule.advanceDays</code>
+  </td>
+  <td>
+    对 4 类真实节点生成预警：<br>
+    · deadline（时效届满）<br>· hearing_date（开庭）<br>· evidence_deadline（举证期限）<br>· appeal_deadline（上诉期限）<br>
+    级别动态：≤1天 URGENT，≤3天 WARNING，否则规则级；超期则 status=OVERDUE
+  </td>
+  <td>
+    <span class="tag post">去重</span> 键 <code>case_id::warning_type::target_date::advance_days</code> 已存在则跳过<br>
+    <span class="tag post">通知</span> 每小时 <code>checkOverdueWarnings</code> 对超期预警通知主办律师
+  </td>
+  <td><span class="tag api">case-warning.generateWarnings</span><br><span class="tag api">checkOverdueWarnings</span><br><span class="small">case-warning.service.ts:181</span></td>
+</tr>
+
+<tr>
+  <td><b>7. 变更/解约/作废</b><br><span class="small">change/terminate/void</span></td>
+  <td><span class="tag pre">存在</span> 案件存在</td>
+  <td>
+    change：<code>change_status=changed</code>（仅记录，非终态）<br>
+    terminate：<code>status=terminated</code> + <code>change_status=terminated</code><br>
+    void：<code>status=voided</code> + <code>change_status=voided</code>
+  </td>
+  <td><span class="tag post">审计</span> 均记录 change_reason / operator / time 并写审计日志</td>
+  <td><span class="tag api">PUT /cases/:id/change</span><br><span class="tag api">PUT /cases/:id/terminate</span><br><span class="tag api">PUT /cases/:id/void</span><br><span class="small">case.service.ts:801</span></td>
+</tr>
+
+<tr>
+  <td><b>8. 结案</b><br><span class="small">closeCase</span></td>
+  <td>
+    <span class="tag pre">存在</span> 案件存在（代码未强制「必须先结清/完成」，但会联动校验合同应收）
+  </td>
+  <td>事务内：<code>status=closed</code>；关联合同 stage∈{signed,performing}→<code>completed</code>；应收 recvAmt≥totalAmt 且&gt;0 → <code>is_settled=true</code></td>
+  <td>
+    <span class="tag post">触发</span> 分润检查 <code>checkAndTriggerCommission</code>（静默）<br>
+    <span class="tag post">触发</span> 客户评价 <code>triggerRatingOnCaseClose</code>（静默）<br>
+    <span class="tag post">生成</span> 结案报告文书 <code>closing_report</code>；审计日志；C端短信 <code>contract_closed</code>
+  </td>
+  <td><span class="tag api">POST /cases/:id/close</span><br><span class="tag api">POST /cases/batch-close</span><br><span class="small">case.service.ts:734</span></td>
+</tr>
+
+<tr>
+  <td><b>9. 结案报告</b><br><span class="small">closeCaseReport</span></td>
+  <td><span class="tag pre">存在</span> 案件存在</td>
+  <td>置 <code>stage=closing</code>（进入结案阶段；归档时才置 <code>stage=closed</code>）</td>
+  <td><span class="tag post">文书</span> 通常伴随生成结案报告文档</td>
+  <td><span class="tag api">POST /cases/:id/close-report</span><br><span class="small">case.service.ts:944</span></td>
+</tr>
+
+<tr>
+  <td><b>10. 归档</b><br><span class="small">archiveCase</span></td>
+  <td><span class="tag pre">存在</span> 案件存在（代码未强制「必须已结案」，但语义上应先结案）</td>
+  <td>事务内：<code>stage=closed</code> + 生成 <code>archive_no</code>（组织规则）；同结案联动合同 stage/is_settled</td>
+  <td>
+    <span class="tag post">触发</span> 分润检查（静默）<br>
+    <span class="tag post">通知</span> C端短信 <code>closed</code>（全流程结束）
+  </td>
+  <td><span class="tag api">POST /cases/:id/archive</span><br><span class="tag api">POST /cases/batch-archive</span><br><span class="small">case.service.ts:952</span></td>
+</tr>
+</table>
+</div>
+
+<h2>三、子模块规则要点</h2>
+<div class="grid2">
+<div class="card">
+<h3>利冲检索（conflict-check）</h3>
+<ul>
+  <li><span class="tag warn">判定</span> 当事人姓名与对方当事人姓名<b>同时</b>命中同一已有案件 ⇒ <code>conflict</code>，案件置 <code>conflict_hold</code>。</li>
+  <li>仅一方（当事人或对方）命中 ⇒ <code>warning</code>。</li>
+  <li>都不命中 ⇒ <code>clear</code>。</li>
+  <li><span class="tag warn">深度检索</span> <code>deepCheck</code> 用 LIKE 模糊匹配，并模拟工商数据关联企业；结果落库 <code>approval_status=pending</code>，需主管审批。审批驳回会回写案件 <code>approval_status=rejected</code>。</li>
+  <li>检索记录落表 <code>conflict_checks</code>，便于追溯。</li>
+</ul>
+</div>
+
+<div class="card">
+<h3>办案任务 / SOP（case-task）</h3>
+<ul>
+  <li>案件创建时按所选模板（民事/交通/劳动/债务）批量生成任务，初始 <code>PENDING</code>。</li>
+  <li>任务状态机：<code>pending → in_progress → completed → verified</code>；超期 <code>overdue</code>；可 <code>cancelled</code>。</li>
+  <li>指派（assign）：<code>pending → in_progress</code>。</li>
+  <li>进度到 100% 自动 <code>completed</code>；父任务在所有子任务完成后自动置 COMPLETED 并算平均进度。</li>
+  <li>定时任务 <code>checkAndUpdateOverdueTasks</code> 将超期活跃任务置 <code>overdue</code>。</li>
+</ul>
+</div>
+
+<div class="card">
+<h3>预警（case-warning）</h3>
+<ul>
+  <li>仅扫描 status 为 processing/filing/evidence/hearing/appeal 的在办案件。</li>
+  <li>四类真实节点：时效届满、开庭、举证期限、上诉期限。</li>
+  <li>仅当「剩余天数」命中规则 <code>advanceDays</code> 才生成；级别按剩余天数动态升级（≤1天紧急，≤3天警告）。</li>
+  <li>去重键唯一；每小时定时任务升级超期预警并通知主办律师。</li>
+  <li>另含 <code>checkOverdue</code>：扫描 processing 且 deadline&lt;now ⇒ <code>is_overdue=true</code>。</li>
+</ul>
+</div>
+
+<div class="card">
+<h3>风险评级（analyzeRisk）</h3>
+<ul>
+  <li>案件创建时自动评级，规则触发即加分：</li>
+  <li>涉案金额 &gt; 50万 ⇒ 1 因子</li>
+  <li>临近关键期限（开庭/举证/上诉）&lt;15天 ⇒ 1 因子</li>
+  <li>案由为刑事/行政 ⇒ 1 因子</li>
+  <li>因子≥2 ⇒ <code>high</code>；=1 ⇒ <code>medium</code>；否则 <code>low</code>。结果写入 <code>risk_level</code> / <code>risk_notes</code>。</li>
+</ul>
+</div>
+</div>
+
+<h2>四、跨模块联动汇总</h2>
+<div class="card">
+<table>
+<tr><th>触发动作</th><th>联动模块</th><th>具体副作用</th><th>代码位置</th></tr>
+<tr><td>分配律师 / 审批通过</td><td>合同 contract</td><td>回写 <code>contract.lead_lawyer_id</code>（主办律师）</td><td>case.service.ts:502 / 1093</td></tr>
+<tr><td>结案 / 归档</td><td>合同 contract</td><td>合同 stage∈{signed,performing}→<code>completed</code>；应收 recvAmt≥totalAmt ⇒ <code>is_settled=true</code></td><td>case.service.ts:741-758 / 964-981</td></tr>
+<tr><td>结案 / 归档</td><td>财务 commission</td><td>触发 <code>checkAndTriggerCommission</code> 分润计算（异常静默）</td><td>case.service.ts:763 / 986</td></tr>
+<tr><td>结案</td><td>客户评价 client</td><td>触发 <code>triggerRatingOnCaseClose</code> 客户评价入口</td><td>case.service.ts:768</td></tr>
+<tr><td>结案</td><td>文书 legal-document</td><td>生成结案报告 <code>closing_report</code></td><td>case.service.ts:786</td></tr>
+<tr><td>创建案件</td><td>SOP任务 / 类案 / 利冲</td><td>生成办案任务、匹配类案、执行利冲检索</td><td>case.service.ts:227-276</td></tr>
+</table>
+</div>
+
+<h2>五、需求文档 vs 代码 关键差异（提示）</h2>
+<div class="card">
+<table>
+<tr><th>事项</th><th>需求文档口径</th><th>代码实际</th><th>影响</th></tr>
+<tr><td>案件状态</td><td>单一「案件状态」</td><td>四维：status / stage / change_status / approval_status</td><td class="tag warn">重要</td></tr>
+<tr><td>办案节点</td><td>未明确</td><td>filing/evidence/hearing/appeal/pending_close 等明确节点</td><td class="tag warn">重要（预警依赖）</td></tr>
+<tr><td>利冲命中处理</td><td>未写</td><td>命中冲突 → <code>conflict_hold</code>，且深度检索需主管审批</td><td class="tag warn">重要</td></tr>
+<tr><td>结案前置</td><td>可能要求结清/完成</td><td>代码未强制校验未收款，仅联动应收判断合同结清</td><td class="tag ok">需注意风控</td></tr>
+<tr><td>归档前置</td><td>需先结案</td><td>代码未强制，归档与结案是两个独立动作（stage 维度）</td><td class="tag ok">需注意</td></tr>
+<tr><td>自动建档联动</td><td>未写</td><td>创建即联动 SOP任务、类案、利冲、风险评级</td><td class="tag warn">重要</td></tr>
+</table>
+</div>
+
+<p class="small">数据来源：<code>backend/src/case/case.service.ts</code>、<code>case.entity.ts</code>、<code>case-task.service.ts</code>、<code>conflict-check.service.ts</code>、<code>case-warning.service.ts</code>、<code>types/index.ts</code>。本报告聚焦「案件管理」域；线索/商机/财务/合规等域可另行按同样粒度补充。</p>
+
+</div>
+</body>
+</html>

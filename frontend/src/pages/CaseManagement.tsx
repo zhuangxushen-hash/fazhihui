@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Table, Button, Modal, Form, Input, Select, Space, message, DatePicker, Card, Tag, InputNumber, Switch, Popconfirm, Progress, AutoComplete } from 'antd'
-import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, DeleteOutlined, ExportOutlined, FileTextOutlined } from '@ant-design/icons'
+import { Table, Button, Modal, Form, Input, Select, Space, message, DatePicker, Card, Tag, InputNumber, Switch, Popconfirm, Progress, AutoComplete, Radio } from 'antd'
+import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, DeleteOutlined, ExportOutlined, SettingOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { archiveCase, createCase, batchCloseCases, batchArchiveCases, CreateCasePayload, getCaseDocuments } from '../api/case'
 import { getClientProfiles, createClientProfile } from '../api/client-profile'
 import { getContracts } from '../api/contract'
+import { getCaseStatuses, createCaseStatus, updateCaseStatus, deleteCaseStatus, CaseStatusItem, FALLBACK_CASE_STATUSES } from '../api/caseStatus'
 import { getTeamList } from '../api/team'
 import { formatDate } from '../utils/format'
 import { theme } from '../constants/theme'
@@ -72,32 +73,7 @@ const StatusPill = ({ text, kind }: { text: string; kind: PillKind }) => {
   )
 }
 
-// === Case Status & Risk Mappings (Preserved) ===
-const caseStatusKindMap: Record<string, PillKind> = {
-  pending_assign: 'neutral',
-  processing: 'blue',
-  filing: 'blue',
-  evidence: 'cyan',
-  hearing: 'orange',
-  appeal: 'geekblue',
-  pending_close: 'orange',
-  closed: 'green',
-  terminated: 'orange',
-  voided: 'red',
-}
-
-const caseStatusLabelMap: Record<string, string> = {
-  pending_assign: '待分配',
-  processing: '处理中',
-  filing: '立案中',
-  evidence: '取证中',
-  hearing: '庭审中',
-  appeal: '上诉中',
-  pending_close: '待结案',
-  closed: '已结案',
-  terminated: '已解约',
-  voided: '已作废',
-}
+// === 案件状态字典：由组织自定义配置（组件内 statusConfigs 派生） ===
 
 const riskKindMap: Record<string, PillKind> = {
   low: 'green',
@@ -177,6 +153,31 @@ export default function CaseManagement() {
   // 案由自定义选项（支持用户输入新案由）
   const [customCaseTypeOptions, setCustomCaseTypeOptions] = useState<Array<{ value: string; label: string }>>([])
 
+  // === 组织级自定义案件状态字典 ===
+  const [statusConfigs, setStatusConfigs] = useState<CaseStatusItem[]>(
+    // 初始用回退默认值渲染，接口成功后覆盖
+    FALLBACK_CASE_STATUSES.map((s, i) => ({
+      id: `fallback-${i}`, organization_id: '', name: s.name, code: s.code, kind: s.kind,
+      sort_order: i, enabled: true, is_default: i === 0, created_at: '', updated_at: '',
+    })),
+  )
+  const [statusConfigVisible, setStatusConfigVisible] = useState(false)
+  const [statusConfigLoading, setStatusConfigLoading] = useState(false)
+  const [statusConfigForm] = Form.useForm()
+
+  // 状态配色可选项（与 StatusPill 的 PillKind 对齐）
+  const statusKindOptions: Array<{ value: PillKind; label: string }> = [
+    { value: 'neutral', label: '灰色（默认）' },
+    { value: 'blue', label: '蓝色' },
+    { value: 'cyan', label: '青色' },
+    { value: 'green', label: '绿色' },
+    { value: 'orange', label: '橙色' },
+    { value: 'gold', label: '金色' },
+    { value: 'red', label: '红色' },
+    { value: 'purple', label: '紫色' },
+    { value: 'geekblue', label: '深蓝' },
+  ]
+
   
 
   const user = JSON.parse(localStorage.getItem('user') || '{}')
@@ -187,7 +188,19 @@ export default function CaseManagement() {
     fetchLeads()
     fetchClientProfiles()
     fetchTeams()
+    fetchStatusConfigs()
   }, [])
+
+  // 加载组织自定义案件状态字典（失败时保留回退默认值）
+  const fetchStatusConfigs = async () => {
+    try {
+      const res: any = await getCaseStatuses(user.organization_id)
+      const list = (Array.isArray(res) ? res : null) || res?.data || []
+      if (Array.isArray(list) && list.length) setStatusConfigs(list)
+    } catch (error) {
+      // 保留 FALLBACK_CASE_STATUSES 回退
+    }
+  }
 
   // 加载律师团队列表（按当前用户组织隔离）
   const fetchTeams = async () => {
@@ -564,18 +577,90 @@ export default function CaseManagement() {
     }
   }
 
-  const statusOptions = [
-    { value: 'pending_assign', label: '待分配' },
-    { value: 'processing', label: '处理中' },
-    { value: 'filing', label: '立案中' },
-    { value: 'evidence', label: '取证中' },
-    { value: 'hearing', label: '庭审中' },
-    { value: 'appeal', label: '上诉中' },
-    { value: 'pending_close', label: '待结案' },
-    { value: 'closed', label: '已结案' },
-    { value: 'terminated', label: '已解约' },
-    { value: 'voided', label: '已作废' },
-  ]
+  // === 状态设置：组织自定义状态字典 CRUD ===
+  const isFallbackStatus = (item: CaseStatusItem) => String(item.id).startsWith('fallback-')
+
+  const refreshStatusConfigs = async () => {
+    setStatusConfigLoading(true)
+    try {
+      const res: any = await getCaseStatuses(user.organization_id)
+      const list = (Array.isArray(res) ? res : null) || res?.data || []
+      if (Array.isArray(list) && list.length) setStatusConfigs(list)
+    } catch (error) {
+      message.error('状态字典加载失败')
+    } finally {
+      setStatusConfigLoading(false)
+    }
+  }
+
+  const handleAddStatusConfig = async (values: { name: string; kind?: string }) => {
+    try {
+      await createCaseStatus(values)
+      message.success('状态新增成功')
+      statusConfigForm.resetFields()
+      refreshStatusConfigs()
+    } catch (error) {
+      message.error('状态新增失败')
+    }
+  }
+
+  const handleSaveStatusConfig = async (item: CaseStatusItem, patch: Partial<CaseStatusItem>) => {
+    if (isFallbackStatus(item)) {
+      message.warning('状态字典尚未加载成功，请刷新后重试')
+      return
+    }
+    try {
+      await updateCaseStatus(item.id, patch as Record<string, unknown>)
+      setStatusConfigs((prev) => prev.map((s) => (s.id === item.id ? { ...s, ...patch } : s)))
+      // 设为默认后其余取消默认
+      if (patch.is_default) {
+        setStatusConfigs((prev) => prev.map((s) => (s.id === item.id ? s : { ...s, is_default: false })))
+      }
+    } catch (error) {
+      message.error('状态保存失败')
+      refreshStatusConfigs()
+    }
+  }
+
+  const handleMoveStatusConfig = async (index: number, dir: -1 | 1) => {
+    const target = statusConfigs[index + dir]
+    const current = statusConfigs[index]
+    if (!target || !current || isFallbackStatus(target) || isFallbackStatus(current)) return
+    try {
+      await Promise.all([
+        updateCaseStatus(current.id, { sort_order: target.sort_order }),
+        updateCaseStatus(target.id, { sort_order: current.sort_order }),
+      ])
+      refreshStatusConfigs()
+    } catch (error) {
+      message.error('排序调整失败')
+    }
+  }
+
+  const handleDeleteStatusConfig = async (item: CaseStatusItem) => {
+    if (isFallbackStatus(item)) {
+      message.warning('状态字典尚未加载成功，请刷新后重试')
+      return
+    }
+    try {
+      await deleteCaseStatus(item.id)
+      message.success('状态删除成功')
+      refreshStatusConfigs()
+    } catch (error) {
+      message.error('状态删除失败')
+    }
+  }
+
+  // === 动态状态字典派生：标签/配色/选项全部来自组织自定义配置 ===
+  const caseStatusLabelMap: Record<string, string> = {}
+  const caseStatusKindMap: Record<string, PillKind> = {}
+  statusConfigs.forEach((s) => {
+    caseStatusLabelMap[s.code] = s.name
+    caseStatusKindMap[s.code] = (s.kind as PillKind) || 'neutral'
+  })
+  const statusOptions = statusConfigs
+    .filter((s) => s.enabled)
+    .map((s) => ({ value: s.code, label: s.name }))
 
   const caseTypeOptions = [
     { value: 'marriage', label: '婚姻家事' },
@@ -673,7 +758,7 @@ export default function CaseManagement() {
     { title: '联系地址', dataIndex: 'contact_address', key: 'contact_address' },
     { title: '受理法院', dataIndex: 'court', key: 'court' },
     { title: '状态', dataIndex: 'status', key: 'status', render: (status: string) => (
-      <StatusPill text={caseStatusLabelMap[status] || '-'} kind={caseStatusKindMap[status] || 'neutral'} />
+      <StatusPill text={caseStatusLabelMap[status] || status || '-'} kind={caseStatusKindMap[status] || 'neutral'} />
     )},
     { title: '案件阶段', dataIndex: 'stage', key: 'stage', render: (stage: string) => (
       <Tag className={stageTagClassMap[stage] || 'stitch-tag'}>{stageLabelMap[stage] || '-'}</Tag>
@@ -700,7 +785,6 @@ export default function CaseManagement() {
           {!record.assignee_lawyer_id && (
             <Button size="small" type="primary" onClick={() => handleAssignLawyer(record)}>分配律师</Button>
           )}
-          <Button type="link" size="small" icon={<FileTextOutlined />} onClick={() => navigate(`/cases/${record.id}/sign`)}>发起签约</Button>
           {canArchive && (
             <Popconfirm title="确认结案归档？" onConfirm={() => handleArchiveCase(record)}>
               <Button type="link" size="small">归档</Button>
@@ -718,7 +802,12 @@ export default function CaseManagement() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="page-header" style={{ marginBottom: 0 }}>
         <h2 style={pageH2Style}>案件管理</h2>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAddCase}>创建案件</Button>
+        <Space>
+          {['super_admin', 'org_admin'].includes(user.role) && (
+            <Button icon={<SettingOutlined />} onClick={() => setStatusConfigVisible(true)}>状态设置</Button>
+          )}
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleAddCase}>创建案件</Button>
+        </Space>
       </div>
 
       <div className="search-bar stitch-filter-bar" style={searchBarStyle}>
@@ -1033,6 +1122,91 @@ export default function CaseManagement() {
           )}
           <Form.Item>
             <Button type="primary" htmlType="submit">确认变更</Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 状态设置：组织自定义案件状态字典（增删改/配色/排序/启停/设默认） */}
+      <Modal
+        title="状态设置"
+        open={statusConfigVisible}
+        onCancel={() => setStatusConfigVisible(false)}
+        footer={null}
+        width={760}
+      >
+        <div style={{ marginBottom: 8, fontSize: 12, color: theme.textTertiary }}>
+          新案件默认使用「默认状态」；禁用的状态不再出现在筛选和变更列表中，但已有案件仍保留显示。
+        </div>
+        <div style={{ maxHeight: 420, overflowY: 'auto' }}>
+          {statusConfigs.map((item, index) => (
+            <div
+              key={item.id}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+                padding: '8px 0', borderBottom: `1px solid ${theme.border}`,
+              }}
+            >
+              <StatusPill text={item.name} kind={(item.kind as PillKind) || 'neutral'} />
+              <Input
+                style={{ width: 140 }}
+                size="small"
+                defaultValue={item.name}
+                disabled={item.is_default}
+                onBlur={(e) => {
+                  const next = e.target.value.trim()
+                  if (next && next !== item.name) handleSaveStatusConfig(item, { name: next })
+                }}
+              />
+              <Select
+                style={{ width: 110 }}
+                size="small"
+                value={(item.kind as PillKind) || 'neutral'}
+                options={statusKindOptions}
+                onChange={(kind) => handleSaveStatusConfig(item, { kind })}
+              />
+              <span style={{ fontSize: 12, color: theme.textTertiary }}>启用</span>
+              <Switch
+                size="small"
+                checked={item.enabled}
+                disabled={item.is_default}
+                onChange={(enabled) => handleSaveStatusConfig(item, { enabled })}
+              />
+              <Radio
+                checked={item.is_default}
+                onChange={() => !item.is_default && handleSaveStatusConfig(item, { is_default: true })}
+              >
+                默认
+              </Radio>
+              <Space size={4}>
+                <Button size="small" disabled={index === 0} onClick={() => handleMoveStatusConfig(index, -1)}>上移</Button>
+                <Button size="small" disabled={index === statusConfigs.length - 1} onClick={() => handleMoveStatusConfig(index, 1)}>下移</Button>
+                <Popconfirm
+                  title="确定删除该状态？"
+                  description="已有案件若使用此状态将显示状态码原文"
+                  onConfirm={() => handleDeleteStatusConfig(item)}
+                  okText="删除"
+                  cancelText="取消"
+                >
+                  <Button size="small" danger disabled={item.is_default}>删除</Button>
+                </Popconfirm>
+              </Space>
+            </div>
+          ))}
+        </div>
+        <Form
+          form={statusConfigForm}
+          layout="inline"
+          style={{ marginTop: 16, flexWrap: 'wrap', gap: 8, rowGap: 8 }}
+          onFinish={handleAddStatusConfig}
+        >
+          <Form.Item name="name" rules={[{ required: true, message: '请输入状态名称' }]} style={{ marginRight: 0 }}>
+            <Input placeholder="新状态名称（如：调查取证中）" style={{ width: 180 }} />
+          </Form.Item>
+          <Form.Item name="kind" initialValue="neutral" style={{ marginRight: 0 }}>
+            <Select style={{ width: 110 }} options={statusKindOptions} />
+          </Form.Item>
+          <Form.Item style={{ marginRight: 0 }}>
+            <Button type="primary" htmlType="submit" loading={statusConfigLoading}>新增状态</Button>
           </Form.Item>
         </Form>
       </Modal>

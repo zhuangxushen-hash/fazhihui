@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, InputNumber, Alert, DatePicker, Popconfirm, AutoComplete } from 'antd'
-import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, HistoryOutlined, SaveOutlined, SwapOutlined, SafetyCertificateOutlined, WarningOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, HistoryOutlined, SaveOutlined, SafetyCertificateOutlined, WarningOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteOutlined, FileTextOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { checkConflict, ConflictCheckRecord } from '../api/conflictCheck'
 import { getClientProfiles, createClientProfile } from '../api/client-profile'
+import { getUsers, UserItem } from '../api/user'
 import { formatDateTime } from '../utils/format'
 import dayjs from 'dayjs'
 import { theme } from '../constants/theme'
@@ -24,6 +25,11 @@ export default function LeadManagement() {
   const [detailVisible, setDetailVisible] = useState(false)
   const [followUpVisible, setFollowUpVisible] = useState(false)
   const [statusVisible, setStatusVisible] = useState(false)
+  // 线索分配：选择谈案销售人员
+  const [assignVisible, setAssignVisible] = useState(false)
+  const [assignForm] = Form.useForm()
+  const [salesUsers, setSalesUsers] = useState<UserItem[]>([])
+  const [salesLoading, setSalesLoading] = useState(false)
   const [form] = Form.useForm()
   const [editForm] = Form.useForm()
   const [followUpForm] = Form.useForm()
@@ -41,11 +47,6 @@ export default function LeadManagement() {
     source_channel: '',
     days_no_follow: '' as string | number,
   })
-  // 转化为案件的弹窗（公共线索池功能已合并入 LeadPool 专项页，此处仅维护私有线索）
-  const [convertVisible, setConvertVisible] = useState(false)
-  const [convertForm] = Form.useForm()
-  const [converting, setConverting] = useState(false)
-
   // 利冲初查相关状态
   const [conflictVisible, setConflictVisible] = useState(false)
   const [conflictChecking, setConflictChecking] = useState(false)
@@ -106,40 +107,6 @@ export default function LeadManagement() {
       // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
-    }
-  }
-
-  // 打开转化为案件弹窗
-  const handleConvert = (record: Record<string, unknown>) => {
-    setCurrentLead(record)
-    convertForm.resetFields()
-    convertForm.setFieldsValue({ fee_amount: record.service_fee || 0 })
-    setConvertVisible(true)
-  }
-
-  // 确认转化为案件
-  const handleConvertSubmit = async (values: Record<string, unknown>) => {
-    if (!currentLead) return
-    setConverting(true)
-    try {
-      const res = (await axios.post(`/leads/${currentLead.id}/convert`, values)) as Record<string, unknown>
-      setConvertVisible(false)
-      message.success('线索转化案件成功')
-      fetchData()
-      const caseId = (res?.data as Record<string, unknown>)?.id || (res as Record<string, unknown>)?.id
-      if (caseId) {
-        Modal.confirm({
-          title: '转化成功',
-          content: '案件已创建，是否跳转到案件详情？',
-          okText: '查看案件',
-          cancelText: '留在当前页',
-          onOk: () => navigate('/cases'),
-        })
-      }
-    } catch (error) {
-      message.error('线索转化案件失败')
-    } finally {
-      setConverting(false)
     }
   }
 
@@ -232,10 +199,35 @@ export default function LeadManagement() {
     }
   }
 
-  const handleAssign = async (record: Record<string, unknown>) => {
+  // 打开分配弹窗：加载本组织谈案销售人员，供选择
+  const handleAssign = (record: Record<string, unknown>) => {
+    setCurrentLead(record)
+    assignForm.setFieldsValue({ sales_id: record.assign_sales_id || undefined })
+    setAssignVisible(true)
+    fetchSalesUsers()
+  }
+
+  // 加载谈案销售人员（role=sales，按组织隔离）
+  const fetchSalesUsers = async () => {
+    setSalesLoading(true)
     try {
-      await axios.put(`/leads/${record.id}/assign`, { sales_id: user.id })
-      message.success('线索分配成功')
+      const res: any = await getUsers({ role: 'sales', org_id: user.organization_id })
+      const list = (Array.isArray(res) ? res : null) || res?.data?.list || res?.data || []
+      setSalesUsers(list as UserItem[])
+    } catch (error) {
+      setSalesUsers([])
+    } finally {
+      setSalesLoading(false)
+    }
+  }
+
+  // 提交分配：将线索分配给选中的谈案销售人员
+  const handleSubmitAssign = async (values: Record<string, unknown>) => {
+    if (!currentLead) return
+    try {
+      await axios.put(`/leads/${currentLead.id}/assign`, { sales_id: values.sales_id })
+      message.success('线索已分配')
+      setAssignVisible(false)
       fetchData()
     } catch (error) {
       message.error('线索分配失败')
@@ -596,13 +588,11 @@ export default function LeadManagement() {
     { title: '操作', key: 'action', render: (_: unknown, record: Record<string, unknown>) => (
       <Space wrap>
         <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
+        <Button size="small" type="primary" icon={<FileTextOutlined />} onClick={() => navigate(`/leads/sign/${record.id}`)}>发合同</Button>
         <Button size="small" icon={<EditOutlined />} onClick={() => handleEditLead(record)}>编辑</Button>
         <Button size="small" icon={<EditOutlined />} onClick={() => handleChangeStatus(record)}>状态</Button>
         <Button size="small" icon={<SaveOutlined />} onClick={() => handleEditFee(record)}>设置费用</Button>
         <Button size="small" icon={<SafetyCertificateOutlined />} onClick={() => handleConflictCheck(record)}>利冲初查</Button>
-        {record.conversion_status !== 'converted' && (
-          <Button size="small" icon={<SwapOutlined />} onClick={() => handleConvert(record)}>转化为案件</Button>
-        )}
         {record.status === 'new' && (
           <Button size="small" type="primary" onClick={() => handleAssign(record)}>分配</Button>
         )}
@@ -1006,6 +996,40 @@ export default function LeadManagement() {
         </Form>
       </Modal>
 
+      {/* 分配线索：选择谈案销售人员 */}
+      <Modal
+        title="分配线索"
+        open={assignVisible}
+        onCancel={() => setAssignVisible(false)}
+        footer={null}
+        destroyOnClose
+      >
+        <Form form={assignForm} onFinish={handleSubmitAssign} initialValues={{ sales_id: currentLead?.assign_sales_id || undefined }}>
+          <Form.Item
+            name="sales_id"
+            label="谈案销售人员"
+            rules={[{ required: true, message: '请选择谈案销售人员' }]}
+            extra="将该线索分配给对应的谈案销售人员跟进。"
+          >
+            <Select
+              className="stitch-input"
+              showSearch
+              placeholder={salesLoading ? '加载中…' : '请选择谈案销售人员'}
+              loading={salesLoading}
+              allowClear
+              optionFilterProp="label"
+              options={salesUsers.map((u) => ({
+                value: u.id,
+                label: `${u.real_name || u.id}${u.phone ? `（${u.phone}）` : ''}`,
+              }))}
+            />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">确认分配</Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+
       <Modal
         title="设置服务费用"
         open={editingFee}
@@ -1026,25 +1050,6 @@ export default function LeadManagement() {
           </div>
           <Button type="primary" block onClick={handleSaveFee}>保存费用</Button>
         </div>
-      </Modal>
-
-      <Modal
-        title="转化为案件"
-        open={convertVisible}
-        onCancel={() => setConvertVisible(false)}
-        footer={null}
-      >
-        <Form onFinish={handleConvertSubmit} form={convertForm}>
-          <Form.Item name="assignee_lawyer_id" label="承办律师ID">
-            <Input className="stitch-input" placeholder="选填，可后续分配" />
-          </Form.Item>
-          <Form.Item name="fee_amount" label="案件费用（元）">
-            <InputNumber style={{ width: '100%' }} min={0} step={100} prefix="¥" />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={converting} icon={<SwapOutlined />}>确认转化</Button>
-          </Form.Item>
-        </Form>
       </Modal>
 
       {/* 利冲初查弹窗：预填线索联系人信息，输入对方当事人后检索 */}
