@@ -41,12 +41,14 @@ Page({
           }
         }
 
+        // 向 H5 透传小程序环境标记，便于前端 openFadadaUrl 可靠识别并桥接到 pagesFace
+        params.push('mp_env=weapp');
         const sep = base.indexOf('?') === -1 ? '?' : '&';
         this.setData({ url: base + sep + params.join('&') });
       },
       fail: () => {
         // 授权失败也先打开 H5，由 H5 端降级处理（如跳转登录页）
-        this.setData({ url: base });
+        this.setData({ url: base + (base.indexOf('?') === -1 ? '?' : '&') + 'mp_env=weapp' });
       }
     });
   },

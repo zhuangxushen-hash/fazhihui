@@ -4,6 +4,7 @@ import { LockOutlined } from '@ant-design/icons'
 import axios from '../../api/axios'
 import { useSearchParams } from 'react-router-dom'
 import { Card, Pill } from './shared'
+import { openFadadaUrl } from '../../utils/openFadada'
 
 /**
  * C 端电子签约页（对齐设计稿 09-电子签约）
@@ -88,13 +89,8 @@ export default function SignPrefill() {
       const res: any = await axios.post('/client/sign/submit-prefill', payload)
       const url = res?.embed_url || res?.sign_url
       if (url) {
-        const ua = navigator.userAgent || ''
-        if (ua.includes('app_embed')) {
-          window.location.href = url
-        } else {
-          const win = window.open(url, '_blank', 'noopener,noreferrer')
-          if (!win) window.location.href = url
-        }
+        // 微信小程序内会自动桥接到法大大 pagesFace 中间页（解决 web-view 无法唤起刷脸/互动视频签小程序的问题）
+        openFadadaUrl(url)
       } else {
         message.error('未获取到签署链接，请稍后重试')
       }

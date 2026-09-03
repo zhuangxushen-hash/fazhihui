@@ -13,7 +13,24 @@ App({
     wxPhoneLoginPath: '/api/auth/wx-phone-login',
 
     // 登录态：小程序本地存储里 token 的 key 名（与 app 端保持一致）
-    tokenKey: 'token'
+    tokenKey: 'token',
+    // 法大大刷脸/互动视频签返回标记：从法大小程序 referrerInfo 回填，供 pagesFace 中间页判断
+    firstEnter: false
+  },
+
+  onLaunch() {
+    // 首次进入（冷启动）标记，用于区分 onShow 是冷启动还是从法大小程序返回
+    this.globalData.firstEnter = true
+  },
+
+  onShow(options) {
+    // 从法大大刷脸/互动视频签小程序返回时，法大会通过 referrerInfo.extraData 回传结果
+    console.log(options, '================ app onShow (fadada return) ==================')
+    const isLiveDone = options?.referrerInfo?.extraData?.isDone || false
+    const returnURL = options?.referrerInfo?.extraData?.returnURL || ''
+    wx.setStorageSync('isLiveDone', this.globalData.firstEnter ? false : isLiveDone)
+    wx.setStorageSync('returnURL', this.globalData.firstEnter ? '' : returnURL)
+    this.globalData.firstEnter = false
   }
 });
 

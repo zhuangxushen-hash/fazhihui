@@ -3,6 +3,17 @@
     "pages/phone/phone",
     "pages/webview/webview"
   ],
+  "subpackages": [
+    {
+      "root": "pagesFace",
+      "name": "pagesFace",
+      "pages": [
+        "pages/webview/webview",
+        "pages/middle/middle",
+        "pages/avsMiddlePage/avsMiddlePage"
+      ]
+    }
+  ],
   "window": {
     "navigationBarBackgroundColor": "#ffffff",
     "navigationBarTextStyle": "black",
