@@ -504,9 +504,9 @@ export default function CaseDetail() {
         getCaseCosts(id),
         getCaseCostSummary(id).catch(() => null),
       ])
-      const list = (listRes?.data ?? listRes) as any[]
+      const list = ((listRes as any)?.data ?? listRes) as any[]
       setCaseCosts(Array.isArray(list) ? list : [])
-      const sum = (summaryRes?.data ?? summaryRes) as any
+      const sum = ((summaryRes as any)?.data ?? summaryRes) as any
       setCaseCostSummary(sum || { total_amount: 0, count: 0 })
     } catch (error) {
       setCaseCosts([])
