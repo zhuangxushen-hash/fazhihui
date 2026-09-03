@@ -74,8 +74,23 @@ npm run build
 echo -e "${GREEN}后端构建完成${NC}"
 
 cd "$PROJECT_DIR/frontend"
-npm run build
-echo -e "${GREEN}前端构建完成${NC}"
+# 根据当前分支决定前端产物目录，实现 test / prod 双构建分离：
+#   test 分支        -> frontend/dist-test  （对应 nginx 中 test 环境 root）
+#   production 分支  -> frontend/dist-prod  （对应 nginx 中 prod 环境 root）
+# 其余分支默认按 test 处理，避免误写共享的 dist 影响 prod。
+BRANCH=$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)
+if [ "$BRANCH" = "test" ]; then
+  OUTDIR=dist-test
+elif [ "$BRANCH" = "production" ] || [ "$BRANCH" = "master" ]; then
+  OUTDIR=dist-prod
+else
+  echo -e "${YELLOW}未知分支 $BRANCH，前端默认构建到 dist-test${NC}"
+  OUTDIR=dist-test
+fi
+echo -e "${GREEN}当前分支 $BRANCH，前端将构建到 $OUTDIR${NC}"
+rm -rf "$OUTDIR"
+BUILD_OUTDIR="$OUTDIR" npm run build
+echo -e "${GREEN}前端构建完成 -> $OUTDIR${NC}"
 
 # ============ 4. 启动 PM2 后端服务 ============
 echo -e "${YELLOW}[4/6] 启动后端服务...${NC}"
