@@ -26,6 +26,10 @@ export class Contract {
   @Column({ type: 'varchar', nullable: true, comment: '关联案件ID' })
   case_id: string;
 
+  // 发合同时预生成的案件编号（签约完成建案时沿用同一编号，保证客户签约前后案件号一致）
+  @Column({ type: 'varchar', nullable: true, comment: '预生成案件编号' })
+  case_no: string;
+
   @Column({ type: 'varchar', nullable: false, comment: '客户名称' })
   client_name: string;
 

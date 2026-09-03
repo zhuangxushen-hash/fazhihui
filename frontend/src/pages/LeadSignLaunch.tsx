@@ -397,7 +397,7 @@ export default function LeadSignLaunch() {
           <Result
             status="success"
             title="合同已发出"
-            subTitle={`合同编号：${signResult.contractNo || '-'}（待签署）`}
+            subTitle={`合同编号：${signResult.contractNo || '-'}（待签署）${signResult.caseNo ? ` · 案件编号：${signResult.caseNo}` : ''}`}
             extra={[
               <div key="note" style={{ textAlign: 'left', background: '#fafafb', border: '1px solid #ececef', borderRadius: 6, padding: 10 }}>
                 <div style={{ fontSize: 12, color: '#5f6672', marginBottom: 8 }}>

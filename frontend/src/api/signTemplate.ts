@@ -149,6 +149,8 @@ export interface LaunchSignFromLeadParams {
 export interface LaunchSignFromLeadResult {
   contractId: string
   contractNo: string
+  // 发合同时预生成的案件编号，签约完成建案时沿用同一编号
+  caseNo: string
   signingId: string
   signTaskId: string
   actorId: string

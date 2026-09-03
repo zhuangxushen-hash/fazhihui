@@ -1362,6 +1362,21 @@ export class FadadaService {
       this.logger.warn(`发合同：按编号规则生成合同号失败，回退随机编号 ${(e as Error)?.message || e}`);
     }
     const supplement = params.caseSupplement || {};
+    // 案件编号：发合同时即预生成（按组织编号规则 + 案件大类映射），
+    // 签约完成建案时沿用同一编号，保证「发合同告知客户的案件号 = 最终案件号」。
+    // 生成失败不阻塞发合同：留空，建案时回退到建案时生成。
+    let preCaseNo: string | null = null;
+    try {
+      const caseBizType = NumberRuleService.mapCategoryToBizType(supplement.case_category || 'civil');
+      if (caseBizType) {
+        preCaseNo = await this.numberRuleService.generateNumber(orgId, {
+          numberType: NumberType.CASE,
+          bizType: caseBizType,
+        });
+      }
+    } catch (e) {
+      this.logger.warn(`发合同：预生成案件编号失败，建案时回退生成 ${(e as Error)?.message || e}`);
+    }
     const clientName = params.subjectType === 'corp'
       ? params.corp?.corpName || lead.contact_name || lead.phone
       : params.client?.userName || lead.contact_name || lead.phone;
@@ -1369,6 +1384,7 @@ export class FadadaService {
     const contract = await this.contractRepository.save(
       this.contractRepository.create({
         contract_no: contractNo || this.fallbackContractNo(),
+        case_no: preCaseNo || null,
         title: params.subject || '法律服务合同',
         type: params.contract?.type || 'entrust',
         client_name: clientName,
@@ -1431,6 +1447,7 @@ export class FadadaService {
       return {
         contractId: contract.id,
         contractNo: contract.contract_no,
+        caseNo: contract.case_no || '',
         signingId: signing.id,
         signTaskId: res.signTaskId,
         actorId: res.actorId,
@@ -1496,18 +1513,21 @@ export class FadadaService {
       clientId = profile.id;
     }
 
-    // 案件编号：优先按组织编号规则，回退 AJ- 随机
-    let caseNo: string | null = null;
-    try {
-      const bizType = NumberRuleService.mapCategoryToBizType(supplement.case_category || 'civil');
-      if (bizType) {
-        caseNo = await this.numberRuleService.generateNumber(contract.organization_id, {
-          numberType: NumberType.CASE,
-          bizType,
-        });
+    // 案件编号：优先沿用发合同时预生成的编号（保证签约前后案件号一致）；
+    // 历史合同无预生成编号时，按组织编号规则生成，回退 AJ- 随机
+    let caseNo: string | null = contract.case_no || null;
+    if (!caseNo) {
+      try {
+        const bizType = NumberRuleService.mapCategoryToBizType(supplement.case_category || 'civil');
+        if (bizType) {
+          caseNo = await this.numberRuleService.generateNumber(contract.organization_id, {
+            numberType: NumberType.CASE,
+            bizType,
+          });
+        }
+      } catch (e) {
+        this.logger.warn(`生成案件编号失败，回退随机编号：${(e as Error)?.message || e}`);
       }
-    } catch (e) {
-      this.logger.warn(`生成案件编号失败，回退随机编号：${(e as Error)?.message || e}`);
     }
 
     const statusConfigRepo = this.caseStatusConfigRepository;

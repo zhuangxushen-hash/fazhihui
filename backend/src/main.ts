@@ -79,8 +79,12 @@ async function bootstrap() {
         await dataSource.query(`ALTER TABLE contracts ADD COLUMN case_supplement text`);
         console.log('[生产环境] contracts 表已补充 case_supplement 列');
       }
+      if (Array.isArray(cCols) && cCols.length > 0 && !cCols.some((c: any) => c.name === 'case_no')) {
+        await dataSource.query(`ALTER TABLE contracts ADD COLUMN case_no varchar`);
+        console.log('[生产环境] contracts 表已补充 case_no 列（发合同时预生成案件编号）');
+      }
     } catch (e) {
-      console.warn('[生产环境] contracts.case_supplement 补列检查失败，请手动执行 ALTER TABLE', e);
+      console.warn('[生产环境] contracts 补列检查失败，请手动执行 ALTER TABLE', e);
     }
     try {
       const sCols = await dataSource.query(`PRAGMA table_info(signing_compliance)`);
