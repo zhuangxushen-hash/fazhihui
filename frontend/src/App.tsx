@@ -31,7 +31,7 @@ const Payment = lazy(() => import('./pages/client/Payment'))
 const ClientProfile = lazy(() => import('./pages/client/ClientProfile'))
 // Phase 1 案件办案模块
 const LeadPool = lazy(() => import('./pages/LeadPool'))
-const InviteWorkbench = lazy(() => import('./pages/InviteWorkbench'))
+// 邀约工作台已合并入线索管理（LeadManagement），页面删除，旧路由重定向
 const TalkWorkbench = lazy(() => import('./pages/TalkWorkbench'))
 const TalkSOPConfig = lazy(() => import('./pages/TalkSOPConfig'))
 const TalkQualityCheck = lazy(() => import('./pages/TalkQualityCheck'))
@@ -452,9 +452,12 @@ function App() {
           {/* 发合同(签约)：新流程 洽谈(线索)→发合同→生成案件→案件管理，与案件解耦 */}
           <Route path="/leads/sign" element={<ProtectedRoute><LeadSignLaunch /></ProtectedRoute>} />
           <Route path="/leads/sign/:leadId" element={<ProtectedRoute><LeadSignLaunch /></ProtectedRoute>} />
+          {/* 客户级发合同（不依赖线索）：从客户管理「发合同」跳入 */}
+          <Route path="/clients/sign/:clientId" element={<ProtectedRoute><LeadSignLaunch /></ProtectedRoute>} />
           <Route path="/client-management" element={<ProtectedRoute><ClientManagement /></ProtectedRoute>} />
           <Route path="/lead-pool" element={<ProtectedRoute><LeadPool /></ProtectedRoute>} />
-          <Route path="/invite-workbench" element={<ProtectedRoute><InviteWorkbench /></ProtectedRoute>} />
+          {/* 邀约工作台已合并入线索管理，旧路由重定向到线索管理页 */}
+          <Route path="/invite-workbench" element={<Navigate to="/leads" replace />} />
           <Route path="/talk-workbench" element={<ProtectedRoute><TalkWorkbench /></ProtectedRoute>} />
           <Route path="/talk-sop" element={<ProtectedRoute><TalkSOPConfig /></ProtectedRoute>} />
           <Route path="/compliance-management" element={<ProtectedRoute><ComplianceManagement /></ProtectedRoute>} />

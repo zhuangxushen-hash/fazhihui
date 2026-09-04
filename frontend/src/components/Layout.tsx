@@ -56,11 +56,10 @@ const menuGroups: MenuGroup[] = [
     icon: <TeamOutlined />,
     label: '线索CRM',
     children: [
-      // 原线索CRM 7项
+      // 原线索CRM（邀约工作台已合并入线索管理）
       { key: '/leads', label: '线索管理' },
       { key: '/client-management', label: '客户管理' },
       { key: '/lead-pool', label: '公海池' },
-      { key: '/invite-workbench', label: '邀约工作台' },
       { key: '/talk-workbench', label: '谈案工作台' },
       { key: '/talk-sop', label: '谈案SOP' },
     ],
@@ -266,7 +265,6 @@ const roleSubMenuAccess: Record<string, SubMenuRule> = {
     '/leads': ['super_admin', 'org_admin', 'marketing', 'sales'],
     '/client-management': ['super_admin', 'org_admin', 'marketing', 'sales', 'lawyer', 'assistant', 'finance'],
     '/lead-pool': ['super_admin', 'org_admin', 'sales'],
-    '/invite-workbench': ['super_admin', 'org_admin', 'sales'],
     '/talk-workbench': ['super_admin', 'org_admin', 'sales'],
     '/talk-sop': ['super_admin', 'org_admin', 'sales'],
     // 合并原SCRM私域 6项

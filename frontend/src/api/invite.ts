@@ -26,6 +26,18 @@ export const getMyTasks = (status?: InviteTaskStatus): Promise<InviteTask[]> => 
   return api.get('/invite-tasks/my-tasks', { params: { status } })
 }
 
+// 获取邀约任务列表（支持按线索过滤，用于线索管理页邀约状态列与详情弹窗邀约记录）
+export const getInviteTasks = (params: {
+  org_id?: string
+  lead_id?: string
+  status?: InviteTaskStatus
+  inviter_id?: string
+  page?: number
+  limit?: number
+}): Promise<{ data: InviteTask[]; total: number }> => {
+  return api.get('/invite-tasks', { params })
+}
+
 // 创建邀约记录
 export const createInviteTask = (data: {
   leadId: string

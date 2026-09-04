@@ -230,6 +230,7 @@ export class InviteTaskService {
     status?: InviteTaskStatus;
     invite_method?: InviteMethod;
     inviter_id?: string;
+    lead_id?: string;
     page?: number;
     limit?: number;
   }): Promise<{ data: InviteTask[]; total: number }> {
@@ -247,6 +248,9 @@ export class InviteTaskService {
     }
     if (filters?.inviter_id) {
       queryBuilder.andWhere('task.inviter_id = :inviter_id', { inviter_id: filters.inviter_id });
+    }
+    if (filters?.lead_id) {
+      queryBuilder.andWhere('task.lead_id = :lead_id', { lead_id: filters.lead_id });
     }
 
     const total = await queryBuilder.getCount();

@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, InputNumber, Alert, DatePicker, Popconfirm, AutoComplete } from 'antd'
-import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, HistoryOutlined, SaveOutlined, SafetyCertificateOutlined, WarningOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteOutlined, FileTextOutlined } from '@ant-design/icons'
+import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, InputNumber, Alert, DatePicker, Popconfirm, AutoComplete, Upload } from 'antd'
+import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, HistoryOutlined, SaveOutlined, SafetyCertificateOutlined, WarningOutlined, CheckCircleOutlined, CloseCircleOutlined, DeleteOutlined, FileTextOutlined, PhoneOutlined, WechatOutlined, UploadOutlined, CalendarOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import { checkConflict, ConflictCheckRecord } from '../api/conflictCheck'
 import { getClientProfiles, createClientProfile } from '../api/client-profile'
 import { getUsers, UserItem } from '../api/user'
+import { getInviteTasks, getTodayTasks, createInviteTask, updateTaskStatus } from '../api/invite'
+import { InviteTask, InviteMethod, InviteTaskStatus, InviteResult } from '../types'
 import { formatDateTime } from '../utils/format'
 import dayjs from 'dayjs'
 import { theme } from '../constants/theme'
@@ -57,6 +59,17 @@ export default function LeadManagement() {
   const [conflictLeadIds, setConflictLeadIds] = useState<Set<string>>(new Set())
   // 客户库客户列表（用于创建线索时留存/关联客户信息）
   const [clientProfiles, setClientProfiles] = useState<Record<string, any>[]>([])
+  // ===== 邀约功能（原邀约工作台合并入本页）=====
+  // 邀约跟进弹窗
+  const [inviteVisible, setInviteVisible] = useState(false)
+  const [inviteForm] = Form.useForm()
+  // leadId -> 最新一条邀约任务（用于列表「邀约状态」列）
+  const [inviteTasksMap, setInviteTasksMap] = useState<Record<string, InviteTask>>({})
+  // 详情弹窗中当前线索的邀约记录时间线
+  const [leadInviteTasks, setLeadInviteTasks] = useState<InviteTask[]>([])
+  // 今日邀约到所任务（顶部提醒条 + 弹窗）
+  const [todayTasks, setTodayTasks] = useState<InviteTask[]>([])
+  const [todayVisible, setTodayVisible] = useState(false)
 
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const navigate = useNavigate()
@@ -64,7 +77,47 @@ export default function LeadManagement() {
   useEffect(() => {
     fetchData()
     fetchClientProfiles()
+    fetchInviteTasks()
+    fetchTodayTasks()
   }, [])
+
+  // ===== 邀约功能：拉取本组织全部邀约任务，构建 leadId -> 最新任务映射（列表邀约状态列用）=====
+  const fetchInviteTasks = async () => {
+    try {
+      const res: any = await getInviteTasks({ org_id: user.organization_id, limit: 500 })
+      const list: InviteTask[] = res?.data || (Array.isArray(res) ? res : [])
+      // 接口已按 updated_at 倒序返回，首条即最新
+      const map: Record<string, InviteTask> = {}
+      for (const task of list) {
+        if (task.lead_id && !map[task.lead_id]) {
+          map[task.lead_id] = task
+        }
+      }
+      setInviteTasksMap(map)
+    } catch (error) {
+      // 邀约状态加载失败不阻断线索列表主流程
+    }
+  }
+
+  // 拉取今日邀约到所任务（当前用户的），用于顶部提醒条
+  const fetchTodayTasks = async () => {
+    try {
+      const res: any = await getTodayTasks()
+      setTodayTasks(Array.isArray(res) ? res : [])
+    } catch (error) {
+      setTodayTasks([])
+    }
+  }
+
+  // 拉取指定线索的全部邀约记录（详情弹窗邀约记录时间线用）
+  const fetchLeadInviteTasks = async (leadId: string) => {
+    try {
+      const res: any = await getInviteTasks({ org_id: user.organization_id, lead_id: leadId, limit: 100 })
+      setLeadInviteTasks(res?.data || (Array.isArray(res) ? res : []))
+    } catch (error) {
+      setLeadInviteTasks([])
+    }
+  }
 
   // 加载客户库客户列表，供创建线索时下拉选择/匹配客户
   const fetchClientProfiles = async () => {
@@ -242,7 +295,65 @@ export default function LeadManagement() {
     } catch (error) {
       setFollowUps([])
     }
+    fetchLeadInviteTasks(String(record.id))
     setDetailVisible(true)
+  }
+
+  // ===== 邀约跟进（原邀约工作台「快速跟进」弹窗迁入）=====
+  const handleInviteFollow = (record: Record<string, unknown>) => {
+    setCurrentLead(record)
+    inviteForm.resetFields()
+    setInviteVisible(true)
+  }
+
+  // 提交邀约跟进记录（后端会自动联动线索状态：成功邀约→邀约中，无效线索→已流失）
+  const handleSubmitInvite = async () => {
+    let values: Record<string, any>
+    try {
+      values = await inviteForm.validateFields()
+    } catch {
+      return
+    }
+    if (!currentLead) return
+    try {
+      await createInviteTask({
+        leadId: String(currentLead.id),
+        inviteMethod: values.inviteMethod,
+        scheduledTime: values.scheduledTime ? dayjs(values.scheduledTime).toDate() : undefined,
+        result: values.result,
+        resultNote: values.resultNote,
+        recordingUrl: values.recordingUrl,
+      })
+      message.success('邀约跟进提交成功')
+      setInviteVisible(false)
+      fetchData()
+      fetchInviteTasks()
+      fetchTodayTasks()
+    } catch (error) {
+      message.error('邀约跟进提交失败')
+    }
+  }
+
+  // 更新邀约任务状态（已到所/未到所，后端会自动联动线索状态）
+  const handleUpdateInviteStatus = async (taskId: string, status: InviteTaskStatus) => {
+    try {
+      await updateTaskStatus(taskId, { status })
+      message.success('邀约状态更新成功')
+      if (currentLead) {
+        fetchLeadInviteTasks(String(currentLead.id))
+      }
+      fetchData()
+      fetchInviteTasks()
+      fetchTodayTasks()
+    } catch (error) {
+      message.error('邀约状态更新失败')
+    }
+  }
+
+  // 从邀约任务中取关联线索信息（今日任务提醒/列表展示用）
+  const getLeadInfo = (task: InviteTask): { contact_name?: string; phone?: string } => {
+    const lead = (task as unknown as Record<string, unknown>).lead as { contact_name?: string; phone?: string } | undefined
+    return lead || {}
   }
 
   const handleAddFollowUp = () => {
@@ -580,6 +691,28 @@ export default function LeadManagement() {
         </Space>
       )
     }},
+    { title: '邀约状态', key: 'invite_status', width: 160, render: (_: unknown, record: Record<string, unknown>) => {
+      // 展示该线索最新一条邀约任务的状态（原邀约工作台「已邀约」Tab 迁入）
+      const task = inviteTasksMap[String(record.id)]
+      if (!task) {
+        return <Tag className="stitch-tag stitch-tag-default">未邀约</Tag>
+      }
+      const statusMap: Record<string, { label: string; className: string }> = {
+        pending: { label: '待跟进', className: 'stitch-tag stitch-tag-warning' },
+        invited: { label: '已邀约', className: 'stitch-tag stitch-tag-primary' },
+        arrived: { label: '已到所', className: 'stitch-tag stitch-tag-success' },
+        not_arrived: { label: '未到所', className: 'stitch-tag stitch-tag-error' },
+      }
+      const info = statusMap[task.status]
+      return (
+        <Space size={4}>
+          {info ? <Tag className={info.className}>{info.label}</Tag> : <Tag>{task.status}</Tag>}
+          {task.status === InviteTaskStatus.INVITED && task.scheduled_time && (
+            <span style={{ fontSize: 12, color: theme.grayDark }}>{dayjs(task.scheduled_time).format('MM-DD HH:mm')}</span>
+          )}
+        </Space>
+      )
+    }},
     { title: '转化状态', dataIndex: 'conversion_status', key: 'conversion_status', render: (status: string) => {
       const info = conversionStatusMap[status] || conversionStatusMap.not_converted
       return <Tag className={info.color}>{info.label}</Tag>
@@ -588,6 +721,7 @@ export default function LeadManagement() {
     { title: '操作', key: 'action', render: (_: unknown, record: Record<string, unknown>) => (
       <Space wrap>
         <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
+        <Button size="small" icon={<PhoneOutlined />} onClick={() => handleInviteFollow(record)}>邀约跟进</Button>
         <Button size="small" type="primary" icon={<FileTextOutlined />} onClick={() => navigate(`/leads/sign/${record.id}`)}>发合同</Button>
         <Button size="small" icon={<EditOutlined />} onClick={() => handleEditLead(record)}>编辑</Button>
         <Button size="small" icon={<EditOutlined />} onClick={() => handleChangeStatus(record)}>状态</Button>
@@ -609,6 +743,26 @@ export default function LeadManagement() {
         <h2>线索管理</h2>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAddLead}>添加线索</Button>
       </div>
+
+      {/* 今日邀约到所提醒条（原邀约工作台「今日任务」Tab 迁入，无任务时隐藏） */}
+      {todayTasks.length > 0 && (
+        <Alert
+          type="info"
+          showIcon
+          icon={<CalendarOutlined />}
+          style={{ marginBottom: 16 }}
+          message={
+            <Space wrap>
+              <span>今日邀约到所 <strong>{todayTasks.length}</strong> 位客户</span>
+              <span style={{ fontSize: 13, color: theme.grayDark }}>
+                最早 {dayjs(todayTasks[0].scheduled_time).format('HH:mm')}
+                {getLeadInfo(todayTasks[0]).contact_name ? ` ${getLeadInfo(todayTasks[0]).contact_name}` : ''}
+              </span>
+              <Button size="small" type="link" onClick={() => setTodayVisible(true)}>查看今日任务</Button>
+            </Space>
+          }
+        />
+      )}
 
       <div className="search-bar stitch-filter-bar">
         <Input
@@ -951,6 +1105,55 @@ export default function LeadManagement() {
                 )}
               </div>
             </div>
+            {/* 邀约记录时间线（原邀约工作台「已邀约/历史记录」Tab 迁入） */}
+            <div style={{ marginTop: 24 }}>
+              <div style={{ fontWeight: 'bold', marginBottom: 8 }}>邀约记录</div>
+              <div style={{ maxHeight: 260, overflow: 'auto' }}>
+                {leadInviteTasks.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: theme.gray, padding: 24 }}>暂无邀约记录</div>
+                ) : (
+                  leadInviteTasks.map((task) => {
+                    const statusMap: Record<string, { label: string; className: string }> = {
+                      pending: { label: '待跟进', className: 'stitch-tag stitch-tag-warning' },
+                      invited: { label: '已邀约', className: 'stitch-tag stitch-tag-primary' },
+                      arrived: { label: '已到所', className: 'stitch-tag stitch-tag-success' },
+                      not_arrived: { label: '未到所', className: 'stitch-tag stitch-tag-error' },
+                    }
+                    const resultMap: Record<string, string> = {
+                      success: '成功邀约',
+                      no_intention: '暂无意向',
+                      invalid: '无效线索',
+                      follow_up: '继续跟进',
+                    }
+                    const info = statusMap[task.status]
+                    return (
+                      <div key={task.id} style={{ borderBottom: `1px solid ${theme.borderSecondary}`, padding: '12px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                        <div>
+                          <Space size={6} wrap>
+                            {task.invite_method === InviteMethod.PHONE ? <PhoneOutlined /> : <WechatOutlined />}
+                            {info ? <Tag className={info.className}>{info.label}</Tag> : <Tag>{task.status}</Tag>}
+                            <span style={{ fontSize: 12, color: theme.grayDark }}>{formatDateTime(task.created_at)}</span>
+                          </Space>
+                          <div style={{ marginTop: 4, fontSize: 13, color: theme.textSecondary }}>
+                            {task.result ? `跟进结果：${resultMap[task.result] || task.result}` : '跟进结果：-'}
+                            {task.scheduled_time ? ` · 预约到所：${formatDateTime(task.scheduled_time)}` : ''}
+                          </div>
+                          {task.result_note && (
+                            <div style={{ marginTop: 2, fontSize: 13, color: theme.grayDark }}>备注：{task.result_note}</div>
+                          )}
+                        </div>
+                        {task.status === InviteTaskStatus.INVITED && (
+                          <Space className="stitch-btn-group">
+                            <Button size="small" onClick={() => handleUpdateInviteStatus(task.id, InviteTaskStatus.ARRIVED)}>已到所</Button>
+                            <Button size="small" danger onClick={() => handleUpdateInviteStatus(task.id, InviteTaskStatus.NOT_ARRIVED)}>未到所</Button>
+                          </Space>
+                        )}
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            </div>
           </div>
           )
         })()}
@@ -1116,6 +1319,79 @@ export default function LeadManagement() {
             </div>
           )
         })()}
+      </Modal>
+
+      {/* 邀约跟进弹窗（原邀约工作台「快速跟进」弹窗迁入） */}
+      <Modal
+        title="邀约跟进"
+        open={inviteVisible}
+        onCancel={() => setInviteVisible(false)}
+        onOk={handleSubmitInvite}
+        okText="提交"
+        cancelText="取消"
+        width={600}
+      >
+        <Form form={inviteForm} layout="vertical">
+          <Form.Item label="客户信息">
+            <div><strong>姓名：</strong>{String(currentLead?.contact_name || '-')}</div>
+            <div><strong>手机：</strong>{String(currentLead?.phone || '-')}</div>
+            <div><strong>案由：</strong>{String(currentLead?.case_type || '-')}</div>
+          </Form.Item>
+          <Form.Item label="邀约方式" name="inviteMethod" rules={[{ required: true, message: '请选择邀约方式' }]}>
+            <Select>
+              <Select.Option value={InviteMethod.PHONE}><PhoneOutlined /> 电话</Select.Option>
+              <Select.Option value={InviteMethod.WECHAT}><WechatOutlined /> 微信</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item label="预约时间" name="scheduledTime">
+            <DatePicker showTime format="YYYY-MM-DD HH:mm" style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item label="跟进结果" name="result" rules={[{ required: true, message: '请选择跟进结果' }]}>
+            <Select>
+              <Select.Option value={InviteResult.SUCCESS}>成功邀约</Select.Option>
+              <Select.Option value={InviteResult.NO_INTENTION}>暂无意向</Select.Option>
+              <Select.Option value={InviteResult.INVALID}>无效线索</Select.Option>
+              <Select.Option value={InviteResult.FOLLOW_UP}>继续跟进</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item label="备注说明" name="resultNote">
+            <Input.TextArea rows={4} placeholder="请输入跟进备注" />
+          </Form.Item>
+          <Form.Item label="录音上传" name="recordingUrl">
+            <Upload>
+              <Button icon={<UploadOutlined />}>上传录音</Button>
+            </Upload>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 今日邀约到所任务弹窗（原邀约工作台「今日任务」Tab 迁入） */}
+      <Modal
+        title="今日邀约到所任务"
+        open={todayVisible}
+        onCancel={() => setTodayVisible(false)}
+        footer={null}
+        width={640}
+      >
+        <div className="stitch-table">
+          <Table
+            size="small"
+            rowKey="id"
+            dataSource={todayTasks}
+            pagination={false}
+            columns={[
+              { title: '客户姓名', key: 'contact_name', render: (_: unknown, task: InviteTask) => getLeadInfo(task).contact_name || '-' },
+              { title: '预约时间', dataIndex: 'scheduled_time', key: 'scheduled_time', render: (v: string) => dayjs(v).format('HH:mm') },
+              { title: '联系方式', key: 'phone', render: (_: unknown, task: InviteTask) => getLeadInfo(task).phone || '-' },
+              { title: '操作', key: 'action', render: (_: unknown, task: InviteTask) => (
+                <Space className="stitch-btn-group">
+                  <Button size="small" onClick={() => handleUpdateInviteStatus(task.id, InviteTaskStatus.ARRIVED)}>已到所</Button>
+                  <Button size="small" danger onClick={() => handleUpdateInviteStatus(task.id, InviteTaskStatus.NOT_ARRIVED)}>未到所</Button>
+                </Space>
+              )},
+            ]}
+          />
+        </div>
       </Modal>
     </div>
   )

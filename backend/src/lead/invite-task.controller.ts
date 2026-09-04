@@ -17,12 +17,13 @@ export class InviteTaskController {
     @Query('status') status?: InviteTaskStatus,
     @Query('invite_method') invite_method?: InviteMethod,
     @Query('inviter_id') inviter_id?: string,
+    @Query('lead_id') lead_id?: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
     @Request() req?: any,
   ) {
     const finalOrgId = orgId || req?.user?.organization_id;
-    return this.inviteTaskService.findAll(finalOrgId, { status, invite_method, inviter_id, page, limit });
+    return this.inviteTaskService.findAll(finalOrgId, { status, invite_method, inviter_id, lead_id, page, limit });
   }
 
   @Get('my-tasks')
