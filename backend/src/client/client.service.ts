@@ -426,6 +426,9 @@ export class ClientService {
    * 线上签约（发起签约意向，两步式）：
    * - 法大大启用（FADADA_ENABLED=true）：创建 pending 签约记录，走「实名认证 → 电子签」流程
    * - 法大大未启用（legacy）：保留原直签行为，直接生成已签署记录
+   * @deprecated 旧「先实名后签署」两步流程。现行流程为免验证签整合模式：发起签约即返回签署链接，
+   * 客户在法大大签署页通过互动视频签（audio_video）一并完成实名与意愿确认，无需调用本接口。
+   * 前端已无调用方，保留仅为兼容，请勿在新代码中使用。
    */
   async onlineSign(body: {
     case_id: string;
@@ -493,7 +496,12 @@ export class ClientService {
     };
   }
 
-  /** 获取法大大实名认证链接（身份鉴别第一步，按签约主体类型分流：个人/企业） */
+  /**
+   * 获取法大大实名认证链接（身份鉴别第一步，按签约主体类型分流：个人/企业）
+   * @deprecated 旧「先刷脸实名、后签署」两步流程。现行流程为互动视频签即实名：客户打开签署链接
+   * 后由法大大互动视频签（audio_video，含人脸核身）一并完成实名与意愿确认，无需单独获取实名链接。
+   * 前端已无调用方，保留仅为兼容，请勿在新代码中使用。
+   */
   async getSignVerifyUrl(body: {
     signing_id: string;
     client_id: string;
@@ -583,7 +591,12 @@ export class ClientService {
     return { signing_id: signing.id, verify_status: signing.verify_status };
   }
 
-  /** 创建法大大签署任务并返回客户签署链接（身份鉴别通过后调用） */
+  /**
+   * 创建法大大签署任务并返回客户签署链接（身份鉴别通过后调用）
+   * @deprecated 旧「先实名后签署」链路专用（且强制要求 verify_status=verified，与现行整合模式矛盾）。
+   * 现行流程：发起签约即创建签署任务（免验证签整合模式），无需调用本接口。
+   * 前端已无调用方，保留仅为兼容，请勿在新代码中使用。
+   */
   async createSignFlow(body: { signing_id: string; client_id: string }): Promise<any> {
     const signing = await this.findSigning(body.signing_id, body.client_id);
     if (this.fadadaService.enabled && signing.verify_status !== 'verified') {
@@ -783,8 +796,8 @@ export class ClientService {
     if (!signing.fadada_sign_task_id) {
       throw new Error('该签约尚未完成发起，缺少签署任务ID');
     }
-    // 免验证签整合模式：无需提前单独实名认证，客户在法大大签署页完成签署时即同步完成实名授权，
-    // 身份与意愿确认由法大大签署流程（人脸/短信/密码核验）保障，此处不再强制校验 verify_status。
+    // 免验证签整合模式：无需提前单独实名认证，客户在法大大签署页完成签署时即同步完成实名，
+    // 身份与意愿确认由法大大互动视频签（audio_video，含人脸核身）一并保障，此处不校验 verify_status。
     // 合并系统预填 + 业务员预填与客户填写的值（客户值覆盖同名预填值），一并传给法大大，避免信息丢失
     const values = this.mergePrefillValues(signing, body.values || []);
     // 查出客户手机号，传给法大大确保快捷签 createWithTemplate 与 getActorUrl 的 clientUserId 一致

@@ -124,6 +124,8 @@ export class ClientController {
   // ==================== 模块7.4 线上服务大厅 ====================
 
   // 线上签约（C端 POST）
+  // @deprecated 旧「先实名后签署」流程。现行为免验证签整合模式：发起签约即返回签署链接，
+  // 客户在法大大签署页通过互动视频签一并完成实名与意愿确认。前端已无调用方，请勿在新代码中使用。
   @Post('online-sign')
   onlineSign(@Body() body: {
     case_id: string;
@@ -148,6 +150,8 @@ export class ClientController {
   }
 
   // 获取法大大实名认证链接（身份鉴别第一步，个人/企业分流）
+  // @deprecated 旧「先刷脸实名、后签署」流程。现行为互动视频签即实名：客户打开签署链接后由
+  // 法大大互动视频签（audio_video，含人脸核身）一并完成实名与意愿确认。前端已无调用方，请勿在新代码中使用。
   @Post('sign/verify-url')
   getSignVerifyUrl(@Body() body: {
     signing_id: string;
@@ -166,12 +170,16 @@ export class ClientController {
   }
 
   // 模拟模式：本地完成实名认证（仅 mock 模式可用）
+  // @deprecated 配套旧「先实名后签署」两步流程的 mock 演示。现行流程（互动视频签即实名）下
+  // 生产模式不再有单独实名步骤；仅 mock 模式演示保留。
   @Post('sign/mock-verify')
   mockVerifySigning(@Body() body: { signing_id: string; client_id: string }) {
     return this.clientService.mockVerifySigning(body);
   }
 
   // 创建法大大签署任务并返回客户签署链接
+  // @deprecated 旧「先实名后签署」链路专用（强制 verify_status=verified，与现行整合模式矛盾）。
+  // 现行流程：发起签约即创建签署任务。前端已无调用方，请勿在新代码中使用。
   @Post('sign/flow')
   createSignFlow(@Body() body: { signing_id: string; client_id: string }) {
     return this.clientService.createSignFlow(body);

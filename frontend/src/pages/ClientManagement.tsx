@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Table, Tag, Button, Modal, Form, Input, Select, Space, message, Rate, Popconfirm, Descriptions, Tabs } from 'antd'
-import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, DeleteOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, EyeOutlined, SearchOutlined, DeleteOutlined, FileTextOutlined } from '@ant-design/icons'
 import {
   getClientProfiles,
   createClientProfile,
@@ -52,6 +53,7 @@ const valueLevelOptions = [
 ]
 
 export default function ClientManagement() {
+  const navigate = useNavigate()
   const [data, setData] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(false)
   const [keyword, setKeyword] = useState('')
@@ -262,6 +264,14 @@ export default function ClientManagement() {
       render: (_: unknown, record: Record<string, unknown>) => (
         <Space className="stitch-btn-group">
           <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
+          <Button
+            size="small"
+            type="link"
+            icon={<FileTextOutlined />}
+            onClick={() => navigate(`/clients/sign/${record.id}`)}
+          >
+            发合同
+          </Button>
           <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
           <Popconfirm
             title="确认删除该客户吗？"
@@ -382,6 +392,18 @@ export default function ClientManagement() {
           const cli = currentClient as Record<string, unknown>
           return (
           <div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+              <Button
+                type="primary"
+                icon={<FileTextOutlined />}
+                onClick={() => {
+                  setDetailVisible(false)
+                  navigate(`/clients/sign/${cli.id}`)
+                }}
+              >
+                发合同
+              </Button>
+            </div>
             <Descriptions column={2} bordered size="small">
               <Descriptions.Item label="客户名称">{String(cli.name ?? '')}</Descriptions.Item>
               <Descriptions.Item label="客户类型">

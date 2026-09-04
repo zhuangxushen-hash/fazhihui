@@ -6,8 +6,8 @@ import ClientButton from '../../components/ClientButton'
 
 /**
  * 法大大电子签模拟页（仅 mock 模式使用）
- * mode=verify：模拟法大大个人实名认证页
- * mode=sign：模拟法大大电子签签署页
+ * mode=verify：模拟法大大个人实名认证页（旧「先实名后签署」两步流程演示，现行流程已无单独实名步骤）
+ * mode=sign：模拟法大大电子签签署页（现行流程：互动视频签即实名，仅需此一步）
  */
 export default function MockFadada() {
   const [params] = useSearchParams()

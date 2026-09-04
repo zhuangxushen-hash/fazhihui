@@ -83,6 +83,11 @@ async function bootstrap() {
         await dataSource.query(`ALTER TABLE contracts ADD COLUMN case_no varchar`);
         console.log('[生产环境] contracts 表已补充 case_no 列（发合同时预生成案件编号）');
       }
+      // 客户级发合同（不依赖线索）：contracts.client_id
+      if (Array.isArray(cCols) && cCols.length > 0 && !cCols.some((c: any) => c.name === 'client_id')) {
+        await dataSource.query(`ALTER TABLE contracts ADD COLUMN client_id varchar`);
+        console.log('[生产环境] contracts 表已补充 client_id 列（客户级发合同）');
+      }
     } catch (e) {
       console.warn('[生产环境] contracts 补列检查失败，请手动执行 ALTER TABLE', e);
     }

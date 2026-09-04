@@ -6,11 +6,12 @@ import {
 import { ArrowLeftOutlined, FileTextOutlined, LinkOutlined, CopyOutlined } from '@ant-design/icons'
 import axios from '../api/axios'
 import {
-  getSignTemplateList, launchSignFromLead, getSignTemplateFields,
+  getSignTemplateList, launchSignFromLead, launchSignFromClient, getSignTemplateFields,
   SignTemplate as SignTemplateType, SignTemplateField, LaunchSignFromLeadResult,
 } from '../api/signTemplate'
 import { getOrganizations, Organization } from '../api/organization'
 import { getUsers } from '../api/user'
+import { getClientProfile } from '../api/client-profile'
 import dayjs from 'dayjs'
 
 // 案件类型 label 映射（英文 key -> 中文）
@@ -66,18 +67,35 @@ interface LeadItem {
   organization_id: string
 }
 
+interface ClientItem {
+  id: string
+  name?: string
+  contact_name?: string
+  type?: string
+  phone?: string
+  id_card_no?: string
+  unit_name?: string
+  address?: string
+  organization_id: string
+}
+
 /**
  * 发合同(签约)独立页面（新流程，与案件无关）：
  * 洽谈(线索) → 发合同(签约，可批量补充合同没有的信息) → 合同签约完成自动生成案件 → 案件管理
  * - 从线索管理「发合同」按钮跳入（/leads/sign/:leadId）
+ * - 从客户管理「发合同」按钮跳入（/clients/sign/:clientId，客户级发合同，不依赖线索）
  * - 也可独立打开后手动选择线索（/leads/sign）
  */
 export default function LeadSignLaunch() {
-  const { leadId } = useParams<{ leadId?: string }>()
+  const { leadId, clientId } = useParams<{ leadId?: string; clientId?: string }>()
   const navigate = useNavigate()
+
+  // clientId 存在时为「客户级发合同」模式（不依赖线索）
+  const isClientMode = !!clientId
 
   const [loading, setLoading] = useState(true)
   const [lead, setLead] = useState<LeadItem | null>(null)
+  const [client, setClient] = useState<ClientItem | null>(null)
   const [leads, setLeads] = useState<LeadItem[]>([])
 
   // 发起签约相关 state
@@ -92,12 +110,15 @@ export default function LeadSignLaunch() {
 
   const user = JSON.parse(localStorage.getItem('user') || '{}')
 
-  // 加载线索：指定 leadId 直接加载；未指定则拉列表供选择
+  // 加载目标：客户级模式按 clientId 加载客户档案；指定 leadId 直接加载线索；均未指定则拉线索列表供选择
   useEffect(() => {
     const load = async () => {
       setLoading(true)
       try {
-        if (leadId) {
+        if (isClientMode) {
+          const res: any = await getClientProfile(clientId!)
+          setClient(res?.data || res || null)
+        } else if (leadId) {
           const res: any = await axios.get(`/leads/${leadId}`)
           setLead(res?.data || res || null)
         } else {
@@ -105,13 +126,13 @@ export default function LeadSignLaunch() {
           setLeads((res?.data || []) as LeadItem[])
         }
       } catch (e) {
-        message.error('加载线索失败')
+        message.error(isClientMode ? '加载客户失败' : '加载线索失败')
       } finally {
         setLoading(false)
       }
     }
     load()
-  }, [leadId])
+  }, [leadId, clientId, isClientMode])
 
   // 页面加载：拉签署模板 + 组织 + 律师列表
   useEffect(() => {
@@ -146,8 +167,26 @@ export default function LeadSignLaunch() {
     })()
   }, [])
 
-  // 选中线索后预填客户信息与补充信息
+  // 选中线索/客户后预填客户信息与补充信息
   useEffect(() => {
+    if (isClientMode) {
+      if (!client) return
+      const isCorp = client.type === 'enterprise'
+      signForm.setFieldsValue({
+        subject_type: isCorp ? 'corp' : 'person',
+        client: { userName: client.name || client.contact_name || '', mobile: client.phone || '' },
+        corp: { corpName: client.name || '' },
+        // 合同信息
+        contract: { amount: undefined },
+        // 生成案件补充信息（客户级发合同无线索字段，留空手填）
+        supplement: {
+          case_name: undefined,
+          description: undefined,
+          fee_amount: undefined,
+        },
+      })
+      return
+    }
     if (!lead) return
     signForm.setFieldsValue({
       subject_type: lead.unit_name ? 'corp' : 'person',
@@ -166,7 +205,7 @@ export default function LeadSignLaunch() {
         fee_amount: lead.amount != null ? Number(lead.amount) : undefined,
       },
     })
-  }, [lead])
+  }, [lead, client, isClientMode])
 
   // 模板所属组织名称（模板下拉标注；无归属显示为「全局」）
   const templateOrgName = (orgId?: string) => {
@@ -175,10 +214,12 @@ export default function LeadSignLaunch() {
   }
 
   // 解析业务员预填字段的自动带出值（auto_source）：
-  // 新流程从「线索」带出（lead.* 命名空间），legacy case.*/client.*/team.*/timeline.* 键做兼容映射
+  // 新流程从「线索」带出（lead.* 命名空间）；客户级发合同时按 client.* 带出客户档案字段；
+  // legacy case.*/client.*/team.*/timeline.* 键做兼容映射
   const resolveAutoSource = (key?: string): string => {
     if (!key) return ''
     const l: any = lead || {}
+    const c: any = client || {}
     // 线索字段：lead.<字段名>
     if (key.startsWith('lead.')) {
       const f = key.slice(5)
@@ -202,21 +243,23 @@ export default function LeadSignLaunch() {
       const v = map[f]
       return v === undefined || v === null ? '' : String(v)
     }
+    // 客户档案字段：client.<字段名>（客户级发合同时带出）
+    if (key.startsWith('client.')) {
+      const f = key.slice(7)
+      const map: Record<string, any> = {
+        name: c.name || c.contact_name,
+        mobile: c.phone,
+        phone: c.phone,
+        address: c.address,
+        type: c.type === 'enterprise' ? '企业' : '个人',
+      }
+      const v = map[f]
+      return v === undefined || v === null ? '' : String(v)
+    }
     // 律所字段：firm.name
     if (key === 'firm.name') {
-      return organizations.find((o: any) => o.id === l.organization_id)?.name || ''
-    }
-    // 兼容旧配置键：client.* → 线索客户字段
-    if (key.startsWith('client.')) {
-      const raw = key.slice(7)
-      const map: Record<string, any> = {
-        name: l.contact_name,
-        mobile: l.phone,
-        address: l.contact_address,
-        type: l.unit_name ? '企业' : '个人',
-      }
-      const v = map[raw]
-      return v === undefined || v === null ? '' : String(v)
+      const orgId = l.organization_id || c.organization_id
+      return organizations.find((o: any) => o.id === orgId)?.name || ''
     }
     // 兼容旧配置键：case.* → 尽量从线索映射（发合同时还没有案件）
     if (key.startsWith('case.')) {
@@ -261,7 +304,12 @@ export default function LeadSignLaunch() {
       setSignResult(null)
       return
     }
-    if (!lead) {
+    if (isClientMode) {
+      if (!client) {
+        message.warning('请先加载客户')
+        return
+      }
+    } else if (!lead) {
       message.warning('请先选择线索')
       return
     }
@@ -269,13 +317,12 @@ export default function LeadSignLaunch() {
     setSignLaunching(true)
     try {
       const payload: any = {
-        lead_id: lead.id,
         subject: values.subject,
         subject_type: values.subject_type,
         client: {
           userName: values.client?.userName || '',
           idCardNo: values.client?.idCardNo || undefined,
-          mobile: values.client?.mobile || lead.phone,
+          mobile: values.client?.mobile || (isClientMode ? client!.phone : lead!.phone),
         },
         // 合同信息（合同上已有的字段）
         contract: {
@@ -317,7 +364,13 @@ export default function LeadSignLaunch() {
         }))
         .filter(v => v.fieldValue && v.fieldValue !== '')
       if (fillValues.length) payload.fillValues = fillValues
-      const res: any = await launchSignFromLead(values.template, payload)
+      let res: any
+      if (isClientMode) {
+        // 客户级发合同（不依赖线索）
+        res = await launchSignFromClient(values.template, { ...payload, client_id: client!.id })
+      } else {
+        res = await launchSignFromLead(values.template, { ...payload, lead_id: lead!.id })
+      }
       setSignResult(res?.data || res)
       message.success('合同已发出，等待客户签署')
     } catch (error) {
@@ -336,7 +389,9 @@ export default function LeadSignLaunch() {
       <Breadcrumb
         style={{ marginBottom: 16 }}
         items={[
-          { title: <a onClick={() => navigate('/leads')}>线索管理</a> },
+          isClientMode
+            ? { title: <a onClick={() => navigate('/client-management')}>客户管理</a> }
+            : { title: <a onClick={() => navigate('/leads')}>线索管理</a> },
           { title: '发合同(签约)' },
         ]}
       />
@@ -354,8 +409,8 @@ export default function LeadSignLaunch() {
         style={{ borderRadius: 12, marginBottom: 16 }}
         extra={<Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>返回</Button>}
       >
-        {/* 选择线索 / 线索信息概览 */}
-        {!leadId && (
+        {/* 选择线索 / 目标信息概览 */}
+        {!leadId && !clientId && (
           <Form.Item label="选择洽谈线索" style={{ marginBottom: 16 }} required>
             <Select
               showSearch
@@ -392,6 +447,16 @@ export default function LeadSignLaunch() {
             )}
           </div>
         )}
+        {client && (
+          <div style={{ background: '#fafafb', borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 13 }}>
+            <div style={{ color: '#86909c', marginBottom: 6 }}>客户档案（客户级发合同，不依赖线索）</div>
+            <div>
+              {client.name || client.contact_name || client.phone}
+              {client.phone && <span style={{ color: '#86909c', marginLeft: 12 }}>{client.phone}</span>}
+              {client.type && <span style={{ color: '#86909c', marginLeft: 12 }}>{client.type === 'enterprise' ? '企业客户' : '个人客户'}</span>}
+            </div>
+          </div>
+        )}
 
         {signResult ? (
           <Result
@@ -420,7 +485,9 @@ export default function LeadSignLaunch() {
                 )}
               </div>,
               <div key="btns" style={{ marginTop: 12 }}>
-                <Button style={{ marginRight: 8 }} onClick={() => navigate('/leads')}>返回线索管理</Button>
+                {isClientMode
+                  ? <Button style={{ marginRight: 8 }} onClick={() => navigate('/client-management')}>返回客户管理</Button>
+                  : <Button style={{ marginRight: 8 }} onClick={() => navigate('/leads')}>返回线索管理</Button>}
                 <Button style={{ marginRight: 8 }} onClick={() => navigate('/contracts')}>查看合同</Button>
                 <Button type="primary" onClick={() => { setSignResult(null); signForm.resetFields() }}>再发一批</Button>
               </div>,
@@ -581,7 +648,7 @@ export default function LeadSignLaunch() {
 
             <div style={{ textAlign: 'right', marginTop: 16 }}>
               <Button style={{ marginRight: 8 }} onClick={() => navigate(-1)}>取消</Button>
-              <Button type="primary" loading={signLaunching} icon={<LinkOutlined />} onClick={handleLaunchSign} disabled={!lead}>
+              <Button type="primary" loading={signLaunching} icon={<LinkOutlined />} onClick={handleLaunchSign} disabled={!lead && !client}>
                 发合同并签约
               </Button>
             </div>

@@ -163,6 +163,35 @@ export const launchSignFromLead = (id: string, data: LaunchSignFromLeadParams) =
   return axios.post<LaunchSignFromLeadResult>(`/sign-template/${encodeURIComponent(id)}/launch-from-lead`, data)
 }
 
+// 客户级发合同（不依赖线索）参数：与线索发合同结构一致，仅将 lead_id 换为 client_id
+export interface LaunchSignFromClientParams {
+  client_id: string
+  subject: string
+  subject_type?: 'person' | 'corp'
+  client?: { clientUserId?: string; userName: string; idCardNo?: string; mobile?: string }
+  corp?: SignCorpInfo
+  lawyer?: { lawyerUserId: string; name: string; mobile?: string }
+  fillValues?: Array<{ docId?: string | number; fieldId?: string; fieldName?: string; fieldValue: string }>
+  contract?: {
+    type?: string
+    amount?: number
+    fee_type?: string
+    payment_method?: string
+    start_date?: string
+    end_date?: string
+    remarks?: string
+  }
+  case_supplement?: CaseSupplement
+}
+
+// 发合同结果（与线索发合同一致）：合同已创建（待签），签约完成后回调自动生成案件
+export type LaunchSignFromClientResult = LaunchSignFromLeadResult
+
+/** 「发合同(签约)」：从客户档案发起（不依赖线索），与案件无关；签约完成后自动生成案件 */
+export const launchSignFromClient = (id: string, data: LaunchSignFromClientParams) => {
+  return axios.post<LaunchSignFromClientResult>(`/sign-template/${encodeURIComponent(id)}/launch-from-client`, data)
+}
+
 // ==================== 模板字段配置 ====================
 
 // 模板字段填写方式

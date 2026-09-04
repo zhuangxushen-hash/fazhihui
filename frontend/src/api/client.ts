@@ -193,6 +193,8 @@ export const getSignConfig = () => {
 /**
  * 获取法大大实名认证链接（身份鉴别）
  * POST /client/sign/verify-url
+ * @deprecated 旧「先刷脸实名、后签署」流程。现行流程为互动视频签即实名：客户打开签署链接后
+ * 由法大大互动视频签（audio_video，含人脸核身）一并完成实名与意愿确认，无需单独获取实名链接。
  */
 export const getSignVerifyUrl = (data: {
   signing_id: string
@@ -207,6 +209,7 @@ export const getSignVerifyUrl = (data: {
 /**
  * 模拟模式：本地完成实名认证
  * POST /client/sign/mock-verify
+ * @deprecated 配套旧两步流程的 mock 演示。现行流程（互动视频签即实名）下生产模式无单独实名步骤。
  */
 export const mockVerifySigning = (data: { signing_id: string; client_id: string }) => {
   return axios.post('/client/sign/mock-verify', data)
@@ -215,6 +218,8 @@ export const mockVerifySigning = (data: { signing_id: string; client_id: string 
 /**
  * 创建法大大签署任务并返回签署链接
  * POST /client/sign/flow
+ * @deprecated 旧「先实名后签署」链路专用（后端强制 verify_status=verified，与现行整合模式矛盾）。
+ * 现行流程：发起签约即创建签署任务，前端无需调用。
  */
 export const createSignFlow = (data: { signing_id: string; client_id: string }) => {
   return axios.post('/client/sign/flow', data)

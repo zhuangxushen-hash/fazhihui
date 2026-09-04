@@ -258,6 +258,10 @@ export class Contract {
   @Column({ type: 'varchar', nullable: true, comment: '关联线索ID' })
   related_lead_id: string;
 
+  // 关联客户档案ID（客户级发合同，不依赖线索；无线索发合同时填此字段）
+  @Column({ type: 'varchar', nullable: true, comment: '关联客户档案ID' })
+  client_id: string;
+
   // 开票状态
   @Column({ type: 'varchar', nullable: true, comment: '开票状态' })
   invoice_status: string;

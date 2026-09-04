@@ -250,6 +250,77 @@ export class SignTemplateController {
     });
   }
 
+  // 客户级发合同（不依赖线索）：直接从客户档案发起签约，签约完成自动生成案件
+  @Post(':id/launch-from-client')
+  async launchFromClient(
+    @Param('id') id: string,
+    @Body() dto: {
+      client_id: string;
+      subject: string;
+      subject_type?: 'person' | 'corp';
+      client?: { clientUserId?: string; userName: string; idCardNo?: string; mobile?: string };
+      corp?: { corpName: string; corpIdentNo: string; legalRepName?: string };
+      lawyer?: { lawyerUserId: string; name: string; mobile?: string };
+      fillValues?: Array<{ docId?: string | number; fieldId?: string; fieldName?: string; fieldValue: string }>;
+      contract?: {
+        type?: string;
+        amount?: number;
+        fee_type?: string;
+        payment_method?: string;
+        start_date?: string;
+        end_date?: string;
+        remarks?: string;
+      };
+      case_supplement?: {
+        case_type?: string;
+        case_category?: string;
+        case_name?: string;
+        opposing_party?: string;
+        assignee_lawyer_id?: string;
+        assistant_lawyer_ids?: string[];
+        fee_amount?: number;
+        fee_type?: string;
+        payment_method?: string;
+        description?: string;
+        contact_address?: string;
+        court?: string;
+      };
+    },
+    @Request() req: any,
+  ) {
+    const tmpl = await this.resolveTemplate(id, req.user);
+    let audioVideoInfos: Array<{ audioText: string; answerText?: string }> | undefined;
+    if (tmpl.audio_video_infos) {
+      try {
+        audioVideoInfos = (JSON.parse(tmpl.audio_video_infos) as Array<{ audioText?: string; answerText?: string }>)
+          .filter((i) => i && (i.audioText || '').trim())
+          .map((i) => ({
+            audioText: i.audioText as string,
+            answerText: i.answerText || undefined,
+          }));
+        if (audioVideoInfos.length === 0) audioVideoInfos = undefined;
+      } catch {
+        audioVideoInfos = undefined;
+      }
+    }
+    return this.fadadaService.launchSignFromClient({
+      clientId: dto.client_id,
+      lawyerId: req.user.id,
+      organizationId: req.user.organization_id || req.user.id,
+      subject: dto.subject || tmpl.name,
+      signTemplateId: tmpl.sign_template_id,
+      signTemplateLocalId: tmpl.id,
+      subjectType: dto.subject_type || 'person',
+      client: dto.client ? { ...dto.client, clientUserId: dto.client.clientUserId || dto.client.mobile || '' } : undefined,
+      corp: dto.corp,
+      lawyer: dto.lawyer,
+      fillValues: dto.fillValues,
+      audioVideoInfos,
+      contract: dto.contract,
+      caseSupplement: dto.case_supplement,
+    });
+  }
+
   // 同步模板字段：从法大大拉取模板填写控件，覆盖保存到本地配置表（按组织隔离）
   @Post(':id/sync-fields')
   async syncFields(@Param('id') id: string, @Request() req: any) {
