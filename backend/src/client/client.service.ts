@@ -565,9 +565,10 @@ export class ClientService {
       {
         signingId: signing.id,
         // clientUserId 必须与签署链路（createWithTemplate / getActorUrl）保持一致，
-        // 统一使用「CLT_手机号」：否则同一客户在法大大侧被拆成两个账号，
-        // 授权完成后签署链路仍查不到实名状态，导致已实名用户无法免登。
-        clientUserId: 'CLT_' + (body.mobile || profile.phone || body.client_id),
+        // 统一口径为「本地客户档案 ID」（body.client_id，即 C 端登录客户 ID）：
+        // 法大大会校验 accountName(手机号)↔clientUserId 绑定关系，同一手机号换
+        // clientUserId 注册/发起会报「accountName与clientUserId不匹配, 非同一用户」。
+        clientUserId: body.client_id,
         userName: body.user_name || profile.name || profile.contact_name || '客户',
         idCardNo,
         mobile: body.mobile || profile.phone || undefined,
@@ -804,19 +805,22 @@ export class ClientService {
     if (!signing.fadada_sign_task_id) {
       throw new Error('该签约尚未完成发起，缺少签署任务ID');
     }
-    // 查出客户手机号：法大大 clientUserId 统一为「CLT_手机号」（授权链路与签署链路一致）
+    // 查出客户手机号：法大大 accountName 用（法大大侧 accountName=手机号）
     let clientMobile: string | undefined;
     try {
       const profile = await this.clientProfileRepository.findOne({ where: { id: signing.client_id } });
       clientMobile = profile?.phone || undefined;
-    } catch { /* 查不到就跳过，clientUserId 为空法大大走普通登录流程 */ }
+    } catch { /* 查不到就跳过，accountName 为空法大大走普通登录流程 */ }
     // 标准两步流程实名校验：以法大大侧实时实名结果为权威数据源判断（本地 verify_status 仅作缓存/兜底）。
     //   - 法大大 identStatus=identified → 已实名，回写本地 verify_status 后直接走第 ② 步签署；
     //   - unidentified → 未实名，自动调「个人授权链接API」返回刷脸链接（identify_required=true）；
     //   - 查询异常/mock 模式 → 回退本地 verify_status 判断（可用性优先，避免网络抖动导致重复刷脸）。
+    // clientUserId 统一口径：本地客户档案 ID。lead 发起的签约 signing.client_id 为空，
+    // 回退用 body.client_id（C 端登录客户 ID，两者最终指向同一客户档案）。
+    const fadadaClientUserId = signing.client_id || body.client_id;
     let identified: boolean;
-    if (this.fadadaService.mode !== 'mock' && clientMobile) {
-      const realNameStatus = await this.fadadaService.getUserRealNameStatus('CLT_' + clientMobile);
+    if (this.fadadaService.mode !== 'mock' && fadadaClientUserId) {
+      const realNameStatus = await this.fadadaService.getUserRealNameStatus(fadadaClientUserId);
       identified = realNameStatus.identStatus === 'identified';
       // 法大大侧实名结果回写本地（含认证时间），供 B 端看板与状态展示使用
       if (identified && signing.verify_status !== 'verified') {
@@ -848,6 +852,8 @@ export class ClientService {
       actorId: signing.fadada_actor_id || signing.client_id,
       signingId: signing.id,
       clientMobile,
+      // 法大大 clientUserId 统一口径：本地客户档案 ID（与实名注册/免登查询一致）
+      clientUserId: fadadaClientUserId,
       values,
     });
     // 回填签署链接并更新状态为审核中（待签署）

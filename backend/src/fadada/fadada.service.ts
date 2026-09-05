@@ -805,9 +805,14 @@ export class FadadaService {
         accountName: params.client?.mobile || undefined,
         // accountEditable: true, // 豸帮帮没提此字段，先不传（默认 false）
         // accountEditable=true: 开启"二要素快捷签"——手机号+姓名匹配即可，无需法大大已有账号
-        // clientUserId: 用手机号派生，确保 createWithTemplate 与 getActorUrl 传一致的值
-        // 豸帮帮明确建议：获取签署链接时也应传一致的 clientUserId，避免提交环节弹窗要求登录
-        clientUserId: params.client?.mobile ? ('CLT_' + params.client.mobile) : undefined,
+        // clientUserId 统一口径：优先用调用方传入的「本地客户档案 ID」（与 C 端实名注册、
+        // 法大大侧 accountName↔clientUserId 绑定一致）；拿不到时才回退 CLT_手机号派生。
+        // 注意：法大大会校验 accountName 与 clientUserId 必须指向同一用户——手机号一旦
+        // 绑定过某个 clientUserId，再用其他 clientUserId + 同手机号发起任务会报
+        // 「accountName与clientUserId不匹配, 非同一用户」。
+        clientUserId:
+          params.client?.clientUserId ||
+          (params.client?.mobile ? 'CLT_' + params.client.mobile : undefined),
         notification: { sendNotification: false },
       },
       // 关联客户需填写的控件，避免模板校验「签署任务不是提交状态」
@@ -1009,6 +1014,8 @@ export class FadadaService {
     actorId: string;
     signingId: string;
     clientMobile?: string;
+    /** 本地客户档案 ID：法大大 clientUserId 的统一口径（与实名注册一致，用于免登判断） */
+    clientUserId?: string;
     values: Array<{ docId?: string | number; fieldId?: string; fieldName?: string; fieldValue: string }>;
   }): Promise<{ signUrl: string; embedUrl: string; mode: FadadaMode }> {
     if (this.mode === 'mock') {
@@ -1046,21 +1053,23 @@ export class FadadaService {
       signTaskId: params.signTaskId,
       actorId: params.actorId,
       // 法大大建议：传与 createWithTemplate 一致的 clientUserId，确保快捷签链路完整
-      // createWithTemplate 里用 CLT_手机号 当 clientUserId，这里保持一致
-      clientUserId: params.clientMobile ? ('CLT_' + params.clientMobile) : undefined,
+      // 统一口径：本地客户档案 ID（优先），回退 CLT_手机号（旧数据兼容）
+      clientUserId: params.clientUserId || (params.clientMobile ? 'CLT_' + params.clientMobile : undefined),
       // 签署完成后重定向回 C 端案件列表（法大大 getActorUrl 接口支持 redirectUrl 参数）
       redirectUrl: this.redirectUrl || undefined,
     };
-    if (params.clientMobile) {
-      const realNameStatus = await this.getUserRealNameStatus('CLT_' + params.clientMobile);
+    // 实名查询口径与 clientUserId 保持一致（本地客户档案 ID 优先）
+    const queryClientUserId = params.clientUserId || (params.clientMobile ? 'CLT_' + params.clientMobile : '');
+    if (queryClientUserId) {
+      const realNameStatus = await this.getUserRealNameStatus(queryClientUserId);
       if (realNameStatus.identStatus === 'identified') {
         // 法大大侧已实名认证：免登签署，直接进合同详情页
         urlParams2.freeLogin = true;
         urlParams2.free_login = true; // snake_case 兼容别名
-        console.log(`法大大实名查询通过（identified），签署链接启用免登 clientUserId=CLT_${params.clientMobile}`);
+        console.log(`法大大实名查询通过（identified），签署链接启用免登 clientUserId=${queryClientUserId}`);
       } else {
         console.log(
-          `法大大实名查询未通过（${realNameStatus.identStatus}），签署链接走标准实名前置 clientUserId=CLT_${params.clientMobile}`,
+          `法大大实名查询未通过（${realNameStatus.identStatus}），签署链接走标准实名前置 clientUserId=${queryClientUserId}`,
         );
       }
     }
@@ -1286,12 +1295,14 @@ export class FadadaService {
     );
     try {
       // 2. 基于签署模板发起签署，获取客户 C 端签署链接
+      // clientUserId 统一用本地客户档案 ID（clientId）：与 C 端实名注册、法大大侧
+      // accountName↔clientUserId 绑定保持一致，避免「非同一用户」校验报错
       const res = await this.createSignTaskFromTemplate({
         signingId: signing.id,
         subject: params.subject,
         signTemplateId: params.signTemplateId,
         subjectType: params.subjectType,
-        client: params.client,
+        client: params.client ? { ...params.client, clientUserId: params.clientId } : undefined,
         corp: params.corp,
         lawyer: params.lawyer,
         fillValues: params.fillValues,
@@ -1494,12 +1505,24 @@ export class FadadaService {
 
     try {
       // 3. 基于签署模板发起法大大签署任务
+      // lead 流程 signing.client_id 为空（尚未建客户档案）：按线索手机号查客户档案，
+      // 有档案 → clientUserId 用本地档案 ID（与 C 端实名注册口径一致）；
+      // 无档案 → 回退 CLT_手机号（C 端登录建档后实名时同样会按登录档案 ID 注册，
+      // 极端情况下免登判断会退化为标准实名前置，但不阻断签署）。
+      let leadClientUserId: string | undefined = params.client?.clientUserId;
+      if (params.subjectType !== 'corp') {
+        const phone = params.client?.mobile || lead.phone;
+        if (phone) {
+          const profile = await this.clientProfileRepository.findOne({ where: { phone } });
+          leadClientUserId = profile?.id || 'CLT_' + phone;
+        }
+      }
       const res = await this.createSignTaskFromTemplate({
         signingId: signing.id,
         subject: params.subject,
         signTemplateId: params.signTemplateId,
         subjectType: params.subjectType,
-        client: params.client,
+        client: params.client ? { ...params.client, clientUserId: leadClientUserId } : undefined,
         corp: params.corp,
         lawyer: params.lawyer,
         fillValues: params.fillValues,
@@ -1653,12 +1676,14 @@ export class FadadaService {
 
     try {
       // 3. 基于签署模板发起法大大签署任务
+      // clientUserId 统一用本地客户档案 ID（params.clientId）：与 C 端实名注册、
+      // 法大大侧 accountName↔clientUserId 绑定保持一致，避免「非同一用户」校验报错
       const res = await this.createSignTaskFromTemplate({
         signingId: signing.id,
         subject: params.subject,
         signTemplateId: params.signTemplateId,
         subjectType: params.subjectType,
-        client: params.client,
+        client: params.client ? { ...params.client, clientUserId: params.clientId } : undefined,
         corp: params.corp,
         lawyer: params.lawyer,
         fillValues: params.fillValues,
