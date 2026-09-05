@@ -87,9 +87,23 @@ export default function SignPrefill() {
         values: collectFieldValues(values),
       }
       const res: any = await axios.post('/client/sign/submit-prefill', payload)
+      // 标准两步流程（对齐法大大文档 6YHMCFJJC4/FIJYQHAS802K7UD9）：
+      //   未实名（verify_status != verified）→ 后端自动调「个人授权链接API」并返回 identify_required=true
+      //   让客户先做人脸识别 + 实名账号绑定；
+      //   已实名 → 返回 sign_url / embed_url，客户进入签署页做互动视频签意愿确认。
+      if (res?.identify_required) {
+        if (res?.verify_url) {
+          message.info(res?.message || '请先完成人脸识别与实名认证', 2)
+          // 微信小程序内会自动桥接到法大大 pagesFace 中间页（解决 web-view 无法唤起刷脸小程序的问题）
+          openFadadaUrl(res.verify_url)
+        } else {
+          message.error('未获取到人脸识别链接，请稍后重试')
+        }
+        return
+      }
       const url = res?.embed_url || res?.sign_url
       if (url) {
-        // 微信小程序内会自动桥接到法大大 pagesFace 中间页（解决 web-view 无法唤起刷脸/互动视频签小程序的问题）
+        // 微信小程序内会自动桥接到法大大 pagesFace 中间页（解决 web-view 无法唤起互动视频签小程序的问题）
         openFadadaUrl(url)
       } else {
         message.error('未获取到签署链接，请稍后重试')
@@ -248,11 +262,11 @@ export default function SignPrefill() {
           <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
             <LockOutlined style={{ color: '#1E3A8A', marginTop: 2, fontSize: 14, flexShrink: 0 }} />
             <div style={{ fontSize: 12, color: '#64748B', lineHeight: 1.7 }}>
-              填写完成后将在新窗口打开签署页面，签署时同步完成身份认证（刷脸），完成后关闭窗口即可。
+              填写完成后将在新窗口打开页面，先完成人脸识别与实名认证（仅首次），再做互动视频签确认签署意愿。
             </div>
           </div>
 
-          {/* 预览合同（点击触发确认签署跳转） */}
+          {/* 预览合同（点击触发确认签署跳转，未实名会自动转为先人脸再签约） */}
           <button
             type="button"
             onClick={handleSubmit}

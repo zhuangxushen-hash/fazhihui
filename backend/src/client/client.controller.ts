@@ -149,9 +149,10 @@ export class ClientController {
     return this.clientService.getSignConfig();
   }
 
-  // 获取法大大实名认证链接（身份鉴别第一步，个人/企业分流）
-  // @deprecated 旧「先刷脸实名、后签署」流程。现行为互动视频签即实名：客户打开签署链接后由
-  // 法大大互动视频签（audio_video，含人脸核身）一并完成实名与意愿确认。前端已无调用方，请勿在新代码中使用。
+  // 获取法大大「个人授权链接API」（法大大文档 6YHMCFJJC4/FIJYQHAS802K7UD9 推荐的两步流程第 ① 步）：
+//   让 C 端客户先在个人授权链接做人脸识别 + 实名账号绑定，再调 submit-prefill 拿签署链接。
+// 个人客户走个人授权链接，企业客户走企业授权链接（C 端以个人流程为主，企业签约走 B 端后台，本接口可不传企业参数）。
+// @deprecated 标记移除：恢复为标准两步流程的对齐接口，前端 SignPrefill 在未实名时调用。
   @Post('sign/verify-url')
   getSignVerifyUrl(@Body() body: {
     signing_id: string;
@@ -170,8 +171,7 @@ export class ClientController {
   }
 
   // 模拟模式：本地完成实名认证（仅 mock 模式可用）
-  // @deprecated 配套旧「先实名后签署」两步流程的 mock 演示。现行流程（互动视频签即实名）下
-  // 生产模式不再有单独实名步骤；仅 mock 模式演示保留。
+  // @deprecated 仅 mock 模式可用；生产模式按「个人授权链接API」走法大大标准两步流程。
   @Post('sign/mock-verify')
   mockVerifySigning(@Body() body: { signing_id: string; client_id: string }) {
     return this.clientService.mockVerifySigning(body);

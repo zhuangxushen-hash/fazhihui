@@ -692,8 +692,8 @@ export class FadadaService {
       };
     }
     await this.assertProdReady();
-    // 个人客户手机号必填：签署统一走「互动视频签即实名」（快捷签 freeLogin + identifiedView=false），
-    // 快捷签依赖手机号作为客户唯一标识（CLT_手机号），无手机号无法建立免实名签署链路。
+    // 个人客户手机号必填：手机号会作为 CLT_手机号 贯穿 createWithTemplate / getActorUrl，
+    // 用于法大大 actor 在「个人授权链接API」实名授权环节绑定手机号。
     if (params.subjectType !== 'corp' && !params.client?.mobile) {
       throw new Error('客户手机号必填：请先在客户/线索信息中补充手机号，再发起签约');
     }
@@ -720,10 +720,12 @@ export class FadadaService {
     // 因此乙方可填性不受影响，只是不再让企业参与方背负填写义务。
     // 客户参与方（映射到模板 person 参与方，C端填写必填控件后再签署）
     // permissions 同时含 fill 与 sign：客户打开单链接后先补充必填控件，再执行签约动作
-    // 个人快捷签：客户手机号必填（入口已校验），开启免登签署（freeLogin + identifiedView=false），
-    // 打开链接直接进入合同详情页，无需登录法大大账号、无需预先单独实名。
-    // 实名认证与签署意愿验证合二为一：C端验证方式只保留互动视频签（audio_video），
-    // 签署时语音播报并录制音视频（含人脸核身），不再使用人脸(face)/短信(sms)单独实名认证。
+    // 标准两步流程（对齐法大大文档 6YHMCFJJC4/FIJYQHAS802K7UD9）：
+    //   ① 客户在 C 端打开「个人授权链接API」(getUserAuthUrl) 做人脸识别 + 实名账号绑定；
+    //   ② C 端 submit-prefill 校验 verify_status=verified 后，调 getActorUrl 拿签署链接；
+    //   ③ 客户在签署页通过互动视频签（audio_video，含朗读授权文本+人脸核身）完成意愿确认。
+    // 本配置用于 createWithTemplate 阶段 actor 元信息：freeLogin=false（不打免登快捷签）、
+    // identifiedView=true（签署页提示"已实名"），意愿验证仍走 audio_video 录屏。
     // isQuickSign 的降级分支仅作防御兜底（手机号必填校验后正常恒为 true）。
     const isQuickSign = !!params.client?.mobile;
     console.log(
@@ -731,15 +733,16 @@ export class FadadaService {
     );
     const clientActorSignConfig = isQuickSign
       ? ({
-          // 快捷签意愿验证：使用互动视频签（audio_video）后签署（原人脸 face 改为互动视频签）
+          // 意愿验证：使用互动视频签（audio_video）确认签署意愿
           verifyMethods: ['audio_video'],
-          identifiedView: false,
-          freeLogin: true,
+          // 不走免登（必须先经个人授权链接API 完成实名），签署页提示"已实名"
+          identifiedView: true,
+          freeLogin: false,
           readingToEnd: true,
           signerSignMethod: 'standard',
           // snake_case 兼容别名（法大大 API 可能需要 snake_case）
-          free_login: true,
-          identified_view: false,
+          free_login: false,
+          identified_view: true,
           reading_to_end: true,
           signer_sign_method: 'standard',
           // 互动视频签播报内容（配合 verifyMethods=audio_video 启用音视频录制）
@@ -992,17 +995,20 @@ export class FadadaService {
     }
     // 处于 fill_complete / sign_progress / finished 等更后置状态时，start 与 finalize 均已生效，直接取链接
     // 4. 获取客户参与方签署链接
-    // 获取签署链接时同时传 freeLogin / free_login（SDK 类型定义未包含但法大大后端可能需要）
+    // 标准两步流程（对齐法大大文档 6YHMCFJJC4/FIJYQHAS802K7UD9）的第 ② 步：客户已通过
+    // 「获取个人授权链接API」完成人脸识别+实名账号绑定，verify_status=verified 后才能走到这里。
+    // 不再传 freeLogin / free_login：走法大大标准签署页（含 identifiedView 实名遮罩），由 actor 配
+    // 里的 verifyMethods=audio_video 做意愿确认。
     const urlParams2: any = {
       signTaskId: params.signTaskId,
       actorId: params.actorId,
-      // 豸帮帮建议：传与 createWithTemplate 一致的 clientUserId，确保快捷签链路完整
+      // 法大大建议：传与 createWithTemplate 一致的 clientUserId，确保快捷签链路完整
       // createWithTemplate 里用 CLT_手机号 当 clientUserId，这里保持一致
       clientUserId: params.clientMobile ? ('CLT_' + params.clientMobile) : undefined,
       // 签署完成后重定向回 C 端案件列表（法大大 getActorUrl 接口支持 redirectUrl 参数）
       redirectUrl: this.redirectUrl || undefined,
     };
-    console.log('法大大 getActorUrl 请求体(camel+snake)=' + JSON.stringify(urlParams2));
+    console.log('法大大 getActorUrl 请求体=' + JSON.stringify(urlParams2));
     const urlRes = await this.signTaskClient.getActorUrl(urlParams2);
     console.log('法大大 getActorUrl 响应.data=' + JSON.stringify(urlRes?.data));
     const signUrl = urlRes?.data?.data?.actorSignTaskUrl;
@@ -1868,8 +1874,8 @@ export class FadadaService {
             if (eventId === 'sign-task-finished') {
               target.status = SigningStatus.SIGNED;
               target.signed_time = new Date();
-              // 互动视频签即实名：签署任务完成（客户已通过互动视频签完成身份核验与意愿确认），
-              // 同步将实名状态置为 verified，保证看板/状态查询口径准确。
+              // 兜底：无论是否走过标准两步流程，签署任务完成时同步将实名状态置为 verified，
+              // 保证看板/状态查询口径准确（已实名的 actor 会先收 user-* 回调，这里仅用于防御性兜底）。
               if (target.verify_status !== 'verified') {
                 target.verify_status = 'verified';
                 if (!target.verify_time) target.verify_time = new Date();

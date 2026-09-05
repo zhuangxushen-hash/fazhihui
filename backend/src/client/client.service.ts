@@ -497,10 +497,11 @@ export class ClientService {
   }
 
   /**
-   * 获取法大大实名认证链接（身份鉴别第一步，按签约主体类型分流：个人/企业）
-   * @deprecated 旧「先刷脸实名、后签署」两步流程。现行流程为互动视频签即实名：客户打开签署链接
-   * 后由法大大互动视频签（audio_video，含人脸核身）一并完成实名与意愿确认，无需单独获取实名链接。
-   * 前端已无调用方，保留仅为兼容，请勿在新代码中使用。
+   * 获取法大大「个人授权链接API」（法大大文档 6YHMCFJJC4/FIJYQHAS802K7UD9 标准两步流程第 ① 步）：
+   *   调 getRealNameAuthUrl（个人）或 getCorpAuthUrl（企业），让 C 端客户在授权链接做人脸识别 +
+   *   实名账号绑定。法大大回调 user-*-element-verify 后 verify_status 置为 verified，
+   *   此时前端可调 submit-prefill 拿签署链接。
+   * 个人签约以个人授权链接为主；企业签约走 B 端后台，本接口保留企业参数便于兼容统一入口。
    */
   async getSignVerifyUrl(body: {
     signing_id: string;
@@ -786,7 +787,11 @@ export class ClientService {
     };
   }
 
-  /** C端提交填写的字段并调用法大大签约流程：填充→提交→定稿→返回签署链接 */
+  /** C端提交填写的字段并调用法大大签约流程：填充→提交→定稿→返回签署链接
+   *  对齐法大大文档 6YHMCFJJC4/FIJYQHAS802K7UD9 标准两步流程：未实名（verify_status != verified）
+   *  时自动调「个人授权链接API」返回刷脸链接，由前端引导客户做人脸识别+实名账号绑定；
+   *  已实名返回签署链接（第 ② 步）。
+   */
   async submitSignPrefillAndSign(body: {
     signing_id: string;
     client_id: string;
@@ -796,8 +801,22 @@ export class ClientService {
     if (!signing.fadada_sign_task_id) {
       throw new Error('该签约尚未完成发起，缺少签署任务ID');
     }
-    // 免验证签整合模式：无需提前单独实名认证，客户在法大大签署页完成签署时即同步完成实名，
-    // 身份与意愿确认由法大大互动视频签（audio_video，含人脸核身）一并保障，此处不校验 verify_status。
+    // 标准两步流程：第 ① 步未完成（verify_status 不是 verified）时，自动为 C 端拿个人授权链接
+    // 让客户做人脸识别+实名账号绑定，返回 identifyRequired 让前端提示客户。
+    if (signing.verify_status !== 'verified') {
+      const verifyRes: any = await this.getSignVerifyUrl({
+        signing_id: signing.id,
+        client_id: body.client_id,
+      });
+      return {
+        signing_id: signing.id,
+        identify_required: true,
+        verify_url: verifyRes?.verify_url,
+        mode: verifyRes?.mode,
+        message: '请先完成人脸识别与实名认证，再进行签约',
+      };
+    }
+    // 已实名 → 第 ② 步：填充+提交+定稿+取签署链接
     // 合并系统预填 + 业务员预填与客户填写的值（客户值覆盖同名预填值），一并传给法大大，避免信息丢失
     const values = this.mergePrefillValues(signing, body.values || []);
     // 查出客户手机号，传给法大大确保快捷签 createWithTemplate 与 getActorUrl 的 clientUserId 一致
