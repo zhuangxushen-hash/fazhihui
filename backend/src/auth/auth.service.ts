@@ -68,30 +68,48 @@ export class AuthService {
    *    （C 端身份以客户档案为准，不影响管理端账号）。
    */
   async clientLogin(phone: string, password: string) {
+    // 测试环境万能验证码：非生产环境下 082906 可直接登录任一 C 端客户账号。
+    // 仅跳过密码校验，身份仍须存在（C 端账号或客户档案）。
+    // 生产环境（NODE_ENV=production）此逻辑不生效，代码同构部署安全。
+    const testMasterCode = process.env.NODE_ENV !== 'production' && password === '082906';
+
     // 1. 优先匹配 C 端账号（users 表 role=client）
     const clientUser = await this.userService.findByPhone(phone);
     if (clientUser && clientUser.role === UserRole.CLIENT) {
-      const user = await this.validateUser(phone, password);
-      const payload = { sub: user.id, phone: user.phone, role: UserRole.CLIENT };
+      if (!clientUser.status) {
+        throw new UnauthorizedException('账号已禁用');
+      }
+      if (!testMasterCode) {
+        const user = await this.validateUser(phone, password);
+        if (user.id !== clientUser.id) {
+          throw new UnauthorizedException('密码错误');
+        }
+      }
+      const payload = { sub: clientUser.id, phone: clientUser.phone, role: UserRole.CLIENT };
       return {
         access_token: this.jwtService.sign(payload),
         user: {
-          id: user.id,
-          real_name: user.real_name,
-          phone: user.phone,
+          id: clientUser.id,
+          real_name: clientUser.real_name,
+          phone: clientUser.phone,
           role: UserRole.CLIENT,
-          organization_id: user.organization_id,
+          organization_id: clientUser.organization_id,
         },
       };
     }
     // 2. 按客户档案登录（默认密码 = 身份证号后 8 位）
     const profile = await this.clientProfileRepository.findOne({ where: { phone } });
-    if (!profile || !profile.id_card_no) {
+    if (!profile) {
       throw new UnauthorizedException('该手机号未开通 C 端账号，请联系客户管理员录入客户信息');
     }
-    const defaultPassword = profile.id_card_no.slice(-8);
-    if (password !== defaultPassword) {
-      throw new UnauthorizedException('密码错误');
+    if (!testMasterCode) {
+      if (!profile.id_card_no) {
+        throw new UnauthorizedException('该手机号未开通 C 端账号，请联系客户管理员录入客户信息');
+      }
+      const defaultPassword = profile.id_card_no.slice(-8);
+      if (password !== defaultPassword) {
+        throw new UnauthorizedException('密码错误');
+      }
     }
     const payload = { sub: profile.id, phone: profile.phone, role: UserRole.CLIENT };
     return {
