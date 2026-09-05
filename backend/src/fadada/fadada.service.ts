@@ -647,13 +647,11 @@ export class FadadaService {
       throw new Error('法大大签署任务创建失败：' + (createRes?.data?.msg || '未知错误'));
     }
     await this.signTaskClient.start({ signTaskId });
-    // 获取签署链接时同时传 freeLogin / free_login（SDK 类型定义未包含但法大大后端可能需要）
+    // 获取签署链接（不传 freeLogin：免登会跳过 audio_video 互动视频签，录不了音视频）
     const urlParams1: any = {
       signTaskId,
       actorId: 'client',
       redirectUrl: this.redirectUrl || undefined,
-      freeLogin: true,
-      free_login: true,
     };
     console.log('法大大 getActorUrl 请求体(camel+snake)=' + JSON.stringify(urlParams1));
     const urlRes = await this.signTaskClient.getActorUrl(urlParams1);
@@ -1043,12 +1041,9 @@ export class FadadaService {
     }
     // 处于 fill_complete / sign_progress / finished 等更后置状态时，start 与 finalize 均已生效，直接取链接
     // 4. 获取客户参与方签署链接
-    // 标准两步流程（对齐法大大文档 6YHMCFJJC4/FIJYQHAS802K7UD9）：签署链接是否免登
-    // 取决于客户在法大大侧的实时实名结果——先调 getUserInfo 查询（法大大侧为权威数据源）：
-    //   - identStatus=identified（已实名认证且有效）→ 传 freeLogin:true 免登，
-    //     已实名授权的客户打开链接直接进入合同签署页（意愿确认走 audio_video）；
-    //   - identStatus=unidentified（未实名/查询失败）→ 不传 freeLogin，走法大大标准
-    //     实名前置流程（该情况理论上不会到这里：submit-prefill 已前置拦截，此处为兜底）。
+    // 一律走标准签署链接（不传 freeLogin）：免登链接会跳过法大大签署页的
+    // 互动视频签（audio_video）意愿核身，导致已实名客户签合同时不录音频视频。
+    // 实名前置由 submit-prefill 已拦截（未实名根本到不了这里），此处直接取链接。
     const urlParams2: any = {
       signTaskId: params.signTaskId,
       actorId: params.actorId,
@@ -1058,21 +1053,6 @@ export class FadadaService {
       // 签署完成后重定向回 C 端案件列表（法大大 getActorUrl 接口支持 redirectUrl 参数）
       redirectUrl: this.redirectUrl || undefined,
     };
-    // 实名查询口径与 clientUserId 保持一致（本地客户档案 ID 优先）
-    const queryClientUserId = params.clientUserId || (params.clientMobile ? 'CLT_' + params.clientMobile : '');
-    if (queryClientUserId) {
-      const realNameStatus = await this.getUserRealNameStatus(queryClientUserId);
-      if (realNameStatus.identStatus === 'identified') {
-        // 法大大侧已实名认证：免登签署，直接进合同详情页
-        urlParams2.freeLogin = true;
-        urlParams2.free_login = true; // snake_case 兼容别名
-        console.log(`法大大实名查询通过（identified），签署链接启用免登 clientUserId=${queryClientUserId}`);
-      } else {
-        console.log(
-          `法大大实名查询未通过（${realNameStatus.identStatus}），签署链接走标准实名前置 clientUserId=${queryClientUserId}`,
-        );
-      }
-    }
     console.log('法大大 getActorUrl 请求体=' + JSON.stringify(urlParams2));
     const urlRes = await this.signTaskClient.getActorUrl(urlParams2);
     console.log('法大大 getActorUrl 响应.data=' + JSON.stringify(urlRes?.data));
