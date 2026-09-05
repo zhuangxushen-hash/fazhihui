@@ -95,6 +95,8 @@ export class FadadaService {
   private serviceClient: any = null;
   private templateClient: any = null;
   private corpClient: any = null;
+  // 法大大用户服务客户端：查询个人用户实时实名认证结果（getUserInfo）
+  private userClient: any = null;
   // accessToken 缓存（法大大凭证有效 2 小时，缓存提前 5 分钟续期）
   private accessTokenCache: { token: string; expireAt: number } | null = null;
 
@@ -270,6 +272,7 @@ export class FadadaService {
     if (!this.serviceClient) this.serviceClient = new sdk.serviceClient.Client(clientConfig);
     if (!this.templateClient) this.templateClient = new sdk.templateClient.Client(clientConfig);
     if (!this.corpClient) this.corpClient = new sdk.corpClient.Client(clientConfig);
+    if (!this.userClient) this.userClient = new sdk.userClient.Client(clientConfig);
   }
 
   /**
@@ -297,6 +300,7 @@ export class FadadaService {
     this.docClient.credential.accessToken = token;
     this.templateClient.credential.accessToken = token;
     this.corpClient.credential.accessToken = token;
+    this.userClient.credential.accessToken = token;
     this.logger.log(`法大大 accessToken 已获取（有效期 ${expiresIn}s），已写入各 SDK 客户端`);
   }
 
@@ -309,8 +313,45 @@ export class FadadaService {
   }
 
   /**
-   * 获取个人实名认证链接（身份鉴别）
-   * - prod：法大大个人授权认证页（姓名/证件号/手机号实名 + 电子签授权）
+   * 查询法大大侧个人用户实时实名认证结果（以法大大为准，本地 verify_status 仅作回写缓存）。
+   * - 返回 identStatus: identified=已认证且有效 / unidentified=未认证
+   * - 返回 bindingStatus: authorized=已授权本应用 / unauthorized=未授权
+   * - mock 模式无真实法大大用户，返回 unidentified（由调用方回退本地 verify_status 判断）
+   * - 查询异常不抛错（返回 unidentified），由调用方决定回退策略
+   */
+  async getUserRealNameStatus(clientUserId: string): Promise<{
+    identStatus: 'identified' | 'unidentified';
+    bindingStatus?: string;
+    mode: FadadaMode;
+  }> {
+    if (!this.enabled) {
+      throw new Error('法大大电子签未启用（FADADA_ENABLED=false）');
+    }
+    if (this.mode === 'mock') {
+      return { identStatus: 'unidentified', mode: 'mock' };
+    }
+    try {
+      await this.assertProdReady();
+      const res = await this.userClient.getUserInfo({ clientUserId });
+      const data = res?.data?.data;
+      console.log(
+        `法大大 getUserInfo 实名查询 clientUserId=${clientUserId} 响应.data=${JSON.stringify(res?.data || null)}`,
+      );
+      return {
+        identStatus: data?.identStatus === 'identified' ? 'identified' : 'unidentified',
+        bindingStatus: data?.bindingStatus,
+        mode: 'prod',
+      };
+    } catch (e) {
+      // 查询失败（网络/用户不存在等）不阻断业务，按未认证处理，调用方回退本地状态
+      this.logger.warn(`法大大实名结果查询失败 clientUserId=${clientUserId}：${(e as Error)?.message}`);
+      return { identStatus: 'unidentified', mode: 'prod' };
+    }
+  }
+
+  /**
+   * 获取个人实名认证链接（身份鉴别-个人认证）
+   * - prod：法大大个人授权页（人脸识别 + 实名账号绑定 + 应用授权）
    * - mock：本地模拟认证页
    */
   async getRealNameAuthUrl(
@@ -995,10 +1036,12 @@ export class FadadaService {
     }
     // 处于 fill_complete / sign_progress / finished 等更后置状态时，start 与 finalize 均已生效，直接取链接
     // 4. 获取客户参与方签署链接
-    // 标准两步流程（对齐法大大文档 6YHMCFJJC4/FIJYQHAS802K7UD9）的第 ② 步：客户已通过
-    // 「获取个人授权链接API」完成人脸识别+实名账号绑定，verify_status=verified 后才能走到这里。
-    // 不再传 freeLogin / free_login：走法大大标准签署页（含 identifiedView 实名遮罩），由 actor 配
-    // 里的 verifyMethods=audio_video 做意愿确认。
+    // 标准两步流程（对齐法大大文档 6YHMCFJJC4/FIJYQHAS802K7UD9）：签署链接是否免登
+    // 取决于客户在法大大侧的实时实名结果——先调 getUserInfo 查询（法大大侧为权威数据源）：
+    //   - identStatus=identified（已实名认证且有效）→ 传 freeLogin:true 免登，
+    //     已实名授权的客户打开链接直接进入合同签署页（意愿确认走 audio_video）；
+    //   - identStatus=unidentified（未实名/查询失败）→ 不传 freeLogin，走法大大标准
+    //     实名前置流程（该情况理论上不会到这里：submit-prefill 已前置拦截，此处为兜底）。
     const urlParams2: any = {
       signTaskId: params.signTaskId,
       actorId: params.actorId,
@@ -1008,6 +1051,19 @@ export class FadadaService {
       // 签署完成后重定向回 C 端案件列表（法大大 getActorUrl 接口支持 redirectUrl 参数）
       redirectUrl: this.redirectUrl || undefined,
     };
+    if (params.clientMobile) {
+      const realNameStatus = await this.getUserRealNameStatus('CLT_' + params.clientMobile);
+      if (realNameStatus.identStatus === 'identified') {
+        // 法大大侧已实名认证：免登签署，直接进合同详情页
+        urlParams2.freeLogin = true;
+        urlParams2.free_login = true; // snake_case 兼容别名
+        console.log(`法大大实名查询通过（identified），签署链接启用免登 clientUserId=CLT_${params.clientMobile}`);
+      } else {
+        console.log(
+          `法大大实名查询未通过（${realNameStatus.identStatus}），签署链接走标准实名前置 clientUserId=CLT_${params.clientMobile}`,
+        );
+      }
+    }
     console.log('法大大 getActorUrl 请求体=' + JSON.stringify(urlParams2));
     const urlRes = await this.signTaskClient.getActorUrl(urlParams2);
     console.log('法大大 getActorUrl 响应.data=' + JSON.stringify(urlRes?.data));
@@ -1841,10 +1897,20 @@ export class FadadaService {
       if (eventId.startsWith('user-')) {
         const clientUserId = body?.clientUserId;
         if (clientUserId) {
-          const target = await this.signingComplianceRepository.findOne({
-            where: { client_id: clientUserId, verify_status: 'pending' },
-            order: { created_at: 'DESC' },
-          });
+          // 兼容两种 clientUserId 口径：直接匹配本地 client_id（旧口径），或
+          // 「CLT_手机号」（新统一口径）→ 通过手机号反查客户档案得到本地 client_id
+          let localClientId: string | null = clientUserId;
+          if (clientUserId.startsWith('CLT_')) {
+            const phone = clientUserId.slice(4);
+            const profile = await this.clientProfileRepository.findOne({ where: { phone } });
+            localClientId = profile?.id || null;
+          }
+          const target = localClientId
+            ? await this.signingComplianceRepository.findOne({
+                where: { client_id: localClientId, verify_status: 'pending' },
+                order: { created_at: 'DESC' },
+              })
+            : null;
           if (target) {
             const ok =
               eventId === 'user-authorize'

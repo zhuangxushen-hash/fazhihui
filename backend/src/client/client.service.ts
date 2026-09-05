@@ -564,7 +564,10 @@ export class ClientService {
     const result = await this.fadadaService.getRealNameAuthUrl(
       {
         signingId: signing.id,
-        clientUserId: body.client_id,
+        // clientUserId 必须与签署链路（createWithTemplate / getActorUrl）保持一致，
+        // 统一使用「CLT_手机号」：否则同一客户在法大大侧被拆成两个账号，
+        // 授权完成后签署链路仍查不到实名状态，导致已实名用户无法免登。
+        clientUserId: 'CLT_' + (body.mobile || profile.phone || body.client_id),
         userName: body.user_name || profile.name || profile.contact_name || '客户',
         idCardNo,
         mobile: body.mobile || profile.phone || undefined,
@@ -801,9 +804,30 @@ export class ClientService {
     if (!signing.fadada_sign_task_id) {
       throw new Error('该签约尚未完成发起，缺少签署任务ID');
     }
-    // 标准两步流程：第 ① 步未完成（verify_status 不是 verified）时，自动为 C 端拿个人授权链接
-    // 让客户做人脸识别+实名账号绑定，返回 identifyRequired 让前端提示客户。
-    if (signing.verify_status !== 'verified') {
+    // 查出客户手机号：法大大 clientUserId 统一为「CLT_手机号」（授权链路与签署链路一致）
+    let clientMobile: string | undefined;
+    try {
+      const profile = await this.clientProfileRepository.findOne({ where: { id: signing.client_id } });
+      clientMobile = profile?.phone || undefined;
+    } catch { /* 查不到就跳过，clientUserId 为空法大大走普通登录流程 */ }
+    // 标准两步流程实名校验：以法大大侧实时实名结果为权威数据源判断（本地 verify_status 仅作缓存/兜底）。
+    //   - 法大大 identStatus=identified → 已实名，回写本地 verify_status 后直接走第 ② 步签署；
+    //   - unidentified → 未实名，自动调「个人授权链接API」返回刷脸链接（identify_required=true）；
+    //   - 查询异常/mock 模式 → 回退本地 verify_status 判断（可用性优先，避免网络抖动导致重复刷脸）。
+    let identified: boolean;
+    if (this.fadadaService.mode !== 'mock' && clientMobile) {
+      const realNameStatus = await this.fadadaService.getUserRealNameStatus('CLT_' + clientMobile);
+      identified = realNameStatus.identStatus === 'identified';
+      // 法大大侧实名结果回写本地（含认证时间），供 B 端看板与状态展示使用
+      if (identified && signing.verify_status !== 'verified') {
+        signing.verify_status = 'verified';
+        if (!signing.verify_time) signing.verify_time = new Date();
+        await this.signingComplianceRepository.save(signing);
+      }
+    } else {
+      identified = signing.verify_status === 'verified';
+    }
+    if (!identified) {
       const verifyRes: any = await this.getSignVerifyUrl({
         signing_id: signing.id,
         client_id: body.client_id,
@@ -819,12 +843,6 @@ export class ClientService {
     // 已实名 → 第 ② 步：填充+提交+定稿+取签署链接
     // 合并系统预填 + 业务员预填与客户填写的值（客户值覆盖同名预填值），一并传给法大大，避免信息丢失
     const values = this.mergePrefillValues(signing, body.values || []);
-    // 查出客户手机号，传给法大大确保快捷签 createWithTemplate 与 getActorUrl 的 clientUserId 一致
-    let clientMobile: string | undefined;
-    try {
-      const profile = await this.clientProfileRepository.findOne({ where: { id: signing.client_id } });
-      clientMobile = profile?.phone || undefined;
-    } catch { /* 查不到就跳过，clientUserId 为空法大大走普通登录流程 */ }
     const result = await this.fadadaService.completeClientPrefillAndSign({
       signTaskId: signing.fadada_sign_task_id,
       actorId: signing.fadada_actor_id || signing.client_id,
