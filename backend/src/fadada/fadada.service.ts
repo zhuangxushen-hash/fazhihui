@@ -1554,6 +1554,9 @@ export class FadadaService {
             await this.syncRealNameToProfile(profile, params.client?.userName, params.client?.idCardNo);
           }
           leadClientUserId = profile.id;
+          // 签约记录回填客户档案 ID：C 端登录后按 client_id 才能查到/签署该合同
+          // （findSigning、getActiveSignings 均按 client_id 匹配，留空则客户侧完全不可见）
+          signing.client_id = profile.id;
         }
       }
       const res = await this.createSignTaskFromTemplate({

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Spin, Empty } from 'antd'
+import { Spin, Empty, Button } from 'antd'
 import {
   BellOutlined,
   FolderOutlined,
   AppstoreOutlined,
   FileTextOutlined,
+  EditOutlined,
 } from '@ant-design/icons'
 import axios from '../../api/axios'
 import { caseTypeLabel } from '../../utils/format'
@@ -31,6 +32,7 @@ const QUICK_ENTRIES = [
 
 export default function ClientHome() {
   const [cases, setCases] = useState<any[]>([])
+  const [signings, setSignings] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
@@ -38,6 +40,7 @@ export default function ClientHome() {
 
   useEffect(() => {
     fetchCases()
+    fetchSignings()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -50,6 +53,16 @@ export default function ClientHome() {
       // 错误已由拦截器统一处理
     } finally {
       setLoading(false)
+    }
+  }
+
+  /** 名下待签署合同（含线索/客户档案发起、尚未生成案件的合同） */
+  const fetchSignings = async () => {
+    try {
+      const res = await axios.post('/client/signings', { client_id: user.id })
+      setSignings(Array.isArray(res) ? res : [])
+    } catch (error) {
+      // 错误已由拦截器统一处理
     }
   }
 
@@ -152,6 +165,67 @@ export default function ClientHome() {
             })}
           </div>
         </section>
+
+        {/* ===== 待签署合同 ===== */}
+        {signings.length > 0 && (
+          <section style={{ marginBottom: 16 }}>
+            <div
+              style={{
+                borderRadius: 16,
+                background: '#FFFFFF',
+                padding: 16,
+                boxShadow: '0 4px 16px rgba(15, 23, 42, 0.05)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <span style={{ fontSize: 15, fontWeight: 600, color: '#0F172A' }}>待签署合同</span>
+                <span style={{ padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 500, background: '#FEF3C7', color: '#B45309' }}>
+                  {signings.length} 份待签
+                </span>
+              </div>
+              {signings.map(s => (
+                <div
+                  key={s.signing_id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 8,
+                    paddingTop: 10,
+                    borderTop: '1px solid #F1F5F9',
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 500,
+                        color: '#0F172A',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {s.subject || '法律服务合同'}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>
+                      {s.created_at ? new Date(s.created_at).toLocaleDateString() : ''}
+                    </div>
+                  </div>
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<EditOutlined />}
+                    style={{ flexShrink: 0, borderRadius: 99, background: '#1E3A8A' }}
+                    onClick={() => navigate(`/client/sign-prefill?signing_id=${s.signing_id}`)}
+                  >
+                    去签署
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* ===== 我的案件 ===== */}
         <section style={{ marginBottom: 16 }}>

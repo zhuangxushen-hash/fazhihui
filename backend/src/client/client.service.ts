@@ -743,13 +743,19 @@ export class ClientService {
       order: { created_at: 'DESC' },
     });
     const active = list.filter((s) => s.fadada_sign_task_id);
-    // 同一案件只展示最新一次发起的签约
-    return (active.length > 0 ? [active[0]] : []).map((s) => ({
+    // 映射为 C 端展示结构
+    const mapped = active.map((s) => ({
       signing_id: s.id,
       case_id: s.case_id,
       subject: s.contract_content || '法律顾问签约',
       created_at: s.created_at,
     }));
+    // 案件维度：同一案件只展示最新一次发起的签约；
+    // 全量维度（C端首页「待签署合同」）：跨案件返回全部进行中的签约
+    if (body.case_id) {
+      return mapped.length > 0 ? [mapped[0]] : [];
+    }
+    return mapped;
   }
 
   /** C端获取待签约任务中客户需要补充填写的字段列表（复用现有 C 端页面做预填） */

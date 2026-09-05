@@ -213,6 +213,12 @@ export class ClientController {
     return this.clientService.getActiveSignings({ client_id: body.client_id, case_id: id });
   }
 
+  // C端查询名下全部进行中的签约（含线索/客户档案发起、尚未生成案件的合同）
+  @Post('signings')
+  getMyActiveSignings(@Body() body: { client_id: string }) {
+    return this.clientService.getActiveSignings({ client_id: body.client_id });
+  }
+
   // C端查询案件下已签署的签约记录（供案件详情展示签署音视频入口）
   @Post('cases/:id/signed-signings')
   getSignedSignings(
