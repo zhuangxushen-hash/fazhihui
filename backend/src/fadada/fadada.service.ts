@@ -1274,7 +1274,14 @@ export class FadadaService {
       } as Partial<SigningCompliance>),
     );
     try {
-      // 2. 基于签署模板发起签署，获取客户 C 端签署链接
+      // 2. 发合同时录入的客户实名信息同步到客户管理（补录身份证号/替换占位姓名）
+      if (params.subjectType !== 'corp' && params.client) {
+        const profile = await this.clientProfileRepository.findOne({ where: { id: params.clientId } });
+        if (profile) {
+          await this.syncRealNameToProfile(profile, params.client.userName, params.client.idCardNo);
+        }
+      }
+      // 3. 基于签署模板发起签署，获取客户 C 端签署链接
       // clientUserId 统一用本地客户档案 ID（clientId）：与 C 端实名注册、法大大侧
       // accountName↔clientUserId 绑定保持一致，避免「非同一用户」校验报错
       const res = await this.createSignTaskFromTemplate({
@@ -1352,6 +1359,41 @@ export class FadadaService {
     const d = String(now.getDate()).padStart(2, '0');
     const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
     return `AJ-${y}${m}${d}-${rand}`;
+  }
+
+  /**
+   * 发合同实名信息同步到客户管理（按需补录，不覆盖客户已维护的数据）：
+   * - 身份证号：仅档案缺失时补录（法大大实名核验/案件建档复用）；
+   * - 姓名：仅档案姓名为占位（微信用户XXXX / 客户XXXX / 手机号）时替换为录入的真实姓名。
+   */
+  private async syncRealNameToProfile(
+    profile: ClientProfile,
+    userName?: string,
+    idCardNo?: string,
+  ): Promise<void> {
+    try {
+      const patch: Partial<ClientProfile> = {};
+      if (idCardNo && !profile.id_card_no) patch.id_card_no = idCardNo;
+      if (
+        userName &&
+        (!profile.name ||
+          /^微信用户\d+$/.test(profile.name) ||
+          /^客户\d+$/.test(profile.name) ||
+          profile.name === profile.phone)
+      ) {
+        patch.name = userName;
+      }
+      if (Object.keys(patch).length > 0) {
+        await this.clientProfileRepository.update(profile.id, patch);
+        this.logger.log(
+          `发合同实名信息已同步客户档案 clientId=${profile.id} fields=${Object.keys(patch).join(',')}`,
+        );
+      }
+    } catch (e) {
+      this.logger.warn(
+        `发合同同步客户档案失败（不阻断）clientId=${profile.id}: ${(e as Error)?.message || e}`,
+      );
+    }
   }
 
   /**
@@ -1484,17 +1526,34 @@ export class FadadaService {
     );
 
     try {
-      // 3. 基于签署模板发起法大大签署任务
-      // lead 流程 signing.client_id 为空（尚未建客户档案）：按线索手机号查客户档案，
-      // 有档案 → clientUserId 用本地档案 ID（与 C 端实名注册口径一致）；
-      // 无档案 → 回退 CLT_手机号（C 端登录建档后实名时同样会按登录档案 ID 注册，
-      // 极端情况下免登判断会退化为标准实名前置，但不阻断签署）。
+      // 3. 发合同时录入的客户实名信息同步到客户管理：
+      //    无档案 → 立即建档（source=合同签约），客户即时出现在客户管理，
+      //    且手机号即可通过微信授权登录 C 端；
+      //    有档案 → 补录身份证号/替换占位姓名。
+      //    档案 ID 作为法大大 clientUserId（与 C 端实名注册口径一致），
+      //    同步异常时回退 CLT_手机号，不阻断发合同。
       let leadClientUserId: string | undefined = params.client?.clientUserId;
       if (params.subjectType !== 'corp') {
         const phone = params.client?.mobile || lead.phone;
         if (phone) {
-          const profile = await this.clientProfileRepository.findOne({ where: { phone } });
-          leadClientUserId = profile?.id || 'CLT_' + phone;
+          let profile = await this.clientProfileRepository.findOne({ where: { phone } });
+          if (!profile) {
+            profile = await this.clientProfileRepository.save(
+              this.clientProfileRepository.create({
+                name: params.client?.userName || lead.contact_name || `客户${phone.slice(-4)}`,
+                phone,
+                type: 'individual',
+                source: '合同签约',
+                contact_name: params.client?.userName || lead.contact_name || phone,
+                id_card_no: params.client?.idCardNo || null,
+                organization_id: orgId,
+              } as Partial<ClientProfile>),
+            );
+            this.logger.log(`发合同自动建档 phone=${phone} clientId=${profile.id}`);
+          } else {
+            await this.syncRealNameToProfile(profile, params.client?.userName, params.client?.idCardNo);
+          }
+          leadClientUserId = profile.id;
         }
       }
       const res = await this.createSignTaskFromTemplate({
@@ -1575,6 +1634,11 @@ export class FadadaService {
     const client = await this.clientProfileRepository.findOne({ where: { id: params.clientId } });
     if (!client) throw new Error('客户不存在');
     const orgId = client.organization_id || params.organizationId;
+
+    // 发合同时录入的客户实名信息同步到客户管理（补录身份证号/替换占位姓名）
+    if (params.subjectType !== 'corp' && params.client) {
+      await this.syncRealNameToProfile(client, params.client.userName, params.client.idCardNo);
+    }
 
     // 1. 创建合同记录（发合同 → 待签署）
     let contractNo: string | null = null;
