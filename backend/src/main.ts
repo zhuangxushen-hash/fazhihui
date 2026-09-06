@@ -106,6 +106,15 @@ async function bootstrap() {
     } catch (e) {
       console.warn('[生产环境] signing_compliance 补列检查失败，请手动执行 ALTER TABLE', e);
     }
+    try {
+      const lCols = await dataSource.query(`PRAGMA table_info(leads)`);
+      if (Array.isArray(lCols) && lCols.length > 0 && !lCols.some((c: any) => c.name === 'id_card_no')) {
+        await dataSource.query(`ALTER TABLE leads ADD COLUMN id_card_no varchar`);
+        console.log('[生产环境] leads 表已补充 id_card_no 列（实名认证通过后回写身份证号）');
+      }
+    } catch (e) {
+      console.warn('[生产环境] leads 补列检查失败，请手动执行 ALTER TABLE', e);
+    }
     // 案件状态字典（组织级自定义）建表
     try {
       await dataSource.query(`

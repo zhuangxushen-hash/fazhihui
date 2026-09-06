@@ -167,15 +167,18 @@ export default function LeadSignLaunch() {
     })()
   }, [])
 
-  // 选中线索/客户后预填客户信息与补充信息
+  // 选中线索/客户后预填：只预填「非实名」字段（合同金额、生成案件补充信息等）。
+  // 实名信息（姓名/身份证号/手机号/企业名称等）一律不预填——必须操作员在发合同表单里据实填写，
+  // 否则法大大实名认证会用到客户档案的占位/陈旧信息（如「微信用户1234」）而走不下去。
   useEffect(() => {
     if (isClientMode) {
       if (!client) return
       const isCorp = client.type === 'enterprise'
       signForm.setFieldsValue({
         subject_type: isCorp ? 'corp' : 'person',
-        client: { userName: client.name || client.contact_name || '', mobile: client.phone || '' },
-        corp: { corpName: client.name || '' },
+        // 实名信息字段留空，由操作员填写（不预填客户档案值）
+        client: { userName: '', mobile: '', idCardNo: '' },
+        corp: { corpName: '', corpIdentNo: '', legalRepName: '' },
         // 合同信息
         contract: { amount: undefined },
         // 生成案件补充信息（客户级发合同无线索字段，留空手填）
@@ -190,8 +193,9 @@ export default function LeadSignLaunch() {
     if (!lead) return
     signForm.setFieldsValue({
       subject_type: lead.unit_name ? 'corp' : 'person',
-      client: { userName: lead.contact_name || '', mobile: lead.phone || '' },
-      corp: { corpName: lead.unit_name || '' },
+      // 实名信息字段留空，由操作员填写（不预填线索洽谈值）
+      client: { userName: '', mobile: '', idCardNo: '' },
+      corp: { corpName: '', corpIdentNo: '', legalRepName: '' },
       // 合同信息
       contract: {
         amount: lead.amount != null ? Number(lead.amount) : undefined,
@@ -322,7 +326,7 @@ export default function LeadSignLaunch() {
         client: {
           userName: values.client?.userName || '',
           idCardNo: values.client?.idCardNo || undefined,
-          mobile: values.client?.mobile || (isClientMode ? client!.phone : lead!.phone),
+          mobile: values.client?.mobile || '',
         },
         // 合同信息（合同上已有的字段）
         contract: {
@@ -530,14 +534,14 @@ export default function LeadSignLaunch() {
                 </>
               ) : (
                 <>
-                  <Form.Item name={['client', 'userName']} label="客户姓名" rules={[{ required: true, message: '请输入客户姓名' }]}>
-                    <Input placeholder="请输入客户姓名" />
+                  <Form.Item name={['client', 'userName']} label="客户姓名" rules={[{ required: true, message: '请输入客户姓名（法大大实名认证用）' }]}>
+                    <Input placeholder="请输入客户姓名（法大大实名认证用）" />
                   </Form.Item>
-                  <Form.Item name={['client', 'idCardNo']} label="身份证号">
-                    <Input placeholder="请输入身份证号（用于实名认证核验）" />
+                  <Form.Item name={['client', 'idCardNo']} label="身份证号" rules={[{ required: true, message: '请输入身份证号（法大大实名认证用）' }]}>
+                    <Input placeholder="请输入身份证号（法大大实名认证核验用）" />
                   </Form.Item>
-                  <Form.Item name={['client', 'mobile']} label="手机号">
-                    <Input placeholder="请输入手机号（快捷签署用）" />
+                  <Form.Item name={['client', 'mobile']} label="手机号" rules={[{ required: true, message: '请输入手机号（签署通知/实名认证用）' }]}>
+                    <Input placeholder="请输入手机号（签署通知与实名认证用）" />
                   </Form.Item>
                 </>
               ))}

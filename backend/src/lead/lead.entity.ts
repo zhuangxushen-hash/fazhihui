@@ -30,6 +30,10 @@ export class Lead {
   @Column({ nullable: true })
   contact_name: string;
 
+  // 身份证号（法大大个人实名认证通过后回写，核验过的真实证件号）
+  @Column({ type: 'varchar', nullable: true, comment: '身份证号（法大大实名认证回写）' })
+  id_card_no: string;
+
   @Column({ type: 'text', nullable: true })
   case_description: string;
 

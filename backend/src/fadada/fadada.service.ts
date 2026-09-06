@@ -1397,6 +1397,66 @@ export class FadadaService {
   }
 
   /**
+   * 实名认证通过后，把核验过的真实身份信息（姓名/手机号/身份证号）回写到
+   * 线索(leads) 与 客户档案(client_profiles)：
+   * - 线索：按 signing_compliance.lead_id 更新 contact_name/phone/id_card_no；
+   * - 客户档案：按 signing_compliance.client_id 更新 name/phone/id_card_no/contact_name。
+   * 仅对 person（个人/C端）主体生效（corp 主体无身份证号概念，不在此处理）。
+   * 幂等：只写入非空核验值，避免把已有字段清空；重复回调不会造成副作用。
+   * 实名信息来源：发合同表单填写、并经法大大核验通过的值（合同 client_name/client_phone + 签约记录 id_card_no）。
+   */
+  private async syncVerifiedRealNameToLeadAndClient(
+    target: SigningCompliance,
+  ): Promise<void> {
+    try {
+      if (target.subject_type && target.subject_type !== 'person') return;
+      const contract = target.contract_id
+        ? await this.contractRepository.findOne({ where: { id: target.contract_id } })
+        : null;
+      const name = contract?.client_name || '';
+      const phone = contract?.client_phone || '';
+      const idCard = target.id_card_no || '';
+      if (!name && !phone && !idCard) return;
+
+      // 线索回写：按 lead_id 定位（客户级发合同无线索时 lead_id 为空，跳过）
+      if (target.lead_id) {
+        const patch: Record<string, any> = {};
+        if (name) patch.contact_name = name;
+        if (phone) patch.phone = phone;
+        if (idCard) patch.id_card_no = idCard;
+        if (Object.keys(patch).length > 0) {
+          await this.leadRepository.update(target.lead_id, patch);
+          this.logger.log(
+            `实名信息已同步线索 leadId=${target.lead_id} fields=${Object.keys(patch).join(',')}`,
+          );
+        }
+      }
+
+      // 客户档案回写：client_id 恒非空
+      if (target.client_id) {
+        const profile = await this.clientProfileRepository.findOne({ where: { id: target.client_id } });
+        if (profile) {
+          const patch: Record<string, any> = {};
+          if (name) patch.name = name;
+          if (phone) patch.phone = phone;
+          if (idCard) patch.id_card_no = idCard;
+          if (name) patch.contact_name = name;
+          if (Object.keys(patch).length > 0) {
+            await this.clientProfileRepository.update(profile.id, patch);
+            this.logger.log(
+              `实名信息已同步客户档案 clientId=${profile.id} fields=${Object.keys(patch).join(',')}`,
+            );
+          }
+        }
+      }
+    } catch (e) {
+      this.logger.warn(
+        `实名信息回写线索/客户档案失败（不阻断主流程）contractId=${target.contract_id}: ${(e as Error)?.message || e}`,
+      );
+    }
+  }
+
+  /**
    * 新流程「发合同(签约)」：从线索发起，与案件无关。
    * 1) 创建合同记录（stage=signing，关联线索，保存生成案件补充信息 case_supplement）
    * 2) 创建签约合规记录（case_id 空串、lead_id/contract_id 关联）
@@ -1476,9 +1536,9 @@ export class FadadaService {
       this.logger.warn(`发合同：预生成案件编号失败，建案时回退生成 ${(e as Error)?.message || e}`);
     }
     const clientName = params.subjectType === 'corp'
-      ? params.corp?.corpName || lead.contact_name || lead.phone
-      : params.client?.userName || lead.contact_name || lead.phone;
-    const clientPhone = params.client?.mobile || lead.phone || '';
+      ? params.corp?.corpName || ''
+      : params.client?.userName || '';
+    const clientPhone = params.client?.mobile || '';
     const contract = await this.contractRepository.save(
       this.contractRepository.create({
         contract_no: contractNo || this.fallbackContractNo(),
@@ -1671,9 +1731,9 @@ export class FadadaService {
       this.logger.warn(`客户发合同：预生成案件编号失败，建案时回退生成 ${(e as Error)?.message || e}`);
     }
     const clientName = params.subjectType === 'corp'
-      ? params.corp?.corpName || client.name || client.contact_name || ''
-      : params.client?.userName || client.name || client.contact_name || '';
-    const clientPhone = params.client?.mobile || client.phone || '';
+      ? params.corp?.corpName || ''
+      : params.client?.userName || '';
+    const clientPhone = params.client?.mobile || '';
     const contract = await this.contractRepository.save(
       this.contractRepository.create({
         contract_no: contractNo || this.fallbackContractNo(),
@@ -1712,7 +1772,7 @@ export class FadadaService {
         subject_type: params.subjectType,
         status: SigningStatus.PENDING,
         verify_status: 'none',
-        id_card_no: params.client?.idCardNo || client.id_card_no || null,
+        id_card_no: params.client?.idCardNo || null,
         corp_name: params.corp?.corpName || null,
         corp_ident_no: params.corp?.corpIdentNo || null,
         legal_rep_name: params.corp?.legalRepName || null,
@@ -1790,10 +1850,12 @@ export class FadadaService {
       ? await this.leadRepository.findOne({ where: { id: contract.related_lead_id } })
       : null;
 
-    // 客户档案：按手机号查找，无则自动建档（保证 C 端可见案件）
-    let clientId: string | null = null;
+    // 客户档案关联：优先用合同已绑定的客户档案（客户级发合同已写入 client_id），
+    // 避免操作员填写的手机号与档案手机号不一致时又自动建档产生重复客户；
+    // 无线索且无 client_id 时再按手机号查找/建档（线索发合同路径）。
+    let clientId: string | null = contract.client_id || null;
     const phone = contract.client_phone || lead?.phone || '';
-    if (phone) {
+    if (!clientId && phone) {
       let profile = await this.clientProfileRepository.findOne({ where: { phone } });
       if (!profile) {
         const created = this.clientProfileRepository.create({
@@ -1989,7 +2051,11 @@ export class FadadaService {
                 ? body?.authResult === 'success' || body?.identProcessStatus === 'success'
                 : body?.verifyResult === true;
             target.verify_status = ok ? 'verified' : 'failed';
-            if (ok) target.verify_time = new Date();
+            if (ok) {
+              target.verify_time = new Date();
+              // 实名通过后，把核验过的真实身份信息回写到线索与客户档案
+              await this.syncVerifiedRealNameToLeadAndClient(target);
+            }
             await this.signingComplianceRepository.save(target);
             this.logger.log(`实名认证回调已更新签约记录 ${target.id}: verify_status=${target.verify_status}`);
           }
@@ -2017,6 +2083,8 @@ export class FadadaService {
               if (target.verify_status !== 'verified') {
                 target.verify_status = 'verified';
                 if (!target.verify_time) target.verify_time = new Date();
+                // 兜底：签署完成时若尚未回写（如 user-* 回调早于本代码或丢失），补做一次实名信息回写
+                await this.syncVerifiedRealNameToLeadAndClient(target);
               }
             } else if (eventId === 'sign-task-signed') {
               if (target.status !== SigningStatus.SIGNED) target.status = SigningStatus.REVIEWING;
