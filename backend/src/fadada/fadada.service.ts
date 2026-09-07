@@ -1028,25 +1028,64 @@ export class FadadaService {
       return;
     }
     this.logger.log(
-      `[fillValuesWithTolerance] signTaskId=${signTaskId} 展开控件数=${expanded.size} entries=${compiled.map((c) => `${c.fieldId}:${(c.fieldValue || '').slice(0, 8)}`).join(',')}`,
+      `[fillValuesWithTolerance] signTaskId=${signTaskId} 展开控件数=${expanded.size} entries=${compiled.map((c) => `${c.fieldId}:${(c.fieldValue || '').slice(0, 8)}`).join(',')} taskFieldsCount=${taskFields.length}`,
     );
-    for (const item of expanded.values()) {
-      // 法大大 fillFieldValues 的 docFieldValues 元素仅支持 {docId, fieldId, fieldValue} 三字段，多余的 fieldName 会触发 4xx 业务码
-      const payload = { docId: item.docId, fieldId: item.fieldId, fieldValue: item.fieldValue };
-      try {
-        const r = await this.signTaskClient.fillFieldValues({ signTaskId, docFieldValues: [payload] });
-        const code = r?.data?.code;
-        if (code && code !== '100000') {
-          this.logger.warn(
-            `字段写入失败 fieldId=${item.fieldId} fieldName=${item.fieldName} code=${code} msg=${r?.data?.msg || ''} payload=${JSON.stringify(payload)}`,
-          );
-        } else {
-          this.logger.log(`字段写入成功 fieldId=${item.fieldId} value=${(item.fieldValue || '').slice(0, 12)}`);
-        }
-      } catch (e) {
+    // 法大大 fillFieldValues 的 docFieldValues 元素仅支持 {docId, fieldId, fieldValue} 三字段，多余的 fieldName 会触发 4xx 业务码
+    const payloads = Array.from(expanded.values()).map((item) => ({
+      docId: item.docId,
+      fieldId: item.fieldId,
+      fieldValue: item.fieldValue,
+    }));
+    // 关键：单次请求批量写入所有控件（一次签名/一次网络往返），避免多次 fillFieldValues
+    // 调用之间出现的法大大内部状态不一致问题（如：某次写入后任务被并发改动、其他字段值被回滚）。
+    // 这是「必填控件未填写 211148」反复出现的根本原因之一——单条循环写入时若有任一调用
+    // 失败被 catch 吞掉、或 SDK 内部 docFieldValues 数组只接受 [1] 的情况下被截断，
+    // 都可能导致同名控件中的一份未落库。批量写入保证原子性。
+    try {
+      const r = await this.signTaskClient.fillFieldValues({ signTaskId, docFieldValues: payloads });
+      const code = r?.data?.code;
+      if (code && code !== '100000') {
         this.logger.warn(
-          `字段写入异常 fieldId=${item.fieldId} fieldName=${item.fieldName} payload=${JSON.stringify(payload)} err=${(e as Error)?.message || e}`,
+          `[fillValuesWithTolerance] 批量写入失败 signTaskId=${signTaskId} code=${code} msg=${r?.data?.msg || ''} payload=${JSON.stringify(payloads).slice(0, 200)}`,
         );
+        // 批量失败时按单条重试一次（部分 API 实现对单条更宽容），便于精确定位失败控件。
+        for (const item of expanded.values()) {
+          const payload = { docId: item.docId, fieldId: item.fieldId, fieldValue: item.fieldValue };
+          try {
+            const rr = await this.signTaskClient.fillFieldValues({ signTaskId, docFieldValues: [payload] });
+            const cc = rr?.data?.code;
+            if (cc && cc !== '100000') {
+              this.logger.warn(
+                `[fillValuesWithTolerance] 单条重试仍失败 fieldId=${item.fieldId} code=${cc} msg=${rr?.data?.msg || ''}`,
+              );
+            } else {
+              this.logger.log(`[fillValuesWithTolerance] 单条重试成功 fieldId=${item.fieldId}`);
+            }
+          } catch (e) {
+            this.logger.warn(
+              `[fillValuesWithTolerance] 单条重试异常 fieldId=${item.fieldId} err=${(e as Error)?.message || e}`,
+            );
+          }
+        }
+      } else {
+        this.logger.log(
+          `[fillValuesWithTolerance] 批量写入成功 signTaskId=${signTaskId} 控件数=${payloads.length}`,
+        );
+      }
+    } catch (e) {
+      // 整批失败也降级为单条重试，并附带完整错误信息
+      this.logger.warn(
+        `[fillValuesWithTolerance] 批量写入异常 signTaskId=${signTaskId} err=${(e as Error)?.message || e}，降级为逐条重试`,
+      );
+      for (const item of expanded.values()) {
+        const payload = { docId: item.docId, fieldId: item.fieldId, fieldValue: item.fieldValue };
+        try {
+          await this.signTaskClient.fillFieldValues({ signTaskId, docFieldValues: [payload] });
+        } catch (ee) {
+          this.logger.warn(
+            `[fillValuesWithTolerance] 单条降级异常 fieldId=${item.fieldId} err=${(ee as Error)?.message || ee}`,
+          );
+        }
       }
     }
   }
@@ -1135,7 +1174,25 @@ export class FadadaService {
         const msg = startRes.data.msg || '';
         // 211148=必填控件未填写：这是真实业务阻塞，直接抛错让前端提示客户补齐字段后重试
         if (code === '211148') {
-          throw new Error(`签署任务提交失败：${msg}`);
+          // 211148 通常是 fillFieldValues 写入失败/写入遗漏导致：start 时法大大侧仍认为必填控件未填。
+          // 此时拉取任务当前 fillFields 真实状态，作为诊断信息附加到错误信息中，
+          // 前端展示「已填字段 / 未填字段 / 法大大侧当前 fieldValue」便于排查。
+          let diagnostic = '';
+          try {
+            const fieldRes = await this.signTaskClient
+              .getSignTaskFieldList({ signTaskId })
+              .catch(() => null);
+            const fs: any[] = fieldRes?.data?.data?.fillFields || [];
+            const empties = fs.filter((f) => !f?.fieldValue).map((f) => `${f?.fieldName}-${f?.fieldId}`);
+            const filleds = fs.filter((f) => !!f?.fieldValue).map((f) => `${f?.fieldName}-${f?.fieldId}=${(f.fieldValue || '').slice(0, 6)}`);
+            diagnostic = `（未填：${empties.join(', ') || '无'}；已填：${filleds.join(', ') || '无'}）`;
+            this.logger.error(
+              `[trySubmitSignTask] 211148 诊断 signTaskId=${signTaskId} 未填=${JSON.stringify(empties)} 已填=${JSON.stringify(filleds)}`,
+            );
+          } catch (e) {
+            this.logger.warn(`[trySubmitSignTask] 拉取字段列表失败：${(e as Error)?.message || e}`);
+          }
+          throw new Error(`签署任务提交失败：${msg}${diagnostic}`);
         }
         // 其余情况（如任务已推进 211055）为幂等场景，降级为 WARN 继续取链接
         this.logger.warn(
