@@ -959,13 +959,15 @@ export class FadadaService {
     signTaskId: string,
     values: Array<{ docId?: string | number; fieldId?: string; fieldName?: string; fieldValue: string }>,
   ): Promise<void> {
+    // 不再过滤掉空值 entry：保留 fieldId/fieldName 信息用于「同名控件兜底」——
+    // 即便某个 entry 的 fieldValue 为空，taskFields 里同名控件的当前已填值或其他非空 entry 仍可兜底写入。
     const compiled = (values || [])
-      .filter((v) => v && v.fieldValue !== undefined && v.fieldValue !== null && v.fieldValue !== '')
+      .filter((v) => v && v.fieldId)
       .map((v) => ({
         docId: String(v.docId ?? ''),
         fieldId: v.fieldId,
         fieldName: v.fieldName,
-        fieldValue: String(v.fieldValue),
+        fieldValue: String(v.fieldValue ?? ''),
       }));
     if (compiled.length === 0) return;
     const fieldRes = await this.signTaskClient
@@ -977,11 +979,13 @@ export class FadadaService {
         .filter((f) => f?.fieldType === 'amount')
         .map((f) => f?.fieldId),
     );
-    // 同名控件展开：一个值 → 该 fieldName 命中的所有任务控件（金额控件除外）
+    // 同名控件展开 + 兜底：
+    //   - 写值优先级：当前 entry 非空 → 同 fieldName 其它 entry 非空 → 法大大任务当前 fieldValue → 跳过该控件。
+    //   - 这样能保证同名控件只要任一份 entry 有值，所有同名控件都同步写入，避免「客户身份证号-XXX」分两份时只填了其中一份的遗漏。
     const expanded = new Map<string, { docId: string; fieldId: string; fieldName: string; fieldValue: string }>();
     for (const item of compiled) {
       if (!item.fieldName) {
-        if (item.fieldId && !amountFieldIds.has(item.fieldId)) {
+        if (item.fieldId && !amountFieldIds.has(item.fieldId) && item.fieldValue !== '') {
           expanded.set(item.fieldId, item as any);
         }
         continue;
@@ -989,30 +993,60 @@ export class FadadaService {
       const twins = taskFields.filter(
         (f) => f?.fieldName === item.fieldName && f?.fieldId && !amountFieldIds.has(f.fieldId),
       );
+      // 兜底值：当前 entry 的非空值 || 同 fieldName 其它 entry 的非空值
+      const fallbackValue =
+        (item.fieldValue && item.fieldValue !== '' && item.fieldValue) ||
+        (compiled.find(
+          (c) =>
+            c.fieldId !== item.fieldId &&
+            c.fieldName === item.fieldName &&
+            c.fieldValue !== undefined &&
+            c.fieldValue !== null &&
+            c.fieldValue !== '',
+        )?.fieldValue ?? '');
       if (twins.length > 0) {
-        // 模板存在同名控件（可能多份）：全部写入，确保 start 时每份必填控件都有值
         for (const t of twins) {
+          // 同名控件任一已有值（法大大侧当前已写入的）也作为兜底
+          const tv = fallbackValue || (typeof t?.fieldValue === 'string' ? t.fieldValue : '');
+          if (!tv) continue;
           expanded.set(t.fieldId, {
             docId: String(t.docId ?? ''),
             fieldId: t.fieldId,
             fieldName: item.fieldName,
-            fieldValue: item.fieldValue,
+            fieldValue: tv,
           });
         }
-      } else if (item.fieldId && !amountFieldIds.has(item.fieldId)) {
+      } else if (item.fieldId && !amountFieldIds.has(item.fieldId) && item.fieldValue !== '') {
         // 字段列表查询失败或按名未命中：回退按 fieldId 原样写入
         expanded.set(item.fieldId, item);
       }
     }
+    if (expanded.size === 0) {
+      this.logger.warn(
+        `[fillValuesWithTolerance] 展开后无任何可写入控件 signTaskId=${signTaskId} compiledCount=${compiled.length} taskFieldsCount=${taskFields.length}`,
+      );
+      return;
+    }
+    this.logger.log(
+      `[fillValuesWithTolerance] signTaskId=${signTaskId} 展开控件数=${expanded.size} entries=${compiled.map((c) => `${c.fieldId}:${(c.fieldValue || '').slice(0, 8)}`).join(',')}`,
+    );
     for (const item of expanded.values()) {
+      // 法大大 fillFieldValues 的 docFieldValues 元素仅支持 {docId, fieldId, fieldValue} 三字段，多余的 fieldName 会触发 4xx 业务码
+      const payload = { docId: item.docId, fieldId: item.fieldId, fieldValue: item.fieldValue };
       try {
-        const r = await this.signTaskClient.fillFieldValues({ signTaskId, docFieldValues: [item] });
+        const r = await this.signTaskClient.fillFieldValues({ signTaskId, docFieldValues: [payload] });
         const code = r?.data?.code;
         if (code && code !== '100000') {
-          this.logger.warn(`字段写入失败 fieldId=${item.fieldId} fieldName=${item.fieldName} code=${code} msg=${r?.data?.msg || ''}`);
+          this.logger.warn(
+            `字段写入失败 fieldId=${item.fieldId} fieldName=${item.fieldName} code=${code} msg=${r?.data?.msg || ''} payload=${JSON.stringify(payload)}`,
+          );
+        } else {
+          this.logger.log(`字段写入成功 fieldId=${item.fieldId} value=${(item.fieldValue || '').slice(0, 12)}`);
         }
       } catch (e) {
-        this.logger.warn(`字段写入异常 fieldId=${item.fieldId} fieldName=${item.fieldName} msg=${(e as Error)?.message || e}`);
+        this.logger.warn(
+          `字段写入异常 fieldId=${item.fieldId} fieldName=${item.fieldName} payload=${JSON.stringify(payload)} err=${(e as Error)?.message || e}`,
+        );
       }
     }
   }
