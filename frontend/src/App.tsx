@@ -63,6 +63,7 @@ const ServiceRating = lazy(() => import('./pages/client/ServiceRating'))
 const ClientArchive = lazy(() => import('./pages/client/ClientArchive'))
 const MockFadada = lazy(() => import('./pages/client/MockFadada'))
 const SignPrefill = lazy(() => import('./pages/client/SignPrefill'))
+const SignAfterVerify = lazy(() => import('./pages/client/SignAfterVerify'))
 const ClientNotifications = lazy(() => import('./pages/client/ClientNotifications'))
 const ClientHelpCenter = lazy(() => import('./pages/client/ClientHelpCenter'))
 // Phase 4 模块8 数据中台
@@ -556,6 +557,7 @@ function App() {
           <Route path="/client/cases" element={<ClientProtectedRoute><ClientCaseList /></ClientProtectedRoute>} />
           <Route path="/client/case/:id" element={<ClientProtectedRoute><ClientCaseDetail /></ClientProtectedRoute>} />
           <Route path="/client/sign-prefill" element={<ClientProtectedRoute><SignPrefill /></ClientProtectedRoute>} />
+          <Route path="/client/sign-after-verify" element={<ClientProtectedRoute><SignAfterVerify /></ClientProtectedRoute>} />
           <Route path="/client/ai-consult" element={<ClientProtectedRoute><AIConsult /></ClientProtectedRoute>} />
           <Route path="/client/complaint" element={<ClientProtectedRoute><Complaint /></ClientProtectedRoute>} />
           <Route path="/client/my-complaints" element={<ClientProtectedRoute><MyComplaints /></ClientProtectedRoute>} />

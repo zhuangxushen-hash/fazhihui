@@ -85,18 +85,30 @@ export default function SignPrefill() {
     setSubmitting(true)
     try {
       const values: any = await form.validateFields()
+      const fieldValues = collectFieldValues(values)
+      // 实名完成后回跳用的中转页地址（绝对地址，需与法大大后台 redirect 白名单同域）：
+      // 落地后自动用本次已填字段再提交一次（此时已实名），直接打开签署页，跳过预览表单。
+      const redirectUrl = `${window.location.origin}/client/sign-after-verify?signing_id=${signingId}`
       const payload = {
         signing_id: signingId,
         client_id: user.id,
-        values: collectFieldValues(values),
+        values: fieldValues,
+        redirect_url: redirectUrl,
       }
       const res: any = await axios.post('/client/sign/submit-prefill', payload)
       // 标准两步流程（对齐法大大文档 6YHMCFJJC4/FIJYQHAS802K7UD9）：
       //   未实名（verify_status != verified）→ 后端自动调「个人授权链接API」并返回 identify_required=true
-      //   让客户先做人脸识别 + 实名账号绑定；
+      //   让客户先做人脸识别 + 实名账号绑定；实名完成法大大按 redirect_url 跳到中转页直接进签署。
       //   已实名 → 返回 sign_url / embed_url，客户进入签署页做互动视频签意愿确认。
       if (res?.identify_required) {
         if (res?.verify_url) {
+          // 暂存本次已填字段，供中转页复用，避免实名回来后重复填写
+          try {
+            localStorage.setItem(
+              `sign_prefill_stash_${signingId}`,
+              JSON.stringify({ signing_id: signingId, client_id: user.id, values: fieldValues }),
+            )
+          } catch { /* localStorage 不可用时忽略，中转页会提示回预览页 */ }
           message.info(res?.message || '请先完成人脸识别与实名认证', 2)
           // 微信小程序内会自动桥接到法大大 pagesFace 中间页（解决 web-view 无法唤起刷脸小程序的问题）
           openFadadaUrl(res.verify_url)

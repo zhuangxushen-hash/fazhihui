@@ -250,6 +250,7 @@ export class ClientController {
     signing_id: string;
     client_id: string;
     values: Array<{ field_doc_id?: string; field_id?: string; field_name?: string; field_value: string }>;
+    redirect_url?: string;
   }) {
     try {
       return await this.clientService.submitSignPrefillAndSign(body);

@@ -842,6 +842,8 @@ export class ClientService {
     signing_id: string;
     client_id: string;
     values: Array<{ field_doc_id?: string; field_id?: string; field_name?: string; field_value: string }>;
+    // 实名授权完成后的回跳地址（仅覆盖「实名这一步」的 redirectUrl，不影响签字完成的全局回跳）
+    redirect_url?: string;
   }): Promise<any> {
     const signing = await this.findSigning(body.signing_id, body.client_id);
     if (!signing.fadada_sign_task_id) {
@@ -881,6 +883,7 @@ export class ClientService {
       const verifyRes: any = await this.getSignVerifyUrl({
         signing_id: signing.id,
         client_id: body.client_id,
+        redirect_url: body.redirect_url,
       });
       return {
         signing_id: signing.id,
