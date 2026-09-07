@@ -105,6 +105,12 @@ export class SigningCompliance {
   @Column({ type: 'varchar', nullable: true })
   fadada_actor_id: string;
 
+  // 法大大客户参与方账号标识（clientUserId）：发合同时按「真实手机号」派生，
+  // 与 accountName(手机号) 保持绑定一致，避免「accountName与clientUserId不匹配, 非同一用户」。
+  // 作为单一事实源，供创建任务 / C端实名注册 / C端提交签署三处复用，确保全程一致。
+  @Column({ type: 'varchar', nullable: true, comment: '法大大客户参与方账号ID（clientUserId）' })
+  fadada_client_user_id: string;
+
   // 法大大签署链接（参与方专属链接）
   @Column({ type: 'varchar', nullable: true })
   sign_url: string;

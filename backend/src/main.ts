@@ -102,6 +102,10 @@ async function bootstrap() {
           await dataSource.query(`ALTER TABLE signing_compliance ADD COLUMN contract_id varchar`);
           console.log('[生产环境] signing_compliance 表已补充 contract_id 列');
         }
+        if (!sCols.some((c: any) => c.name === 'fadada_client_user_id')) {
+          await dataSource.query(`ALTER TABLE signing_compliance ADD COLUMN fadada_client_user_id varchar`);
+          console.log('[生产环境] signing_compliance 表已补充 fadada_client_user_id 列（法大大客户账号ID，避免实名不匹配）');
+        }
       }
     } catch (e) {
       console.warn('[生产环境] signing_compliance 补列检查失败，请手动执行 ALTER TABLE', e);

@@ -16,6 +16,8 @@ export default function SignPrefill() {
   const [submitting, setSubmitting] = useState(false)
   const [fields, setFields] = useState<any[]>([])
   const [subject, setSubject] = useState('委托代理合同')
+  const [partyA, setPartyA] = useState('')
+  const [partyB, setPartyB] = useState('')
   const [signingId, setSigningId] = useState('')
   const [form] = Form.useForm()
   const [searchParams] = useSearchParams()
@@ -40,6 +42,8 @@ export default function SignPrefill() {
       const list = res?.fields || []
       setFields(list)
       setSubject(res?.subject || '委托代理合同')
+      setPartyA(res?.party_a || '')
+      setPartyB(res?.party_b || '')
       const defaults: any = {}
       list.forEach((f: any) => {
         if (f.default_value) defaults[f.field_id] = f.default_value
@@ -185,9 +189,9 @@ export default function SignPrefill() {
               </Pill>
             </div>
             <div style={{ fontSize: 13, color: '#475569' }}>
-              甲方（委托人）：{user.real_name || user.name || '—'}
+              甲方（委托人）：{partyA || '—'}
             </div>
-            <div style={{ fontSize: 13, color: '#475569' }}>乙方（受托人）：法智汇合作律所</div>
+            <div style={{ fontSize: 13, color: '#475569' }}>乙方（受托人）：{partyB || '—'}</div>
             <div style={{ fontSize: 12, color: '#94A3B8' }}>签约日期：{today}</div>
           </Card>
 

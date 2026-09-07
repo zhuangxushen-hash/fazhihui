@@ -218,61 +218,63 @@ export default function LeadSignLaunch() {
   }
 
   // 解析业务员预填字段的自动带出值（auto_source）：
-  // 新流程从「线索」带出（lead.* 命名空间）；客户级发合同时按 client.* 带出客户档案字段；
-  // legacy case.*/client.*/team.*/timeline.* 键做兼容映射
+  // 甲方（client.*）/乙方线索侧（lead.*）互相兜底——客户级发合同（client.*）与线索发合同（lead.*）都能正确带出，
+  // 且以「客户/线索档案当前维护的值」为准（操作员在客户管理/线索改了资料即可生效）。
+  // 注意：此处的甲方乙方为合同正文显示用；法大大实名认证使用的姓名走独立的表单填写字段（不预填档案）。
+  // 乙方（我方/受托方）用 firm.name 取所属组织名称。
   const resolveAutoSource = (key?: string): string => {
     if (!key) return ''
     const l: any = lead || {}
     const c: any = client || {}
-    // 线索字段：lead.<字段名>
-    if (key.startsWith('lead.')) {
-      const f = key.slice(5)
-      const map: Record<string, any> = {
-        name: l.contact_name,
-        mobile: l.phone,
-        phone: l.phone,
-        case_type: l.case_type ? caseTypeLabel(l.case_type) : '',
-        description: l.case_description,
-        amount: l.amount,
-        unit_name: l.unit_name,
-        address: l.contact_address,
-        province: l.province,
-        city: l.city,
-        business_summary: l.business_summary,
-        referrer: l.referrer,
-        source_channel: l.source_channel,
-        handler: l.handler,
-        assignee: l.assignee,
-      }
-      const v = map[f]
-      return v === undefined || v === null ? '' : String(v)
+    const clientMap: Record<string, any> = {
+      name: c.name || c.contact_name,
+      contact_name: c.contact_name || c.name,
+      mobile: c.phone,
+      phone: c.phone,
+      id_card_no: c.id_card_no,
+      address: c.address,
+      type: c.type === 'enterprise' ? '企业' : '个人',
+      unit_name: c.unit_name,
     }
-    // 客户档案字段：client.<字段名>（客户级发合同时带出）
+    const leadMap: Record<string, any> = {
+      name: l.contact_name,
+      contact_name: l.contact_name,
+      mobile: l.phone,
+      phone: l.phone,
+      case_type: l.case_type ? caseTypeLabel(l.case_type) : '',
+      description: l.case_description,
+      amount: l.amount,
+      unit_name: l.unit_name,
+      address: l.contact_address,
+      province: l.province,
+      city: l.city,
+      business_summary: l.business_summary,
+      referrer: l.referrer,
+      source_channel: l.source_channel,
+      handler: l.handler,
+      assignee: l.assignee,
+    }
+    // 客户档案字段：client.<字段名>（客户级发合同优先，无值时回退线索，保证兼容）
     if (key.startsWith('client.')) {
       const f = key.slice(7)
-      const map: Record<string, any> = {
-        name: c.name || c.contact_name,
-        mobile: c.phone,
-        phone: c.phone,
-        address: c.address,
-        type: c.type === 'enterprise' ? '企业' : '个人',
-      }
-      const v = map[f]
+      const v = clientMap[f] ?? leadMap[f]
       return v === undefined || v === null ? '' : String(v)
     }
-    // 律所字段：firm.name
+    // 线索字段：lead.<字段名>（线索发合同优先，无值时回退客户档案）
+    if (key.startsWith('lead.')) {
+      const f = key.slice(5)
+      const v = leadMap[f] ?? clientMap[f]
+      return v === undefined || v === null ? '' : String(v)
+    }
+    // 律所字段：firm.name（我方/受托方名称；客户级发合同以客户所属组织为准）
     if (key === 'firm.name') {
-      const orgId = l.organization_id || c.organization_id
+      const orgId = c.organization_id || l.organization_id
       return organizations.find((o: any) => o.id === orgId)?.name || ''
     }
-    // 兼容旧配置键：case.* → 尽量从线索映射（发合同时还没有案件）
+    // 兼容旧配置键：case.*（发合同时还没有案件，按客户档案优先、线索兜底映射）
     if (key.startsWith('case.')) {
       const raw = key.slice(5)
-      const map: Record<string, any> = {
-        case_type: l.case_type ? caseTypeLabel(l.case_type) : '',
-        description: l.case_description,
-      }
-      const v = map[raw]
+      const v = clientMap[raw] ?? leadMap[raw]
       return v === undefined || v === null ? '' : String(v)
     }
     // team.*/timeline.*/lawyer.* 在发合同阶段无案件数据，留空手填

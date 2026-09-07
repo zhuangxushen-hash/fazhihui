@@ -19,6 +19,8 @@ import { ClientConsultation } from './client-consultation.entity';
 import { ServiceRating } from './service-rating.entity';
 import { ClientArchive } from './client-archive.entity';
 import { ClientProfile } from './client-profile.entity';
+import { Contract } from '../contract/contract.entity';
+import { Organization } from '../user/organization.entity';
 // 法大大电子签：客户端签约身份鉴别 + 电子签名
 import { FadadaService } from '../fadada/fadada.service';
 // Phase4 M3: 客户投诉走合规通道，注入合规服务
@@ -67,6 +69,10 @@ export class ClientService {
     private clientArchiveRepository: Repository<ClientArchive>,
     @InjectRepository(ClientProfile)
     private clientProfileRepository: Repository<ClientProfile>,
+    @InjectRepository(Contract)
+    private contractRepository: Repository<Contract>,
+    @InjectRepository(Organization)
+    private organizationRepository: Repository<Organization>,
     // 法大大电子签：实名认证 + 签署任务
     private fadadaService: FadadaService,
     // Phase4 M3: 注入合规服务，客户投诉同步走合规通道（forwardRef 防止循环依赖）
@@ -524,6 +530,17 @@ export class ClientService {
     const isCorp = signing.subject_type === 'corp';
     // 个人证件号（个人认证主体，或企业认证时的经办人证件）
     const idCardNo = body.id_card_no || signing.id_card_no || profile.id_card_no || '';
+    // 法大大客户账号 ID：以签约记录记录的 fadada_client_user_id 为单一事实源，
+    // 与创建签署任务时完全一致（创建任务已按「真实手机号」解析，避免 accountName 不匹配）
+    const fadadaClientUserId = signing.fadada_client_user_id || body.client_id;
+    // 实名认证手机号必须与创建任务时的 accountName(手机号) 配套：
+    //   - 创建任务用了 CLT_<手机号> 派生账号 → 此处取其后缀，确保同一手机号绑定同一账号
+    //   - 否则沿用 C 端传入手机号 / 客户档案手机号
+    const accountMobile =
+      (fadadaClientUserId && fadadaClientUserId.startsWith('CLT_') ? fadadaClientUserId.slice(4) : undefined) ||
+      body.mobile ||
+      profile.phone ||
+      undefined;
     // 回写企业信息到签署记录（企业实名认证/签署主体匹配用）
     if (isCorp) {
       if (body.corp_name) signing.corp_name = body.corp_name;
@@ -564,14 +581,12 @@ export class ClientService {
     const result = await this.fadadaService.getRealNameAuthUrl(
       {
         signingId: signing.id,
-        // clientUserId 必须与签署链路（createWithTemplate / getActorUrl）保持一致，
-        // 统一口径为「本地客户档案 ID」（body.client_id，即 C 端登录客户 ID）：
-        // 法大大会校验 accountName(手机号)↔clientUserId 绑定关系，同一手机号换
-        // clientUserId 注册/发起会报「accountName与clientUserId不匹配, 非同一用户」。
-        clientUserId: body.client_id,
+        // clientUserId 复用创建任务时记录的 fadada_client_user_id，保证 accountName↔clientUserId
+        // 绑定关系一致，杜绝「accountName与clientUserId不匹配, 非同一用户」报错
+        clientUserId: fadadaClientUserId,
         userName: body.user_name || profile.name || profile.contact_name || '客户',
         idCardNo,
-        mobile: body.mobile || profile.phone || undefined,
+        mobile: accountMobile,
       },
       body.redirect_url,
     );
@@ -632,7 +647,7 @@ export class ClientService {
             }
           : undefined,
       client: {
-        clientUserId: signing.client_id,
+        clientUserId: signing.fadada_client_user_id || signing.client_id,
         userName: profile?.name || profile?.contact_name || '客户',
         idCardNo: signing.id_card_no || profile?.id_card_no || undefined,
         mobile: profile?.phone || undefined,
@@ -765,11 +780,32 @@ export class ClientService {
       throw new Error('该签约尚未完成发起，缺少签署任务ID');
     }
     const fields = await this.fadadaService.getClientPrefillFields(signing.fadada_sign_task_id);
+
+    // 甲方（委托人）：优先取合同上填写的真实姓名（发合同时录入），回退客户档案姓名
+    let partyA = '';
+    if (signing.contract_id) {
+      const contract = await this.contractRepository.findOne({ where: { id: signing.contract_id } });
+      partyA = contract?.client_name || '';
+    }
+    if (!partyA && signing.client_id) {
+      const profile = await this.clientProfileRepository.findOne({ where: { id: signing.client_id } });
+      partyA = profile?.name || '';
+    }
+
+    // 乙方（受托人）：签约所属组织（实际受托律所）名称
+    let partyB = '';
+    if (signing.organization_id) {
+      const org = await this.organizationRepository.findOne({ where: { id: signing.organization_id } });
+      partyB = org?.name || '';
+    }
+
     return {
       signing_id: signing.id,
       sign_task_id: signing.fadada_sign_task_id,
       subject: signing.contract_content || '法律顾问签约',
       fields,
+      party_a: partyA || '—',
+      party_b: partyB || '—',
     };
   }
 
@@ -811,19 +847,23 @@ export class ClientService {
     if (!signing.fadada_sign_task_id) {
       throw new Error('该签约尚未完成发起，缺少签署任务ID');
     }
-    // 查出客户手机号：法大大 accountName 用（法大大侧 accountName=手机号）
+    // 查出客户手机号：法大大 accountName 用（法大大侧 accountName=手机号）。
+    // 若创建任务时用了 CLT_<手机号> 派生账号，accountName 取其后缀，与创建任务时一致。
     let clientMobile: string | undefined;
+    const fadadaClientUserId = signing.fadada_client_user_id || signing.client_id || body.client_id;
     try {
       const profile = await this.clientProfileRepository.findOne({ where: { id: signing.client_id } });
-      clientMobile = profile?.phone || undefined;
+      clientMobile =
+        (fadadaClientUserId && fadadaClientUserId.startsWith('CLT_') ? fadadaClientUserId.slice(4) : undefined) ||
+        profile?.phone ||
+        undefined;
     } catch { /* 查不到就跳过，accountName 为空法大大走普通登录流程 */ }
     // 标准两步流程实名校验：以法大大侧实时实名结果为权威数据源判断（本地 verify_status 仅作缓存/兜底）。
     //   - 法大大 identStatus=identified → 已实名，回写本地 verify_status 后直接走第 ② 步签署；
     //   - unidentified → 未实名，自动调「个人授权链接API」返回刷脸链接（identify_required=true）；
     //   - 查询异常/mock 模式 → 回退本地 verify_status 判断（可用性优先，避免网络抖动导致重复刷脸）。
-    // clientUserId 统一口径：本地客户档案 ID。lead 发起的签约 signing.client_id 为空，
-    // 回退用 body.client_id（C 端登录客户 ID，两者最终指向同一客户档案）。
-    const fadadaClientUserId = signing.client_id || body.client_id;
+    // clientUserId 统一口径：签约记录记录的 fadada_client_user_id（创建任务时按真实手机号解析），
+    // 与实名注册/免登查询一致；lead 发起且未记录时回退 signing.client_id，再回退 C 端登录客户 ID。
     let identified: boolean;
     if (this.fadadaService.mode !== 'mock' && fadadaClientUserId) {
       const realNameStatus = await this.fadadaService.getUserRealNameStatus(fadadaClientUserId);

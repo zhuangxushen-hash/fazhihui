@@ -1253,6 +1253,16 @@ export class FadadaService {
     // 互动视频签（audio_video）播报内容（模板管理按模板配置，未配置时回退默认）
     audioVideoInfos?: Array<{ audioText: string; answerText?: string }>;
   }) {
+    // 法大大客户参与方账号 clientUserId：按「真实手机号」派生，确保与 accountName(手机号) 绑定一致。
+    //   - 表单手机号 == 档案手机号：沿用档案 ID（与 C 端实名注册口径一致，保留历史绑定）
+    //   - 二者不一致（新客户 / 占位档案 / 更正号码）：用 CLT_<手机号> 派生新账号，天然一致
+    let caseFadadaClientUserId: string = params.clientId;
+    if (params.subjectType !== 'corp' && params.client?.mobile) {
+      const profile = await this.clientProfileRepository.findOne({ where: { id: params.clientId } });
+      const realPhone = params.client.mobile;
+      const profilePhone = profile?.phone || '';
+      caseFadadaClientUserId = realPhone && realPhone !== profilePhone ? 'CLT_' + realPhone : params.clientId;
+    }
     // 1. 创建签约合规记录（pending，引用法大大签署模板）
     const signing: SigningCompliance = await this.signingComplianceRepository.save(
       this.signingComplianceRepository.create({
@@ -1271,6 +1281,8 @@ export class FadadaService {
         contract_content: params.subject,
         // 保存系统预填 + 业务员预填的字段值，C 端提交签署时一并传参法大大，避免信息丢失
         prefill_values: params.fillValues && params.fillValues.length > 0 ? JSON.stringify(params.fillValues) : null,
+        // 记录本次签约使用的法大大客户账号 ID，C 端实名/签署复用同一值，避免「非同一用户」校验报错
+        fadada_client_user_id: caseFadadaClientUserId,
       } as Partial<SigningCompliance>),
     );
     try {
@@ -1282,14 +1294,13 @@ export class FadadaService {
         }
       }
       // 3. 基于签署模板发起签署，获取客户 C 端签署链接
-      // clientUserId 统一用本地客户档案 ID（clientId）：与 C 端实名注册、法大大侧
-      // accountName↔clientUserId 绑定保持一致，避免「非同一用户」校验报错
+      // clientUserId 用上面解析出的 caseFadadaClientUserId，与 accountName(手机号) 绑定一致
       const res = await this.createSignTaskFromTemplate({
         signingId: signing.id,
         subject: params.subject,
         signTemplateId: params.signTemplateId,
         subjectType: params.subjectType,
-        client: params.client ? { ...params.client, clientUserId: params.clientId } : undefined,
+        client: params.client ? { ...params.client, clientUserId: caseFadadaClientUserId } : undefined,
         corp: params.corp,
         lawyer: params.lawyer,
         fillValues: params.fillValues,
@@ -1563,6 +1574,9 @@ export class FadadaService {
       } as Partial<Contract>),
     );
 
+    // 法大大客户参与方账号 clientUserId：个人主体按「表单手机号匹配的档案 ID」为单一事实源，
+    // 供 C 端实名/签署复用同一值（在下方 try 内按手机号建档/匹配后回填到签约记录）
+    let leadClientUserId: string | undefined = params.client?.clientUserId;
     // 2. 创建签约合规记录（无案件，case_id 空串）
     const signing: SigningCompliance = await this.signingComplianceRepository.save(
       this.signingComplianceRepository.create({
@@ -1582,6 +1596,8 @@ export class FadadaService {
         legal_rep_name: params.corp?.legalRepName || null,
         contract_content: params.subject,
         prefill_values: params.fillValues && params.fillValues.length > 0 ? JSON.stringify(params.fillValues) : null,
+        // 法大大客户账号 ID：以「手机号匹配的档案 ID」为单一事实源，C 端实名/签署复用同一值
+        fadada_client_user_id: leadClientUserId || undefined,
       } as Partial<SigningCompliance>),
     );
 
@@ -1592,7 +1608,6 @@ export class FadadaService {
       //    有档案 → 补录身份证号/替换占位姓名。
       //    档案 ID 作为法大大 clientUserId（与 C 端实名注册口径一致），
       //    同步异常时回退 CLT_手机号，不阻断发合同。
-      let leadClientUserId: string | undefined = params.client?.clientUserId;
       if (params.subjectType !== 'corp') {
         const phone = params.client?.mobile || lead.phone;
         if (phone) {
@@ -1617,6 +1632,8 @@ export class FadadaService {
           // 签约记录回填客户档案 ID：C 端登录后按 client_id 才能查到/签署该合同
           // （findSigning、getActiveSignings 均按 client_id 匹配，留空则客户侧完全不可见）
           signing.client_id = profile.id;
+          // 法大大客户账号 ID 同步回填，确保与创建任务时一致（C 端实名/签署复用同一值）
+          signing.fadada_client_user_id = leadClientUserId || undefined;
         }
       }
       const res = await this.createSignTaskFromTemplate({
@@ -1703,6 +1720,15 @@ export class FadadaService {
       await this.syncRealNameToProfile(client, params.client.userName, params.client.idCardNo);
     }
 
+    // 法大大客户参与方账号 clientUserId：按「真实手机号」派生，确保与 accountName(手机号) 绑定一致。
+    //   - 表单手机号 == 档案手机号：沿用档案 ID（与 C 端实名注册口径一致，保留历史绑定、避免重复实名）
+    //   - 二者不一致（新客户 / 占位档案 / 更正号码）：用 CLT_<手机号> 派生新账号，
+    //     法大大侧不会出现「accountName 与 clientUserId 不匹配, 非同一用户」
+    const realPhone = params.client?.mobile || '';
+    const profilePhone = client.phone || '';
+    const resolvedClientUserId =
+      realPhone && realPhone !== profilePhone ? 'CLT_' + realPhone : params.clientId;
+
     // 1. 创建合同记录（发合同 → 待签署）
     let contractNo: string | null = null;
     try {
@@ -1778,19 +1804,23 @@ export class FadadaService {
         legal_rep_name: params.corp?.legalRepName || null,
         contract_content: params.subject,
         prefill_values: params.fillValues && params.fillValues.length > 0 ? JSON.stringify(params.fillValues) : null,
+        // 记录本次签约使用的法大大客户账号 ID：与 accountName(手机号) 绑定一致，
+        // C 端实名认证/提交签署时复用同一值，避免「accountName与clientUserId不匹配」
+        fadada_client_user_id: resolvedClientUserId,
       } as Partial<SigningCompliance>),
     );
 
     try {
       // 3. 基于签署模板发起法大大签署任务
-      // clientUserId 统一用本地客户档案 ID（params.clientId）：与 C 端实名注册、
-      // 法大大侧 accountName↔clientUserId 绑定保持一致，避免「非同一用户」校验报错
+      // clientUserId 用上面解析出的 resolvedClientUserId：手机号与档案一致时沿用档案 ID
+      // （与 C 端实名注册/历史绑定一致），不一致时（新客户/占位档案/更正号码）用 CLT_<手机号>
+      // 派生新账号，与 accountName(手机号) 天然一致，绝不会触发「非同一用户」校验报错
       const res = await this.createSignTaskFromTemplate({
         signingId: signing.id,
         subject: params.subject,
         signTemplateId: params.signTemplateId,
         subjectType: params.subjectType,
-        client: params.client ? { ...params.client, clientUserId: params.clientId } : undefined,
+        client: params.client ? { ...params.client, clientUserId: resolvedClientUserId } : undefined,
         corp: params.corp,
         lawyer: params.lawyer,
         fillValues: params.fillValues,
@@ -2031,20 +2061,27 @@ export class FadadaService {
       if (eventId.startsWith('user-')) {
         const clientUserId = body?.clientUserId;
         if (clientUserId) {
-          // 兼容两种 clientUserId 口径：直接匹配本地 client_id（旧口径），或
-          // 「CLT_手机号」（新统一口径）→ 通过手机号反查客户档案得到本地 client_id
-          let localClientId: string | null = clientUserId;
-          if (clientUserId.startsWith('CLT_')) {
-            const phone = clientUserId.slice(4);
-            const profile = await this.clientProfileRepository.findOne({ where: { phone } });
-            localClientId = profile?.id || null;
-          }
-          const target = localClientId
-            ? await this.signingComplianceRepository.findOne({
+          // 优先用签约记录记录的 fadada_client_user_id 直接精确匹配（CLT_手机号派生账号也能命中，
+          // 即便该手机号尚未建档，也能正确定位到签约记录，避免实名状态不更新）
+          let target = await this.signingComplianceRepository.findOne({
+            where: { fadada_client_user_id: clientUserId, verify_status: 'pending' },
+            order: { created_at: 'DESC' },
+          });
+          // 兼容旧口径：clientUserId 直接是本地 client_id，或「CLT_手机号」→ 反查档案得到本地 client_id
+          if (!target) {
+            let localClientId: string | null = clientUserId;
+            if (clientUserId.startsWith('CLT_')) {
+              const phone = clientUserId.slice(4);
+              const profile = await this.clientProfileRepository.findOne({ where: { phone } });
+              localClientId = profile?.id || null;
+            }
+            if (localClientId) {
+              target = await this.signingComplianceRepository.findOne({
                 where: { client_id: localClientId, verify_status: 'pending' },
                 order: { created_at: 'DESC' },
-              })
-            : null;
+              });
+            }
+          }
           if (target) {
             const ok =
               eventId === 'user-authorize'
