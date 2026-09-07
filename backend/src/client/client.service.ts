@@ -783,25 +783,22 @@ export class ClientService {
 
     // 若客户此前已填过（含实名跳转回来 / 手动再次进入），把已填值回填为表单默认值，
     // 避免必填项（如客户身份证号）因表单重置而空白，再次提交时法大大报「必填控件未填写」。
+    // 优先级：prefill_values 暂存值（客户/B端最近一次提交的值） > 法大大任务当前已填值。
     let fieldsWithDefaults = fields;
     try {
       const saved: Array<{ docId?: string | number; fieldId?: string; fieldName?: string; fieldValue?: string }> = JSON.parse(
         signing.prefill_values || '[]',
       );
-      if (Array.isArray(saved) && saved.length) {
-        const pvMap = new Map<string, string>();
-        saved.forEach((v) => {
-          if (v?.fieldId && v.fieldValue !== undefined && v.fieldValue !== null && v.fieldValue !== '') {
-            pvMap.set(v.fieldId, String(v.fieldValue));
-          }
-        });
-        if (pvMap.size) {
-          fieldsWithDefaults = fields.map((f: any) => {
-            const dv = pvMap.get(f.field_id);
-            return dv ? { ...f, default_value: dv } : f;
-          });
+      const pvMap = new Map<string, string>();
+      saved.forEach((v) => {
+        if (v?.fieldId && v.fieldValue !== undefined && v.fieldValue !== null && v.fieldValue !== '') {
+          pvMap.set(v.fieldId, String(v.fieldValue));
         }
-      }
+      });
+      fieldsWithDefaults = fields.map((f: any) => {
+        const dv = pvMap.get(f.field_id) || f.field_value;
+        return dv ? { ...f, default_value: dv } : f;
+      });
     } catch {
       /* 解析失败不影响主流程，按原字段返回 */
     }
