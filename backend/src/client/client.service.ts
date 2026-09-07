@@ -781,6 +781,31 @@ export class ClientService {
     }
     const fields = await this.fadadaService.getClientPrefillFields(signing.fadada_sign_task_id);
 
+    // 若客户此前已填过（含实名跳转回来 / 手动再次进入），把已填值回填为表单默认值，
+    // 避免必填项（如客户身份证号）因表单重置而空白，再次提交时法大大报「必填控件未填写」。
+    let fieldsWithDefaults = fields;
+    try {
+      const saved: Array<{ docId?: string | number; fieldId?: string; fieldName?: string; fieldValue?: string }> = JSON.parse(
+        signing.prefill_values || '[]',
+      );
+      if (Array.isArray(saved) && saved.length) {
+        const pvMap = new Map<string, string>();
+        saved.forEach((v) => {
+          if (v?.fieldId && v.fieldValue !== undefined && v.fieldValue !== null && v.fieldValue !== '') {
+            pvMap.set(v.fieldId, String(v.fieldValue));
+          }
+        });
+        if (pvMap.size) {
+          fieldsWithDefaults = fields.map((f: any) => {
+            const dv = pvMap.get(f.field_id);
+            return dv ? { ...f, default_value: dv } : f;
+          });
+        }
+      }
+    } catch {
+      /* 解析失败不影响主流程，按原字段返回 */
+    }
+
     // 甲方（委托人）：优先取合同上填写的真实姓名（发合同时录入），回退客户档案姓名
     let partyA = '';
     if (signing.contract_id) {
@@ -803,7 +828,7 @@ export class ClientService {
       signing_id: signing.id,
       sign_task_id: signing.fadada_sign_task_id,
       subject: signing.contract_content || '法律顾问签约',
-      fields,
+      fields: fieldsWithDefaults,
       party_a: partyA || '—',
       party_b: partyB || '—',
     };
@@ -848,6 +873,30 @@ export class ClientService {
     const signing = await this.findSigning(body.signing_id, body.client_id);
     if (!signing.fadada_sign_task_id) {
       throw new Error('该签约尚未完成发起，缺少签署任务ID');
+    }
+    // 实名流程会离开页面（跳转法大大刷脸），先把本次已填字段落库，
+    // 避免实名完成回来 / 用户手动再次点击时表单空白、必填项（如客户身份证号）为空，
+    // 导致法大大报「必填控件未填写」。后续 submit 与 getSignPrefillFields 都会复用此值。
+    if (body.values && body.values.length) {
+      const norm = (body.values || []).map((v) => ({
+        docId: v.field_doc_id,
+        fieldId: v.field_id,
+        fieldName: v.field_name,
+        fieldValue: v.field_value,
+      }));
+      const existing: Array<{ docId?: string | number; fieldId?: string; fieldName?: string; fieldValue?: string }> = (() => {
+        try {
+          return JSON.parse(signing.prefill_values || '[]');
+        } catch {
+          return [];
+        }
+      })();
+      const merged = new Map<string, { docId?: string | number; fieldId?: string; fieldName?: string; fieldValue?: string }>();
+      [...existing, ...norm].forEach((v) => {
+        if (v?.fieldId) merged.set(v.fieldId, v as any);
+      });
+      signing.prefill_values = JSON.stringify(Array.from(merged.values()));
+      await this.signingComplianceRepository.save(signing);
     }
     // 查出客户手机号：法大大 accountName 用（法大大侧 accountName=手机号）。
     // 若创建任务时用了 CLT_<手机号> 派生账号，accountName 取其后缀，与创建任务时一致。
