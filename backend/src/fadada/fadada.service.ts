@@ -875,32 +875,13 @@ export class FadadaService {
     }
     // 模板签署：B端创建 → 写入预填字段(固定值+业务员预填，客户后仍需填写的必填控件在此之后)。
     // 关键约束：填写接口(fillFieldValues)必须在提交(start)之前调用；
+    // 统一走 fillValuesWithTolerance：过滤金额控件 + 同名控件联动填充
+    // （模板存在多个同名控件时，如两处「客户身份证号」，一次把所有同名控件都填上，
+    //   避免 C 端表单再让客户重复填写同名信息、或 start 报必填控件未填写）。
     // 任务现处于「填写中」状态，后续由 C 端客户在本系统 C 端页面补全其余必填控件后，
     // 再调用 completeClientPrefillAndSign 完成 提交→定稿→ 并返回签署链接，从而实现「补充完整信息后再签约」闭环。
     if (params.fillValues && params.fillValues.length > 0) {
-      const compiled = params.fillValues
-        .filter((v) => v && v.fieldValue !== undefined && v.fieldValue !== null && v.fieldValue !== '')
-        .map((v) => ({
-          docId: String(v.docId ?? ''),
-          fieldId: v.fieldId,
-          fieldName: v.fieldName,
-          fieldValue: String(v.fieldValue),
-        }));
-      // 逐字段写入并容错：auto_source 自动带出的值可能不符合控件格式（如数字控件填了案件编号），
-      // 单个字段失败仅记录日志并跳过，避免整批填充失败导致 B 端预填全部丢失（C 端重复填写/不回显）。
-      for (const item of compiled) {
-        try {
-          const r = await this.signTaskClient.fillFieldValues({ signTaskId, docFieldValues: [item] });
-          const code = r?.data?.code;
-          if (code && code !== '100000') {
-            this.logger.warn(
-              `B端预填字段写入失败 fieldId=${item.fieldId} fieldName=${item.fieldName} code=${code} msg=${r?.data?.msg || ''}`,
-            );
-          }
-        } catch (e) {
-          this.logger.warn(`B端预填字段写入异常 fieldId=${item.fieldId} fieldName=${item.fieldName} msg=${(e as Error)?.message || e}`);
-        }
-      }
+      await this.fillValuesWithTolerance(signTaskId, params.fillValues);
     }
     // 不再跳转法大大预填 H5 页面：返回签署任务ID，由 C 端本系统页面收集字段后点击签约再取签署链接。
     return { signTaskId, actorId: clientActorId, signUrl: '', mode: 'prod' };
@@ -966,6 +947,9 @@ export class FadadaService {
    * 逐字段填充签署任务控件（共用）：
    * 金额控件(amount)无法通过 API 填充（211407），查询任务字段列表并过滤；
    * 其余字段逐字段写入并容错，单个字段值非法仅记录日志跳过，避免整体填充失败导致信息丢失。
+   * 同名控件联动：模板中可能存在多个同名填写控件（如两处「客户身份证号」），
+   * 按 fieldName 命中的所有控件一并写入同一值，避免只填其中一份、
+   * 另一份保持空白导致 start 提交报 211148「必填控件未填写」/客户被要求重复填写同名信息。
    */
   private async fillValuesWithTolerance(
     signTaskId: string,
@@ -983,21 +967,48 @@ export class FadadaService {
     const fieldRes = await this.signTaskClient
       .getSignTaskFieldList({ signTaskId })
       .catch(() => null);
+    const taskFields = ((fieldRes?.data?.data?.fillFields || []) as any[]);
     const amountFieldIds = new Set(
-      ((fieldRes?.data?.data?.fillFields || []) as any[])
+      taskFields
         .filter((f) => f?.fieldType === 'amount')
         .map((f) => f?.fieldId),
     );
+    // 同名控件展开：一个值 → 该 fieldName 命中的所有任务控件（金额控件除外）
+    const expanded = new Map<string, { docId: string; fieldId: string; fieldName: string; fieldValue: string }>();
     for (const item of compiled) {
-      if (amountFieldIds.has(item.fieldId)) continue;
+      if (!item.fieldName) {
+        if (item.fieldId && !amountFieldIds.has(item.fieldId)) {
+          expanded.set(item.fieldId, item as any);
+        }
+        continue;
+      }
+      const twins = taskFields.filter(
+        (f) => f?.fieldName === item.fieldName && f?.fieldId && !amountFieldIds.has(f.fieldId),
+      );
+      if (twins.length > 0) {
+        // 模板存在同名控件（可能多份）：全部写入，确保 start 时每份必填控件都有值
+        for (const t of twins) {
+          expanded.set(t.fieldId, {
+            docId: String(t.docId ?? ''),
+            fieldId: t.fieldId,
+            fieldName: item.fieldName,
+            fieldValue: item.fieldValue,
+          });
+        }
+      } else if (item.fieldId && !amountFieldIds.has(item.fieldId)) {
+        // 字段列表查询失败或按名未命中：回退按 fieldId 原样写入
+        expanded.set(item.fieldId, item);
+      }
+    }
+    for (const item of expanded.values()) {
       try {
         const r = await this.signTaskClient.fillFieldValues({ signTaskId, docFieldValues: [item] });
         const code = r?.data?.code;
         if (code && code !== '100000') {
-          this.logger.warn(`C端字段写入失败 fieldId=${item.fieldId} fieldName=${item.fieldName} code=${code} msg=${r?.data?.msg || ''}`);
+          this.logger.warn(`字段写入失败 fieldId=${item.fieldId} fieldName=${item.fieldName} code=${code} msg=${r?.data?.msg || ''}`);
         }
       } catch (e) {
-        this.logger.warn(`C端字段写入异常 fieldId=${item.fieldId} fieldName=${item.fieldName} msg=${(e as Error)?.message || e}`);
+        this.logger.warn(`字段写入异常 fieldId=${item.fieldId} fieldName=${item.fieldName} msg=${(e as Error)?.message || e}`);
       }
     }
   }
