@@ -9,6 +9,8 @@ import { Complaint } from '../compliance/complaint.entity';
 import { ComplaintTicket } from '../compliance/complaint-ticket.entity';
 import { ContractTemplate } from '../compliance/contract-template.entity';
 import { SigningCompliance } from '../compliance/signing-compliance.entity';
+import { Contract } from '../contract/contract.entity';
+import { Organization } from '../user/organization.entity';
 import { PaymentRecord } from '../finance/payment-record.entity';
 import { Lead } from '../lead/lead.entity';
 import { FollowUp } from '../lead/follow-up.entity';
@@ -54,6 +56,9 @@ import { SmsModule } from '../sms/sms.module';
       ClientArchive,
       // 客户档案管理（B端）新增实体
       ClientProfile,
+      // 发起合同/签约预填需要合同与客户组织架构（org 名称作为乙方）
+      Contract,
+      Organization,
     ]),
     // Phase4 M3: 注入合规服务用于客户投诉走合规通道
     forwardRef(() => ComplianceModule),
