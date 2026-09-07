@@ -81,6 +81,18 @@ export class LeadService {
     return this.leadRepository.findOne({ where: { id } });
   }
 
+  /**
+   * 删除线索（软删除）：置 deleted_at，列表与统计查询自动过滤，
+   * 关联的跟进记录(follow_ups)、合规记录等外键数据保留，避免破坏引用。
+   */
+  async remove(id: string): Promise<void> {
+    const lead = await this.leadRepository.findOne({ where: { id } });
+    if (!lead) {
+      throw new NotFoundException('线索不存在');
+    }
+    await this.leadRepository.softDelete(id);
+  }
+
   async updateStatus(id: string, status: LeadStatus): Promise<Lead> {
     await this.leadRepository.update(id, { status });
     return this.leadRepository.findOne({ where: { id } });

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Param, Query, UseGuards, Request, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { LeadService } from './lead.service';
 import { LeadStatus, CaseType, LeadSource, UserRole} from '../types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -83,6 +83,21 @@ export class LeadController {
       throw new ForbiddenException('无权访问该资源');
     }
     return this.leadService.update(id, body);
+  }
+
+  // 删除线索（软删除：置 deleted_at，列表自动过滤，保留 follow_ups 等关联数据）
+  @Delete(':id')
+  async remove(
+    @Param('id') id: string,
+    @Request() req?: any,
+  ) {
+    const existing = await this.leadService.findById(id);
+    if (!existing) throw new NotFoundException('线索不存在');
+    if (req?.user?.organization_id && existing.organization_id !== req.user.organization_id) {
+      throw new ForbiddenException('无权删除该资源');
+    }
+    await this.leadService.remove(id);
+    return { success: true, message: '线索已删除' };
   }
 
   @Put(':id/status')

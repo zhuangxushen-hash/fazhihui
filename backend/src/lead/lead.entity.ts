@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, ManyToOne, OneToMany } from 'typeorm';
 import { Organization } from '../user/organization.entity';
 import { User } from '../user/user.entity';
 import { FollowUp } from './follow-up.entity';
@@ -60,6 +60,10 @@ export class Lead {
 
   @UpdateDateColumn()
   updated_at: Date;
+
+  // 软删除时间（线索删除走软删，避免破坏 follow_ups 等外键关联，且可恢复）
+  @DeleteDateColumn({ nullable: true, comment: '软删除时间' })
+  deleted_at: Date;
 
   @Column({ nullable: true })
   follow_up_time: Date;

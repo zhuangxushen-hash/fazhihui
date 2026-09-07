@@ -116,6 +116,11 @@ async function bootstrap() {
         await dataSource.query(`ALTER TABLE leads ADD COLUMN id_card_no varchar`);
         console.log('[生产环境] leads 表已补充 id_card_no 列（实名认证通过后回写身份证号）');
       }
+      // 线索软删除：deleted_at 列
+      if (Array.isArray(lCols) && lCols.length > 0 && !lCols.some((c: any) => c.name === 'deleted_at')) {
+        await dataSource.query(`ALTER TABLE leads ADD COLUMN deleted_at datetime`);
+        console.log('[生产环境] leads 表已补充 deleted_at 列（线索软删除）');
+      }
     } catch (e) {
       console.warn('[生产环境] leads 补列检查失败，请手动执行 ALTER TABLE', e);
     }
