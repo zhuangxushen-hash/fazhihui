@@ -913,7 +913,12 @@ export class ClientService {
     // clientUserId 统一口径：签约记录记录的 fadada_client_user_id（创建任务时按真实手机号解析），
     // 与实名注册/免登查询一致；lead 发起且未记录时回退 signing.client_id，再回退 C 端登录客户 ID。
     let identified: boolean;
-    if (this.fadadaService.mode !== 'mock' && fadadaClientUserId) {
+    // 方案B：本地已实名(verify_status='verified')且非 mock 时，信任本地缓存、跳过法大大实名状态查询，
+    // 省去一次网络往返（~1-2s）。本地 verify_status 仅在法大大确认后写入 verified，与法大大侧一致；
+    // 仅当本地非 verified 时才回源法大大查询，兼顾实时性（避免重复触发人脸核身）。
+    if (signing.verify_status === 'verified' && this.fadadaService.mode !== 'mock') {
+      identified = true;
+    } else if (this.fadadaService.mode !== 'mock' && fadadaClientUserId) {
       const realNameStatus = await this.fadadaService.getUserRealNameStatus(fadadaClientUserId);
       identified = realNameStatus.identStatus === 'identified';
       // 法大大侧实名结果回写本地（含认证时间），供 B 端看板与状态展示使用

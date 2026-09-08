@@ -48,8 +48,12 @@ export default function SignAfterVerify() {
         }
         const url = res?.embed_url || res?.sign_url
         if (url) {
-          openFadadaUrl(url, { miniAppInfo: res.mini_app_info })
-          setStatus('done')
+          const ok = await openFadadaUrl(url, { miniAppInfo: res.mini_app_info })
+          if (ok) setStatus('done')
+          else {
+            setStatus('error')
+            message.error('打开签署页失败，请返回预览页重试')
+          }
         } else {
           setStatus('error')
           message.error('未获取到签署链接，请返回预览页重试')

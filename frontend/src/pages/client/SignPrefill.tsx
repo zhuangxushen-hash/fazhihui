@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Form, Input, InputNumber, message, Spin } from 'antd'
 import { LockOutlined } from '@ant-design/icons'
 import axios from '../../api/axios'
@@ -110,7 +110,15 @@ export default function SignPrefill() {
     return raw
   }
 
+  // 跳转成功后页面被 web-view 接管；若用户返回本页，8s 后复位按钮允许重试
+  const openWatchdogRef = useRef<number | null>(null)
+  const resetSubmittingLater = () => {
+    if (openWatchdogRef.current) window.clearTimeout(openWatchdogRef.current)
+    openWatchdogRef.current = window.setTimeout(() => setSubmitting(false), 8000)
+  }
+
   const handleSubmit = async () => {
+    if (submitting) return
     setSubmitting(true)
     try {
       const values: any = await form.validateFields()
@@ -140,22 +148,35 @@ export default function SignPrefill() {
           } catch { /* localStorage 不可用时忽略，中转页会提示回预览页 */ }
           message.info(res?.message || '请先完成人脸识别与实名认证', 2)
           // 微信小程序内会自动桥接到法大大 pagesFace 中间页（解决 web-view 无法唤起刷脸小程序的问题）
-          openFadadaUrl(res.verify_url, { miniAppInfo: res.mini_app_info })
+          // 跳转成功前保持 loading，避免按钮复位造成「跳转失败」错觉
+          const ok = await openFadadaUrl(res.verify_url, { miniAppInfo: res.mini_app_info })
+          if (ok) resetSubmittingLater()
+          else {
+            message.error('打开人脸识别失败，请重试')
+            setSubmitting(false)
+          }
         } else {
           message.error('未获取到人脸识别链接，请稍后重试')
+          setSubmitting(false)
         }
         return
       }
       const url = res?.embed_url || res?.sign_url
       if (url) {
         // 微信小程序内会自动桥接到法大大 pagesFace 中间页（解决 web-view 无法唤起互动视频签小程序的问题）
-        openFadadaUrl(url, { miniAppInfo: res.mini_app_info })
+        // 跳转成功前保持 loading，避免按钮复位造成「跳转失败」错觉
+        const ok = await openFadadaUrl(url, { miniAppInfo: res.mini_app_info })
+        if (ok) resetSubmittingLater()
+        else {
+          message.error('打开签署页失败，请重试')
+          setSubmitting(false)
+        }
       } else {
         message.error('未获取到签署链接，请稍后重试')
+        setSubmitting(false)
       }
     } catch (error) {
-      // 校验失败或请求错误已处理
-    } finally {
+      message.error('提交失败，请稍后重试')
       setSubmitting(false)
     }
   }
@@ -327,7 +348,7 @@ export default function SignPrefill() {
               cursor: 'pointer',
             }}
           >
-            {submitting ? '提交中...' : '预览合同'}
+            {submitting ? '正在打开签署页…' : '预览合同'}
           </button>
 
           {/* ===== 确认签署（功能暂未上线，暂时隐藏） ===== */}

@@ -57,58 +57,81 @@ export interface FadadaOpenOptions {
  *   于刷脸/互动视频签环节会自动跳转到对应 middle / avsMiddlePage 中间页。把 mini_app_info
  *   的 appId/path 一并透传，供中间页优先使用，避免硬编码。wx SDK 未注入时动态加载 jweixin
  *   后重试，仍失败或超时则降级为新窗口打开。
+ * @returns Promise<boolean> —— resolve(true) 表示已开始跳转（已 navigateTo / 已开新窗口）；
+ *   resolve(false) 表示跳转失败（wx 不可用且兜底打开也未生效）。调用方可据此决定是否复位 loading。
  */
-export function openFadadaUrl(url: string, opts?: FadadaOpenOptions): void {
-  if (!url) return
-  const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : ''
-
-  // 1. App 内嵌 web-view：直接当前页跳转
-  if (ua.includes('app_embed')) {
-    window.location.href = url
-    return
-  }
-
-  // 2. 明确桌面浏览器：新窗口打开
-  if (isDesktopBrowser()) {
-    fallbackOpen(url)
-    return
-  }
-
-  // 3. 默认按微信小程序处理（识别不到 UA 标记时不再降级为浏览器）
-  //    桥接到 pagesFace 的 webview 页（由法大大 H5 在刷脸/互动视频签环节自动跳转到
-  //    对应的 middle / avsMiddlePage 中间页）。把 mini_app_info 的 appId/path 一并带上，
-  //    webview 页写入 globalData/storage，供中间页优先使用，避免硬编码 appId。
-  const mini = opts?.miniAppInfo
-  const q = new URLSearchParams()
-  q.set('url', url)
-  if (mini?.wxOriginalId) q.set('appId', mini.wxOriginalId)
-  if (mini?.path) q.set('path', mini.path)
-  const navigateUrl = '/pagesFace/pages/webview/webview?' + q.toString()
-
-  let handled = false
-  const bridge = (): boolean => {
-    const wx = (window as any).wx
-    if (wx?.miniProgram?.navigateTo) {
-      wx.miniProgram.navigateTo({ url: navigateUrl })
-      return true
+export function openFadadaUrl(url: string, opts?: FadadaOpenOptions): Promise<boolean> {
+  return new Promise<boolean>((resolve) => {
+    if (!url) {
+      resolve(false)
+      return
     }
-    return false
-  }
-  if (bridge()) return
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : ''
 
-  // wx JS-SDK 未注入（小程序 webview 首次进入）→ 动态加载后重试
-  const degrade = () => {
-    if (handled) return
-    handled = true
-    fallbackOpen(url)
-  }
-  const script = document.createElement('script')
-  script.src = 'https://res.wx.qq.com/open/js/jweixin-1.6.0.js'
-  script.onload = () => {
-    if (!bridge()) degrade()
-  }
-  script.onerror = degrade
-  document.body.appendChild(script)
-  // SDK 加载超时兜底（弱网环境）
-  window.setTimeout(degrade, 5000)
+    // 1. App 内嵌 web-view：直接当前页跳转
+    if (ua.includes('app_embed')) {
+      window.location.href = url
+      resolve(true)
+      return
+    }
+
+    // 2. 明确桌面浏览器：新窗口打开
+    if (isDesktopBrowser()) {
+      fallbackOpen(url)
+      resolve(true)
+      return
+    }
+
+    // 3. 默认按微信小程序处理（识别不到 UA 标记时不再降级为浏览器）
+    //    桥接到 pagesFace 的 webview 页（由法大大 H5 在刷脸/互动视频签环节自动跳转到
+    //    对应的 middle / avsMiddlePage 中间页）。把 mini_app_info 的 appId/path 一并带上，
+    //    webview 页写入 globalData/storage，供中间页优先使用，避免硬编码 appId。
+    const mini = opts?.miniAppInfo
+    const q = new URLSearchParams()
+    q.set('url', url)
+    if (mini?.wxOriginalId) q.set('appId', mini.wxOriginalId)
+    if (mini?.path) q.set('path', mini.path)
+    const navigateUrl = '/pagesFace/pages/webview/webview?' + q.toString()
+
+    let done = false
+    const finish = (ok: boolean) => {
+      if (done) return
+      done = true
+      resolve(ok)
+    }
+    const bridge = (): boolean => {
+      const wx = (window as any).wx
+      if (wx?.miniProgram?.navigateTo) {
+        try {
+          wx.miniProgram.navigateTo({ url: navigateUrl })
+          return true
+        } catch {
+          return false
+        }
+      }
+      return false
+    }
+    // 小程序 web-view 内 wx 已注入 → 同步跳转，立即返回成功（避免 loading 过早复位）
+    if (bridge()) {
+      finish(true)
+      return
+    }
+
+    // wx JS-SDK 未注入（极少数时序问题）→ 动态加载后重试；失败/超时则降级新窗口
+    const degrade = () => {
+      if (done) return
+      fallbackOpen(url)
+      finish(false)
+    }
+    const script = document.createElement('script')
+    script.src = 'https://res.wx.qq.com/open/js/jweixin-1.6.0.js'
+    script.onload = () => {
+      if (bridge()) finish(true)
+      else degrade()
+    }
+    script.onerror = degrade
+    document.body.appendChild(script)
+    // SDK 加载超时兜底（弱网环境）
+    window.setTimeout(degrade, 5000)
+  })
 }
