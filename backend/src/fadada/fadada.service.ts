@@ -1109,7 +1109,7 @@ export class FadadaService {
     /** 本地客户档案 ID：法大大 clientUserId 的统一口径（与实名注册一致，用于免登判断） */
     clientUserId?: string;
     values: Array<{ docId?: string | number; fieldId?: string; fieldName?: string; fieldValue: string }>;
-  }): Promise<{ signUrl: string; embedUrl: string; mode: FadadaMode }> {
+  }): Promise<{ signUrl: string; embedUrl: string; mode: FadadaMode; miniAppInfo?: any }> {
     if (this.mode === 'mock') {
       return { signUrl: `/client/mock-fadada?mode=sign&signing_id=${params.signingId}`, embedUrl: '', mode: 'mock' };
     }
@@ -1152,6 +1152,11 @@ export class FadadaService {
     console.log('法大大 getActorUrl 响应.data=' + JSON.stringify(urlRes?.data));
     const signUrl = urlRes?.data?.data?.actorSignTaskUrl;
     const embedUrl = urlRes?.data?.data?.actorSignTaskEmbedUrl || '';
+    // 法大小程序入口信息（微信小程序 web-view 需据此跳转法大大刷脸/互动视频签小程序）：
+    // wxOriginalId = 法大小程序原始Id（作为 navigateToMiniProgram 的 appId）；
+    // path = 法大小程序内入口路径。后端透传给前端，前端在 MiniProgram 环境下交给 pagesFace 中间页使用，
+    // 避免在小程序代码里硬编码 appId。
+    const miniAppInfo = urlRes?.data?.data?.actorSignTaskMiniAppInfo || null;
     if (!signUrl) {
       // 附加签署任务当前状态日志，便于定位状态流转问题
       const detailRes = await this.signTaskClient
@@ -1162,7 +1167,7 @@ export class FadadaService {
       );
       throw new Error('法大大签署链接获取失败：' + (urlRes?.data?.msg || '未知错误'));
     }
-    return { signUrl, embedUrl, mode: 'prod' };
+    return { signUrl, embedUrl, mode: 'prod', miniAppInfo };
   }
 
   /**

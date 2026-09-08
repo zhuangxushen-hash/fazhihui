@@ -1,0 +1,2 @@
+<!-- pagesFace/pages/webview/webview.wxml -->
+<web-view wx:if="{{url}}" src="{{url}}" bindmessage="onMessage"></web-view>

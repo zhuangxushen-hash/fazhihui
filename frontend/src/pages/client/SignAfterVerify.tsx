@@ -48,7 +48,7 @@ export default function SignAfterVerify() {
         }
         const url = res?.embed_url || res?.sign_url
         if (url) {
-          openFadadaUrl(url)
+          openFadadaUrl(url, { miniAppInfo: res.mini_app_info })
           setStatus('done')
         } else {
           setStatus('error')

@@ -1,0 +1,9 @@
+/* pagesFace/pages/index/index.wxss */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: #94a3b8;
+  font-size: 14px;
+}

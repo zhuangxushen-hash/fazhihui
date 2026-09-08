@@ -1,0 +1,9 @@
+/* pagesFace/pages/middle/middle.wxss */
+.tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  color: #64748b;
+  font-size: 14px;
+}

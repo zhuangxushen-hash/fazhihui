@@ -961,6 +961,9 @@ export class ClientService {
       embed_url: result.embedUrl,
       sign_task_id: signing.fadada_sign_task_id,
       mode: result.mode,
+      // 法大小程序入口信息（微信小程序 web-view 环境使用）：wxOriginalId/path。
+      // 前端在 MiniProgram 下交给 pagesFace 中间页做 navigateToMiniProgram，避免硬编码 appId。
+      mini_app_info: result.miniAppInfo || null,
     };
   }
 

@@ -15,7 +15,14 @@ App({
     // 登录态：小程序本地存储里 token 的 key 名（与 app 端保持一致）
     tokenKey: 'token',
     // 法大大刷脸/互动视频签返回标记：从法大小程序 referrerInfo 回填，供 pagesFace 中间页判断
-    firstEnter: false
+    firstEnter: false,
+    // ★ 法大大刷脸/互动视频签小程序（pagesFace）配置
+    // 从「刷脸小程序跳转中间页DEMO」代码包（法大大开放平台-服务与支持-资源下载）的
+    // middle.js / avsMiddlePage.js 中拷贝对应值填入。刷脸与互动视频签共用同一个法大大小程序，仅 path 不同。
+    // 注意：必须先在法大大开放平台配置「业务域名校验文件」并关联本小程序，否则无法跳转。
+    fadadaFaceAppId: '',       // 法大大刷脸小程序 AppId（必填）
+    fadadaFacePath: '',        // 刷脸入口 path（必填，如 pages/face/index）
+    fadadaAvsPath: '',         // 互动视频签入口 path（留空则回退使用 fadadaFacePath）
   },
 
   onLaunch() {

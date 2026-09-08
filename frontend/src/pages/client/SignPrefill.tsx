@@ -73,13 +73,42 @@ export default function SignPrefill() {
     return <Input placeholder={`请输入${fieldName}`} className="mp-field-input" style={{ height: 44 }} />
   }
 
-  const collectFieldValues = (values: any) =>
-    fields.map((f) => ({
-      field_doc_id: f.field_doc_id,
-      field_id: f.field_id,
-      field_name: f.field_name,
-      field_value: String(values[f.field_id] ?? ''),
-    }))
+  // 收集字段值并提交。关键兜底逻辑：
+  // 1) 表单实时值优先；若某字段表单值为空，回退使用后端回传的 default_value（历史已填/暂存值），
+  //    避免双同名「客户身份证号」框因受控组件状态或用户漏填导致提交时空值、法大大报 211148 必填未填。
+  // 2) 同一 field_name 存在多个 fieldId（如模板里两份「客户身份证号」控件）时，任一框有值则同步给所有
+  //    同名框，确保法大大侧每一份同名必填控件都被填充，不会漏填其中一份。
+  const collectFieldValues = (values: any) => {
+    const raw = fields.map((f) => {
+      const v = values?.[f.field_id]
+      const fieldValue =
+        v !== undefined && v !== null && String(v).trim() !== ''
+          ? String(v)
+          : (f.default_value || '')
+      return {
+        field_doc_id: f.field_doc_id,
+        field_id: f.field_id,
+        field_name: f.field_name,
+        field_value: fieldValue,
+      }
+    })
+    const byName: Record<string, typeof raw> = {}
+    raw.forEach((item) => {
+      if (!item.field_name) return
+      if (!byName[item.field_name]) byName[item.field_name] = []
+      byName[item.field_name].push(item)
+    })
+    Object.keys(byName).forEach((name) => {
+      const list = byName[name]
+      const filled = list.find((x) => x.field_value.trim() !== '')
+      if (filled) {
+        list.forEach((x) => {
+          if (x.field_value.trim() === '') x.field_value = filled.field_value
+        })
+      }
+    })
+    return raw
+  }
 
   const handleSubmit = async () => {
     setSubmitting(true)
@@ -111,7 +140,7 @@ export default function SignPrefill() {
           } catch { /* localStorage 不可用时忽略，中转页会提示回预览页 */ }
           message.info(res?.message || '请先完成人脸识别与实名认证', 2)
           // 微信小程序内会自动桥接到法大大 pagesFace 中间页（解决 web-view 无法唤起刷脸小程序的问题）
-          openFadadaUrl(res.verify_url)
+          openFadadaUrl(res.verify_url, { miniAppInfo: res.mini_app_info })
         } else {
           message.error('未获取到人脸识别链接，请稍后重试')
         }
@@ -120,7 +149,7 @@ export default function SignPrefill() {
       const url = res?.embed_url || res?.sign_url
       if (url) {
         // 微信小程序内会自动桥接到法大大 pagesFace 中间页（解决 web-view 无法唤起互动视频签小程序的问题）
-        openFadadaUrl(url)
+        openFadadaUrl(url, { miniAppInfo: res.mini_app_info })
       } else {
         message.error('未获取到签署链接，请稍后重试')
       }

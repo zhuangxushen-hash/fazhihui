@@ -41,15 +41,24 @@ function fallbackOpen(url: string): void {
   if (!win) window.location.href = url
 }
 
+export interface FadadaOpenOptions {
+  /** 后端返回的 actorSignTaskMiniAppInfo（{ wxOriginalId, path }）。
+   *  微信小程序 web-view 环境下，把法大大刷脸/互动视频签小程序的 appId/path 透传给
+   *  pagesFace 中间页，避免在小程序代码里硬编码 appId。无则走小程序 app.js 配置兜底。 */
+  miniAppInfo?: { wxOriginalId?: string; path?: string } | null
+}
+
 /**
- * 打开法大大页面链接。
+ * 打开法大大页面链接（个人实名刷脸 / 互动视频签）。
  * - App 内嵌 web-view（UA 含 app_embed）：直接当前页跳转。
  * - 明确桌面浏览器：新窗口打开（保持原行为）。
  * - 其余环境（手机 / 微信内 / 识别不到小程序标记时）：**默认按微信小程序处理**，
- *   通过 wx.miniProgram.navigateTo 桥接到 pagesFace 中间页；wx SDK 未注入时
- *   动态加载 jweixin 后重试，仍失败或超时则降级为新窗口打开。
+ *   通过 wx.miniProgram.navigateTo 桥接到 pagesFace 的 webview 页；法大大 H5 在该页内
+ *   于刷脸/互动视频签环节会自动跳转到对应 middle / avsMiddlePage 中间页。把 mini_app_info
+ *   的 appId/path 一并透传，供中间页优先使用，避免硬编码。wx SDK 未注入时动态加载 jweixin
+ *   后重试，仍失败或超时则降级为新窗口打开。
  */
-export function openFadadaUrl(url: string): void {
+export function openFadadaUrl(url: string, opts?: FadadaOpenOptions): void {
   if (!url) return
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : ''
 
@@ -66,13 +75,21 @@ export function openFadadaUrl(url: string): void {
   }
 
   // 3. 默认按微信小程序处理（识别不到 UA 标记时不再降级为浏览器）
+  //    桥接到 pagesFace 的 webview 页（由法大大 H5 在刷脸/互动视频签环节自动跳转到
+  //    对应的 middle / avsMiddlePage 中间页）。把 mini_app_info 的 appId/path 一并带上，
+  //    webview 页写入 globalData/storage，供中间页优先使用，避免硬编码 appId。
+  const mini = opts?.miniAppInfo
+  const q = new URLSearchParams()
+  q.set('url', url)
+  if (mini?.wxOriginalId) q.set('appId', mini.wxOriginalId)
+  if (mini?.path) q.set('path', mini.path)
+  const navigateUrl = '/pagesFace/pages/webview/webview?' + q.toString()
+
   let handled = false
   const bridge = (): boolean => {
     const wx = (window as any).wx
     if (wx?.miniProgram?.navigateTo) {
-      wx.miniProgram.navigateTo({
-        url: '/pagesFace/pages/webview/webview?url=' + encodeURIComponent(url),
-      })
+      wx.miniProgram.navigateTo({ url: navigateUrl })
       return true
     }
     return false
