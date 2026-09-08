@@ -928,12 +928,18 @@ export class FadadaService {
     }
     const res = await this.signTaskClient.getSignTaskFieldList({ signTaskId });
     const fields: any[] = res?.data?.data?.fillFields || [];
-    // 过滤出「填写类」控件（金额控件 amount 不能通过 API 填充，过滤掉不展示给客户）。
-    // 注意：不再按「未填写」（fieldValue 为空）过滤 —— B 端发起预填 / 客户上次提交的值已经写入
-    // 法大大任务，如果此时过滤掉，客户再次进入预览页会看到自己填过的字段凭空消失。
-    // 已填控件也返回并带出 field_value，由上层（getSignPrefillFields）回填为表单默认值，可查看可修改。
+    // 仅返回「填写类」且「尚未填写」的控件供 C 端客户填写：
+    //  - 金额控件(amount)无法通过 API 填充，且属业务字段（由 B 端/平台维护），不展示给客户；
+    //  - 已填值的控件（B 端发起预填 / 客户上次提交已写入法大大任务）不再展示给 C 端，
+    //    由后端 submit-prefill 的 mergePrefillValues 合并 signing.prefill_values 一并传给法大大，
+    //    避免客户重复填写、也避免「已填字段凭空消失」的困惑。
     return fields
-      .filter((f) => this.isFillableFieldType(f?.fieldType) && (f?.fieldType || '') !== 'amount')
+      .filter(
+        (f) =>
+          this.isFillableFieldType(f?.fieldType) &&
+          (f?.fieldType || '') !== 'amount' &&
+          !f?.fieldValue,
+      )
       .map((f) => ({
         field_doc_id: String(f?.docId ?? ''),
         field_id: f?.fieldId || '',
