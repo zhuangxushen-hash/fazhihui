@@ -1,4 +1,4 @@
 {
-  "navigationBarTitleText": "实名认证",
-  "usingComponents": {}
+  "usingComponents": {},
+  "navigationBarTitleText": "人脸识别认证"
 }

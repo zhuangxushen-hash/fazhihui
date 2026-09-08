@@ -1,9 +1,210 @@
-/* pagesFace/pages/avsMiddlePage/avsMiddlePage.wxss */
-.tip {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  color: #64748b;
-  font-size: 14px;
+page {
+  height: 100%;
 }
+.announcements {
+  box-sizing: content-box;
+  width: 100%;
+	height: calc(100% - 180rpx);
+  margin-bottom: 180rpx;
+  border-top: 1px solid #eee;
+  overflow-y: scroll;
+}
+.announcements .announcements-title {
+  text-align: center;
+  font-size: 40rpx;
+  font-weight: bold;
+  padding-top: 56rpx;
+	padding-bottom: 24rpx;
+}
+
+.announcements .mini-tip {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 28rpx;
+  line-height: 44rpx;
+  text-align: center;
+  color: #595959;
+}
+
+.announcements .scan-picture {
+  margin: 64rpx 0;
+  display: flex;
+  justify-content: center;
+  height: 240rpx;
+  width: 100%;
+}
+
+.announcements .scan-picture image {
+  width: 240rpx;
+  height: 240rpx;
+}
+
+.announcements .small-title {
+  padding: 24rpx 40rpx;
+  font-weight: bold;
+  font-size: 30rpx;
+  line-height: 48rpx;
+}
+
+.announcements .icon-wrap {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 40rpx 40rpx;
+}
+
+.announcements .icon-wrap .icon-item {
+  width: 18%;
+}
+
+.announcements .icon-wrap .icon-item image {
+  width: 100%;
+}
+
+.announcements .icon-wrap .icon-item .icon-text {
+  text-align: center;
+  margin-top: 10rpx;
+  font-size: 26rpx;
+  white-space: nowrap;
+}
+
+.announcements .icon-wrap-2 {
+  display: flex;
+  justify-content: space-around;
+  padding: 0 40rpx 40rpx;
+}
+
+.announcements .icon-wrap-2 .icon-item {
+  width: 25%;
+  text-align: center;
+}
+
+.announcements .icon-wrap-2 .icon-item image {
+  width: 72%;
+}
+
+.announcements .icon-wrap-2 .icon-item .icon-text {
+  text-align: center;
+  margin-top: 10rpx;
+  font-size: 26rpx;
+  white-space: nowrap;
+}
+
+.announcements ::-webkit-scrollbar {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  color:#ffffff;
+}
+
+/*定义滚动条轨道 内阴影+圆角*/
+.announcements ::-webkit-scrollbar-track {
+  -webkit-box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  background-color:#FFFFFF;
+}
+
+/*定义滑块 内阴影+圆角*/
+.announcements ::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  -webkit-box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.1);
+  background-color:#ccc;
+}
+
+.confirm-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 180rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-top: 1px solid #eee;
+  background-color: #fff;
+  z-index: 2;
+}
+
+.confirm-bottom .confirm-btn {
+  color: #fff;
+  background: #276EF9;
+  width: 438rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  text-align: center;
+  font-size: 30rpx;
+  letter-spacing: 2rpx;
+  border-radius: 8rpx;
+}
+
+.face-live-tips {
+  margin: 3vh 0;
+  font-size: 28rpx;
+  width: 50vw;
+  font-family: PingFangSC-Medium;
+  color: #666666;
+  letter-spacing: -0px;
+  text-align: center;
+}
+
+/* .middle-page-container {
+  line-height: 1.8;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding-top: 2vh;
+}
+.mark-title {
+  font-family: PingFangSC-Medium;
+  font-size: 36rpx;
+  color: #333333;
+  letter-spacing: -0rpx;
+  text-align: center;
+  padding: 0 0 1vh 0;
+}
+.mark-container {
+  width: 75vw;
+  min-width: 340rpx;
+  box-shadow: 0 0 24rpx 0 rgba(221,221,221,0.50);
+  border-radius: 20rpx;
+  margin: 14rpx;
+  padding: 2vh 2vh 0 2vh;
+}
+.tips-view {
+  font-size: 24rpx;
+  color: #666666;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+.mark-pic {
+  text-align: center;
+}
+.mark-pic .mark-live-icon {
+  height: 20vh;
+}
+.voice-gif {
+  height: 18vh;
+  margin-bottom: .5vh;
+  margin-right: 3vh;
+}
+.start-face-live-icon {
+  width: 24rpx;
+  margin-right: 12rpx;
+}
+.face-live-tips {
+  margin: 3vh 0;
+  font-size: 28rpx;
+  width: 50vw;
+  font-family: PingFangSC-Medium;
+  color: #666666;
+  letter-spacing: -0px;
+  text-align: center;
+}
+.face-live-btn {
+  background-color: #136FFF !important;
+  width: 80vw !important;
+} */

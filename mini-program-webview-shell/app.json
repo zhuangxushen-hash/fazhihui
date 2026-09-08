@@ -3,11 +3,15 @@
     "pages/phone/phone",
     "pages/webview/webview"
   ],
+  "navigateToMiniProgramAppIdList": [
+    "wxe79d5da9faad5f53"
+  ],
   "subpackages": [
     {
       "root": "pagesFace",
       "name": "pagesFace",
       "pages": [
+        "pages/index/index",
         "pages/webview/webview",
         "pages/middle/middle",
         "pages/avsMiddlePage/avsMiddlePage"

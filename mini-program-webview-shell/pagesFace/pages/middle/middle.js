@@ -1,65 +1,76 @@
-// pagesFace/pages/middle/middle.js
-// 刷脸（个人/企业实名）中间页：承接法大大 H5 的跳转，桥接到「法大大刷脸小程序」完成人脸识别，
-// 完成后法大大小程序回跳本页（referrerInfo.extraData.returnURL），本页再 reloadPage 回 webview 拿结果。
-// appId / path 取自 app.js globalData（从「刷脸小程序跳转中间页DEMO」的 middle.js 拷贝填入）。
-const app = getApp()
-
 Page({
   data: {
-    url: '',
-    appId: '',
-    path: '',
-    jumped: false,
+    /** 刷脸Id */
+    bizToken: '',
+
+    /** 认证小程序appId */
+    miniProgramAppId: '',
+
+    /** 认证小程序跳转页地址 */
+    miniProgramPath: '',
+
+    /** 刷脸结束回调地址 */
+    miniProgramCallBackUrl: '',
+
+    /** 是否已跳转认证小程序 */
+    goFaceDone: false,
   },
 
-  onLoad(options) {
-    const url = decodeURIComponent(options.url || '')
-    const appId =
-      options.appId || wx.getStorageSync('fadadaFaceAppId') || app.globalData.fadadaFaceAppId || ''
-    const path =
-      options.path || wx.getStorageSync('fadadaFacePath') || app.globalData.fadadaFacePath || ''
-    this.setData({ url, appId, path })
-    this.jumpToFadada()
-  },
-
-  // 从法大大小程序返回（App.onShow 已把 returnURL 写入 storage）时，回 webview 取结果
-  onShow() {
-    const returnURL = wx.getStorageSync('returnURL')
-    if (returnURL) {
-      wx.removeStorageSync('returnURL')
-      wx.redirectTo({
-        url: '/pagesFace/pages/webview/webview?url=' + encodeURIComponent(returnURL),
-      })
-    }
-  },
-
-  jumpToFadada() {
-    const { appId, path, url } = this.data
-    if (!appId) {
-      wx.showModal({
-        title: '配置缺失',
-        content: '请在 app.js globalData.fadadaFaceAppId 配置法大大刷脸小程序 AppId（取自法大大官方 DEMO 的 middle.js）',
-        showCancel: false,
-      })
-      return
-    }
-    if (!path) {
-      wx.showModal({
-        title: '配置缺失',
-        content: '请在 app.js globalData.fadadaFacePath 配置法大大刷脸小程序入口 path（取自法大大官方 DEMO 的 middle.js）',
-        showCancel: false,
-      })
-      return
-    }
-    this.setData({ jumped: true })
-    wx.navigateToMiniProgram({
-      appId,
-      path: path + (path.indexOf('?') === -1 ? '?' : '&') + 'url=' + encodeURIComponent(url),
-      extraData: { url },
-      envVersion: 'release',
-      fail: (err) => {
-        wx.showToast({ title: '跳转法大大失败：' + (err && err.errMsg ? err.errMsg : '未知错误'), icon: 'none' })
-      },
+  /**
+   * 生命周期函数--监听页面加载
+   */
+  onLoad({ bizToken = '', miniProgramAppId = '', miniProgramPath = '', miniProgramCallBackUrl = '', isRedirect = false }) {
+    this.setData({
+      bizToken: decodeURIComponent(bizToken),
+      miniProgramAppId: decodeURIComponent(miniProgramAppId),
+      miniProgramPath: decodeURIComponent(miniProgramPath),
+      miniProgramCallBackUrl: decodeURIComponent(miniProgramCallBackUrl)
     })
+
+    if (isRedirect) {
+      const pages = getCurrentPages()
+      const prev = pages[pages.length - 2]
+      prev.setIsRedirect && prev.setIsRedirect()
+    }
   },
+
+  /**
+   * 生命周期函数--监听页面显示
+   */
+  onShow() {
+    const {goFaceDone, miniProgramCallBackUrl} = this.data
+
+    /** 防止从认证进入后直接返回 */
+    if(!goFaceDone) return
+
+    /** 已跳转认证小程序，重置 */
+    this.setData({ goFaceDone: false })
+
+    /** getEnterOptionsSync 基础库 2.9.4 开始支持，低版本需做兼容处理 */
+    const options = wx.getEnterOptionsSync()
+
+    /** 从认证小程序返回 */
+    if (options.scene === 1038 && options.referrerInfo.extraData && options.referrerInfo.extraData.faceResult) {
+      const pages = getCurrentPages()
+      const previous = pages[pages.length - 2]
+
+      /** 重新加载认证页面 */
+      if (previous.reloadPage && typeof previous.reloadPage === 'function') {
+        previous.reloadPage(miniProgramCallBackUrl)
+        wx.navigateBack({ delta: 1 })
+      }
+    }
+  },
+
+  /**
+   * 点击前往认证
+   */
+  onJump() {
+    const { bizToken, miniProgramAppId, miniProgramPath } = this.data
+    wx.navigateToMiniProgram({
+      appId: miniProgramAppId,
+      path: miniProgramPath + '?bizToken=' + bizToken,
+      success:() => this.setData({ goFaceDone: true })
+    })
+  }
 })
