@@ -652,6 +652,12 @@ export class FadadaService {
       signTaskId,
       actorId: 'client',
       redirectUrl: this.redirectUrl || undefined,
+      // 微信小程序模式标记：签署链接在小程序 web-view 内使用时，法大大 H5 才会自动
+      // wx.miniProgram.navigateTo 到宿主小程序中间页触发刷脸/互动视频签。文档：签署场景 =4。
+      // SDK 模型未定义该字段，但 SDK 会原样透传额外字段。
+      // 同时兼容驼峰(isMiniProgram)与下划线(is_mini_program)命名，待服务器验证后收敛。
+      isMiniProgram: 4,
+      is_mini_program: 4,
     };
     console.log('法大大 getActorUrl 请求体(camel+snake)=' + JSON.stringify(urlParams1));
     const urlRes = await this.signTaskClient.getActorUrl(urlParams1);
@@ -1146,6 +1152,12 @@ export class FadadaService {
       clientUserId: params.clientUserId || (params.clientMobile ? 'CLT_' + params.clientMobile : undefined),
       // 签署完成后重定向回 C 端案件列表（法大大 getActorUrl 接口支持 redirectUrl 参数）
       redirectUrl: this.redirectUrl || undefined,
+      // 微信小程序模式标记：告知法大大该签署链接在小程序 web-view 内使用，
+      // H5 才会自动 wx.miniProgram.navigateTo 到宿主小程序中间页（avsMiddlePage）触发互动视频签。
+      // 文档要求签署场景 =4。SDK 模型未定义该字段，但 SDK 会原样透传额外字段。
+      // 同时兼容驼峰(isMiniProgram)与下划线(is_mini_program)命名，待服务器验证后收敛。
+      isMiniProgram: 4,
+      is_mini_program: 4,
     };
     console.log('法大大 getActorUrl 请求体=' + JSON.stringify(urlParams2));
     const urlRes = await this.signTaskClient.getActorUrl(urlParams2);
