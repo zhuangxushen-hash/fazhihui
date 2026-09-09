@@ -185,7 +185,9 @@ export class FadadaService {
     if (this.mode === 'uat') {
       return this.configService.get('FADADA_UAT_API_URL') || 'https://uat-api.fadada.com/api/v5';
     }
-    return this.configService.get('FADADA_API_URL') || 'https://openapi.fadada.com';
+    // 生产环境域名严格按法大大「生产环境上线准备」文档：https://api.fadada.com/api/v5/
+    // （uat 模式走上面的 FADADA_UAT_API_URL；prod 模式若未显式配置 FADADA_API_URL 则回退到此默认值）
+    return this.configService.get('FADADA_API_URL') || 'https://api.fadada.com/api/v5';
   }
 
   private get redirectUrl(): string {
